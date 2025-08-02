@@ -1,173 +1,167 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dumbbell, Droplets, MessageSquare, TrendingUp } from 'lucide-react';
+'use client';
+
+import { Dumbbell, Droplet, MessageSquare, Flame, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/auth-context';
+import { Button } from '@/components/ui/button';
+import ProtectedRoute from '@/components/auth/protected-route';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/use-toast';
+
+// Time-based greeting
+function getTimeGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+type QuickActionButtonProps = {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  color: string;
+  href: string;
+};
+
+function QuickActionButton({ icon: Icon, label, color, href }: QuickActionButtonProps) {
+  return (
+    <Link href={href}>
+      <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-white border border-gray-100 hover:bg-gray-50 transition-colors h-full">
+        <div className={`p-3 rounded-full ${color.split(' ')[0]} bg-opacity-20 mb-2`}>
+          <Icon className={`h-5 w-5 ${color.split(' ')[1]}`} />
+        </div>
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+      </div>
+    </Link>
+  );
+}
+
+function DashboardContent() {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+  
+  const greeting = getTimeGreeting();
+  const today = new Date().toLocaleDateString('en-US', { 
+    weekday: 'long', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.',
+      });
+      router.push('/login');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  // Only keep essential stats
+  const stats = [
+    { 
+      label: 'Current Streak', 
+      value: '7', 
+      unit: 'days', 
+      icon: Flame, 
+      color: 'bg-orange-100',
+      textColor: 'text-orange-600'
+    },
+    { 
+      label: 'Water Intake', 
+      value: '5', 
+      unit: 'cups', 
+      icon: Droplet, 
+      color: 'bg-blue-100',
+      textColor: 'text-blue-600'
+    }
+  ];
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <header className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {greeting}, {user?.email?.split('@')[0] || 'User'}!
+          </h1>
+          <p className="text-gray-500">{today}</p>
+        </div>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleSignOut}
+          className="flex items-center gap-2 text-gray-500 hover:text-red-600"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </Button>
+      </header>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">{stat.label}</p>
+                  <p className="text-2xl font-bold">
+                    {stat.value} <span className="text-sm font-normal text-gray-500">{stat.unit}</span>
+                  </p>
+                </div>
+                <div className={`p-2 rounded-lg ${stat.color}`}>
+                  <Icon className={`h-5 w-5 ${stat.textColor}`} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <QuickActionButton 
+          icon={MessageSquare} 
+          label="Chat" 
+          color="bg-blue-100 text-blue-600"
+          href="/dashboard/chat" 
+        />
+        <QuickActionButton 
+          icon={Dumbbell} 
+          label="Fitness" 
+          color="bg-purple-100 text-purple-600"
+          href="/dashboard/fitness" 
+        />
+        <QuickActionButton 
+          icon={Droplet} 
+          label="Water" 
+          color="bg-cyan-100 text-cyan-600"
+          href="/dashboard/water" 
+        />
+        <QuickActionButton 
+          icon={Flame} 
+          label="Journal" 
+          color="bg-orange-100 text-orange-600"
+          href="/dashboard/journal" 
+        />
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  // Mock data - will be replaced with real data later
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
-        <p className="text-muted-foreground">
-          {today} • Let's make today amazing! 🌟
-        </p>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <DashboardCard 
-          title="Daily Journal" 
-          description="Reflect on your day" 
-          icon={<MessageSquare className="h-4 w-4 text-muted-foreground" />}
-          href="/chat"
-          buttonText="Start Journaling"
-        />
-        <DashboardCard 
-          title="Fitness" 
-          description="Log your workout" 
-          icon={<Dumbbell className="h-4 w-4 text-muted-foreground" />}
-          href="/fitness"
-          buttonText="Track Workout"
-        />
-        <DashboardCard 
-          title="Water Intake" 
-          description="Stay hydrated" 
-          icon={<Droplets className="h-4 w-4 text-muted-foreground" />}
-          href="/water"
-          buttonText="Log Water"
-        />
-        <DashboardCard 
-          title="Progress" 
-          description="View your stats" 
-          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-          href="/progress"
-          buttonText="See Progress"
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your recent interactions and progress
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <ActivityItem 
-                title="Morning Reflection"
-                description="You journaled about your goals for the week"
-                time="2 hours ago"
-              />
-              <ActivityItem 
-                title="Workout Completed"
-                description="You completed a 30-minute HIIT session"
-                time="5 hours ago"
-              />
-              <ActivityItem 
-                title="Water Intake"
-                description="You've had 6 glasses of water today"
-                time="3 hours ago"
-              />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Stats</CardTitle>
-            <CardDescription>Your daily progress at a glance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <StatItem label="Journal Entries" value="3" max="7" />
-              <StatItem label="Workout Minutes" value="45" max="60" />
-              <StatItem label="Water Intake" value="1.5L" max="3L" />
-              <StatItem label="Mood Average" value="4.2" max="5" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-interface DashboardCardProps {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  buttonText: string;
-}
-
-function DashboardCard({ title, description, icon, href, buttonText }: DashboardCardProps) {
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div>
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </div>
-        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-          {icon}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Link href={href}>
-          <Button size="sm" className="w-full">
-            {buttonText}
-          </Button>
-        </Link>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface ActivityItemProps {
-  title: string;
-  description: string;
-  time: string;
-}
-
-function ActivityItem({ title, description, time }: ActivityItemProps) {
-  return (
-    <div className="flex items-start gap-4">
-      <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
-      <div>
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground">{description}</p>
-        <p className="text-xs text-muted-foreground">{time}</p>
-      </div>
-    </div>
-  );
-}
-
-interface StatItemProps {
-  label: string;
-  value: string | number;
-  max: string | number;
-}
-
-function StatItem({ label, value, max }: StatItemProps) {
-  const percentage = typeof value === 'number' && typeof max === 'number' 
-    ? Math.min(100, (value / max) * 100) 
-    : 0;
-  
-  return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value} / {max}</span>
-      </div>
-      <div className="h-2 bg-secondary rounded-full overflow-hidden">
-        <div 
-          className="h-full bg-primary rounded-full" 
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }
