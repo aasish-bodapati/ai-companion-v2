@@ -1,39 +1,54 @@
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware import Middleware
 from sqlalchemy.orm import Session
+from pathlib import Path
+import os
+
 from . import models
 from .database import engine, get_db
+from .api.endpoints import documents
+from .core.config import settings
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
 
+# Configure CORS
+middleware = [
+    Middleware(
+        CORSMiddleware,
+        allow_origins=settings.BACKEND_CORS_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+]
+
 app = FastAPI(
     title="AI Companion API",
     description="Backend API for the AI Companion application",
-    version="0.1.0"
+    version="0.1.0",
+    middleware=middleware,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
-# CORS middleware configuration
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with your frontend URL
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+# Include API routers
+app.include_router(
+    documents.router,
+    prefix="/api/documents",
+    tags=["documents"]
 )
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "version": "0.1.0"}
 
-# Example protected route
-@app.get("/api/me")
-async def read_current_user():
-    # TODO: Implement actual user authentication
-    return {"user_id": "example_user_id"}
+# Create uploads directory if it doesn't exist
+os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+# Serve static files (for uploaded files in development)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
