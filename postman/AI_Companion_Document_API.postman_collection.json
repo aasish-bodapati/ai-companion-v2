@@ -1,0 +1,284 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-1234-56789abcdef0",
+		"name": "AI Companion - Document API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"yourpassword\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Documents",
+			"item": [
+				{
+					"name": "Upload Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/your/document.pdf"
+								},
+								{
+									"key": "title",
+									"value": "Test Document",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Test document upload via Postman",
+									"type": "text"
+								},
+								{
+									"key": "metadata",
+									"value": "{\"category\":\"test\",\"source\":\"postman\"}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/upload",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "upload"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "List Documents",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents?limit=10&skip=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/1?include_chunks=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "1"],
+							"query": [
+								{
+									"key": "include_chunks",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search Documents",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"query\": \"search query\",\n    \"limit\": 5,\n    \"threshold\": 0.5,\n    \"include_content\": true,\n    \"file_types\": [\"application/pdf\"],\n    \"tags\": [\"important\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/search",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "search"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Tags to Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"tags\": [\"important\", \"test\"],\n    \"replace\": false\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/1/tags",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "1", "tags"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Document Tags",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/tags",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "tags"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reprocess Document",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/1/reprocess",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "1", "reprocess"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Document",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/documents/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "documents", "1"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"exec": [
+					""
+				],
+				"type": "text/javascript"
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"exec": [
+					""
+				],
+				"type": "text/javascript"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+}
