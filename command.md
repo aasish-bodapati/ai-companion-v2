@@ -5,3 +5,4 @@ uvicorn main:app --reload
 uvicorn app.main:app --reload --app-dir e:/docs/ai-companion-v2/backend
 taskkill /f /im uvicorn.exe
 taskkill /f /im python.exe
+taskkill /f /im node.exe

@@ -1,18 +1,21 @@
-# AI Companion - MVP Backend
+# AI Companion - Backend (Canonical)
 
-This is the minimal viable product (MVP) backend for the AI Companion application, built with FastAPI.
+This is the canonical FastAPI backend for the AI Companion application.
+
+> The legacy single-file app `backend/main.py` is deprecated and will be removed. Use `backend/app/main.py`.
 
 ## Features
 
-- User registration
-- User authentication with JWT tokens
-- Protected user profile endpoint
+- JWT-based authentication
+- User profile and management (admin-only creation)
+- Conversations and messages APIs
+- OpenAPI docs at `/api/v1/openapi.json` and Swagger UI at `/docs`
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.10+
 - pip (Python package manager)
 
 ### Installation
@@ -20,7 +23,10 @@ This is the minimal viable product (MVP) backend for the AI Companion applicatio
 1. Create a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+   # Windows
+   .\\venv\\Scripts\\activate
+   # macOS/Linux
+   source venv/bin/activate
    ```
 
 2. Install dependencies:
@@ -30,51 +36,52 @@ This is the minimal viable product (MVP) backend for the AI Companion applicatio
 
 ### Running the Application
 
-Start the development server:
+```bash
+uvicorn app.main:app --reload --app-dir backend
+```
+
+The API will be available at `http://localhost:8000`.
+
+## Canonical API Endpoints
+
+All endpoints are prefixed with `/api/v1`.
+
+- Auth (form-encoded):
+  - `POST /api/v1/login/access-token`
+    - Body (x-www-form-urlencoded): `username`, `password`
+    - Returns: `{ access_token, token_type }`
+- Current user:
+  - `GET /api/v1/users/me` with `Authorization: Bearer <token>`
+- Conversations and messages:
+  - See `docs/ground_truth/api_endpoints.md` for the full list and parameters.
+
+Note: There is no public registration endpoint. User creation is admin-only.
+
+## Testing
+
+- Unit tests use FastAPI `TestClient` and override the DB to SQLite in-memory or file.
+- Do not connect to external services for unit tests.
+
+Run tests:
 
 ```bash
-uvicorn main:app --reload
-```
+# unittest
+python -m unittest discover -s backend -p "test_*.py" -v
 
-The API will be available at `http://localhost:8000`
-
-## API Endpoints
-
-### Register a new user
-
-```http
-POST /register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "securepassword",
-  "full_name": "John Doe"
-}
-```
-
-### Login
-
-```http
-POST /token
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=password&username=user@example.com&password=securepassword
-```
-
-### Get current user profile
-
-```http
-GET /users/me
-Authorization: Bearer <access_token>
+# or pytest
+pytest backend -q
 ```
 
 ## Project Structure
 
-- `main.py` - Main application file with all routes and logic
-- `requirements.txt` - Project dependencies
-- `minimal.db` - SQLite database (created automatically)
+- `app/main.py` - FastAPI application with routers under `/api/v1`
+- `app/api/` - API routers and versioned API setup
+- `app/schemas/`, `app/models/`, `app/crud/` - Pydantic schemas, SQLAlchemy models, data access layer
+- `alembic/` - Database migrations (for Postgres environments)
+- `requirements.txt` - Python dependencies
 
-## License
+## Documentation
+
+See `docs/ground_truth/api_endpoints.md` for the canonical API documentation.
 
 This project is proprietary and confidential.
