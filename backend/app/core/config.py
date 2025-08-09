@@ -74,6 +74,9 @@ class Settings(BaseSettings):
 
     # JWT
     ALGORITHM: str = "HS256"
+    
+    # Registration settings
+    REGISTRATION_ENABLED: bool = True
 
     class Config:
         env_file = ".env"

@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.endpoints import conversations, login, users, utils
+from app.api.endpoints import onboarding
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -11,3 +12,4 @@ api_router.include_router(
     prefix="/conversations", 
     tags=["conversations"]
 )
+api_router.include_router(onboarding.router, prefix="/users", tags=["onboarding"])

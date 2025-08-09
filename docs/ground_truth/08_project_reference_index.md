@@ -12,6 +12,7 @@ The AI builder and developers must reference these before generating answers, co
 - `api_endpoints.md` → All REST and WebSocket endpoints with parameters & example calls.
 - `frontend_structure.md` → Next.js folder structure, component hierarchy, state management rules.
 - `backend_structure.md` → FastAPI folder structure, CRUD rules, service layers.
+- `onboarding_flow.md` → First-run onboarding UX, data model, and API contract.
 
 ---
 
