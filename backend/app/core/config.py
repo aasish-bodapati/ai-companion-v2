@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyHttpUrl, EmailStr, validator
-from pydantic_settings import BaseSettings
+from pydantic import AnyHttpUrl, EmailStr, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 import json
 
 class Settings(BaseSettings):
@@ -18,7 +18,8 @@ class Settings(BaseSettings):
         "http://localhost:8000",  # Default FastAPI dev server
     ]
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         # Accept either a JSON list string or a comma-separated string
         if isinstance(v, str):
@@ -65,7 +66,8 @@ class Settings(BaseSettings):
     TEST_USERNAME: str = "test@example.com"
     TEST_PASSWORD: str = "testpassword123"
 
-    @validator("SQLALCHEMY_DATABASE_URI", pre=True)
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @classmethod
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         # 1) If provided explicitly and non-empty, use as-is
         if isinstance(v, str) and v.strip():
@@ -86,7 +88,7 @@ class Settings(BaseSettings):
 
     # JWT
     ALGORITHM: str = "HS256"
-    
+
     # Registration settings
     REGISTRATION_ENABLED: bool = True
 
@@ -99,9 +101,10 @@ class Settings(BaseSettings):
     RETRIEVAL_RECENT_MESSAGES: int = 5
     MEMORY_MIN_RELEVANCE: float = 0.5
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+    )
 
 settings = Settings()

@@ -86,3 +86,45 @@ def search(user_id: str, query_vec: List[float], top_k: int) -> List[Tuple[str, 
     return result
 
 
+def update_vector(user_id: str, target_id: str, new_vector: List[float]) -> bool:
+    """Replace the vector for target_id by rebuilding the user's index.
+
+    Notes:
+    - IndexFlatIP does not support in-place updates/removals without ID maps.
+    - We reconstruct all vectors, replace the one for target_id, rebuild, and save.
+    - Returns True on success, False if index missing or faiss not available.
+    """
+    faiss = _try_import_faiss()
+    if not faiss:
+        return False
+    index, ids = _load_index(user_id)
+    if index is None or not ids:
+        return False
+    # Find the position of target_id
+    try:
+        pos = ids.index(target_id)
+    except ValueError:
+        return False
+
+    import numpy as np
+
+    # Reconstruct all vectors from the existing index using reconstruct_n
+    # This returns an array of shape (ntotal, dim) with dtype float32
+    ntotal = index.ntotal
+    all_mat = index.reconstruct_n(0, ntotal)  # type: ignore[attr-defined]
+    all_vecs: List[List[float]] = all_mat.astype("float32").tolist()
+
+    # Replace the vector at the target position
+    all_vecs[pos] = list(new_vector)
+
+    # Rebuild a fresh index and add vectors in the same order
+    dim = len(all_vecs[0]) if all_vecs else 384
+    new_index = faiss.IndexFlatIP(dim)
+    xb = np.array(all_vecs, dtype="float32")
+    new_index.add(xb)
+
+    # Save rebuilt index and ids mapping
+    _save_index(user_id, new_index, ids)
+    return True
+
+

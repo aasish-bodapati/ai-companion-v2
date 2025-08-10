@@ -5,9 +5,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-# Force SQLite for tests before importing app/settings so global engine binds to SQLite
-os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
-
 from app.core.config import settings
 from app.main import app
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -16,16 +13,25 @@ from app.db.session import get_db  # Import the production dependency to overrid
 from app.api import deps as api_deps  # Import API deps to override its get_db as well
 from app.models.user import User
 
-# Create test database engine
-SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
+# Create test database engine using DATABASE_URL if provided (e.g., Postgres)
+SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL") or "sqlite:///:memory:"
+
+if SQLALCHEMY_DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+else:
+    # For Postgres (or others), use default pooling with pre-ping
+    engine = create_engine(
+        SQLALCHEMY_DATABASE_URL,
+        pool_pre_ping=True,
+    )
+
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create test database tables
+# Create test database tables (ensure schema exists for Postgres)
 Base.metadata.create_all(bind=engine)
 
 # Test user data

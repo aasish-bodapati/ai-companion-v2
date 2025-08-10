@@ -7,7 +7,14 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.api import deps
 from app.models.user import User
-from app.schemas.conversation import Conversation, ConversationCreate, ConversationWithMessages, Message, MessageCreate
+from app.schemas.conversation import (
+    Conversation,
+    ConversationCreate,
+    ConversationUpdate,
+    ConversationWithMessages,
+    Message,
+    MessageCreate,
+)
 from app.core.config import settings
 from app.memory import memory_enabled
 from app.memory.embeddings import embed_texts
@@ -77,16 +84,13 @@ async def get_conversation(
 @router.put("/{conversation_id}", response_model=Conversation)
 async def update_conversation(
     conversation_id: UUID,
-    conversation_in: "ConversationUpdate",
+    conversation_in: ConversationUpdate,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """
     Update conversation fields (e.g., title).
     """
-    # Lazy import to avoid circular
-    from app.schemas.conversation import ConversationUpdate
-
     # Ensure the conversation exists and belongs to the user
     conversation = crud.conversation.get(db, id=conversation_id)
     if not conversation:

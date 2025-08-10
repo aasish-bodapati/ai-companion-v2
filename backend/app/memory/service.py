@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.crud.memory import memory
 from app.crud.onboarding import get_by_user_id
 from app.memory.faiss_store import add as faiss_add, search as faiss_search
+from app.memory.faiss_store import update_vector as faiss_update
 from app.memory.embeddings import embed_texts
 from app.schemas.memory import MemorySearchResult
 
@@ -257,9 +258,20 @@ class MemoryService:
             if consolidation_key:
                 existing = memory.get_by_consolidation_key(db, user_id=user_id, key=consolidation_key)
                 if existing:
+                    # Update DB content/metadata first
                     memory.update_content_and_metadata(db, node=existing, content=content, metadata=metadata)
-                    # For now, skip FAISS update for simplicity; future: re-embed & update vector
-                    logger.info(f"Consolidated memory for key '{consolidation_key}' (updated existing node)")
+                    # Re-embed and update FAISS vector to keep retrieval consistent
+                    try:
+                        embedding = embed_texts([content])
+                        if embedding is not None:
+                            updated = faiss_update(user_id, existing.faiss_id, embedding[0])
+                            if not updated:
+                                logger.warning("FAISS update_vector failed; index missing or faiss unavailable")
+                        else:
+                            logger.warning("Embedding failed during consolidation; FAISS vector not updated")
+                    except Exception as e:
+                        logger.warning(f"Error updating FAISS vector for consolidated memory: {e}")
+                    logger.info(f"Consolidated memory for key '{consolidation_key}' (updated existing node & vector)")
                     return existing.faiss_id
 
             # Generate embedding

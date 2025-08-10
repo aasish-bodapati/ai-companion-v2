@@ -1,6 +1,7 @@
 import logging
 import sys
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -27,13 +28,24 @@ logger.info("=================\n")
 # No automatic table creation; always use Alembic migrations
 logger.info("Database tables are managed by Alembic migrations.")
 
-# Initialize FastAPI app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: log registered routes after inclusion
+    yield
+    # Post-startup hook: log routes (mirrors prior on_event usage)
+    logger.info("\n=== Final Registered Routes ===")
+    for route in app.routes:
+        logger.info(f"{route.methods} {route.path} -> {getattr(route, 'endpoint', 'N/A')}")
+    logger.info("============================\n")
+
+# Initialize FastAPI app (with lifespan)
 logger.info("Initializing FastAPI application...")
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 logger.info("FastAPI application initialized")
 
@@ -89,18 +101,4 @@ async def health_check():
     logger.info("Health check endpoint called")
     return {"status": "ok"}
 
-# Debug: Log registered routes after all routes are added
-@app.on_event("startup")
-async def log_routes():
-    logger.info("\n=== Final Registered Routes ===")
-    for route in app.routes:
-        logger.info(f"{route.methods} {route.path} -> {getattr(route, 'endpoint', 'N/A')}")
-    logger.info("============================\n")
-
-# For debugging: Print all registered routes
-@app.on_event("startup")
-async def startup_event():
-    print("\nRegistered routes:")
-    for route in app.routes:
-        print(f"{route.methods} {route.path}")
-    print()
+# (Removed deprecated on_event startup handlers; handled in lifespan)
