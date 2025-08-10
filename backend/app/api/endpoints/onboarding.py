@@ -31,15 +31,18 @@ def upsert_my_onboarding(
     out = onboarding_crud.upsert_for_user(db, user_id=current_user.id, data=data)
     try:
         if memory_enabled():
-            text = serialize_onboarding_profile(out)
-            if text:
-                memory_service.store_memory(
-                    db=db,
-                    content=text,
-                    content_type="onboarding",
-                    user_id=str(current_user.id),
-                    metadata={"profile_id": str(out.id), "completed": False}
-                )
+            # Get the actual model for serialization
+            profile_model = onboarding_crud.get_by_user_id(db, user_id=current_user.id)
+            if profile_model:
+                text = serialize_onboarding_profile(profile_model)
+                if text:
+                    memory_service.store_memory(
+                        db=db,
+                        content=text,
+                        content_type="onboarding",
+                        user_id=str(current_user.id),
+                        metadata={"profile_id": str(out.id), "completed": False}
+                    )
     except Exception as e:
         # Log error but don't fail the request
         pass
@@ -53,15 +56,18 @@ def complete_my_onboarding(
     out = onboarding_crud.mark_completed(db, user_id=current_user.id)
     try:
         if memory_enabled():
-            text = serialize_onboarding_profile(out)
-            if text:
-                memory_service.store_memory(
-                    db=db,
-                    content=text,
-                    content_type="onboarding",
-                    user_id=str(current_user.id),
-                    metadata={"profile_id": str(out.id), "completed": True}
-                )
+            # Get the actual model for serialization
+            profile_model = onboarding_crud.get_by_user_id(db, user_id=current_user.id)
+            if profile_model:
+                text = serialize_onboarding_profile(profile_model)
+                if text:
+                    memory_service.store_memory(
+                        db=db,
+                        content=text,
+                        content_type="onboarding",
+                        user_id=str(current_user.id),
+                        metadata={"profile_id": str(out.id), "completed": True}
+                    )
     except Exception as e:
         # Log error but don't fail the request
         pass

@@ -30,8 +30,14 @@ class CRUDConversation(CRUDBase[Conversation, ConversationCreate, ConversationUp
         """
         Create a new conversation with an owner.
         """
+        data: Dict[str, Any] = obj_in.model_dump()
+        # Ensure a non-empty title to satisfy NOT NULL constraint
+        title = (data.get("title") or "").strip()
+        if not title:
+            data["title"] = "New Conversation"
+
         db_obj = Conversation(
-            **obj_in.model_dump(),
+            **data,
             user_id=owner_id,
         )
         db.add(db_obj)

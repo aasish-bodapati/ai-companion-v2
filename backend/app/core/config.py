@@ -45,10 +45,11 @@ class Settings(BaseSettings):
     # Database
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = ""
+    POSTGRES_PASSWORD: str = "test"
     POSTGRES_DB: str = "ai_companion"
-    SQLALCHEMY_DATABASE_URI: Optional[str] = None
-    DATABASE_URL: Optional[str] = None  # For SQLite
+    # For local dev, default directly to Postgres connection string
+    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:test@localhost:5432/ai_companion"
+    DATABASE_URL: Optional[str] = None  # Prefer explicit env; default to Postgres via validator
     
     # JWT Settings
     ALGORITHM: str = "HS256"  # Algorithm for JWT token generation
@@ -66,11 +67,22 @@ class Settings(BaseSettings):
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
-        if isinstance(v, str):
-            return v
-        if values.get("DATABASE_URL"):
-            return values["DATABASE_URL"]
-        return f"postgresql://{values.get('POSTGRES_USER')}:{values.get('POSTGRES_PASSWORD')}@{values.get('POSTGRES_SERVER')}/{values.get('POSTGRES_DB')}"
+        # 1) If provided explicitly and non-empty, use as-is
+        if isinstance(v, str) and v.strip():
+            return v.strip()
+
+        # 2) Prefer DATABASE_URL if set and non-empty
+        db_url = values.get("DATABASE_URL")
+        if isinstance(db_url, str) and db_url.strip():
+            return db_url.strip()
+
+        # 3) Default to Postgres on localhost (docker-compose default)
+        #    Example: docker service exposes 5432 and we connect from host backend
+        pg_user = values.get('POSTGRES_USER') or 'postgres'
+        pg_pass = values.get('POSTGRES_PASSWORD') or 'postgres'
+        pg_host = values.get('POSTGRES_SERVER') or 'localhost'
+        pg_db = values.get('POSTGRES_DB') or 'ai_companion'
+        return f"postgresql://{pg_user}:{pg_pass}@{pg_host}:5432/{pg_db}"
 
     # JWT
     ALGORITHM: str = "HS256"
@@ -79,11 +91,13 @@ class Settings(BaseSettings):
     REGISTRATION_ENABLED: bool = True
 
     # Memory & Retrieval (feature-flagged)
-    MEMORY_ENABLED: bool = False
+    MEMORY_ENABLED: bool = True
     MEMORY_PROVIDER: str = "faiss"  # future: "faiss" | "none"
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     FAISS_DATA_DIR: str = "data/faiss"
     RETRIEVAL_TOP_K: int = 8
+    RETRIEVAL_RECENT_MESSAGES: int = 5
+    MEMORY_MIN_RELEVANCE: float = 0.5
 
     class Config:
         env_file = ".env"

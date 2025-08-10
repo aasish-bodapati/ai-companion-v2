@@ -74,6 +74,47 @@ async def get_conversation(
         )
     return conversation
 
+@router.put("/{conversation_id}", response_model=Conversation)
+async def update_conversation(
+    conversation_id: UUID,
+    conversation_in: "ConversationUpdate",
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Update conversation fields (e.g., title).
+    """
+    # Lazy import to avoid circular
+    from app.schemas.conversation import ConversationUpdate
+
+    # Ensure the conversation exists and belongs to the user
+    conversation = crud.conversation.get(db, id=conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    if str(conversation.user_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+
+    updated = crud.conversation.update(db, db_obj=conversation, obj_in=conversation_in)
+    return updated
+
+@router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_conversation(
+    conversation_id: UUID,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Delete a conversation owned by the current user.
+    """
+    conversation = crud.conversation.get(db, id=conversation_id)
+    if not conversation:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
+    if str(conversation.user_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+
+    crud.conversation.remove(db, id=str(conversation_id))
+    return None
+
 @router.get("/{conversation_id}/messages", response_model=List[Message])
 async def list_messages(
     conversation_id: UUID,
@@ -134,6 +175,21 @@ async def create_message(
     message = crud.message.create_with_conversation(
         db=db, obj_in=message_in, conversation_id=conversation_id
     )
+    
+    # Auto-title conversation on first user message if title is empty
+    try:
+        if message.role == 'user' and (conversation.title is None or str(conversation.title).strip() == ''):
+            proposed = (message.content or '').strip().split('\n', 1)[0][:80]
+            if proposed:
+                from app.schemas.conversation import ConversationUpdate
+                updated = crud.conversation.update(
+                    db=db,
+                    db_obj=conversation,
+                    obj_in=ConversationUpdate(title=proposed)
+                )
+                conversation = updated
+    except Exception as e:
+        logger.warning(f"Failed to auto-title conversation: {e}")
     # Store message in memory system if enabled
     try:
         if memory_enabled():
@@ -161,7 +217,8 @@ async def reply(
     """
     Generate an assistant reply using Together AI.
     - Retrieves top-k memories from FAISS if enabled; otherwise falls back to recent messages.
-    - Builds a simple system prompt; can be extended with onboarding persona later.
+    - Builds a personalized system prompt based on user's onboarding profile.
+    - Always includes user profile context for personalized responses.
     """
     # Verify conversation belongs to user
     conversation = crud.conversation.get(db, id=conversation_id)
@@ -175,26 +232,35 @@ async def reply(
     user_texts = [m.content for m in recent_msgs if m.role == "user"]
     last_user_input = user_texts[-1] if user_texts else ""
 
-    # Get context from memory service if enabled
+    # Get personalized system prompt and context from memory service if enabled
+    system_prompt = ""
     context = ""
+    
     if memory_enabled():
         try:
+            # Build personalized system prompt based on user's onboarding profile
+            system_prompt = memory_service.build_personalized_system_prompt(
+                db=db, 
+                user_id=str(current_user.id)
+            )
+            
+            # Get conversation context including profile memory
             context = memory_service.get_conversation_context(
                 db=db,
                 user_id=str(current_user.id),
                 conversation_id=str(conversation_id),
-                recent_messages=5,
-                memory_limit=3
+                recent_messages=settings.RETRIEVAL_RECENT_MESSAGES,
+                memory_limit=settings.RETRIEVAL_TOP_K,
             )
         except Exception as e:
             logger.warning(f"Failed to retrieve memory context: {e}")
+            # Fallback to basic system prompt
+            system_prompt = "You are a helpful, attentive AI companion. Be concise, friendly, and context-aware."
             context = ""
-
-    # Build system prompt with context
-    system_prompt = (
-        "You are a helpful, attentive AI companion. Be concise, friendly, and context-aware. "
-        "Use the provided context to give personalized responses."
-    )
+    else:
+        # Fallback when memory is disabled
+        system_prompt = "You are a helpful, attentive AI companion. Be concise, friendly, and context-aware."
+        context = ""
     
     # Add context to system prompt if available
     if context:
@@ -213,4 +279,20 @@ async def reply(
         obj_in=MessageCreate(role="assistant", content=content),
         conversation_id=conversation_id,
     )
+    
+    # Store assistant message in memory system if enabled
+    try:
+        if memory_enabled():
+            memory_service.store_memory(
+                db=db,
+                content=content,
+                content_type="message",
+                user_id=str(current_user.id),
+                conversation_id=str(conversation_id),
+                metadata={"message_id": str(assistant.id), "role": "assistant"}
+            )
+    except Exception as e:
+        logger.warning(f"Failed to store assistant message in memory: {e}")
+        # Do not fail the request if memory operations fail
+    
     return assistant

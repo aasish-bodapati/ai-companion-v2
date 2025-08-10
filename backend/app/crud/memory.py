@@ -36,6 +36,38 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
     def get_memory_by_faiss_id(self, db: Session, faiss_id: str) -> Optional[MemoryNode]:
         """Get memory node by FAISS ID."""
         return db.query(MemoryNode).filter(MemoryNode.faiss_id == faiss_id).first()
+
+    def get_by_consolidation_key(self, db: Session, user_id: str, key: str) -> Optional[MemoryNode]:
+        """Find a memory node by consolidation_key in JSON metadata for a given user."""
+        # metadata is stored as JSON string in memory_metadata
+        like_pattern = f'%"consolidation_key": "{key}"%'
+        return (
+            db.query(MemoryNode)
+            .filter(
+                and_(
+                    MemoryNode.user_id == user_id,
+                    MemoryNode.memory_metadata.like(like_pattern),
+                )
+            )
+            .order_by(MemoryNode.timestamp.desc())
+            .first()
+        )
+
+    def update_content_and_metadata(
+        self,
+        db: Session,
+        *,
+        node: MemoryNode,
+        content: str,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> MemoryNode:
+        """Update memory content and metadata."""
+        node.content = content
+        if metadata is not None:
+            node.memory_metadata = json.dumps(metadata)
+        db.commit()
+        db.refresh(node)
+        return node
     
     def get_user_memories(
         self, 

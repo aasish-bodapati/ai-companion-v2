@@ -5,9 +5,10 @@ import uuid
 
 from app.core.config import settings
 from app.crud.memory import memory
+from app.crud.onboarding import get_by_user_id
 from app.memory.faiss_store import add as faiss_add, search as faiss_search
 from app.memory.embeddings import embed_texts
-from app.schemas.memory import MemorySearchQuery, MemorySearchResult
+from app.schemas.memory import MemorySearchResult
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,26 @@ class MemoryService:
     
     def __init__(self):
         pass  # No initialization needed for function-based approach
+    
+    def get_user_profile_memory(
+        self, 
+        db: Session, 
+        user_id: str
+    ) -> Optional[str]:
+        """
+        Get the user's onboarding profile memory as the foundational context.
+        This is always included in conversation context.
+        """
+        try:
+            # Get the most recent completed onboarding profile
+            profile = get_by_user_id(db, user_id=user_id)
+            if profile and profile.completed:
+                from app.memory.profile import serialize_onboarding_profile
+                return serialize_onboarding_profile(profile)
+        except Exception as e:
+            logger.warning(f"Failed to retrieve profile memory for user {user_id}: {e}")
+        
+        return None
     
     def search_memories(
         self, 
@@ -109,18 +130,16 @@ class MemoryService:
     ) -> str:
         """
         Get conversation context by combining recent messages with relevant memories.
-        
-        Args:
-            db: Database session
-            user_id: User ID
-            conversation_id: Conversation ID
-            recent_messages: Number of recent messages to include
-            memory_limit: Number of relevant memories to include
-            
-        Returns:
-            Formatted context string for LLM prompt
+        Always includes the user's profile memory as the foundation.
         """
         context_parts = []
+        
+        # Always include profile memory as the foundation
+        profile_memory = self.get_user_profile_memory(db, user_id)
+        if profile_memory:
+            context_parts.append("User Profile & Preferences:")
+            context_parts.append(profile_memory)
+            context_parts.append("")  # Empty line for separation
         
         # Get recent conversation memories
         conversation_memories = memory.get_conversation_memories(
@@ -131,22 +150,71 @@ class MemoryService:
             context_parts.append("Recent conversation context:")
             for mem in conversation_memories:
                 context_parts.append(f"- {mem.content}")
+            context_parts.append("")  # Empty line for separation
         
-        # Get relevant general memories (onboarding, facts, etc.)
+        # Get relevant general memories (facts, etc.) - exclude onboarding as it's already included
         general_memories = self.search_memories(
             db=db,
-            query="user preferences background information",
+            query="user preferences background information facts",
             user_id=user_id,
-            content_types=["onboarding", "fact"],
-            limit=memory_limit
+            content_types=["fact"],  # Exclude onboarding as it's handled separately
+            limit=settings.RETRIEVAL_TOP_K,
+            min_relevance=settings.MEMORY_MIN_RELEVANCE,
         )
         
         if general_memories:
-            context_parts.append("\nRelevant background information:")
+            context_parts.append("Relevant background information:")
             for mem in general_memories:
                 context_parts.append(f"- {mem.content}")
         
         return "\n".join(context_parts) if context_parts else "No specific context available."
+    
+    def build_personalized_system_prompt(
+        self,
+        db: Session,
+        user_id: str
+    ) -> str:
+        """
+        Build a personalized system prompt based on the user's onboarding profile.
+        """
+        profile_memory = self.get_user_profile_memory(db, user_id)
+        
+        base_prompt = (
+            "You are a helpful, attentive AI companion. Be context-aware and personalized "
+            "based on the user's preferences and background information."
+        )
+        
+        if profile_memory:
+            # Extract key preferences for the system prompt
+            lines = profile_memory.split(" | ")
+            preferences = []
+            
+            for line in lines:
+                if "ResponseStyle:" in line:
+                    style = line.split(": ")[1]
+                    if style == "Concise":
+                        preferences.append("Keep responses brief and to the point")
+                    elif style == "Detailed":
+                        preferences.append("Provide comprehensive, detailed responses")
+                    elif style == "Balanced":
+                        preferences.append("Balance between concise and detailed responses")
+                
+                elif "Tone:" in line:
+                    tone = line.split(": ")[1]
+                    preferences.append(f"Maintain a {tone.lower()} tone")
+                
+                elif "AIPersona:" in line:
+                    persona = line.split(": ")[1]
+                    preferences.append(f"Act as: {persona}")
+                
+                elif "AvoidTopics:" in line:
+                    topics = line.split(": ")[1]
+                    preferences.append(f"Never discuss: {topics}")
+            
+            if preferences:
+                base_prompt += "\n\nYour specific instructions:\n" + "\n".join(f"- {p}" for p in preferences)
+        
+        return base_prompt
     
     def store_memory(
         self, 
@@ -176,16 +244,34 @@ class MemoryService:
             return None
         
         try:
+            # Simple consolidation: upsert by fact key if detected
+            # Detect pattern: "Key: Value" and use Key as consolidation key
+            consolidation_key: Optional[str] = None
+            if ':' in content:
+                key_part = content.split(':', 1)[0].strip()
+                if 1 <= len(key_part) <= 64 and ' ' not in key_part:
+                    consolidation_key = key_part.lower()
+                    metadata = {**(metadata or {}), 'consolidation_key': consolidation_key}
+
+            # If we have a consolidation key, update existing memory instead of creating a new node
+            if consolidation_key:
+                existing = memory.get_by_consolidation_key(db, user_id=user_id, key=consolidation_key)
+                if existing:
+                    memory.update_content_and_metadata(db, node=existing, content=content, metadata=metadata)
+                    # For now, skip FAISS update for simplicity; future: re-embed & update vector
+                    logger.info(f"Consolidated memory for key '{consolidation_key}' (updated existing node)")
+                    return existing.faiss_id
+
             # Generate embedding
             embedding = embed_texts([content])
             if embedding is None:
                 logger.warning("Failed to generate embedding for memory storage")
                 return None
-            
+
             # Store in FAISS
             faiss_id = str(uuid.uuid4())  # Generate a unique ID
             faiss_add(user_id, [faiss_id], [embedding[0]])
-            
+
             # Store in database
             memory_node = memory.create_memory_node(
                 db=db,

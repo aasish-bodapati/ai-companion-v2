@@ -24,15 +24,8 @@ for path in sys.path:
     logger.info(f"- {path}")
 logger.info("=================\n")
 
-# Create database tables only for SQLite (dev/test). For Postgres, rely on migrations.
-try:
-    db_uri = str(getattr(settings, 'SQLALCHEMY_DATABASE_URI', '') or '')
-    if db_uri.startswith('sqlite'):
-        models.Base.metadata.create_all(bind=engine)
-    else:
-        logger.info("Skipping automatic table creation for non-SQLite database; use migrations instead.")
-except Exception as e:
-    logger.warning(f"Skipping automatic table creation due to error: {e}")
+# No automatic table creation; always use Alembic migrations
+logger.info("Database tables are managed by Alembic migrations.")
 
 # Initialize FastAPI app
 logger.info("Initializing FastAPI application...")

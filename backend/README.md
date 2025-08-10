@@ -42,6 +42,37 @@ uvicorn app.main:app --reload --app-dir backend
 
 The API will be available at `http://localhost:8000`.
 
+## Database (Postgres via Docker)
+
+- Start DB and apply migrations:
+
+```powershell
+# from repo root
+./scripts/db.ps1 up
+```
+
+- Reset DB (drop volumes), re-create, migrate, and seed:
+
+```powershell
+./scripts/db.ps1 reset
+```
+
+- Create a migration from model changes:
+
+```powershell
+./scripts/db.ps1 revision -Message "add_new_field"
+./scripts/db.ps1 migrate
+```
+
+Configuration is read from `backend/app/core/config.py` and environment variables. For local dev, Postgres defaults:
+
+- `POSTGRES_USER=postgres`
+- `POSTGRES_PASSWORD=postgres`
+- `POSTGRES_DB=ai_companion`
+- Host: `localhost`, Port: `5432`
+
+You can also set `DATABASE_URL` to override.
+
 ## Canonical API Endpoints
 
 All endpoints are prefixed with `/api/v1`.
