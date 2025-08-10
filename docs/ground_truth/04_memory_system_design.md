@@ -6,20 +6,17 @@ The memory system enables the AI to maintain context across conversations by sto
 ## Core Components
 
 ### 1. Memory Storage
-- **Type**: Vector database (ChromaDB)
-- **Schema**:
-  - `id`: Unique identifier (UUID)
-  - `user_id`: Owner of the memory
-  - `content`: The actual memory content
-  - `embedding`: Vector embedding of the content
-  - `metadata`: Additional context (timestamps, source, etc.)
-  - `created_at`: When the memory was created
-  - `last_accessed`: When the memory was last retrieved
+- **Type**: FAISS-backed vector store (local, per-user shards)
+- **Source of truth**: Application DB for messages, onboarding, and metadata; FAISS stores vectors only
+- **Files**:
+  - `data/faiss/{user_id}.index`
+  - `data/faiss/{user_id}.meta.json` (id ordering and lightweight metadata)
 
 ### 2. Memory Retrieval
-- **Semantic Search**: Uses cosine similarity on embeddings
-- **Recency Boost**: More recent memories get higher relevance
-- **Relevance Threshold**: Minimum similarity score to consider a memory relevant
+- **Semantic Search**: Uses cosine similarity (IndexFlatIP) on normalized embeddings
+- **Recency Boost**: Prefer recent nodes when scores tie
+- **Relevance Threshold**: Configurable minimum similarity score
+- **Profile Seed**: Always include “profile memory” (onboarding summary)
 
 ### 3. Memory Types
 1. **Conversation Memory**
@@ -33,6 +30,8 @@ The memory system enables the AI to maintain context across conversations by sto
 3. **Procedural Memory**
    - Stores learned procedures
    - Used for task automation
+4. **Profile Memory (central hub)**
+   - Synthesized onboarding summary kept up-to-date; acts as the center node of the web
 
 ## Data Flow
 
@@ -41,20 +40,22 @@ sequenceDiagram
     participant User
     participant Frontend
     participant Backend
-    participant MemoryDB
-    participant EmbeddingModel
-    
+    participant FAISS
+    participant Embeddings
+    participant LLM
+
     User->>Frontend: Sends message
-    Frontend->>Backend: POST /api/chat
-    Backend->>EmbeddingModel: Generate embedding for message
-    EmbeddingModel-->>Backend: Returns embedding
-    Backend->>MemoryDB: Query relevant memories
-    MemoryDB-->>Backend: Returns top-k memories
-    Backend->>LLM: Generate response with context
-    LLM-->>Backend: Returns response
-    Backend->>MemoryDB: Store new memories
-    Backend-->>Frontend: Returns response
-    Frontend->>User: Displays response
+    Frontend->>Backend: POST /api/v1/conversations/{id}/messages
+    Backend->>Embeddings: Generate embedding (background)
+    Embeddings-->>Backend: Vector
+    Backend->>FAISS: Append to per-user index (background)
+
+    User->>Frontend: POST /api/v1/conversations/{id}/reply
+    Frontend->>Backend: Reply request
+    Backend->>FAISS: Retrieve top-k memories (+ profile)
+    Backend->>LLM: Build prompt with retrieved context
+    LLM-->>Backend: Response
+    Backend-->>Frontend: Assistant message persisted + returned
 ```
 
 ## Implementation Details
@@ -64,43 +65,18 @@ sequenceDiagram
 - **Vector Size**: 384 dimensions
 - **Normalization**: L2 normalization for cosine similarity
 
-### Memory Storage
-```python
-class Memory(Base):
-    __tablename__ = "memories"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True)
-    user_id = Column(UUID, ForeignKey("users.id"), nullable=False)
-    content = Column(Text, nullable=False)
-    embedding = Column(Vector(384))  # Vector type from pgvector
-    metadata = Column(JSON, default={})
-    created_at = Column(DateTime, default=datetime.utcnow)
-    last_accessed = Column(DateTime, default=datetime.utcnow)
-    
-    # For full-text search
-    __ts_vector__ = create_tsvector('english', content)
-    __table_args__ = (
-        Index('idx_memory_fts', __ts_vector__, postgresql_using='gin'),
-    )
-```
+### Memory Store (FAISS)
+- Index: `IndexFlatIP` per user (CPU)
+- Persistence: disk files in `FAISS_DATA_DIR`
+- Operations:
+  - `add(user_id, ids[], vectors[])`
+  - `search(user_id, query_vector, top_k)`
+- Deletes: mark-delete in meta and rebuild shard periodically (later)
 
-### Memory Retrieval
-```python
-def get_relevant_memories(
-    db: Session,
-    user_id: UUID,
-    query_embedding: List[float],
-    limit: int = 5,
-    threshold: float = 0.7
-) -> List[Memory]:
-    """Retrieve memories most relevant to the query embedding."""
-    return db.query(Memory).filter(
-        Memory.user_id == user_id,
-        Memory.embedding.cosine_distance(query_embedding) < (1 - threshold)
-    ).order_by(
-        Memory.embedding.cosine_distance(query_embedding)
-    ).limit(limit).all()
-```
+### Retrieval
+- Seed: top-k by FAISS for the current query + profile memory
+- Optional expansion (future): 1–2 hops via graph edges
+- Rerank: similarity + recency + importance (future)
 
 ## Future Enhancements
 
@@ -108,9 +84,10 @@ def get_relevant_memories(
 - [ ] Implement memory importance scoring
 - [ ] Add memory consolidation (similar memories merging)
 - [ ] Support memory editing/deletion
+- [ ] Reply endpoint with FAISS retrieval + Together model
 
 ### Medium-term
-- [ ] Implement memory hierarchies
+- [ ] Implement memory hierarchies (spiderweb graph)
 - [ ] Add temporal context awareness
 - [ ] Support for different memory retrieval strategies
 
@@ -119,17 +96,21 @@ def get_relevant_memories(
 - [ ] Cross-user memory sharing
 - [ ] Memory versioning and provenance
 
-## Performance Considerations
+## Performance & Cost Efficiency
 
 ### Indexing
-- Vector index for fast similarity search
-- B-tree index on `user_id` for user-specific queries
-- GIN index for full-text search
+- FAISS for fast similarity search
+- Per-user shards for isolation and cache locality
 
-### Caching
-- LRU cache for frequently accessed memories
+### Caching & Batching
+- LRU cache for recent retrievals per conversation
 - Batch embedding generation
 - Asynchronous memory updates
+
+### Token & Inference Cost
+- Summarize long memories and clamp context window
+- Strict token budgets and top-k limits
+- Use Together `meta-llama/Llama-3.3-70B-Instruct-Turbo-Free` by default; allow env‑based switching
 
 ## Security
 - Strict user isolation for memory access
@@ -140,3 +121,4 @@ def get_relevant_memories(
 - Track memory hit/miss rates
 - Monitor retrieval latency
 - Log memory-related errors
+ - Track token usage and per-feature inference costs

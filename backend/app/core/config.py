@@ -78,6 +78,13 @@ class Settings(BaseSettings):
     # Registration settings
     REGISTRATION_ENABLED: bool = True
 
+    # Memory & Retrieval (feature-flagged)
+    MEMORY_ENABLED: bool = False
+    MEMORY_PROVIDER: str = "faiss"  # future: "faiss" | "none"
+    EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
+    FAISS_DATA_DIR: str = "data/faiss"
+    RETRIEVAL_TOP_K: int = 8
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
