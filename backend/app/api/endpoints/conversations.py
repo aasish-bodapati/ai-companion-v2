@@ -14,6 +14,7 @@ from app.memory.embeddings import embed_texts
 from app.memory.faiss_store import add as faiss_add
 from app.memory.faiss_store import search as faiss_search
 from app.core.llm import generate_with_together
+from app.memory.service import memory_service
 
 logger = logging.getLogger(__name__)
 logger.info("Initializing conversations router...")
@@ -133,14 +134,20 @@ async def create_message(
     message = crud.message.create_with_conversation(
         db=db, obj_in=message_in, conversation_id=conversation_id
     )
-    # Background-like: embed and index if memory enabled (synchronous for now; can move to BackgroundTasks)
+    # Store message in memory system if enabled
     try:
         if memory_enabled():
-            vecs = embed_texts([message.content])
-            faiss_add(str(current_user.id), [str(message.id)], vecs)
-    except Exception:
+            memory_service.store_memory(
+                db=db,
+                content=message.content,
+                content_type="message",
+                user_id=str(current_user.id),
+                conversation_id=str(conversation_id),
+                metadata={"message_id": str(message.id), "role": message.role}
+            )
+    except Exception as e:
+        logger.warning(f"Failed to store message in memory: {e}")
         # Do not fail the request if memory operations fail
-        pass
 
     return message
 
@@ -168,21 +175,30 @@ async def reply(
     user_texts = [m.content for m in recent_msgs if m.role == "user"]
     last_user_input = user_texts[-1] if user_texts else ""
 
-    retrieved_snippets: List[str] = []
-    if memory_enabled() and last_user_input:
+    # Get context from memory service if enabled
+    context = ""
+    if memory_enabled():
         try:
-            qvec = embed_texts([last_user_input])[0]
-            top_k = getattr(settings, "RETRIEVAL_TOP_K", 8)
-            hits = faiss_search(str(current_user.id), qvec, top_k)
-            # For now we only have ids; future: map ids -> texts via DB when adding memory nodes
-            # As a simple interim, we can include recent user texts (already in recent_msgs)
-        except Exception:
-            pass
+            context = memory_service.get_conversation_context(
+                db=db,
+                user_id=str(current_user.id),
+                conversation_id=str(conversation_id),
+                recent_messages=5,
+                memory_limit=3
+            )
+        except Exception as e:
+            logger.warning(f"Failed to retrieve memory context: {e}")
+            context = ""
 
-    # Build system prompt (can include onboarding persona later)
+    # Build system prompt with context
     system_prompt = (
-        "You are a helpful, attentive AI companion. Be concise, friendly, and context-aware."
+        "You are a helpful, attentive AI companion. Be concise, friendly, and context-aware. "
+        "Use the provided context to give personalized responses."
     )
+    
+    # Add context to system prompt if available
+    if context:
+        system_prompt += f"\n\nContext:\n{context}"
 
     chat_messages = [
         {"role": m.role, "content": m.content} for m in recent_msgs[-6:]

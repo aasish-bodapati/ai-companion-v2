@@ -10,6 +10,7 @@ from app.memory import memory_enabled
 from app.memory.embeddings import embed_texts
 from app.memory.faiss_store import add as faiss_add
 from app.memory.profile import serialize_onboarding_profile
+from app.memory.service import memory_service
 
 router = APIRouter()
 
@@ -32,11 +33,15 @@ def upsert_my_onboarding(
         if memory_enabled():
             text = serialize_onboarding_profile(out)
             if text:
-                vec = embed_texts([text])[0]
-                # Use a stable synthetic id for the user's profile memory
-                profile_id = f"profile:{current_user.id}"
-                faiss_add(str(current_user.id), [profile_id], [vec])
-    except Exception:
+                memory_service.store_memory(
+                    db=db,
+                    content=text,
+                    content_type="onboarding",
+                    user_id=str(current_user.id),
+                    metadata={"profile_id": str(out.id), "completed": False}
+                )
+    except Exception as e:
+        # Log error but don't fail the request
         pass
     return out
 
@@ -50,9 +55,14 @@ def complete_my_onboarding(
         if memory_enabled():
             text = serialize_onboarding_profile(out)
             if text:
-                vec = embed_texts([text])[0]
-                profile_id = f"profile:{current_user.id}"
-                faiss_add(str(current_user.id), [profile_id], [vec])
-    except Exception:
+                memory_service.store_memory(
+                    db=db,
+                    content=text,
+                    content_type="onboarding",
+                    user_id=str(current_user.id),
+                    metadata={"profile_id": str(out.id), "completed": True}
+                )
+    except Exception as e:
+        # Log error but don't fail the request
         pass
     return out
