@@ -1,12 +1,11 @@
 import logging
 import sys
-from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    stream=sys.stdout,
 )
 logger = logging.getLogger(__name__)
 
@@ -17,17 +16,18 @@ try:
     from app.models.user import User
     from app.core.security import get_password_hash
     from app.core.config import settings
-    
+
     logger.info("Successfully imported database models and dependencies")
 except ImportError as e:
     logger.error(f"Error importing database dependencies: {e}")
     sys.exit(1)
 
+
 def init_db() -> None:
     """Initialize the database with required tables and initial data."""
     logger.info("Creating database tables...")
     Base.metadata.create_all(bind=engine)
-    
+
     # Create a test user if it doesn't exist
     db = SessionLocal()
     try:
@@ -39,7 +39,7 @@ def init_db() -> None:
                 hashed_password=get_password_hash(settings.TEST_PASSWORD),
                 full_name="Test User",
                 is_active=True,
-                is_superuser=True
+                is_superuser=True,
             )
             db.add(test_user)
             db.commit()
@@ -52,6 +52,7 @@ def init_db() -> None:
         raise
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     logger.info("Starting database initialization...")

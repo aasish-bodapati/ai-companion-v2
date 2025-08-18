@@ -1,0 +1,1 @@
+my vision is for this app to be a replacement of an actual assistan who is with us, learns from us, tracks whatever we do, learns again, gives tailored answers, and evolves with us

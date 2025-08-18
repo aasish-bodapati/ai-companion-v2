@@ -182,7 +182,7 @@ SECRET_KEY=your-secret-key
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # AI
-TOGETHER_API_KEY=your-together-ai-key
+LLM_KEY=your-llm-provider-key
 ```
 
 ### Frontend (`.env.local`)

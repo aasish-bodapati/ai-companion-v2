@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -52,20 +52,20 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
     ) -> List[Message]:
         """
         Get all messages for a specific conversation, ordered by creation time.
-        
+
         Args:
             db: Database session
             conversation_id: ID of the conversation (will be converted to string)
             skip: Number of records to skip
             limit: Maximum number of records to return
-            
+
         Returns:
             List of Message objects
         """
         # Convert UUID to string if needed
-        if hasattr(conversation_id, 'hex'):
+        if hasattr(conversation_id, "hex"):
             conversation_id = str(conversation_id)
-            
+
         return (
             db.query(self.model)
             .filter(Message.conversation_id == conversation_id)
@@ -80,34 +80,37 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
     ) -> Message:
         """
         Create a new message in a conversation.
-        
+
         Args:
             db: Database session
             obj_in: Message data
             conversation_id: ID of the conversation (will be converted to string)
-            
+
         Returns:
             The created Message object
         """
         # Convert UUID to string if needed
-        if hasattr(conversation_id, 'hex'):
+        if hasattr(conversation_id, "hex"):
             conversation_id = str(conversation_id)
-            
+
+        # Only pass fields that exist on the Message model; ignore extras like 'remember'
+        payload = obj_in.model_dump()
         db_obj = Message(
-            **obj_in.model_dump(),
+            role=payload.get("role"),
+            content=payload.get("content"),
             conversation_id=conversation_id,
         )
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
-        
+
         # Update the conversation's updated_at timestamp
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
         if conversation:
             conversation.updated_at = func.now()
             db.commit()
             db.refresh(conversation)
-        
+
         return db_obj
 
 

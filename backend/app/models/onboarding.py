@@ -5,11 +5,23 @@ import uuid
 
 from app.db.base_class import Base
 
+
 class OnboardingProfile(Base):
     __tablename__ = "onboarding_profiles"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True, nullable=False)
+    id = Column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+        index=True,
+    )
+    user_id = Column(
+        String(36),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        index=True,
+        nullable=False,
+    )
 
     # Step 1 – Basic Identity
     name = Column(String, nullable=True)
@@ -25,7 +37,7 @@ class OnboardingProfile(Base):
 
     # Step 3 – Communication Style
     response_style = Column(String, nullable=True)  # Concise|Detailed|Balanced
-    tone_json = Column(Text, nullable=True)         # JSON array as string
+    tone_json = Column(Text, nullable=True)  # JSON array as string
     small_talk_level = Column(Integer, nullable=True)  # 0..2
 
     # Step 4 – Goals & Use Cases
@@ -35,7 +47,7 @@ class OnboardingProfile(Base):
 
     # Step 5 – Boundaries & Sensitivities
     avoid_topics = Column(Text, nullable=True)
-    memory_policy = Column(String, nullable=True)   # RememberAll|ImportantOnly|NoMemory
+    memory_policy = Column(String, nullable=True)  # RememberAll|ImportantOnly|NoMemory
     recall_enabled = Column(Boolean, default=True)
 
     # Step 6 – Fun

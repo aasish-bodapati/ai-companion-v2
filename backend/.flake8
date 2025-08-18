@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 100
+extend-ignore = E203, W503
+exclude =
+    .venv,
+    .venv312,
+    venv,
+    __pycache__,
+    .git,
+    .mypy_cache,
+    build,
+    dist,
+    node_modules
+per-file-ignores =
+    tests/*: D,S101,E402,E501

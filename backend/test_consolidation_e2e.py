@@ -1,4 +1,3 @@
-import os
 import pytest
 from fastapi.testclient import TestClient
 
@@ -8,16 +7,22 @@ from app.core.config import settings
 
 
 @pytest.mark.skipif(_try_import_faiss() is None, reason="faiss not installed")
-def test_consolidation_updates_vector_and_retrieval(tmp_path, monkeypatch, client: TestClient, db, token, test_user):
+def test_consolidation_updates_vector_and_retrieval(
+    tmp_path, monkeypatch, client: TestClient, db, token, test_user
+):
     """
     End-to-end:
     - Create a conversation
     - Post two user messages with the same consolidation key (e.g., "email: ...")
     - The second should update the existing memory's content and FAISS vector
-    - Retrieval using the updated value should return the consolidated memory reflecting the latest content
+    - Retrieval using the updated value should return the consolidated memory
+      reflecting the latest content
     """
     # Isolate FAISS artifacts to a temp directory
     monkeypatch.setenv("FAISS_DATA_DIR", str(tmp_path))
+    # Ensure memory is enabled and importance threshold allows storage
+    monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
+    monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
 
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -57,4 +62,6 @@ def test_consolidation_updates_vector_and_retrieval(tmp_path, monkeypatch, clien
     assert results, "Expected at least one memory result"
     # The highest scoring result should contain the updated email value
     top = results[0]
-    assert "new@example.com" in (top.content or ""), f"Top memory did not reflect update: {top.content}"
+    assert "new@example.com" in (top.content or ""), (
+        f"Top memory did not reflect update: {top.content}"
+    )

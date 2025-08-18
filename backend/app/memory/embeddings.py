@@ -2,9 +2,28 @@ from typing import List
 import threading
 
 from app.core.config import settings
+import threading as _t
+import time as _time
 
 _model = None
 _lock = threading.Lock()
+
+
+# Best-effort background warmup so first request isn't penalized
+def _background_warmup():
+    try:
+        model_name = getattr(settings, "EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+        # Small sleep to avoid competing with startup logging
+        _time.sleep(0.2)
+        _lazy_load(model_name)
+    except Exception:
+        pass
+
+
+try:
+    _t.Thread(target=_background_warmup, daemon=True).start()
+except Exception:
+    pass
 
 
 def _lazy_load(model_name: str):
@@ -16,6 +35,7 @@ def _lazy_load(model_name: str):
             return _model
         try:
             from sentence_transformers import SentenceTransformer  # type: ignore
+
             _model = SentenceTransformer(model_name)
         except Exception:
             _model = None
@@ -31,9 +51,21 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
     model_name = getattr(settings, "EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
     model = _lazy_load(model_name)
     if model is None:
-        # Fallback: simple deterministic vectors of small dimension
-        return [[float((hash(t) % 1000) / 1000.0)] * 8 for t in texts]
+        # Fallback: deterministic vectors matching FAISS dim (384)
+        # Use a simple hash-based PRNG to generate stable values per text
+        import random as _rand
+
+        dim = 384
+        vecs: List[List[float]] = []
+        for t in texts:
+            seed = hash(t) & 0xFFFFFFFF
+            rng = _rand.Random(seed)
+            v = [rng.random() for _ in range(dim)]
+            # L2 normalize to roughly match SentenceTransformer normalize_embeddings=True
+            import math as _math
+
+            norm = _math.sqrt(sum(x * x for x in v)) or 1.0
+            vecs.append([x / norm for x in v])
+        return vecs
     vectors = model.encode(texts, normalize_embeddings=True, convert_to_numpy=True)
     return vectors.tolist()
-
-

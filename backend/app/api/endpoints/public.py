@@ -48,5 +48,3 @@ def register_user(
 
     user = crud.user.create(db, obj_in=user_to_create)
     return user
-
-

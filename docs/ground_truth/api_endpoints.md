@@ -103,6 +103,11 @@ Most endpoints under `/api/v1` require a valid JWT. Admin-only endpoints require
   - Response: `{ "msg": "Test email sent", "email_to": string }`
   - Source: `backend/app/api/endpoints/utils.py::test_email`
 
+- GET `/api/v1/utils/retrieval-metrics` (Auth: Bearer)
+  - Description: Lightweight retrieval diagnostics from the memory service.
+  - Response: `{ total_requests: number, last: { query_prefix: string, mmr_lambda: number|null, top_k_limit: number, min_relevance: number, selected_count: number } }`
+  - Source: `backend/app/api/endpoints/utils.py::get_retrieval_metrics`
+
 ---
 
 ## Conversations
@@ -134,6 +139,7 @@ Schemas: `backend/app/schemas/conversation.py`
 - MessageCreate
   - `role`: string (`user` | `assistant`)
   - `content`: string
+  - `remember?`: boolean — explicitly save this message to memory; if omitted, smart gating applies
 
 Endpoints:
 
@@ -177,9 +183,137 @@ Endpoints:
   - Body (MessageCreate):
     - `role`: `user` | `assistant`
     - `content`: string
+    - `remember?`: boolean
   - Response: `Message`
   - Errors: 404 not found, 403 not owner
   - Source: `backend/app/api/endpoints/conversations.py::create_message`
+  - Notes: When `remember` is true, the message is saved as memory. Without it, only sufficiently important user messages are stored; assistant messages are skipped unless explicit.
+
+---
+
+## Memories
+
+All Memory endpoints require Bearer JWT and are scoped to the authenticated user.
+
+Schemas: `backend/app/schemas/memory.py`
+
+- MemoryNode
+  - `id`: UUID
+  - `user_id`: UUID
+  - `content`: string
+  - `content_type`: string (e.g., `conversation` | `message` | `fact` | `onboarding`)
+  - `relevance_score`: number | null
+  - `timestamp`: datetime
+  - `memory_metadata`: string (JSON-as-text; may include `{ core: true }`)
+
+- MemoryUpdate (PATCH body)
+  - `content?`: string
+  - `relevance_score?`: number
+  - `core?`: boolean
+
+Endpoints:
+
+- GET `/api/v1/users/me/memories` (Auth: Bearer)
+  - Description: List current user's memories
+  - Query:
+    - `content_type?`: string
+    - `core?`: boolean — filters by `memory_metadata.core`
+    - `limit?`: integer, default 100
+  - Response: `MemoryNode[]`
+  - Notes: `core` filtering is applied by parsing `memory_metadata` JSON; unparsable metadata is treated as non-core.
+  - Source: `backend/app/api/endpoints/memory.py::list_my_memories`
+
+- POST `/api/v1/memories` (Auth: Bearer)
+  - Description: Create a memory node for the current user.
+  - Body (CreateMemoryIn):
+    - `content`: string (required)
+    - `content_type?`: string (`conversation` | `message` | `fact` | `onboarding`) default `fact`
+    - `conversation_id?`: UUID
+    - `core?`: boolean
+    - `importance?`: number
+  - Response: `MemoryNode`
+  - Notes: Assigns a placeholder FAISS id; indexing can be async.
+  - Source: `backend/app/api/endpoints/memory.py::create_memory`
+
+- PATCH `/api/v1/memories/{memory_id}` (Auth: Bearer)
+  - Description: Update a memory node you own; supports toggling Core via `core`
+  - Path:
+    - `memory_id`: UUID
+  - Body (MemoryUpdate): `content?`, `relevance_score?`, `core?`
+  - Response: `MemoryNode` (updated)
+  - Errors:
+    - 404 `{ error: "not_found", message: "Memory not found" }`
+    - 403 `{ error: "forbidden", message: "Not enough permissions" }`
+  - Source: `backend/app/api/endpoints/memory.py::patch_memory`
+
+- POST `/api/v1/users/me/checkins` (Auth: Bearer)
+  - Description: Create a daily/weekly check-in as a memory.
+  - Body (CheckInIn):
+    - `prompt?`: string (optional UI prompt shown to user)
+    - `content`: string (required)
+    - `cadence?`: `daily` | `weekly` (default `daily`)
+  - Response: `MemoryNode`
+  - Metadata: sets `source` in `memory_metadata` to `checkin:{cadence}`
+  - Source: `backend/app/api/endpoints/memory.py::create_checkin_memory`
+
+- DELETE `/api/v1/memories/{memory_id}` (Auth: Bearer)
+  - Description: Delete a memory you own
+  - Status: 204 No Content
+  - Errors: 404 not found, 403 not owner
+  - Source: `backend/app/api/endpoints/memory.py::delete_memory`
+
+- POST `/api/v1/conversations/{conversation_id}/auto-summarize` (Auth: Bearer)
+  - Description: Create a lightweight automatic summary memory for the conversation.
+  - Path:
+    - `conversation_id`: UUID
+  - Response: `MemoryNode`
+  - Notes: Uses Together AI LLM to generate a concise summary. The LLM call includes `user_id` and `conversation_id` in the system prompt per AI Integration Rules. The created memory includes `memory_metadata` such as `{ "source": "auto_summary", "meta": true, "llm": "together:meta-llama/Llama-3.3-70B-Instruct-Turbo-Free" }`.
+  - Errors: 404 not found, 403 not owner
+  - Source: `backend/app/api/endpoints/memory.py::auto_summarize_conversation`
+
+- POST `/api/v1/messages/{message_id}/feedback` (Auth: Bearer)
+  - Description: Record feedback on an assistant message. Supports optional memory reinforcement/suppression when a `faiss_id` is supplied.
+  - Path:
+    - `message_id`: UUID (assistant message id)
+  - Body (FeedbackIn):
+    - `signal`: `up` | `down` (required)
+    - `reason?`: string (optional free-text)
+    - `faiss_id?`: string (optional FAISS memory id to reinforce/suppress)
+  - Behavior:
+    - Logs feedback. If `faiss_id` present and owned by the user:
+      - `signal=up`: increments `reinforced_count` and increases `memory_metadata.rank_boost` (capped), improving future retrieval rank.
+      - `signal=down`: applies a suppression window (`suppressed_until`, default 14 days) to exclude the memory from context.
+  - Response: `{ "status": "recorded", "signal": "up|down" }`
+  - Errors: 404 not found (message), 403 not owner
+  - Source: `backend/app/api/endpoints/memory.py::message_feedback`
+
+---
+
+## Nudges
+
+All Nudges endpoints require Bearer JWT and are scoped to the authenticated user.
+
+Schemas: in-memory placeholder (no DB yet), see router `backend/app/api/endpoints/nudges.py`.
+
+- NudgeItem
+  - `id`: string
+  - `nudge_type`: `morning` | `evening` | `weekly` | `opportunity` | `checkin`
+  - `title`: string
+  - `message`: string
+  - `scheduled_for?`: ISO datetime string | null
+  - `seen`: boolean
+
+Endpoints:
+
+- GET `/api/v1/users/me/nudges` (Auth: Bearer)
+  - Description: List pending nudges for the current user (placeholder implementation)
+  - Response: `NudgeItem[]`
+  - Source: `backend/app/api/endpoints/nudges.py::list_my_nudges`
+
+- POST `/api/v1/nudges/run` (Auth: Bearer)
+  - Description: Trigger nudge materialization (dev stub)
+  - Response: `{ status: "ok" }`
+  - Source: `backend/app/api/endpoints/nudges.py::run_nudges`
 
 ---
 
@@ -207,7 +341,7 @@ curl -X POST \
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"role": "user", "content": "Hello"}' \
+  -d '{"role": "user", "content": "Save this: My phone is 555-1234", "remember": true}' \
   http://localhost:8000/api/v1/conversations/$CID/messages
 ```
 

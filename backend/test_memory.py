@@ -1,4 +1,3 @@
-import os
 import pytest
 
 from app.memory.embeddings import embed_texts
@@ -50,5 +49,3 @@ def test_faiss_update_vector(tmp_path, monkeypatch):
     # After update, both m1 and m2 have the same vector; allow tie order
     res2 = search(user_id, v2, top_k=2)
     assert res2 and {res2[0][0], res2[1][0]} == {"m1", "m2"}
-
-

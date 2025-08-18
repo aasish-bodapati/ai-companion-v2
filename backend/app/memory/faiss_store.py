@@ -1,15 +1,43 @@
 import os
 import json
+import logging
 from typing import List, Tuple
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
+_FAISS_AVAILABLE = None  # type: ignore[assignment]
+_FAISS_OBJ = None
+_FAISS_ERR = None
+
 
 def _try_import_faiss():
+    global _FAISS_AVAILABLE, _FAISS_OBJ, _FAISS_ERR
+    if _FAISS_AVAILABLE is False:
+        return None
+    if _FAISS_AVAILABLE is True and _FAISS_OBJ is not None:
+        return _FAISS_OBJ
     try:
         import faiss  # type: ignore
+
+        _FAISS_AVAILABLE = True
+        _FAISS_OBJ = faiss
+        if _FAISS_ERR:
+            # Clear any previous error message upon success
+            _FAISS_ERR = None
         return faiss
-    except Exception:
+    except Exception as e:
+        # Cache the failure and log once to avoid noisy repeated traces from downstream imports
+        _FAISS_AVAILABLE = False
+        _FAISS_OBJ = None
+        if _FAISS_ERR is None:
+            _FAISS_ERR = str(e)
+            logger.warning(
+                "FAISS unavailable; falling back to DB-only retrieval. Error: %s. "
+                "If on Windows/Python 3.12, ensure numpy<2 and faiss-cpu==1.8.0 are installed.",
+                _FAISS_ERR,
+            )
         return None
 
 
@@ -61,6 +89,7 @@ def add(user_id: str, ids: List[str], vectors: List[List[float]]) -> None:
     if index is None:
         return
     import numpy as np
+
     xb = np.array(vectors, dtype="float32")
     index.add(xb)
     existing_ids.extend(ids)
@@ -76,11 +105,12 @@ def search(user_id: str, query_vec: List[float], top_k: int) -> List[Tuple[str, 
     if index is None or index.ntotal == 0:
         return []
     import numpy as np
+
     q = np.array([query_vec], dtype="float32")
     k = min(top_k, max(1, index.ntotal))
-    D, I = index.search(q, k)
+    D, indices = index.search(q, k)
     result: List[Tuple[str, float]] = []
-    for idx, score in zip(I[0], D[0]):
+    for idx, score in zip(indices[0], D[0]):
         if 0 <= idx < len(ids):
             result.append((ids[idx], float(score)))
     return result
@@ -126,5 +156,3 @@ def update_vector(user_id: str, target_id: str, new_vector: List[float]) -> bool
     # Save rebuilt index and ids mapping
     _save_index(user_id, new_index, ids)
     return True
-
-

@@ -1,6 +1,7 @@
 from typing import Any, Dict, Optional, Union
 
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.core.security import get_password_hash, verify_password
 from app.crud.base import CRUDBase
@@ -11,12 +12,14 @@ from app.schemas.user import UserCreate, UserUpdate
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
         """Get a user by email."""
-        return db.query(User).filter(User.email == email).first()
+        # Case-insensitive lookup to accommodate legacy records
+        normalized = email.strip().lower()
+        return db.query(User).filter(func.lower(User.email) == normalized).first()
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         """Create a new user with hashed password."""
         db_obj = User(
-            email=obj_in.email,
+            email=(obj_in.email or "").strip().lower(),
             hashed_password=get_password_hash(obj_in.password),
             full_name=obj_in.full_name,
             is_superuser=obj_in.is_superuser,
@@ -42,7 +45,9 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     def authenticate(self, db: Session, *, email: str, password: str) -> Optional[User]:
         """Authenticate a user."""
-        user = self.get_by_email(db, email=email)
+        # Normalize input email
+        normalized = (email or "").strip().lower()
+        user = self.get_by_email(db, email=normalized)
         if not user:
             return None
         if not verify_password(password, user.hashed_password):

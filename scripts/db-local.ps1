@@ -32,7 +32,8 @@ switch ($Action) {
     alembic upgrade head | cat
   }
   'seed' {
-    python app/scripts/seed_users.py | cat
+    # Use module invocation so Python resolves the 'app' package from backend
+    python -m app.scripts.seed_users | cat
   }
   'status' {
     alembic current | cat

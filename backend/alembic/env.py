@@ -1,10 +1,9 @@
-import logging
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app.db.base_class import Base
 
 # This is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -15,18 +14,13 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Add your model's MetaData object here for 'autogenerate' support
-from app.db.base_class import Base
-from app.models.conversation import Conversation, Message
-from app.models.user import User
-from app.models.onboarding import OnboardingProfile
-
 target_metadata = Base.metadata
 
 # Other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
@@ -60,10 +54,10 @@ def run_migrations_online() -> None:
     """
     # Get the database URL from environment variables or use the one from alembic.ini
     from app.core.config import settings
-    
+
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = settings.SQLALCHEMY_DATABASE_URI
-    
+
     connectable = engine_from_config(
         configuration,
         prefix="sqlalchemy.",

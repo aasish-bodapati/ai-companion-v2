@@ -1,0 +1,11 @@
+line-length = 100
+extend-select = []
+exclude = [
+  ".venv",
+  ".venv312",
+  "venv",
+  "__pycache__",
+  "build",
+  "dist",
+  "node_modules",
+]

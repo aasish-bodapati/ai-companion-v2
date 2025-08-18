@@ -1,16 +1,26 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 
 # Shared properties
+
+
 class MessageBase(BaseModel):
     role: str = Field(..., description="Role of the message sender ('user' or 'assistant')")
     content: str = Field(..., description="Content of the message")
 
+
 # Properties to receive via API on creation
 class MessageCreate(MessageBase):
-    pass
+    remember: bool | None = Field(
+        default=None,
+        description=(
+            "If true, explicitly save this user message to memory. "
+            "If omitted, smart gating applies."
+        ),
+    )
+
 
 # Properties to return via API
 class Message(MessageBase):
@@ -18,20 +28,27 @@ class Message(MessageBase):
     conversation_id: uuid.UUID
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
 
 # Shared properties for Conversation
 class ConversationBase(BaseModel):
     title: Optional[str] = Field(None, description="Optional title for the conversation")
+    personalization_enabled: Optional[bool] = Field(
+        True,
+        description="Whether personalized memory/profile context is used for replies",
+    )
+
 
 # Properties to receive via API on creation
 class ConversationCreate(ConversationBase):
     pass
 
+
 # Properties to receive via API on update
 class ConversationUpdate(ConversationBase):
     pass
+
 
 # Properties to return via API
 class Conversation(ConversationBase):
@@ -40,13 +57,28 @@ class Conversation(ConversationBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
 
 # Additional models for API responses
 class ConversationWithMessages(Conversation):
     messages: List[Message] = []
 
+
 class ConversationList(BaseModel):
     conversations: List[Conversation]
     total: int
+
+
+# Assistant reply with provenance for explainability
+from app.schemas.memory import MemorySearchResult
+import uuid as _uuid
+
+
+class AssistantReply(BaseModel):
+    """Response shape for non-streaming assistant reply including provenance."""
+
+    # Back-compat convenience: expose the assistant message id at the top level
+    id: _uuid.UUID | None = None
+    message: Message
+    provenance: List[MemorySearchResult] = []

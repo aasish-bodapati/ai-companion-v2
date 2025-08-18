@@ -7,5 +7,3 @@ def memory_enabled() -> bool:
 
 def provider() -> str:
     return getattr(settings, "MEMORY_PROVIDER", "faiss")
-
-

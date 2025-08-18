@@ -6,7 +6,9 @@ from app.memory.service import memory_service
 
 
 @pytest.mark.skipif(_try_import_faiss() is None, reason="faiss not installed")
-def test_user_and_assistant_messages_are_embedded(tmp_path, monkeypatch, client: TestClient, db, token, test_user):
+def test_user_and_assistant_messages_are_embedded(
+    tmp_path, monkeypatch, client: TestClient, db, token, test_user
+):
     """
     Verify that both user and assistant messages get stored into memory/FAISS on all paths:
     - POST /conversations/{id}/messages for user
@@ -16,6 +18,18 @@ def test_user_and_assistant_messages_are_embedded(tmp_path, monkeypatch, client:
     monkeypatch.setenv("FAISS_DATA_DIR", str(tmp_path))
 
     headers = {"Authorization": f"Bearer {token}"}
+    # Ensure memory stores even low-importance messages during this test
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
+    monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
+    # Avoid external API rate limits during test
+    try:
+        import app.core.llm as _llm
+
+        monkeypatch.setattr(_llm, "generate_with_together", lambda *a, **k: "ok")
+    except Exception:
+        pass
 
     # Create a conversation
     resp = client.post("/api/v1/conversations", json={"title": "Embeddings Flow"}, headers=headers)

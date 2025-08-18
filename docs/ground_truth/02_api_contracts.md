@@ -140,3 +140,102 @@
   "detail": "Internal server error"
 }
 ```
+
+---
+
+## Memory
+
+### List My Memories
+- Endpoint: `GET /api/v1/users/me/memories`
+- Headers: `Authorization: Bearer <token>`
+- Query Params:
+  - `content_type` (optional, string) — filter by memory content type
+  - `limit` (optional, int, default 100) — max items
+- Response (200 OK):
+```json
+[
+  {
+    "id": "uuid",
+    "content": "User prefers concise responses",
+    "content_type": "preference",
+    "user_id": "uuid",
+    "conversation_id": null,
+    "relevance_score": 0.92,
+    "memory_metadata": null,
+    "timestamp": "2025-08-10T17:00:00Z"
+  }
+]
+```
+
+### Conversation Memory Context
+- Endpoint: `GET /api/v1/conversations/{conversation_id}/memory-context`
+- Headers: `Authorization: Bearer <token>`
+- Response (200 OK):
+```json
+{
+  "context": [
+    {
+      "id": "profile",
+      "content": "Serialized onboarding/profile facts...",
+      "type": "profile",
+      "relevance": 1.0,
+      "timestamp": "2025-08-10T17:00:00Z"
+    },
+    {
+      "id": "faiss-123",
+      "content": "Long-term memory snippet...",
+      "type": "fact",
+      "relevance": 0.88,
+      "timestamp": "2025-08-09T09:12:34Z"
+    }
+  ]
+}
+```
+
+---
+
+## Utils
+
+### Retrieval Settings (Read-only)
+- Endpoint: `GET /api/v1/utils/retrieval-settings`
+- Response (200 OK):
+```json
+{
+  "MEMORY_ENABLED": true,
+  "MEMORY_PROVIDER": "faiss",
+  "EMBEDDING_MODEL_NAME": "all-MiniLM-L6-v2",
+  "RETRIEVAL_TOP_K": 8,
+  "RETRIEVAL_RECENT_MESSAGES": 5,
+  "MEMORY_MIN_RELEVANCE": 0.5
+}
+```
+
+### CSRF Token
+- Endpoint: `GET /api/v1/utils/csrf-token`
+- Description: Issues a CSRF token and sets a `csrftoken` cookie (`SameSite=Lax`, `Secure` in production). SPA should send this token in the `X-CSRF-Token` header for state-changing requests.
+- Response (200 OK):
+```json
+{ "csrf_token": "<token>" }
+```
+
+---
+
+## Standardized Error Response Shape
+
+All API errors are normalized to the following JSON shape:
+```json
+{
+  "detail": "Human-readable summary",
+  "message": "Human-readable summary (alias of detail)",
+  "errors": [
+    {
+      "loc": ["body", "field"],
+      "msg": "Field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
+```
+Notes:
+- `errors` is `null` for non-validation errors.
+- Validation failures return HTTP 422 with `errors` populated.

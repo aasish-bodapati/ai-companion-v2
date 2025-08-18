@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "upload_id": "000103c4ebed475d",
+      "filename": "WhatsApp Image 2025-08-11 at 5.23.51 PM.jpeg",
+      "path": "e:\\docs\\ai-companion-v2\\backend\\uploads\\9a61d566-845d-4813-af34-1c474899bc6d\\000103c4ebed475d__WhatsApp Image 2025-08-11 at 5.23.51 PM.jpeg",
+      "size": 152426,
+      "mime": "image/jpeg",
+      "checksum": "000103c4ebed475d01a5ccde6a1a570df1a1a1fcb89fba2967be7bf901e0f5ae",
+      "created_at": "2025-08-11T12:01:40.992056+00:00",
+      "status": "stored"
+    }
+  ]
+}

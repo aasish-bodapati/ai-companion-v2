@@ -1,7 +1,9 @@
-import os, sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from app.db.session import SessionLocal
-from app import crud
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from app.db.session import SessionLocal  # noqa: E402
+from app import crud  # noqa: E402
 
 
 def reset_password(email: str, new_password: str) -> None:

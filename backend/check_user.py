@@ -3,21 +3,23 @@ import os
 
 # Ensure package import path
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), 'app'))
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "app"))
 
 # Database connection: use app settings
-from app.core.config import settings
+from app.core.config import settings  # noqa: E402
+
 DATABASE_URL = settings.SQLALCHEMY_DATABASE_URI
 engine = create_engine(DATABASE_URL)
 
 # Reflect the database
 metadata = MetaData()
 metadata.reflect(bind=engine)
-users_table = Table('users', metadata, autoload_with=engine)
+users_table = Table("users", metadata, autoload_with=engine)
 
 # Query for the user
 with engine.connect() as conn:
-    query = select(users_table).where(users_table.c.email == 'test001@example.com')
+    query = select(users_table).where(users_table.c.email == "test001@example.com")
     result = conn.execute(query).fetchone()
 
     if result:

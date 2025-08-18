@@ -1,4 +1,4 @@
-from typing import Generator, Optional
+from typing import Generator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -7,20 +7,18 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app import crud, models
-from app.core import security
 from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.schemas.user import TokenPayload
 
-reusable_oauth2 = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/login/access-token"
-)
+reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/v1/login/access-token")
+
 
 def get_db() -> Generator:
     """
     Get a database session.
-    
+
     Yields:
         Session: A database session.
     """
@@ -30,26 +28,23 @@ def get_db() -> Generator:
     finally:
         db.close()
 
-def get_current_user(
-    db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)
-) -> User:
+
+def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)) -> User:
     """
     Get the current user from the JWT token.
-    
+
     Args:
         db: Database session.
         token: JWT token.
-        
+
     Returns:
         User: The current user.
-        
+
     Raises:
         HTTPException: If the token is invalid or the user doesn't exist.
     """
     try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
     except (jwt.JWTError, ValidationError):
         raise HTTPException(
@@ -61,18 +56,19 @@ def get_current_user(
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+
 def get_current_active_user(
     current_user: models.User = Depends(get_current_user),
 ) -> User:
     """
     Get the current active user.
-    
+
     Args:
         current_user: The current user.
-        
+
     Returns:
         User: The current active user.
-        
+
     Raises:
         HTTPException: If the user is inactive.
     """
@@ -80,23 +76,22 @@ def get_current_active_user(
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
+
 def get_current_active_superuser(
     current_user: models.User = Depends(get_current_user),
 ) -> User:
     """
     Get the current active superuser.
-    
+
     Args:
         current_user: The current user.
-        
+
     Returns:
         User: The current active superuser.
-        
+
     Raises:
         HTTPException: If the user is not a superuser.
     """
     if not crud.user.is_superuser(current_user):
-        raise HTTPException(
-            status_code=400, detail="The user doesn't have enough privileges"
-        )
+        raise HTTPException(status_code=400, detail="The user doesn't have enough privileges")
     return current_user

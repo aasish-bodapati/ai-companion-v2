@@ -1,0 +1,15 @@
+[run]
+omit =
+    app/core/llm.py
+    app/api/endpoints/uploads.py
+    app/api/endpoints/vision.py
+    app/services/calendar_parser.py
+    app/api/endpoints/conversations.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.: 
+    @overload
+    @abstractmethod
+    raise NotImplementedError

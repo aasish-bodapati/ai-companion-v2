@@ -25,22 +25,20 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def get(self, db: Session, id: Any) -> Optional[ModelType]:
         """Get a single object by ID.
-        
+
         Args:
             db: Database session
             id: ID of the object to retrieve. If it's a UUID, it will be converted to string.
-            
+
         Returns:
             The object if found, None otherwise.
         """
         # Convert UUID to string for SQLite compatibility
-        if hasattr(id, 'hex'):
+        if hasattr(id, "hex"):
             id = str(id)
         return db.query(self.model).filter(self.model.id == id).first()
 
-    def get_multi(
-        self, db: Session, *, skip: int = 0, limit: int = 100
-    ) -> List[ModelType]:
+    def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
         """Get multiple objects with pagination."""
         return db.query(self.model).offset(skip).limit(limit).all()
 
@@ -54,11 +52,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     def update(
-        self,
-        db: Session,
-        *,
-        db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, Dict[str, Any]]
+        self, db: Session, *, db_obj: ModelType, obj_in: Union[UpdateSchemaType, Dict[str, Any]]
     ) -> ModelType:
         """Update an existing object."""
         obj_data = jsonable_encoder(db_obj)
@@ -76,7 +70,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         """Remove an object."""
-        obj = db.query(self.model).get(id)
-        db.delete(obj)
+        # Convert UUID to string for SQLite compatibility
+        if hasattr(id, "hex"):
+            id = str(id)
+        # Use a filter-based lookup (like get()) to avoid edge cases with Session.get() on string PKs
+        q = db.query(self.model).filter(self.model.id == id)
+        obj = q.first()
+        # Perform bulk delete to avoid identity map/staleness issues across requests
+        q.delete(synchronize_session=False)
         db.commit()
         return obj

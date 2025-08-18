@@ -5,9 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.core.config import settings
 from app.main import app
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import create_access_token, get_password_hash
 from app.db.base_class import Base
 from app.db.session import get_db  # Import the production dependency to override
 from app.api import deps as api_deps  # Import API deps to override its get_db as well
@@ -39,6 +38,7 @@ TEST_USER_EMAIL = "test@example.com"
 TEST_USER_PASSWORD = "testpassword"
 TEST_USER_FULL_NAME = "Test User"
 
+
 @pytest.fixture(scope="module")
 def db():
     """Provide a shared SQLite in-memory session for tests."""
@@ -54,7 +54,7 @@ def db():
         hashed_password=get_password_hash(TEST_USER_PASSWORD),
         full_name=TEST_USER_FULL_NAME,
         is_active=True,
-        is_superuser=False
+        is_superuser=False,
     )
     session.add(test_user)
     session.commit()
@@ -65,11 +65,13 @@ def db():
     finally:
         session.close()
 
+
 @pytest.fixture(scope="module")
 def client():
     """Create a test client for the FastAPI app."""
     with TestClient(app) as test_client:
         yield test_client
+
 
 @pytest.fixture(scope="module")
 def token(db):
@@ -77,12 +79,11 @@ def token(db):
     # Get the test user
     test_user = db.query(User).filter(User.email == TEST_USER_EMAIL).first()
     assert test_user is not None, "Test user not found in database"
-    
+
     # Create token with user ID as subject
-    access_token = create_access_token(
-        subject=str(test_user.id)
-    )
+    access_token = create_access_token(subject=str(test_user.id))
     return access_token
+
 
 @pytest.fixture(scope="module")
 def test_user(db):
@@ -96,6 +97,7 @@ def test_user(db):
         db.refresh(user)
     return user
 
+
 # Override FastAPI get_db dependency globally for tests to use the in-memory SQLite session
 def override_get_db():
     """Yield a session without manual transaction management to avoid cross-rollbacks."""
@@ -106,6 +108,7 @@ def override_get_db():
         test_session.commit()
     finally:
         test_session.close()
+
 
 # Apply the override before any tests run
 app.dependency_overrides[get_db] = override_get_db

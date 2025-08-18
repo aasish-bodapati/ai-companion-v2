@@ -9,11 +9,13 @@ from app.schemas.onboarding import OnboardingProfileIn, OnboardingProfileOut
 def _to_out(model: OnboardingProfile) -> OnboardingProfileOut:
     if not model:
         return OnboardingProfileOut()
+
     def loads(s: Optional[str]):
         try:
             return json.loads(s) if s else None
         except Exception:
             return None
+
     return OnboardingProfileOut(
         identity={
             "name": model.name,
