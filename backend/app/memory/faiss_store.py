@@ -156,3 +156,45 @@ def update_vector(user_id: str, target_id: str, new_vector: List[float]) -> bool
     # Save rebuilt index and ids mapping
     _save_index(user_id, new_index, ids)
     return True
+
+
+def delete(user_id: str, target_id: str) -> bool:
+    """Remove the vector for target_id by rebuilding the index without it.
+
+    Returns True if the item was removed or did not exist; False on error.
+    No-ops (True) if FAISS is unavailable to keep DB state authoritative.
+    """
+    faiss = _try_import_faiss()
+    if not faiss:
+        return True
+    index, ids = _load_index(user_id)
+    if index is None or not ids:
+        return True
+    try:
+        pos = ids.index(target_id)
+    except ValueError:
+        return True
+
+    import numpy as np
+
+    try:
+        ntotal = index.ntotal
+        all_mat = index.reconstruct_n(0, ntotal)  # type: ignore[attr-defined]
+        all_vecs: List[List[float]] = all_mat.astype("float32").tolist()
+        # Drop target position
+        del all_vecs[pos]
+        del ids[pos]
+        # Rebuild new index with remaining vectors
+        if not all_vecs:
+            # Empty index
+            dim = 384
+            new_index = faiss.IndexFlatIP(dim)
+        else:
+            dim = len(all_vecs[0])
+            new_index = faiss.IndexFlatIP(dim)
+            xb = np.array(all_vecs, dtype="float32")
+            new_index.add(xb)
+        _save_index(user_id, new_index, ids)
+        return True
+    except Exception:
+        return False

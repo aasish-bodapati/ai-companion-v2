@@ -78,7 +78,7 @@ Final score:
 ## Testing
 - Unit tests for scoring function and decay curve boundaries.
 - API tests for reinforce and goals CRUD.
-- Ensure tests stub Together calls (as in existing test fixtures).
+- Ensure tests mock OpenRouter LLM calls (e.g., patch `app/core/llm.py` HTTP client or stub `generate_with_openrouter`).
 
 ---
 

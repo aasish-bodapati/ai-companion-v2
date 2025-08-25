@@ -84,7 +84,7 @@ sequenceDiagram
 - [ ] Implement memory importance scoring
 - [ ] Add memory consolidation (similar memories merging)
 - [ ] Support memory editing/deletion
-- [ ] Reply endpoint with FAISS retrieval + Together model
+- [ ] Reply endpoint with FAISS retrieval + OpenRouter Llama model
 
 ### Medium-term
 - [ ] Implement memory hierarchies (spiderweb graph)
@@ -110,7 +110,7 @@ sequenceDiagram
 ### Token & Inference Cost
 - Summarize long memories and clamp context window
 - Strict token budgets and top-k limits
-- Use Together `meta-llama/Llama-3.3-70B-Instruct-Turbo-Free` by default; allow env‑based switching
+- Use OpenRouter models by default (e.g., `meta-llama/llama-3.3-70b-instruct`); allow env‑based switching
 
 ## Security
 - Strict user isolation for memory access

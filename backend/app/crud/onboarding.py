@@ -1,54 +1,27 @@
 from typing import Optional
-import json
 from sqlalchemy.orm import Session
 
 from app.models.onboarding import OnboardingProfile
-from app.schemas.onboarding import OnboardingProfileIn, OnboardingProfileOut
+from app.schemas.onboarding import OnboardingProfileCreate, OnboardingProfileUpdate, OnboardingProfile as OnboardingProfileSchema
 
 
-def _to_out(model: OnboardingProfile) -> OnboardingProfileOut:
+def _to_out(model: OnboardingProfile) -> OnboardingProfileSchema:
     if not model:
-        return OnboardingProfileOut()
+        return OnboardingProfileSchema()
 
-    def loads(s: Optional[str]):
-        try:
-            return json.loads(s) if s else None
-        except Exception:
-            return None
-
-    return OnboardingProfileOut(
-        identity={
-            "name": model.name,
-            "nickname": model.nickname,
-            "pronouns": model.pronouns,
-            "birthday": model.birthday,
-            "location": model.location,
-        },
-        interests={
-            "topics": loads(model.topics_json) or None,
-            "hobbies": model.hobbies,
-            "favorites": model.favorites,
-        },
-        communication={
-            "responseStyle": model.response_style,
-            "tone": loads(model.tone_json) or None,
-            "smallTalkLevel": model.small_talk_level,
-        },
-        goals={
-            "primaryReason": model.primary_reason,
-            "personalGoals": model.personal_goals,
-            "checkinsEnabled": model.checkins_enabled,
-        },
-        boundaries={
-            "avoidTopics": model.avoid_topics,
-            "memoryPolicy": model.memory_policy,
-            "recallEnabled": model.recall_enabled,
-        },
-        fun={
-            "dreamTrip": model.dream_trip,
-            "randomFact": model.random_fact,
-            "aiPersona": model.ai_persona,
-        },
+    return OnboardingProfileSchema(
+        id=model.id,
+        user_id=model.user_id,
+        # Step 1 – Daily Schedule
+        daily_schedule=model.daily_schedule,
+        schedule_preferences=model.schedule_preferences,
+        # Step 2 – Fitness & Nutrition Goals
+        fitness_goals=model.fitness_goals,
+        nutrition_goals=model.nutrition_goals,
+        dietary_preferences=model.dietary_preferences,
+        # Step 3 – Communication Style
+        communication_style=model.communication_style,
+        additional_preferences=model.additional_preferences,
         completed=model.completed or False,
     )
 
@@ -57,71 +30,38 @@ def get_by_user_id(db: Session, user_id: str) -> Optional[OnboardingProfile]:
     return db.query(OnboardingProfile).filter(OnboardingProfile.user_id == user_id).first()
 
 
-def upsert_for_user(db: Session, user_id: str, data: OnboardingProfileIn) -> OnboardingProfileOut:
+def upsert_for_user(db: Session, user_id: str, data: OnboardingProfileCreate) -> OnboardingProfileSchema:
     model = get_by_user_id(db, user_id)
     if not model:
         model = OnboardingProfile(user_id=user_id)
         db.add(model)
 
-    # Identity
-    if data.identity:
-        model.name = data.identity.name or model.name
-        model.nickname = data.identity.nickname or model.nickname
-        model.pronouns = data.identity.pronouns or model.pronouns
-        model.birthday = data.identity.birthday or model.birthday
-        model.location = data.identity.location or model.location
+    # Step 1 – Daily Schedule
+    if data.daily_schedule is not None:
+        model.daily_schedule = data.daily_schedule
+    if data.schedule_preferences is not None:
+        model.schedule_preferences = data.schedule_preferences
 
-    # Interests
-    if data.interests:
-        if data.interests.topics is not None:
-            model.topics_json = json.dumps(data.interests.topics)
-        if data.interests.hobbies is not None:
-            model.hobbies = data.interests.hobbies
-        if data.interests.favorites is not None:
-            model.favorites = data.interests.favorites
+    # Step 2 – Fitness & Nutrition Goals
+    if data.fitness_goals is not None:
+        model.fitness_goals = data.fitness_goals
+    if data.nutrition_goals is not None:
+        model.nutrition_goals = data.nutrition_goals
+    if data.dietary_preferences is not None:
+        model.dietary_preferences = data.dietary_preferences
 
-    # Communication
-    if data.communication:
-        if data.communication.responseStyle is not None:
-            model.response_style = data.communication.responseStyle
-        if data.communication.tone is not None:
-            model.tone_json = json.dumps(data.communication.tone)
-        if data.communication.smallTalkLevel is not None:
-            model.small_talk_level = data.communication.smallTalkLevel
-
-    # Goals
-    if data.goals:
-        if data.goals.primaryReason is not None:
-            model.primary_reason = data.goals.primaryReason
-        if data.goals.personalGoals is not None:
-            model.personal_goals = data.goals.personalGoals
-        if data.goals.checkinsEnabled is not None:
-            model.checkins_enabled = data.goals.checkinsEnabled
-
-    # Boundaries
-    if data.boundaries:
-        if data.boundaries.avoidTopics is not None:
-            model.avoid_topics = data.boundaries.avoidTopics
-        if data.boundaries.memoryPolicy is not None:
-            model.memory_policy = data.boundaries.memoryPolicy
-        if data.boundaries.recallEnabled is not None:
-            model.recall_enabled = data.boundaries.recallEnabled
-
-    # Fun
-    if data.fun:
-        if data.fun.dreamTrip is not None:
-            model.dream_trip = data.fun.dreamTrip
-        if data.fun.randomFact is not None:
-            model.random_fact = data.fun.randomFact
-        if data.fun.aiPersona is not None:
-            model.ai_persona = data.fun.aiPersona
+    # Step 3 – Communication Style
+    if data.communication_style is not None:
+        model.communication_style = data.communication_style
+    if data.additional_preferences is not None:
+        model.additional_preferences = data.additional_preferences
 
     db.commit()
     db.refresh(model)
     return _to_out(model)
 
 
-def mark_completed(db: Session, user_id: str) -> OnboardingProfileOut:
+def mark_completed(db: Session, user_id: str) -> OnboardingProfileSchema:
     model = get_by_user_id(db, user_id)
     if not model:
         model = OnboardingProfile(user_id=user_id, completed=True)

@@ -118,11 +118,11 @@ def test_personalization_toggle_uses_memory_when_on(monkeypatch, client: TestCli
 
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
-    # Avoid external Together API calls and rate limits
+            # Avoid external OpenRouter API calls and rate limits
     try:
         import app.core.llm as _llm
 
-        monkeypatch.setattr(_llm, "generate_with_together", lambda *a, **k: "ok")
+        monkeypatch.setattr(_llm, "generate_with_openrouter", lambda *a, **k: "ok")
     except Exception:
         pass
 

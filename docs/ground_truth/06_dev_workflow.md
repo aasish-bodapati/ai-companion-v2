@@ -24,7 +24,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 
 # Install dependencies
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env
@@ -154,9 +154,10 @@ pre-commit install
 cd frontend
 npm run build
 
-# Deploy backend
-cd ../backend
-./deploy.sh staging
+# Backend packaging/deploy: use your target platform's process (Docker, PaaS, etc.).
+# Example (Docker):
+# docker build -t ai-companion-backend:staging ../backend
+# docker run -e ENVIRONMENT=staging -p 8000:8000 ai-companion-backend:staging
 ```
 
 ### Production
@@ -165,9 +166,8 @@ cd ../backend
 cd frontend
 NEXT_PUBLIC_API_URL=https://api.yourdomain.com npm run build
 
-# Deploy backend
-cd ../backend
-./deploy.sh production
+# Backend deploy: use managed infra or container orchestration (no deploy.sh in repo)
+# Ensure env vars and database are configured; run migrations before start.
 ```
 
 ## Environment Variables
@@ -181,8 +181,12 @@ DATABASE_URL=postgresql://user:password@localhost:5432/ai_companion
 SECRET_KEY=your-secret-key
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
-# AI
-LLM_KEY=your-llm-provider-key
+# AI (OpenRouter)
+LLM_KEY=your-openrouter-key
+LLM_BASE_URL=https://openrouter.ai/api/v1
+LLM_MODEL_DEFAULT=meta-llama/llama-3.3-70b-instruct
+LLM_MODEL_VISION=meta-llama/llama-3.2-11b-vision-instruct:free
+LLM_MODEL_SUMMARY=meta-llama/llama-3.3-70b-instruct
 ```
 
 ### Frontend (`.env.local`)

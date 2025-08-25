@@ -7,7 +7,10 @@ import uuid
 
 
 class MessageBase(BaseModel):
-    role: str = Field(..., description="Role of the message sender ('user' or 'assistant')")
+    role: str = Field(
+        default="user",
+        description="Role of the message sender ('user' or 'assistant')",
+    )
     content: str = Field(..., description="Content of the message")
 
 
@@ -82,3 +85,5 @@ class AssistantReply(BaseModel):
     id: _uuid.UUID | None = None
     message: Message
     provenance: List[MemorySearchResult] = []
+    # Diagnostics: whether a real LLM call was used (False if local stub or deterministic handler)
+    used_llm: bool | None = None

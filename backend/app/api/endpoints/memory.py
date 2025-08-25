@@ -12,8 +12,84 @@ from app.memory.service import memory_service
 from app import crud
 from app.services.summarization import generate_conversation_summary
 from pydantic import BaseModel, Field
+from app.privacy.redaction import redact_text, redact_metadata
 
 router = APIRouter()
+
+
+class MemoryStatusResponse(BaseModel):
+    enabled: bool
+    stats: Dict[str, Any]
+
+
+class MemoryToggleRequest(BaseModel):
+    enabled: bool
+
+
+@router.get("/status", response_model=MemoryStatusResponse)
+def get_memory_status(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Get memory system status and statistics."""
+    # Effective flag: global unless user override set
+    enabled = bool(settings.MEMORY_ENABLED)
+    try:
+        if getattr(current_user, "memory_enabled", None) is not None:
+            enabled = bool(current_user.memory_enabled)
+    except Exception:
+        pass
+    
+    stats = {
+        "totalMemories": 0,
+        "lastIndexed": None,
+    }
+    
+    if enabled:
+        try:
+            # Get total memory count for user
+            memories = memory_crud.get_user_memories(
+                db=db, user_id=str(current_user.id), limit=1000
+            )
+            stats["totalMemories"] = len(memories)
+            
+            # Get last indexed timestamp
+            if memories:
+                latest = max(memories, key=lambda m: m.timestamp if hasattr(m, 'timestamp') else m.created_at)
+                stats["lastIndexed"] = (latest.timestamp if hasattr(latest, 'timestamp') else latest.created_at).isoformat()
+        except Exception:
+            pass
+    
+    return MemoryStatusResponse(enabled=enabled, stats=stats)
+
+
+@router.post("/toggle")
+def toggle_memory(
+    request: MemoryToggleRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Toggle memory system for this user by setting a per-user override.
+
+    If global is disabled, user cannot enable it (returns global false).
+    If global is enabled, set user override to request.enabled and return effective value.
+    """
+    # If globally off, respect global off regardless of user toggle
+    if not bool(settings.MEMORY_ENABLED):
+        return {"enabled": False, "message": "Memory system globally disabled by admin"}
+
+    # Persist per-user override
+    try:
+        from app.crud.user import user as user_crud
+
+        updated = user_crud.update(db, db_obj=current_user, obj_in={"memory_enabled": bool(request.enabled)})
+        db.refresh(updated)
+        effective = bool(updated.memory_enabled) if updated.memory_enabled is not None else bool(settings.MEMORY_ENABLED)
+        return {"enabled": effective}
+    except Exception:
+        # Fallback to current effective
+        eff = bool(current_user.memory_enabled) if getattr(current_user, "memory_enabled", None) is not None else bool(settings.MEMORY_ENABLED)
+        return {"enabled": eff}
 
 
 @router.get("/users/me/memories", response_model=List[MemoryNodeResponse])
@@ -31,6 +107,56 @@ def list_my_memories(
     items = memory_crud.get_user_memories(
         db=db, user_id=str(current_user.id), content_type=content_type, limit=limit
     )
+    # Filter out soft-deleted items via metadata.deleted
+    try:
+        import json as _json
+        items = [
+            it for it in items
+            if not (
+                (lambda _md: bool(_md.get("deleted")))(
+                    (_json.loads(it.memory_metadata) if it.memory_metadata else {})
+                )
+            )
+        ]
+    except Exception:
+        pass
+    # Deduplicate by normalized content (case-insensitive, whitespace-collapsed)
+    # Keep the first occurrence (most recent due to DESC ordering)
+    seen: set[str] = set()
+    deduped: List[MemoryNodeResponse] = []
+    import re
+    boilerplate_patterns = [
+        r"\bplease\s+remember\s+it\b",
+        r"\bremember\s+this\b",
+        r"\bremember\s+that\b",
+        r"\bplease\s+remember\b",
+        r"\bremember\b",
+        r"\bplease\b",
+        r"\bit\b",
+    ]
+    for it in items:
+        try:
+            raw = (it.content or "").strip().lower()
+            # Remove common boilerplate phrases often present in prompts
+            for pat in boilerplate_patterns:
+                raw = re.sub(pat, " ", raw)
+            # Remove punctuation and non-alphanumeric (keep letters/numbers/spaces)
+            raw = re.sub(r"[^a-z0-9\s]+", " ", raw)
+            # Collapse whitespace
+            norm = " ".join(raw.split())
+        except Exception:
+            norm = (it.content or "")
+        if not norm:
+            # Allow empty content entries through once
+            key = "__empty__"
+        else:
+            key = norm
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(it)
+
+    items = deduped
     # Optional filter by memory_metadata.core without changing SQL shape
     if core is not None:
         filtered: List[MemoryNodeResponse] = []
@@ -80,6 +206,48 @@ def search_my_memories(
     return results
 
 
+class DeleteMemoryResponse(BaseModel):
+    success: bool
+    mode: Literal["soft", "hard"]
+
+
+@router.delete("/memories/{faiss_id}", response_model=DeleteMemoryResponse)
+def soft_delete_memory(
+    faiss_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    ok = memory_crud.soft_delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    return DeleteMemoryResponse(success=True, mode="soft")
+
+
+@router.delete("/memories/{faiss_id}/hard", response_model=DeleteMemoryResponse)
+def hard_delete_memory(
+    faiss_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    ok = memory_crud.delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    return DeleteMemoryResponse(success=True, mode="hard")
+
+
+class DeleteAllMemoriesResponse(BaseModel):
+    deleted: int
+
+
+@router.delete("/users/me/memories", response_model=DeleteAllMemoriesResponse)
+def delete_all_my_memories(
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    count = memory_crud.delete_user_memories(db, user_id=str(current_user.id))
+    return DeleteAllMemoriesResponse(deleted=int(count))
+
+
 class CreateMemoryIn(BaseModel):
     content: str = Field(..., description="Memory content text")
     content_type: Optional[str] = Field(
@@ -98,6 +266,19 @@ class CreateMemoryIn(BaseModel):
         description="Provenance of memory capture (e.g., chat:remember|chat:assistant_selection)",
     )
     message_id: Optional[_UUID] = Field(None, description="Related chat message id for provenance")
+    # Optional richer metadata to improve consolidation and ranking
+    category: Optional[str] = Field(
+        None,
+        description="High-level category for this memory (e.g., profile|preference|habit|goal|log)",
+    )
+    consolidation_key: Optional[str] = Field(
+        None,
+        description="Stable normalized key used to deduplicate/merge similar memories",
+    )
+    rank_boost: Optional[float] = Field(
+        None,
+        description="Optional manual boost (0..1) that can influence retrieval ranking",
+    )
 
 
 @router.post("/memories", response_model=MemoryNodeResponse)
@@ -122,6 +303,52 @@ def create_memory(
         metadata.setdefault("source", "chat:remember")
     if payload.message_id:
         metadata["message_id"] = str(payload.message_id)
+    # Optional enrichment fields
+    if payload.category:
+        metadata["category"] = payload.category
+    if payload.consolidation_key:
+        metadata["consolidation_key"] = payload.consolidation_key
+    if payload.rank_boost is not None:
+        try:
+            rb = float(payload.rank_boost)
+        except Exception:
+            rb = 0.0
+        metadata["rank_boost"] = max(0.0, min(1.0, rb))
+
+    # Preserve the original content as the stored value (tests expect exact text)
+    # Compute a normalized shadow string only for consolidation/dedupe/ranking purposes.
+    raw_content = (payload.content or "").strip()
+    try:
+        import re as _re
+
+        _boilerplate_patterns = [
+            r"\bplease\s+remember\s+it\b",
+            r"\bremember\s+this\b",
+            r"\bremember\s+that\b",
+            r"\bplease\s+remember\b",
+            r"\bremember\b",
+            r"\bplease\b",
+            r"\bit\b",
+        ]
+        _norm = raw_content.lower()
+        for _pat in _boilerplate_patterns:
+            _norm = _re.sub(_pat, " ", _norm)
+        _norm = _re.sub(r"[^a-z0-9\s]+", " ", _norm)
+        _norm = " ".join(_norm.split())
+    except Exception:
+        _norm = raw_content
+
+    # Persist original text as content
+    canonical_content = raw_content
+
+    # Save normalization for internal use
+    if _norm:
+        metadata["norm_content"] = _norm
+
+    # Auto-populate consolidation_key if not provided (prefer normalized form)
+    if not metadata.get("consolidation_key"):
+        key_src = _norm or canonical_content
+        metadata["consolidation_key"] = key_src[:160]
 
     # Determine importance_score:
     # 1) Prefer explicit importance_score (including 0)
@@ -140,7 +367,7 @@ def create_memory(
                     min(
                         100,
                         memory_service.grade_importance(
-                            payload.content,
+                            raw_content,
                             (payload.content_type or "fact"),
                         ),
                     ),
@@ -149,14 +376,29 @@ def create_memory(
     except Exception:
         imp_score = 0
 
+    # Apply privacy redaction before persistence
+    red_content = canonical_content
+    red_meta = metadata
+    try:
+        red_content, red_info = redact_text(canonical_content)
+        red_meta = redact_metadata(metadata)
+        if isinstance(red_meta, dict):
+            red_meta.setdefault("redaction", {}).update({
+                "enabled": True,
+                "counts": {k: int(v) for k, v in (red_info or {}).items() if k != "enabled"}
+            })
+    except Exception:
+        red_content = canonical_content
+        red_meta = metadata
+
     node = memory_crud.create_memory_node(
         db=db,
         faiss_id=str(uuid4()),
-        content=payload.content,
+        content=red_content,
         content_type=payload.content_type or "fact",
         user_id=str(current_user.id),
         conversation_id=str(payload.conversation_id) if payload.conversation_id else None,
-        metadata=metadata,
+        metadata=red_meta,
         importance_score=imp_score,
     )
     return node
@@ -191,7 +433,8 @@ def get_memory_context(
     context_items: List[MemoryContextItem] = []
     seen_norm: set[str] = set()
 
-    if not settings.MEMORY_ENABLED:
+    # Honor per-user memory flag
+    if not bool(settings.MEMORY_ENABLED) or (getattr(current_user, "memory_enabled", None) is False):
         return {"context": context_items}
 
     # Use last user message to shape context and detect self-referential prompt
@@ -294,6 +537,13 @@ def get_memory_context(
                     except Exception:
                         pass
 
+                    # Parse metadata once for category and reasons
+                    try:
+                        import json as _json
+                        md = _json.loads(r.memory_metadata) if r.memory_metadata else {}
+                    except Exception:
+                        md = {}
+
                     mapped_type: MemoryContextItem["type"]
                     if r.content_type in ("onboarding", "profile"):
                         mapped_type = "profile"
@@ -317,6 +567,14 @@ def get_memory_context(
                             else r.content_type
                         )  # type: ignore
 
+                    # Prefer metadata.category when it maps to allowed types
+                    try:
+                        cat = str(md.get("category") or "").strip().lower()
+                        if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                            mapped_type = cat  # type: ignore[assignment]
+                    except Exception:
+                        pass
+
                     # Safe timestamp formatting with fallback
                     try:
                         ts = r.timestamp.isoformat()  # type: ignore[attr-defined]
@@ -326,12 +584,6 @@ def get_memory_context(
                     # Build a short explanation for why this memory appeared
                     reason_parts: list[str] = []
                     reason_parts.append(f"score={r.relevance_score:.2f}")
-                    try:
-                        import json as _json
-
-                        md = _json.loads(r.memory_metadata) if r.memory_metadata else {}
-                    except Exception:
-                        md = {}
                     if md.get("core"):
                         reason_parts.append("core=true")
                     if md.get("importance") is not None:
@@ -361,20 +613,28 @@ def get_memory_context(
                             "reason": ", ".join(reason_parts),
                         }
                     )
+                    # Track as seen for lifecycle analytics and ranking features
+                    try:
+                        seen_faiss_ids.append(r.faiss_id)
+                    except Exception:
+                        pass
                     type_counts[mapped_type] = type_counts.get(mapped_type, 0) + 1
                 except Exception:
                     # Skip bad item but keep others
                     continue
-            # Fallback: if retrieval returned nothing, include recent conversation memories directly
+            # Fallback: if retrieval returned nothing, include recent conversation and
+            # preference memories and interleave them for diversity.
             if not results:
+                import json as _json
+                # Collect recent conversation memories
                 try:
                     conv_mems = memory_crud.get_conversation_memories(
                         db, conversation_id=str(conversation_id), limit=10
                     )
                 except Exception:
                     conv_mems = []
-                import json as _json
 
+                conv_ctx: list[dict] = []
                 for m in conv_mems:
                     try:
                         if str(m.user_id) != str(current_user.id):
@@ -385,6 +645,12 @@ def get_memory_context(
                             md = _json.loads(m.memory_metadata) if m.memory_metadata else {}
                         except Exception:
                             md = {}
+                        # Skip soft-deleted
+                        try:
+                            if bool(md.get("deleted")):
+                                continue
+                        except Exception:
+                            pass
                         sup = md.get("suppressed_until")
                         if sup:
                             try:
@@ -398,10 +664,9 @@ def get_memory_context(
                             except Exception:
                                 pass
                         norm = (m.content or "").strip().lower()
-                        if not norm or norm in seen_norm:
+                        if not norm:
                             continue
-                        seen_norm.add(norm)
-                        context_items.append(
+                        conv_ctx.append(
                             {
                                 "id": m.faiss_id,
                                 "content": m.content,
@@ -413,10 +678,201 @@ def get_memory_context(
                                     conversation.updated_at or conversation.created_at
                                 ).isoformat(),
                                 "reason": "fallback_recent_conversation",
+                                "_norm": norm,
                             }
                         )
                     except Exception:
                         continue
+
+                # Collect recent user preferences
+                try:
+                    pref_mems = memory_crud.get_user_memories(
+                        db=db, user_id=str(current_user.id), content_type="preference", limit=10
+                    )
+                except Exception:
+                    pref_mems = []
+
+                pref_ctx: list[dict] = []
+                for m in pref_mems:
+                    try:
+                        md = {}
+                        try:
+                            md = _json.loads(m.memory_metadata) if m.memory_metadata else {}
+                        except Exception:
+                            md = {}
+                        # Skip soft-deleted
+                        try:
+                            if bool(md.get("deleted")):
+                                continue
+                        except Exception:
+                            pass
+                        mtype: MemoryContextItem["type"] = "preference"
+                        try:
+                            cat = str(md.get("category") or "").strip().lower()
+                            if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                                mtype = cat  # type: ignore[assignment]
+                        except Exception:
+                            pass
+                        norm = (m.content or "").strip().lower()
+                        if not norm:
+                            continue
+                        # Compute a priority score to help internal ordering
+                        rb = 0.0
+                        try:
+                            rb = float(md.get("rank_boost") or 0.0)
+                        except Exception:
+                            rb = 0.0
+                        imp = 0.0
+                        try:
+                            imp = float(md.get("importance") or getattr(m, "importance", 0) or 0)
+                        except Exception:
+                            imp = 0.0
+                        rel = float(m.relevance_score or 0.8)
+                        _score = rel + 0.1 * rb + 0.01 * imp
+                        pref_ctx.append(
+                            {
+                                "id": m.faiss_id,
+                                "content": m.content,
+                                "type": mtype,
+                                "relevance": rel,
+                                "timestamp": m.timestamp.isoformat()
+                                if getattr(m, "timestamp", None)
+                                else (
+                                    conversation.updated_at or conversation.created_at
+                                ).isoformat(),
+                                "reason": "fallback_recent_preferences",
+                                "_norm": norm,
+                                "_score": _score,
+                            }
+                        )
+                    except Exception:
+                        continue
+
+                # Collect recent user profile memories as secondary source (if prefs are sparse)
+                try:
+                    profile_mems = memory_crud.get_user_memories(
+                        db=db, user_id=str(current_user.id), content_type="profile", limit=10
+                    )
+                except Exception:
+                    profile_mems = []
+
+                profile_ctx: list[dict] = []
+                for m in profile_mems:
+                    try:
+                        md = {}
+                        try:
+                            md = _json.loads(m.memory_metadata) if m.memory_metadata else {}
+                        except Exception:
+                            md = {}
+                        # Skip soft-deleted
+                        try:
+                            if bool(md.get("deleted")):
+                                continue
+                        except Exception:
+                            pass
+                        mtype: MemoryContextItem["type"] = "profile"
+                        try:
+                            cat = str(md.get("category") or "").strip().lower()
+                            if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                                mtype = cat  # type: ignore[assignment]
+                        except Exception:
+                            pass
+                        norm = (m.content or "").strip().lower()
+                        if not norm:
+                            continue
+                        rb = 0.0
+                        try:
+                            rb = float(md.get("rank_boost") or 0.0)
+                        except Exception:
+                            rb = 0.0
+                        imp = 0.0
+                        try:
+                            imp = float(md.get("importance") or getattr(m, "importance", 0) or 0)
+                        except Exception:
+                            imp = 0.0
+                        rel = float(m.relevance_score or 0.9)
+                        _score = rel + 0.1 * rb + 0.01 * imp
+                        profile_ctx.append(
+                            {
+                                "id": m.faiss_id,
+                                "content": m.content,
+                                "type": mtype,
+                                "relevance": rel,
+                                "timestamp": m.timestamp.isoformat()
+                                if getattr(m, "timestamp", None)
+                                else (
+                                    conversation.updated_at or conversation.created_at
+                                ).isoformat(),
+                                "reason": "fallback_recent_profile",
+                                "_norm": norm,
+                                "_score": _score,
+                            }
+                        )
+                    except Exception:
+                        continue
+
+                # Interleave up to K items ensuring no duplicates, priority, and per-type caps
+                # 0) Sort each list by computed score (if present) descending
+                def _sort_key(d: dict) -> float:
+                    try:
+                        return float(d.get("_score", d.get("relevance", 0)))
+                    except Exception:
+                        return 0.0
+
+                pref_ctx.sort(key=_sort_key, reverse=True)
+                profile_ctx.sort(key=_sort_key, reverse=True)
+                # For conversation, compute scores lightly from relevance
+                for _d in conv_ctx:
+                    _d["_score"] = float(_d.get("relevance", 1.0))
+                conv_ctx.sort(key=_sort_key, reverse=True)
+
+                # 1) Drop conversation items that duplicate preference/profile content
+                drop_norms = {p["_norm"] for p in pref_ctx} | {p["_norm"] for p in profile_ctx}
+                if drop_norms:
+                    conv_ctx = [c for c in conv_ctx if c.get("_norm") not in drop_norms]
+
+                K = int(getattr(settings, "RETRIEVAL_TOP_K", 8) or 8)
+                from math import ceil
+                per_type_cap = ceil(K / 2)
+
+                type_counts: dict[str, int] = {}
+                i = j = k = 0
+                # 2) Cycle preference -> conversation -> profile to maintain diversity
+                while len(context_items) < K and (i < len(conv_ctx) or j < len(pref_ctx) or k < len(profile_ctx)):
+                    # preference
+                    if j < len(pref_ctx) and len(context_items) < K:
+                        item = pref_ctx[j]
+                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type")), 0) < per_type_cap:
+                            seen_norm.add(item["_norm"])  # reserve
+                            item.pop("_norm", None)
+                            item.pop("_score", None)
+                            context_items.append(item)  # type: ignore[arg-type]
+                            type_counts[str(item.get("type"))] = type_counts.get(str(item.get("type")), 0) + 1
+                        j += 1
+                        if len(context_items) >= K:
+                            break
+                    # conversation
+                    if i < len(conv_ctx) and len(context_items) < K:
+                        item = conv_ctx[i]
+                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type", "conversation")), 0) < per_type_cap:
+                            seen_norm.add(item["_norm"])  # reserve
+                            item.pop("_norm", None)
+                            item.pop("_score", None)
+                            context_items.append(item)  # type: ignore[arg-type]
+                            type_counts[str(item.get("type", "conversation"))] = type_counts.get(str(item.get("type", "conversation")), 0) + 1
+                        i += 1
+                        if len(context_items) >= K:
+                            break
+                    # profile
+                    if k < len(profile_ctx) and len(context_items) < K:
+                        item = profile_ctx[k]
+                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type", "profile")), 0) < per_type_cap:
+                            seen_norm.add(item["_norm"])  # reserve
+                            item.pop("_norm", None)
+                            item.pop("_score", None)
+                            context_items.append(item)  # type: ignore[arg-type]
+                            type_counts[str(item.get("type", "profile"))] = type_counts.get(str(item.get("type", "profile")), 0) + 1
+                        k += 1
         except Exception:
             # Don't fail; return what we have
             pass
@@ -663,7 +1119,7 @@ def auto_summarize_conversation(
     md: Dict[str, Any] = {
         "source": "auto_summary",
         "meta": True,
-        "llm": "together:meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+        "llm": "openrouter:deepseek/deepseek-chat-v3.1",
     }
 
     node = memory_crud.create_memory_node(

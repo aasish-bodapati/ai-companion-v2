@@ -1,7 +1,7 @@
 # Product Vision: AI Companion v2
 
 ## Purpose
-A persistent, multi-domain life coach and assistant that learns continuously, tracks behaviors, and helps you bridge from your current self to your best self. It adapts across fitness, mental health, nutrition, skin care, and daily productivity with a single personalized brain.
+A persistent, multi-domain life coach and assistant that learns continuously, tracks behaviors, and helps you bridge from your current self to your best self. It adapts across fitness, mental health, nutrition, skin care, and daily productivity with a single personalized brain. It is intended to replace a human personal assistant—available 24/7—with expert-level support across these areas of life.
 
 ## Principles
 - Personal-first: advice reflects your goals, constraints, preferences.

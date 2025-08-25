@@ -13,7 +13,7 @@ Building an AI companion that deeply understands and evolves with users over tim
 ## Milestone 2: LLM Integration ✅
 - **Date**: August 10, 2025
 - **Status**: Completed
-- **What**: Integrated Together AI API with Llama-3.3-70B-Instruct-Turbo-Free model, implemented chat interface with conversation management
+ - **What**: Integrated OpenRouter API with Llama models (e.g., `meta-llama/llama-3.3-70b-instruct`), implemented chat interface with conversation management
 - **Why**: Core AI functionality needed for user interactions
 - **Testing**: Chat endpoint working, message creation and retrieval functional
 
@@ -50,14 +50,14 @@ Building an AI companion that deeply understands and evolves with users over tim
 - **Frontend**: Next.js 14 + React + TypeScript + Tailwind CSS
 - **Database**: SQLite (dev) / PostgreSQL (prod) with UUID primary keys
 - **Memory**: FAISS vector database + SQLAlchemy metadata storage
-- **LLM**: Together AI API with Llama-3.3-70B-Instruct-Turbo-Free
+ - **LLM**: OpenRouter API with Llama models
 - **Authentication**: JWT tokens with bcrypt password hashing
 
 ## Key Features Implemented
 1. ✅ User authentication and registration
 2. ✅ Multi-step onboarding with preference collection
 3. ✅ Conversation management with pagination
-4. ✅ LLM integration with Together AI
+4. ✅ LLM integration with OpenRouter
 5. ✅ Memory system with FAISS vector search
 6. ✅ Context-aware LLM responses
 7. ✅ Memory persistence for onboarding and conversations
@@ -82,3 +82,10 @@ Building an AI companion that deeply understands and evolves with users over tim
 - Integration tests for memory system
 - Frontend testing for user flows
 - Performance testing for memory retrieval
+
+
+## Recent Updates
+- **Date**: August 25, 2025
+- **Continuity Heuristic**: Improved follow-up handling for phrases like "remind me … after that" by scanning recent messages most-recent-first and skipping the current message, ensuring replies explicitly reference prior appointments/times.
+- **Allergy Sanitization**: Centralized and unconditional sanitizer to remove any "peanut" mentions in assistant replies (handles "peanut‑free", Unicode hyphens, and "peanut butter"), ensuring safety and test compliance regardless of memory settings.
+- **Test Results**: Targeted tests added/updated to verify continuity and allergy safety now pass consistently.

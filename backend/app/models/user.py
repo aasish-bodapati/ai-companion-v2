@@ -22,6 +22,8 @@ class User(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
+    # When null -> follow global settings.MEMORY_ENABLED; when True/False -> override per user
+    memory_enabled = Column(Boolean(), nullable=True)
 
     # Relationships
     conversations = relationship(
@@ -38,3 +40,4 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}'>"
+

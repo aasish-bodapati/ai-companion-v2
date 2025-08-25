@@ -25,8 +25,8 @@ This document describes how image attachments are analyzed and appended to outgo
 ### Implementation
 
 - The endpoint resolves the image as a data URL if `upload_id` or `image_b64` is provided.
-- It calls `generate_with_together_vision()` with either OpenAI-compatible HTTP (when `LLM_BASE_URL` set) or a Together SDK fallback.
-- Default model: `meta-llama/Llama-Vision-Free` unless overridden by env or request.
+- It calls `generate_with_openrouter_vision()` over OpenAI-compatible HTTP using `LLM_BASE_URL`.
+- Default model: `meta-llama/llama-3.2-11b-vision-instruct:free` unless overridden by env or request.
 
 ## Frontend Integration
 
@@ -40,5 +40,5 @@ This document describes how image attachments are analyzed and appended to outgo
 ## Security & Config
 
 - JWT is required for `/vision/analyze`.
-- Set `LLM_KEY` for your provider and optionally `LLM_BASE_URL=https://api.together.xyz/v1` for OpenAI-compatible HTTP multimodal.
+- Set `LLM_KEY` and typically `LLM_BASE_URL=https://openrouter.ai/api/v1` (OpenAI-compatible HTTP, multimodal supported by model).
 - Model defaults are environment-driven. See `20_model_selection_and_routing.md`.

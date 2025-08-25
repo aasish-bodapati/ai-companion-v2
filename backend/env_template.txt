@@ -1,0 +1,64 @@
+# AI Companion V2 - Environment Configuration Template
+# Copy this file to .env and fill in your actual values
+
+# =============================================================================
+# LLM Configuration - DeepSeek R1 Free
+# =============================================================================
+# Get your API key from: https://platform.deepseek.com/
+LLM_KEY=your_deepseek_api_key_here
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_MODEL_DEFAULT=deepseek-chat
+LLM_MODEL_FAST=deepseek-chat
+LLM_MODEL_VISION=deepseek-vision
+LLM_MODEL_SUMMARY=deepseek-chat
+
+# =============================================================================
+# Database Configuration
+# =============================================================================
+POSTGRES_SERVER=localhost
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=test
+POSTGRES_DB=ai_companion
+
+# =============================================================================
+# JWT Settings
+# =============================================================================
+SECRET_KEY=your-secret-key-here-change-in-production
+ACCESS_TOKEN_EXPIRE_MINUTES=11520
+
+# =============================================================================
+# CORS Origins
+# =============================================================================
+BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:8000"]
+
+# =============================================================================
+# Memory System Configuration
+# =============================================================================
+MEMORY_ENABLED=true
+MEMORY_PROVIDER=faiss
+EMBEDDING_MODEL_NAME=all-MiniLM-L6-v2
+FAISS_DATA_DIR=data/faiss
+RETRIEVAL_TOP_K=12
+RETRIEVAL_RECENT_MESSAGES=5
+
+# =============================================================================
+# Feature Flags
+# =============================================================================
+MEMORY_DECAY_ENABLED=true
+PERSONALITY_REFLECTION_ENABLED=true
+GOAL_TRACKING_ENABLED=true
+AUTO_MEMORY_ENABLED=true
+ACTIONS_SUGGESTIONS_ENABLED=true
+DIRECT_EXECUTION_ENABLED=true
+
+# =============================================================================
+# Alternative Configuration - Local Llama (Ollama)
+# =============================================================================
+# Uncomment these lines and comment out the DeepSeek lines above to use local Llama
+# LLM_KEY=
+# LLM_BASE_URL=http://localhost:11434/v1
+# LLM_MODEL_DEFAULT=llama3.1:8b
+# LLM_MODEL_FAST=llama3.1:8b
+# LLM_MODEL_VISION=llama3.1:8b
+# LLM_MODEL_SUMMARY=llama3.1:8b
+

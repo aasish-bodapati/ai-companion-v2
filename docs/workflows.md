@@ -19,7 +19,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: .\\venv\\Scripts\\activate
 
 # Install dependencies
-pip install -r requirements-dev.txt
+pip install -r requirements.txt
 
 # Set up environment variables
 cp .env.example .env

@@ -1,12 +1,14 @@
 # Architecture Overview
 
+> Vision: This system is designed to replace a human personal assistant—available 24/7—with expert-level support across key areas of life, powered by a single shared memory and proactive coaching loops.
+
 ## System Architecture
 
 ```mermaid
 graph TD
     A[Frontend - Next.js] <--> B[Backend - FastAPI]
     B <--> C[(Database - PostgreSQL)]
-    B <--> D[Together AI]
+    B <--> D[OpenRouter]
     
     subgraph Frontend
     A --> A1[React Components]
@@ -36,12 +38,12 @@ graph TD
 - **Next.js 14**: React framework
 - **TypeScript**: Type-safe JavaScript
 - **Tailwind CSS**: Utility-first CSS framework
-- **SWR**: Data fetching
+- **React Query (TanStack)**: Data fetching and caching
 - **React Hook Form**: Form handling
 - **Axios**: HTTP client
 
 ### AI/ML
-- **Together AI**: LLM provider
+- **OpenRouter**: LLM provider (OpenAI-compatible API)
 - **Llama 3**: Primary language model
 - **Sentence Transformers**: For embeddings
 
@@ -52,3 +54,4 @@ graph TD
 3. Backend processes request and interacts with database/AI
 4. Response sent back to frontend
 5. UI updates based on response
+

@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from app.core.llm import generate_with_together_vision
+from app.core.llm import generate_with_openrouter_vision
 
 
 @pytest.mark.skipif(
@@ -11,7 +11,7 @@ from app.core.llm import generate_with_together_vision
 def test_llama_vision_live_call():
     """
     Optional live test. Requires:
-    - env LLM_KEY set (Together key)
+    - env LLM_KEY set (OpenRouter key)
     - env VISION_MODEL set to a vision-capable model name
     - optionally env LLM_BASE_URL for OpenAI-compatible providers
 
@@ -25,7 +25,7 @@ def test_llama_vision_live_call():
     img_url = (
         "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png"
     )
-    out = generate_with_together_vision(
+    out = generate_with_openrouter_vision(
         model=model,
         system_prompt="You are a vision assistant. Be concise.",
         prompt="Describe the image in one short sentence.",

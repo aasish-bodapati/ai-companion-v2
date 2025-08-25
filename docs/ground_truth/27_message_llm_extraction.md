@@ -38,7 +38,7 @@ Implemented in `backend/app/memory/service.py`:
 
 ## Extractor Contract
 - Helper: `MemoryService._extract_memory_candidates_with_llm(text)`
-- Model: `settings.LLM_MODEL_DEFAULT` (default: meta-llama/Llama-3.3-70B-Instruct-Turbo-Free)
+- Model: `settings.LLM_MODEL_DEFAULT` (default: `meta-llama/llama-3.3-70b-instruct` via OpenRouter)
 - System prompt enforces strict JSON output:
   - `{ "memories": ["...", "..."] }`
 - Post-processing:
@@ -73,7 +73,7 @@ Implemented in `backend/app/memory/service.py`:
 ## Testing Guidance
 - Stabilization tactics (as used in repo tests):
   - Lower `MEMORY_IMPORTANCE_MIN` to 0.0 within tests where storage is needed.
-  - Mock `generate_with_together` for classifier/extractor to avoid rate limits.
+  - Mock OpenRouter LLM calls (e.g., patch the HTTP client used in `app/core/llm.py` or stub `generate_with_openrouter`) to avoid rate limits.
   - Use query terms (e.g., "profile") to trigger profile gating paths when needed.
 
 ---

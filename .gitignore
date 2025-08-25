@@ -1,69 +1,83 @@
-# Dependencies
-node_modules/
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv312
+# Root .gitignore for ai-companion-v2
 
-# Environment variables
-.env
-.env.*
-!.env.example
-
-# Database files
-*.db
-*.sqlite3
-*.sqlite
-
-# Build
-.next/
-out/
-build/
-dist/
-*.egg-info/
-
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-logs/
-*.log
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*.swn
-
-# OS generated files
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
-
-# Local development
-.pytest_cache/
-.coverage
-htmlcov/
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
+*.pyo
+*.pyd
 *.so
-.Python
-build/
-dev-
+*.egg-info/
+.eggs/
+.python-version
+.venv*/
+backend/.venv*/
+.mypy_cache/
+.pytype/
+.pytest_cache/
+.coverage*
+htmlcov/
+.tox/
+.ruff_cache/
+*.log
 
-# Frontend
+# Env/config
+.env
+.env.*
+*.local
+*.backup
+
+# Node/Frontend
+node_modules/
 frontend/.next/
-frontend/out/
+frontend/.turbo/
+frontend/.vercel/
+frontend/coverage/
+frontend/test-results/
+frontend/playwright-report/
+frontend/.playwright-cache/
+
+# Playwright (root or frontend)
+playwright-report/
+.test-results/
+
+# Reports/coverage
+reports/
+coverage/
+coverage-*.json
+
+# Build artifacts
+build/
+dist/
+.next/
+*.lock
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Data caches (keep schema/migrations under VCS; ignore generated indexes/dbs)
+data/*.db
+data/**/*.index
+data/**/*.meta.json
+
+# SQLite DBs
+*.db
+*.db-*
+
+# Misc
+*.tmp
+*.swp
+*.swo
+*.orig
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Snapshots (keep tests' golden snapshots tracked; do not ignore those)
+# If you have any temporary snapshot updates, place them under .snapshots-local/
+.snapshots-local/

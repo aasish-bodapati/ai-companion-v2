@@ -11,7 +11,7 @@ The Weekly Digest provides a read-only summary of the user's recent activity and
 - Provides simple activity stats.
 - Does not persist by default (a materialize endpoint may be added later).
 
-Model selection follows project rules: Llama Turbo (meta-llama/Llama-3.3-70B-Instruct-Turbo-Free) via provider-agnostic `LLM_KEY` and `LLM_BASE_URL`. The summarization includes `user_id` and `conversation_id` in the system prompt per AI Integration Rules.
+Model selection follows project rules: default `meta-llama/llama-3.3-70b-instruct` via `LLM_KEY` and `LLM_BASE_URL` (OpenRouter). The summarization includes `user_id` and `conversation_id` in the system prompt per AI Integration Rules.
 
 ---
 
@@ -44,7 +44,7 @@ Model selection follows project rules: Llama Turbo (meta-llama/Llama-3.3-70B-Ins
     "reinforced": 0
   },
   "provenance": {
-    "model": "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+    "model": "meta-llama/llama-3.3-70b-instruct",
     "source": "weekly_digest",
     "user_id": "uuid"
   }
@@ -78,7 +78,7 @@ Security:
 ---
 
 ## Testing
-- Backend tests should mock LLM calls similarly to existing tests (see memories about Together mocking). Validate:
+- Backend tests should mock OpenRouter LLM calls (e.g., patch the HTTP client or stub `generate_with_openrouter`). Validate:
   - 200 OK, shape matches contract.
   - JWT required.
   - Date filtering works (messages/new_memories counted in window).

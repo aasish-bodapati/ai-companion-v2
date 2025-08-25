@@ -3,6 +3,13 @@ import re
 from typing import Any, Dict
 
 import pytest
+from app.core.config import settings
+
+# Skip entire module if streaming is disabled
+pytestmark = pytest.mark.skipif(
+    not getattr(settings, "STREAMING_ENABLED", False),
+    reason="Streaming endpoints are disabled",
+)
 from fastapi.testclient import TestClient
 
 

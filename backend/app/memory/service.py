@@ -9,17 +9,31 @@ import hashlib
 import json
 
 from app.core.config import settings
-from app.core.llm import generate_with_together
+from app.crud.user import user as user_crud
+from app.core.llm import generate_with_openrouter
 from app.crud.memory import memory
 from app.crud.onboarding import get_by_user_id
-from app.memory import faiss_store
+from app.memory.vector_store.factory import get_vector_store
 import app.memory.embeddings as embeddings
 from app.schemas.memory import MemorySearchResult
+from app.memory.service_mixins_lifecycle import LifecycleMixin
+from app.memory.service_mixins_retrieval import RetrievalMixin
+from app.memory.service_mixins_storage import StorageMixin
 
 logger = logging.getLogger(__name__)
 
+try:
+    from app.memory.emotional_memory import emotional_analyzer
+    from app.memory.contextual_retrieval import contextual_retriever
+    EMOTIONAL_ANALYSIS_ENABLED = True
+except ImportError as e:
+    logger.warning(f"Emotional analysis modules not available: {e}")
+    emotional_analyzer = None
+    contextual_retriever = None
+    EMOTIONAL_ANALYSIS_ENABLED = False
 
-class MemoryService:
+
+class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
     """Service for integrating FAISS memory search with database operations."""
 
     def __init__(self):
@@ -36,15 +50,19 @@ class MemoryService:
             "last": {},
         }
 
+    def enforce_lifecycle(
+        self,
+        db: Session,
+        *,
+        user_id: str,
+        consolidate: bool = True,
+    ) -> Dict[str, int]:
+        """Delegate to LifecycleMixin.enforce_lifecycle (extracted)."""
+        return super().enforce_lifecycle(db, user_id=user_id, consolidate=consolidate)
+
     def get_retrieval_metrics(self) -> Dict[str, Any]:
-        """Return a shallow copy of retrieval metrics for diagnostics."""
-        try:
-            return {
-                "total_requests": int(self._retrieval_metrics.get("total_requests", 0)),
-                "last": dict(self._retrieval_metrics.get("last", {})),
-            }
-        except Exception:
-            return {"total_requests": 0, "last": {}}
+        """Delegate to RetrievalMixin.get_retrieval_metrics (extracted)."""
+        return super().get_retrieval_metrics()
 
     def _normalize_consolidation_key(self, text: str) -> Optional[str]:
         """Extract and normalize a consolidation key from content.
@@ -91,12 +109,6 @@ class MemoryService:
             return out
         except Exception:
             return []
-            key_part = s.split(":", 1)[0].strip()
-            if 1 <= len(key_part) <= 64 and (" " not in key_part):
-                return key_part.lower()
-            return None
-        except Exception:
-            return None
 
     def _content_hash(self, text: str) -> str:
         """Return a stable content hash (sha256 of normalized text)."""
@@ -225,7 +237,7 @@ class MemoryService:
                 or getattr(settings, "LLM_MODEL_DEFAULT", "")
                 or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
             )
-            reply = generate_with_together(
+            reply = generate_with_openrouter(
                 model=model,
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": s}],
@@ -295,7 +307,7 @@ class MemoryService:
             user_prompt = (
                 "Message:\n" + s + "\n\nRespond with JSON only."
             )
-            resp = generate_with_together(
+            resp = generate_with_openrouter(
                 model=(getattr(settings, "LLM_MODEL_DEFAULT", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")),
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
@@ -370,7 +382,10 @@ class MemoryService:
             md = {}
             if node.memory_metadata:
                 try:
-                    md = _json.loads(node.memory_metadata)
+                    if isinstance(node.memory_metadata, dict):
+                        md = dict(node.memory_metadata)
+                    else:
+                        md = _json.loads(node.memory_metadata)
                 except Exception:
                     md = {}
             try:
@@ -404,9 +419,10 @@ class MemoryService:
         This is always included in conversation context.
         """
         try:
-            # Cache by user
+            # Use separate cache for profile memory to avoid collision with system prompt cache
+            profile_cache_key = f"profile_{user_id}"
             now = time.time()
-            c = self._sys_prompt_cache.get(user_id)
+            c = self._sys_prompt_cache.get(profile_cache_key)
             if c and (now - c.get("ts", 0)) < self._sys_prompt_ttl_sec:
                 return c.get("val")
 
@@ -416,7 +432,7 @@ class MemoryService:
                 from app.memory.profile import serialize_onboarding_profile
 
                 val = serialize_onboarding_profile(profile)
-                self._sys_prompt_cache[user_id] = {"ts": now, "val": val}
+                self._sys_prompt_cache[profile_cache_key] = {"ts": now, "val": val}
                 return val
 
         except Exception as e:
@@ -434,377 +450,17 @@ class MemoryService:
         min_relevance: float = 0.5,
         debug: bool = False,
     ) -> List[MemorySearchResult]:
-        """
-        Search for relevant memories using FAISS and return enriched results.
+        """Delegate to RetrievalMixin.search_memories (extracted)."""
+        return super().search_memories(
+            db=db,
+            query=query,
+            user_id=user_id,
+            content_types=content_types,
+            limit=limit,
+            min_relevance=min_relevance,
+            debug=debug,
+        )
 
-        Args:
-            db: Database session
-            query: Search query text
-            user_id: User ID to search within
-            content_types: Optional list of content types to filter by
-            limit: Maximum number of results to return
-            min_relevance: Minimum relevance score threshold
-
-        Returns:
-            List of memory search results with content and metadata
-        """
-        if not settings.MEMORY_ENABLED:
-            logger.info("Memory system disabled, returning empty results")
-            return []
-
-        try:
-            # Get query embedding
-            query_embedding = embeddings.embed_texts([query])
-            if query_embedding is None:
-                logger.warning("Failed to generate query embedding")
-                return []
-
-            # Search FAISS for similar vectors
-            faiss_results = faiss_store.search(
-                user_id,
-                query_embedding[0],
-                limit * 2,  # Get more results to filter by relevance
-            )
-
-            # Fallback: if FAISS is unavailable or empty, do a simple in-DB embedding search
-            if not faiss_results:
-                try:
-                    # Pull a reasonable slice of user memories and rank by dot-product with query
-                    cand_nodes = memory.get_user_memories(
-                        db, user_id=user_id, content_type=None, limit=200
-                    )
-                    texts = [n.content or "" for n in cand_nodes]
-                    if texts:
-                        vecs = embeddings.embed_texts(texts)
-                        if vecs is not None and len(vecs) == len(texts):
-                            import numpy as _np
-
-                            qv = _np.array(query_embedding[0], dtype="float32")
-                            scores: list[tuple[str, float]] = []
-                            for n, v in zip(cand_nodes, vecs):
-                                try:
-                                    sv = float(_np.dot(qv, _np.array(v, dtype="float32")))
-                                except Exception:
-                                    sv = 0.0
-                                scores.append((n.faiss_id, sv))
-                            # Sort by score desc and keep top 2x limit similar to FAISS branch
-                            scores.sort(key=lambda t: t[1], reverse=True)
-                            faiss_results = scores[: max(1, limit * 2)]
-                except Exception:
-                    # If fallback fails, proceed with empty results
-                    faiss_results = []
-
-            if not faiss_results:
-                logger.info("No retrieval results (FAISS and fallback empty)")
-                return []
-
-            # Retrieve memory nodes from database (collect more for reranking)
-            memory_results = []
-            seen_norm_contents: Set[str] = set()
-            for faiss_id, score in faiss_results:
-                memory_node = memory.get_memory_by_faiss_id(db, faiss_id)
-                # Ensure comparison on same type to avoid filtering out valid results
-                if not memory_node or str(memory_node.user_id) != str(user_id):
-                    continue
-
-                # Apply content type filter if specified
-                if content_types and memory_node.content_type not in content_types:
-                    continue
-
-                # Filter out suppressed memories and collect evolution metadata
-                try:
-                    import json as _json
-
-                    md = (
-                        _json.loads(memory_node.memory_metadata)
-                        if memory_node.memory_metadata
-                        else {}
-                    )
-                except Exception:
-                    md = {}
-                suppressed_until = md.get("suppressed_until")
-                if suppressed_until:
-                    try:
-                        sup_dt = datetime.fromisoformat(suppressed_until)
-                        now = datetime.now(timezone.utc)
-                        if sup_dt.tzinfo is None:
-                            sup_dt = sup_dt.replace(tzinfo=timezone.utc)
-                        if sup_dt > now:
-                            # Skip suppressed for now
-                            continue
-                    except Exception:
-                        # If parse fails, treat as not suppressed
-                        pass
-
-                # Allow core memories to bypass minimum similarity threshold
-                is_core = False
-                try:
-                    is_core = bool(md.get("core"))
-                except Exception:
-                    is_core = False
-                if score < min_relevance and not is_core:
-                    continue
-
-                # Evolution-aware fused scoring
-                boosted_score = score
-                _dbg: Dict[str, Any] = {"raw_score": float(score)} if debug else {}
-
-                # Importance boost (bounded)
-                try:
-                    importance = float(md.get("importance", 1.0))
-                except Exception:
-                    importance = 1.0
-                importance_boost = max(0.5, min(2.0, importance))
-                boosted_score *= importance_boost
-                if debug:
-                    _dbg["importance"] = float(importance)
-                    _dbg["importance_boost"] = float(importance_boost)
-
-                # Core boost
-                core_boost = 1.0
-                try:
-                    if bool(md.get("core")):
-                        core_boost = 1.3
-                except Exception:
-                    core_boost = 1.0
-                boosted_score *= core_boost
-                if debug:
-                    _dbg["core"] = bool(core_boost > 1.0)
-                    _dbg["core_boost"] = float(core_boost)
-
-                # Reinforcement boost (capped)
-                reinforced_count = 0
-                try:
-                    reinforced_count = int(md.get("reinforced_count", 0))
-                except Exception:
-                    reinforced_count = 0
-                _reinforce_factor = 1.0 + min(0.25 * reinforced_count, 1.0)
-                boosted_score *= _reinforce_factor
-                if debug:
-                    _dbg["reinforced_count"] = int(reinforced_count)
-                    _dbg["reinforce_factor"] = float(_reinforce_factor)
-
-                # Rank boost from feedback learning (optional, capped)
-                try:
-                    rb = float(md.get("rank_boost", 0.0))
-                except Exception:
-                    rb = 0.0
-                if rb > 0:
-                    boosted_score *= 1.0 + min(rb, 1.0)
-                if debug:
-                    _dbg["rank_boost"] = float(rb)
-
-                # Recency decay (new tunable) based on content type and last seen/timestamp
-                try:
-                    if getattr(settings, "RELEVANCE_RECENCY_DECAY_ENABLED", True):
-                        last_seen_iso = md.get("last_seen_at")
-                        if last_seen_iso:
-                            last_seen = datetime.fromisoformat(last_seen_iso)
-                            if last_seen.tzinfo is None:
-                                last_seen = last_seen.replace(tzinfo=timezone.utc)
-                        else:
-                            last_seen = memory_node.timestamp
-                            if last_seen.tzinfo is None:
-                                last_seen = last_seen.replace(tzinfo=timezone.utc)
-                        now = datetime.now(timezone.utc)
-                        age_days = max(0.0, (now - last_seen).total_seconds() / 86400.0)
-
-                        ct = (memory_node.content_type or "").lower()
-                        if ct == "preference":
-                            hl = int(getattr(settings, "RELEVANCE_HALFLIFE_PREFERENCE_DAYS", 365))
-                        elif ct == "profile":
-                            hl = int(getattr(settings, "RELEVANCE_HALFLIFE_PROFILE_DAYS", 365))
-                        elif ct == "message":
-                            hl = int(getattr(settings, "RELEVANCE_HALFLIFE_MESSAGE_DAYS", 7))
-                        elif ct == "conversation":
-                            hl = int(getattr(settings, "RELEVANCE_HALFLIFE_CONVERSATION_DAYS", 14))
-                        else:
-                            hl = int(getattr(settings, "RELEVANCE_HALFLIFE_FACT_DAYS", 14))
-                        hl = max(1, min(3650, hl))
-
-                        decay_factor = 0.5 ** (age_days / float(hl))
-                        decay_factor = max(0.05, min(1.0, decay_factor))
-                        boosted_score *= decay_factor
-                        if debug:
-                            _dbg["recency_days"] = float(age_days)
-                            _dbg["halflife_days"] = int(hl)
-                            _dbg["decay_factor"] = float(decay_factor)
-                except Exception:
-                    pass
-
-                # Type/source prior (small multiplicative bump)
-                try:
-                    ct = (memory_node.content_type or "").lower()
-                    prior = 0.0
-                    if ct == "preference":
-                        prior = float(getattr(settings, "RELEVANCE_PRIOR_PREFERENCE", 0.05))
-                    elif ct == "profile":
-                        prior = float(getattr(settings, "RELEVANCE_PRIOR_PROFILE", 0.03))
-                    elif ct == "message":
-                        prior = float(getattr(settings, "RELEVANCE_PRIOR_MESSAGE", 0.02))
-                    elif ct == "conversation":
-                        prior = float(getattr(settings, "RELEVANCE_PRIOR_CONVERSATION", 0.01))
-                    else:
-                        prior = float(getattr(settings, "RELEVANCE_PRIOR_FACT", 0.02))
-                    prior = max(0.0, min(0.5, prior))
-                    boosted_score *= (1.0 + prior)
-                    if debug:
-                        _dbg["type_prior"] = float(prior)
-                except Exception:
-                    pass
-
-                # Overlap bonus between query terms and memory content (capped additive)
-                try:
-                    q_terms = set(t for t in (query or "").lower().split() if t and len(t) >= 3)
-                    m_terms = set(t for t in (memory_node.content or "").lower().split() if t and len(t) >= 3)
-                    matches = len(q_terms & m_terms)
-                    per = float(getattr(settings, "RELEVANCE_OVERLAP_BONUS_PER_MATCH", 0.02))
-                    cap = float(getattr(settings, "RELEVANCE_OVERLAP_BONUS_MAX", 0.08))
-                    bonus = min(cap, per * float(matches))
-                    boosted_score *= (1.0 + max(0.0, bonus))
-                    if debug:
-                        _dbg["overlap_matches"] = int(matches)
-                        _dbg["overlap_bonus"] = float(bonus)
-                except Exception:
-                    pass
-
-                # Strict dedupe by normalized content
-                norm_content = (memory_node.content or "").strip().lower()
-                if norm_content in seen_norm_contents or not norm_content:
-                    continue
-                seen_norm_contents.add(norm_content)
-
-                # Attach debug info into metadata if enabled
-                _md_obj: Dict[str, Any] = {}
-                if debug:
-                    try:
-                        if memory_node.memory_metadata:
-                            import json as _json
-                            _md_obj = _json.loads(memory_node.memory_metadata)
-                        else:
-                            _md_obj = {}
-                    except Exception:
-                        _md_obj = {}
-                    _md_obj.setdefault("_retrieval_debug", {}).update({
-                        **_dbg,
-                        "boosted_score": float(boosted_score),
-                    })
-                memory_results.append(
-                    MemorySearchResult(
-                        faiss_id=memory_node.faiss_id,
-                        content=memory_node.content,
-                        content_type=memory_node.content_type,
-                        relevance_score=boosted_score,
-                        timestamp=memory_node.timestamp,
-                        memory_metadata=_md_obj if debug else memory_node.memory_metadata,
-                    )
-                )
-
-            # MMR reranking to diversify results
-            try:
-                mmr_lambda = float(getattr(settings, "RETRIEVAL_MMR_LAMBDA", 0.7))
-                mmr_lambda = max(0.0, min(1.0, mmr_lambda))
-                # Prepare embeddings for candidate contents
-                texts = [m.content or "" for m in memory_results]
-                vecs = embeddings.embed_texts(texts) if texts else None
-                # Fallback to relevance sort if embeddings not available
-                if not vecs or len(vecs) != len(texts):
-                    memory_results.sort(key=lambda x: x.relevance_score, reverse=True)
-                    memory_results = memory_results[:limit]
-                else:
-                    import numpy as _np
-
-                    qv = _np.array(query_embedding[0], dtype="float32")
-                    cands = list(memory_results)
-                    cand_vecs = [_np.array(v, dtype="float32") for v in vecs]
-                    selected: list[int] = []
-                    remaining: list[int] = list(range(len(cands)))
-
-                    def _cos(a: _np.ndarray, b: _np.ndarray) -> float:
-                        try:
-                            denom = float(_np.linalg.norm(a) * _np.linalg.norm(b))
-                            if denom <= 0:
-                                return 0.0
-                            return float(_np.dot(a, b) / denom)
-                        except Exception:
-                            return 0.0
-
-                    # Precompute sim to query
-                    sim_q = [_cos(cv, qv) for cv in cand_vecs]
-
-                    while remaining and len(selected) < max(1, limit):
-                        best_idx = None
-                        best_score = -1e9
-                        for idx in remaining:
-                            # Diversity penalty: max similarity to already selected
-                            if not selected:
-                                div = 0.0
-                            else:
-                                div = max(_cos(cand_vecs[idx], cand_vecs[j]) for j in selected)
-                            score = mmr_lambda * sim_q[idx] - (1.0 - mmr_lambda) * div
-                            if score > best_score:
-                                best_score = score
-                                best_idx = idx
-                        if best_idx is None:
-                            break
-                        selected.append(best_idx)
-                        remaining.remove(best_idx)
-
-                    memory_results = [cands[i] for i in selected]
-
-                # Update retrieval metrics
-                try:
-                    self._retrieval_metrics["total_requests"] = int(
-                        self._retrieval_metrics.get("total_requests", 0)
-                    ) + 1
-                    self._retrieval_metrics["last"] = {
-                        "query_prefix": (query or "")[:50],
-                        "mmr_lambda": mmr_lambda,
-                        "top_k_limit": int(limit),
-                        "min_relevance": float(min_relevance),
-                        "selected_count": len(memory_results),
-                    }
-                except Exception:
-                    pass
-
-                logger.info(
-                    "Found %d relevant memories (post-MMR) for query: %s...",
-                    len(memory_results),
-                    query[:50],
-                )
-                return memory_results
-            except Exception:
-                # Fallback: simple relevance sort
-                memory_results.sort(key=lambda x: x.relevance_score, reverse=True)
-                out = memory_results[:limit]
-                try:
-                    self._retrieval_metrics["total_requests"] = int(
-                        self._retrieval_metrics.get("total_requests", 0)
-                    ) + 1
-                    self._retrieval_metrics["last"] = {
-                        "query_prefix": (query or "")[:50],
-                        "mmr_lambda": None,
-                        "top_k_limit": int(limit),
-                        "min_relevance": float(min_relevance),
-                        "selected_count": len(out),
-                    }
-                except Exception:
-                    pass
-                return out
-
-        except Exception as e:
-            logger.error(f"Error searching memories: {e}")
-            try:
-                self._retrieval_metrics["total_requests"] = int(
-                    self._retrieval_metrics.get("total_requests", 0)
-                ) + 1
-                self._retrieval_metrics["last"] = {
-                    "query_prefix": (query or "")[:50],
-                    "error": str(e),
-                }
-            except Exception:
-                pass
-            return []
 
     def get_conversation_context(
         self,
@@ -812,14 +468,14 @@ class MemoryService:
         user_id: str,
         conversation_id: str,
         recent_messages: int = 5,
-        memory_limit: int = 3,
+        memory_limit: int = 5,
         self_referential: bool = False,
+        current_message: str = "",
     ) -> str:
         """
         Get conversation context by combining recent messages with relevant memories.
-        Bases personalization on the user's profile; when the user asks about
-        themselves (self_referential=True), avoid verbatim disclosure of the full
-        serialized onboarding profile and provide only high-level highlights.
+        Enhanced for human-like conversations with better memory integration and
+        contextual awareness. Prioritizes memories that create natural conversation flow.
         """
         t0 = time.perf_counter()
         context_parts: List[str] = []
@@ -839,97 +495,178 @@ class MemoryService:
             else:
                 # Include full serialized profile as reference for personalization
                 context_parts.append(profile_memory)
-                context_parts.append("")  # Empty line for separation
 
-        # Get recent conversation memories
-        conversation_memories = memory.get_conversation_memories(
-            db, conversation_id, limit=recent_messages
+        # Fetch conversation-specific memories (recent messages from this conversation)
+        from app import crud
+        conversation_memories = crud.message.get_by_conversation(
+            db, conversation_id=conversation_id, skip=0, limit=recent_messages
         )
-        # Deduplicate recent conversation memories by normalized content,
-        # preserving order (most recent first)
+
         if conversation_memories:
-            seen_conv: Set[str] = set()
-            dedup_conv: List[str] = []
-            for mem in conversation_memories:
-                norm = (mem.content or "").strip().lower()
-                if not norm or norm in seen_conv:
-                    continue
-                seen_conv.add(norm)
-                dedup_conv.append(f"- {mem.content}")
-            if dedup_conv:
-                context_parts.append("Recent conversation context:")
-                context_parts.extend(dedup_conv)
-                context_parts.append("")  # Empty line for separation
+            context_parts.append("Recent conversation:")
+            for msg in reversed(conversation_memories[-recent_messages:]):
+                role_prefix = "You" if msg.role == "assistant" else "User"
+                content = (msg.content or "")[:200] + ("..." if len(msg.content or "") > 200 else "")
+                context_parts.append(f"- {role_prefix}: {content}")
 
-        # Get relevant general memories (facts, etc.) - exclude onboarding as it's already included
-        general_memories = self.search_memories(
-            db=db,
-            query="user preferences background information facts",
-            user_id=user_id,
-            content_types=["fact"],  # Exclude onboarding as it's handled separately
-            limit=settings.RETRIEVAL_TOP_K,
-            min_relevance=settings.MEMORY_MIN_RELEVANCE,
-        )
-        # Sort by relevance desc, then timestamp desc; and deduplicate by normalized content
-        if general_memories:
-            sorted_general = sorted(
-                general_memories,
-                key=lambda m: (m.relevance_score or 0.0, m.timestamp or 0),
-                reverse=True,
+        # Enhanced contextual memory retrieval using new system
+        if memory_limit > 0 and current_message and EMOTIONAL_ANALYSIS_ENABLED:
+            try:
+                # Analyze emotional context of current message
+                emotional_context = emotional_analyzer.analyze_emotional_context(
+                    current_message,
+                    [{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else []
+                )
+
+                # Use contextual retrieval for human-like memory selection
+                general_memories = contextual_retriever.get_contextual_memories(
+                    memory_service=self,
+                    db=db,
+                    user_id=user_id,
+                    current_message=current_message,
+                    conversation_history=[{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else [],
+                    emotional_context=emotional_context,
+                    limit=memory_limit
+                )
+            except Exception as e:
+                logger.warning(f"Enhanced memory retrieval failed, falling back to basic: {e}")
+                # Fallback to basic memory search
+                query_parts = []
+                if conversation_memories:
+                    for msg in conversation_memories[-3:]:
+                        if msg.content:
+                            query_parts.append(msg.content)
+
+                query = " ".join(query_parts) if query_parts else "general context"
+                general_memories = self.search_memories(
+                    db=db,
+                    query=query,
+                    user_id=user_id,
+                    content_types=None,
+                    limit=memory_limit,
+                    min_relevance=0.25,
+                )
+        elif memory_limit > 0:
+            # Fallback to original method if no current message
+            query_parts = []
+            if conversation_memories:
+                for msg in conversation_memories[-3:]:
+                    if msg.content:
+                        query_parts.append(msg.content)
+
+            query = " ".join(query_parts) if query_parts else "general context"
+            general_memories = self.search_memories(
+                db=db,
+                query=query,
+                user_id=user_id,
+                content_types=None,
+                limit=memory_limit,
+                min_relevance=0.25,
             )
+        else:
+            general_memories = []
+
+        # Process memories with enhanced contextual presentation
+        if general_memories:
+            dedup_general = []
             seen_gen: Set[str] = set()
-            dedup_general: List[str] = []
-            for mem in sorted_general:
+
+            # Group memories by category for better organization
+            categorized_memories = {}
+
+            for mem in general_memories:
                 norm = (mem.content or "").strip().lower()
                 if not norm or norm in seen_gen:
                     continue
                 seen_gen.add(norm)
-                # Attach a brief rationale to help the model prioritize
-                rationale = ""
-                try:
-                    import json as _json
 
-                    md = _json.loads(mem.memory_metadata) if mem.memory_metadata else {}
-                    rc = int(md.get("reinforced_count", 0))
-                    # Age in days from timestamp
-                    age_days = None
-                    if mem.timestamp:
-                        try:
-                            ts = mem.timestamp
-                            if ts.tzinfo is None:
-                                ts = ts.replace(tzinfo=timezone.utc)
-                            age_days = int(max(0.0, (datetime.now(timezone.utc) - ts).total_seconds() / 86400.0))
-                        except Exception:
-                            age_days = None
-                    parts = []
-                    if rc > 0:
-                        parts.append(f"reinforced x{rc}")
-                    if age_days is not None:
-                        parts.append(f"~{age_days}d old")
-                    if parts:
-                        rationale = " (" + ", ".join(parts) + ")"
+                # Extract categories from metadata
+                categories = []
+                try:
+                    if mem.memory_metadata:
+                        import json as _json
+                        md = _json.loads(mem.memory_metadata)
+                        categories = md.get("categories", [])
                 except Exception:
-                    rationale = ""
-                dedup_general.append(f"- {mem.content}{rationale}")
+                    pass
+
+                # Group by primary category
+                primary_category = categories[0] if categories else "general"
+                if primary_category not in categorized_memories:
+                    categorized_memories[primary_category] = []
+
+                categorized_memories[primary_category].append(mem)
+
                 if len(dedup_general) >= memory_limit:
                     break
-            if dedup_general:
-                context_parts.append("Relevant background information:")
-                context_parts.extend(dedup_general)
+
+            if categorized_memories:
+                context_parts.append("EXACT MEMORIES - ONLY reference these (do not invent others):")
+
+                # Present memories by category for better context
+                for category, memories in categorized_memories.items():
+                    if memories:
+                        # Human-readable category names
+                        category_display = {
+                            "preference": "Preferences & Likes",
+                            "transportation": "Transportation & Travel",
+                            "hobbies": "Hobbies & Interests",
+                            "daily_patterns": "Daily Patterns & Schedule",
+                            "schedule": "Schedule & Routine",
+                            "health": "Health & Wellness",
+                            "fitness": "Fitness & Exercise",
+                            "nutrition": "Nutrition & Food",
+                            "food_preferences": "Food Preferences",
+                            "work": "Work & Career",
+                            "career": "Career & Professional"
+                        }.get(category, category.title())
+
+                        context_parts.append(f"\n{category_display}:")
+                        for mem in memories:
+                            context_parts.append(f"- {mem.content}")
+
+                context_parts.append("")
+                context_parts.append("IMPORTANT: Only use the memories listed above. Do not reference any other conversations, memories, or facts that are not explicitly listed.")
+
+                # Add temporal and emotional intelligence insights
+                temporal_insights = self._get_temporal_intelligence_insights(categorized_memories)
+                if temporal_insights:
+                    context_parts.append("")
+                    context_parts.append("Temporal Intelligence:")
+                    context_parts.extend(temporal_insights)
+
+                emotional_insights = self._get_emotional_intelligence_insights(categorized_memories)
+                if emotional_insights:
+                    context_parts.append("")
+                    context_parts.append("Emotional Intelligence:")
+                    context_parts.extend(emotional_insights)
+
+                # Add proactive suggestions based on current context
+                proactive_suggestions = self._generate_proactive_suggestions(
+                    categorized_memories,
+                    current_message,
+                    user_id,
+                    db
+                )
+                if proactive_suggestions:
+                    context_parts.append("")
+                    context_parts.append("Proactive Suggestions:")
+                    context_parts.extend(proactive_suggestions)
+
         t1 = time.perf_counter()
         logger.info(
-            "Context assembly timings: total=%.2fms (conv_mem=%d, gen_mem_in=%d, gen_mem_out=%d)",
+            "Enhanced context assembly timings: total=%.2fms (conv_mem=%d, gen_mem_in=%d, gen_mem_out=%d)",
             (t1 - t0) * 1000.0,
             len(conversation_memories) if conversation_memories else 0,
             len(general_memories) if general_memories else 0,
-            len(dedup_general) if general_memories else 0,
+            len(dedup_general) if 'dedup_general' in locals() else 0,
         )
 
         return "\n".join(context_parts) if context_parts else "No specific context available."
 
     def build_personalized_system_prompt(self, db: Session, user_id: str) -> str:
         """
-        Build a personalized system prompt based on the user's onboarding profile.
+        Build a personalized system prompt that creates human-like conversations.
         """
         # Cache by user
         now = time.time()
@@ -939,53 +676,119 @@ class MemoryService:
 
         profile_memory = self.get_user_profile_memory(db, user_id)
 
-        base_prompt = (
-            "You are a helpful, attentive AI companion. Be context-aware and personalized "
-            "based on the user's preferences and background information."
-        )
+        # Get user's name from profile if available
+        user_name = "there"
+        if profile_memory:
+            # Extract name from profile
+            import re
+            name_match = re.search(r"name[^:]*:\s*([^\n,]+)", profile_memory, re.IGNORECASE)
+            if name_match:
+                user_name = name_match.group(1).strip()
+
+        base_prompt = f"""
+You are an expert AI companion who knows {user_name} well. You're warm, intelligent, and genuinely care about their wellbeing and goals. You remember everything about them and weave that knowledge naturally into conversations.
+
+CRITICAL RULES - NEVER VIOLATE THESE:
+- ONLY reference information that is explicitly provided in the Context below
+- NEVER make up conversations, memories, or facts that aren't in the Context
+- NEVER say "I recall" or "I remember" unless the information is actually in the Context
+- If you don't have specific information about something, say so honestly
+- Do not invent past conversations or interactions
+
+Personality & Voice:
+- Speak like a knowledgeable friend who truly cares
+- Be warm but not overly familiar
+- Show genuine interest and enthusiasm about their progress
+- Reference their preferences, goals, and past conversations naturally
+- Use their name occasionally but not excessively
+- Demonstrate empathy by acknowledging their feelings and challenges
+- Celebrate achievements with genuine excitement
+- Offer encouragement during difficult times
+
+Conversational Style:
+- Connect new topics to what you know about them
+- Ask thoughtful follow-up questions that show you're listening
+- Celebrate their wins and offer support during challenges
+- Make relevant suggestions based on their interests and goals
+- Remember context from earlier in the conversation
+- Use emotional intelligence to read between the lines
+- Adapt your tone to match their energy and mood
+- Be proactive in offering help when you sense they need it
+
+Memory Integration:
+- Seamlessly reference their preferences, habits, and goals from the Context
+- Connect current topics to their past experiences (only if in Context)
+- Show progression awareness based on actual stored information
+- Reference their schedule, preferences, and relationships naturally (only if in Context)
+- Use memories to provide personalized encouragement and advice
+- If asked about something not in Context, say "I don't have that information saved yet"
+
+Temporal Intelligence:
+- Pay attention to time references in their memories (morning, weekend, seasonal)
+- Consider timing when making suggestions (e.g., morning activities for early risers)
+- Use temporal patterns to provide more relevant advice
+- Acknowledge seasonal preferences and patterns
+
+Emotional Intelligence:
+- Read emotional context from their messages and memories
+- Adapt your tone based on their emotional state
+- Offer support when they seem stressed or overwhelmed
+- Match their energy level (excited, calm, etc.)
+- Use emotional insights to provide more empathetic responses
+
+Proactive Assistance:
+- Use the proactive suggestions provided in Context
+- Anticipate needs based on their patterns and preferences
+- Offer relevant suggestions before they ask
+- Connect different aspects of their life naturally
+- Help them see connections between their goals and current situation
+"""
 
         if profile_memory:
-            # Extract key preferences for the system prompt
-            lines = profile_memory.split(" | ")
-            preferences = []
+            highlights = self._extract_profile_highlights(profile_memory, max_bullets=4)
+            if highlights:
+                base_prompt += "\n\nKey things about " + user_name + ":\n" + "\n".join(highlights)
+            else:
+                # Fallback: use raw profile text (truncated)
+                truncated = profile_memory[:400] + "..." if len(profile_memory) > 400 else profile_memory
+                base_prompt += f"\n\nBackground: {truncated}"
+        else:
+            base_prompt += f"\n\nNote: Learn about {user_name}'s preferences, goals, and background to provide personalized assistance."
 
-            for line in lines:
-                if "ResponseStyle:" in line:
-                    style = line.split(": ")[1]
-                    if style == "Concise":
-                        preferences.append("Keep responses brief and to the point")
-                    elif style == "Detailed":
-                        preferences.append("Provide comprehensive, detailed responses")
-                    elif style == "Balanced":
-                        preferences.append("Balance between concise and detailed responses")
+        # Response personalization based on user energy and mood
+        base_prompt += f"""
 
-                elif "Tone:" in line:
-                    tone = line.split(": ")[1]
-                    preferences.append(f"Maintain a {tone.lower()} tone")
+Response Personalization:
+- Adapt your energy level to match the user's current state
+- If they seem excited or motivated, match their enthusiasm
+- If they seem tired or overwhelmed, be more gentle and supportive
+- Use conversation flow analysis to determine appropriate tone
+- Reference their emotional journey and celebrate progress
+- Provide encouragement that feels genuine and specific to their situation
 
-                elif "AIPersona:" in line:
-                    persona = line.split(": ")[1]
-                    preferences.append(f"Act as: {persona}")
+Natural Conversation Flow:
+- Use smooth topic transitions that feel organic
+- Reference earlier parts of the conversation naturally
+- Build on their responses with thoughtful follow-ups
+- Show you're actively listening by connecting ideas
+- Ask questions that demonstrate understanding of their context
+"""
 
-                elif "AvoidTopics:" in line:
-                    topics = line.split(": ")[1]
-                    preferences.append(f"Never discuss: {topics}")
+        # Response guidelines for human-like interaction
+        base_prompt += f"""
 
-            if preferences:
-                base_prompt += "\n\nYour specific instructions:\n" + "\n".join(
-                    f"- {p}" for p in preferences
-                )
+Response Guidelines:
+- Always acknowledge what {user_name} shared and respond thoughtfully
+- If unclear, ask one specific clarifying question
+- Keep responses conversational (2-4 sentences unless more detail requested)
+- Show you remember and care about their journey
+- Make connections to their interests, goals, or past conversations
+- Be proactive with relevant suggestions when appropriate
+- Never give empty or generic responses
+"""
 
-        # Global response guarantees to prevent empty or missing replies
-        base_prompt += (
-            "\n\nResponse Guarantees:\n"
-            "- Always produce a concise answer to the user's latest message.\n"
-            "- If the request is unclear or underspecified, ask a single brief clarifying question instead of staying silent.\n"
-            "- Never return an empty response.\n"
-            "- If you must refuse, give a short, actionable explanation and suggest a next step.\n"
-            "- Default to brevity (about 1–3 sentences) unless the user asks for more detail.\n"
-        )
-
+        # Cache the result
+        self._sys_prompt_cache[user_id] = {"ts": now, "val": base_prompt}
         return base_prompt
 
     def store_memory(
@@ -996,433 +799,480 @@ class MemoryService:
         user_id: str,
         conversation_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        conversation_history: Optional[List[Dict]] = None,
     ) -> Optional[str]:
+        """Delegate to StorageMixin implementation to keep concerns modular."""
+        return super().store_memory(
+            db=db,
+            content=content,
+            content_type=content_type,
+            user_id=user_id,
+            conversation_id=conversation_id,
+            metadata=metadata,
+            conversation_history=conversation_history,
+        )
+
+    def _enhance_memory_metadata(
+        self,
+        content: str,
+        content_type: str,
+        user_id: str,
+        db: Session,
+        emotional_context: Dict[str, Any],
+        conversation_history: Optional[List[Dict]] = None,
+    ) -> Dict[str, Any]:
         """
-        Store new memory in both FAISS and database.
-
-        Args:
-            db: Database session
-            content: Text content to store
-            content_type: Type of content (message, onboarding, fact, etc.)
-            user_id: User ID
-            conversation_id: Optional conversation ID
-            metadata: Optional metadata
-
-        Returns:
-            FAISS ID if successful, None otherwise
+        Enhance memory metadata with additional context, categories, and related memories.
         """
-        if not settings.MEMORY_ENABLED:
-            logger.info("Memory system disabled, skipping memory storage")
-            return None
-        # Guard: skip trivial messages
-        #   - very short or common greetings/acks
-        #   - low-entropy content
-        norm = (content or "").strip()
-        if not norm:
-            return None
-        norm_lower = norm.lower()
-        trivial_set = {"hi", "hello", "hey", "ok", "k", "👍", "👋"}
-        if len(norm) < 3 or norm_lower in trivial_set:
-            logger.info(
-                "Skipping trivial memory content: '%s'",
-                norm if len(norm) <= 20 else (norm[:20] + "…"),
-            )
-            return None
-        # Simple low-entropy check: single token repeated or same char
-        if len(set(norm_lower)) <= 2:
-            logger.info("Skipping low-entropy memory content")
-            return None
-
-        # Smart gating: only save when explicitly remembered or important enough
-        # - Always allow non-"message" content types (onboarding, facts, uploads)
-        # - For messages: allow if metadata.remember is True; otherwise importance >= threshold
-        # - By default, do not store assistant messages unless explicitly remembered
-        # - Enforce allowlist of content types for auto-capture and apply per-minute/day quotas
+        enhanced_md = {}
         try:
-            role = None
-            remember_explicit = False
-            if metadata:
-                role = metadata.get("role")
-                remember_explicit = bool(metadata.get("remember") is True)
-            if content_type == "message":
-                # Skip assistant messages unless explicitly remembered
-                if (role and role != "user") and not remember_explicit:
-                    return None
-                # Optional: simple PII guard (block or redact) before any LLM calls
+            # Add emotional context
+            enhanced_md.update(emotional_analyzer.enhance_memory_with_emotion(content, emotional_context))
+
+            # Add categories and tags
+            categories = self._extract_memory_categories(content, content_type)
+            if categories:
+                enhanced_md["categories"] = categories
+                enhanced_md["primary_category"] = categories[0] if categories else None
+
+            # Add temporal context
+            temporal_context = self._extract_temporal_context(content, conversation_history)
+            if temporal_context:
+                enhanced_md["temporal_context"] = temporal_context
+
+            # Add emotional patterns
+            emotional_patterns = self._analyze_emotional_patterns(content, emotional_context, conversation_history)
+            if emotional_patterns:
+                enhanced_md["emotional_patterns"] = emotional_patterns
+
+            # Add related memories
+            related_memories = self._find_related_memories(db, user_id, content, categories)
+            if related_memories:
+                enhanced_md["related_memories"] = related_memories
+                enhanced_md["memory_relationships"] = self._build_memory_relationships(related_memories)
+
+            # Add usage contexts
+            usage_contexts = self._determine_usage_contexts(content, content_type, categories)
+            if usage_contexts:
+                enhanced_md["usage_contexts"] = usage_contexts
+
+            # Add goal relevance
+            goal_relevance = self._assess_goal_relevance(content, categories, user_id, db)
+            if goal_relevance:
+                enhanced_md["goal_relevance"] = goal_relevance
+
+            # Add LLM classification if enabled
+            if getattr(settings, "MEMORY_LLM_CLASSIFIER_ENABLED", True):
                 try:
-                    import re as _re
-                    pii_email = _re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-                    pii_phone = _re.compile(r"(?:\+\d{1,3}[ -]?)?(?:\d[ -]?){7,15}")
-                    block_pii = bool(getattr(settings, "MEMORY_BLOCK_PII", True))
-                    if block_pii and (pii_email.search(norm) or pii_phone.search(norm)) and not remember_explicit:
-                        # Do not auto-capture suspected PII unless explicitly requested
-                        return None
-                    redact_pii = bool(getattr(settings, "MEMORY_REDACT_PII", False))
-                    if redact_pii and not remember_explicit:
-                        norm = pii_email.sub("[redacted-email]", norm)
-                        norm = pii_phone.sub("[redacted-phone]", norm)
-                except Exception:
-                    pass
-                # Estimate importance and apply threshold if not explicit
-                if not remember_explicit:
-                    importance_min = float(getattr(settings, "MEMORY_IMPORTANCE_MIN", 0.7))
-                    est_importance = self._estimate_importance(norm)
-                    # Optional LLM classification (importance + sensitivity)
-                    cls = self._classify_with_llm(norm)
-                    final_importance = est_importance
-                    importance_source = "heuristic"
-                    sensitivity_block_min = float(
-                        getattr(
-                            settings,
-                            "MEMORY_SENSITIVITY_BLOCK_MIN",
-                            0.85,
-                        )
-                    )
+                    cls = self._classify_with_llm(content)
                     if cls:
-                        try:
-                            imp_llm = (
-                                float(cls.get("importance"))
-                                if cls.get("importance") is not None
-                                else None
-                            )
-                        except Exception:
-                            imp_llm = None
-                        try:
-                            sens = (
-                                float(cls.get("sensitivity"))
-                                if cls.get("sensitivity") is not None
-                                else None
-                            )
-                        except Exception:
-                            sens = None
-                        if sens is not None and sens >= sensitivity_block_min:
-                            # Block storage of sensitive content
-                            return None
-                        if imp_llm is not None:
-                            final_importance = max(est_importance, max(0.0, min(1.0, imp_llm)))
-                            importance_source = "hybrid-llm"
-                        # Persist classifier outputs
-                        metadata = {
-                            **(metadata or {}),
-                            "importance_heuristic": est_importance,
-                            **(
-                                {"importance_llm": imp_llm}
-                                if cls.get("importance") is not None
-                                else {}
-                            ),
-                            **({"sensitivity": sens} if cls.get("sensitivity") is not None else {}),
-                            **(
-                                {"importance_reason": cls.get("reason")}
-                                if isinstance(cls.get("reason"), str)
-                                else {}
-                            ),
-                        }
-                    # LLM extraction: attempt BEFORE final threshold check to capture short but valuable facts
-                    extracted = self._extract_memory_candidates_with_llm(norm)
-                    if extracted:
-                        # Combine into compact bullets to store as a single memory text
-                        combined = "\n".join(f"- {e}" for e in extracted)
-                        # Mark provenance and prefer extracted content
-                        metadata = {**(metadata or {}), "provenance": "llm_extracted", "source": "message"}
-                        content = combined
-                        # Apply an importance floor when extraction succeeded to avoid dropping short self-facts
-                        extraction_floor = float(getattr(settings, "MEMORY_EXTRACTION_IMPORTANCE_FLOOR", 0.75))
-                        final_importance = max(final_importance, extraction_floor)
-
-                    # Persist final importance and provenance
-                    metadata = {
-                        **(metadata or {}),
-                        "importance": final_importance,
-                        "importance_source": importance_source,
-                        "auto_captured": True,
-                    }
-                    if final_importance < importance_min:
-                        return None
-                # Allowlist of content types when auto-capturing from chat messages
-                allowed_types = set(getattr(settings, "MEMORY_ALLOWED_TYPES", [
-                    "preference",
-                    "fact",
-                    "profile",
-                    "message",
-                    "onboarding",
-                    "conversation",
-                ]))
-                if content_type not in allowed_types and not remember_explicit:
-                    return None
-
-                # Quotas: cap number of auto-captured memories per-minute and per-day
-                try:
-                    import json as _json
-                    from datetime import datetime as _dt
-                    from datetime import timezone as _tz
-
-                    per_min = int(getattr(settings, "MEMORY_MAX_AUTOSAVED_PER_MINUTE", 2))
-                    per_day = int(getattr(settings, "MEMORY_MAX_AUTOSAVED_PER_DAY", 40))
-                    if per_min > 0 or per_day > 0:
-                        recent = memory.get_user_memories(db, user_id=user_id, content_type=None, limit=200)
-                        now = _dt.now(_tz.utc)
-                        mins_ago = now - timedelta(minutes=1)
-                        day_ago = now - timedelta(days=1)
-                        c_min = 0
-                        c_day = 0
-                        for it in recent:
-                            try:
-                                ts = getattr(it, "timestamp", None)
-                                if not ts:
-                                    continue
-                                md = _json.loads(it.memory_metadata) if it.memory_metadata else {}
-                                if not bool(md.get("auto_captured")):
-                                    continue
-                                if ts >= day_ago:
-                                    c_day += 1
-                                    if ts >= mins_ago:
-                                        c_min += 1
-                            except Exception:
-                                continue
-                        if per_min > 0 and c_min >= per_min and not remember_explicit:
-                            return None
-                        if per_day > 0 and c_day >= per_day and not remember_explicit:
-                            return None
+                        enhanced_md["llm_importance"] = float(cls.get("importance", 0.5))
+                        enhanced_md["llm_sensitivity"] = float(cls.get("sensitivity", 0.5))
+                        enhanced_md["llm_reason"] = cls.get("reason")
                 except Exception:
                     pass
-            else:
-                # For non-message content, optionally set a sane default importance if not provided
-                if metadata is None or "importance" not in metadata:
-                    metadata = {**(metadata or {}), "importance": 0.9}
-        except Exception:
-            # Best-effort gating; on failure, proceed conservatively (skip)
-            return None
-
-        try:
-            # Consolidation + dedupe: upsert by normalized fact key if present,
-            # and avoid re-embedding if content is unchanged.
-            consolidation_key: Optional[str] = self._normalize_consolidation_key(content)
-            # Persist detected key and content hash in metadata
-            content_hash = self._content_hash(content)
-            metadata = {
-                **(metadata or {}),
-                **({"consolidation_key": consolidation_key} if consolidation_key else {}),
-                "content_hash": content_hash,
-            }
-
-            # If we have a consolidation key, update existing memory instead of creating a new node
-            if consolidation_key:
-                existing = memory.get_by_consolidation_key(
-                    db,
-                    user_id=user_id,
-                    key=consolidation_key,
-                )
-                if existing:
-                    # If content hash unchanged, update metadata only and skip FAISS work
-                    try:
-                        import json as _json
-
-                        old_md: Dict[str, Any] = (
-                            _json.loads(existing.memory_metadata)
-                            if existing.memory_metadata
-                            else {}
-                        )
-                    except Exception:
-                        old_md = {}
-                    if old_md.get("content_hash") == content_hash:
-                        memory.update_content_and_metadata(
-                            db,
-                            node=existing,
-                            content=existing.content,
-                            metadata={**old_md, **metadata},
-                        )
-                        logger.info(
-                            "Consolidation no-op for key '%s' (unchanged content)",
-                            consolidation_key,
-                        )
-                        return existing.faiss_id
-
-                    # Content changed: update DB and FAISS vector
-                    memory.update_content_and_metadata(
-                        db,
-                        node=existing,
-                        content=content,
-                        metadata=metadata,
-                    )
-                    try:
-                        embedding = embeddings.embed_texts([content])
-                        if embedding is not None:
-                            updated = faiss_store.update_vector(
-                                user_id,
-                                existing.faiss_id,
-                                embedding[0],
-                            )
-                            if not updated:
-                                logger.warning(
-                                    "FAISS update_vector failed; index missing or faiss unavailable"
-                                )
-                        else:
-                            logger.warning(
-                                "Embedding failed during consolidation; FAISS vector not updated"
-                            )
-                    except Exception as e:
-                        logger.warning(
-                            "Error updating FAISS vector for consolidated memory: %s", e
-                        )
-                    logger.info(
-                        "Consolidated memory for key '%s' (updated node & vector)",
-                        consolidation_key,
-                    )
-                    return existing.faiss_id
-
-            # Generate embedding
-            embedding = embeddings.embed_texts([content])
-            if embedding is None:
-                logger.warning("Failed to generate embedding for memory storage")
-                return None
-
-            # Store in FAISS (non-fatal if FAISS is unavailable)
-            faiss_id = str(uuid.uuid4())  # Generate a unique ID
-            try:
-                faiss_store.add(user_id, [faiss_id], [embedding[0]])
-            except Exception as _fe:
-                logger.warning(
-                    "FAISS add failed; proceeding with DB write only for %s: %s",
-                    faiss_id,
-                    _fe,
-                )
-
-            # Store in database
-            memory_node = memory.create_memory_node(
-                db=db,
-                faiss_id=faiss_id,
-                content=content,
-                content_type=content_type,
-                user_id=user_id,
-                conversation_id=conversation_id,
-                metadata=metadata,
-            )
-
-            logger.info(f"Successfully stored memory: {content_type} for user {user_id}")
-
-            # Optional: auto-promote to Core based on metadata thresholds
-            try:
-                import json as _json
-
-                md: Dict[str, Any] = {}
-                if memory_node.memory_metadata:
-                    try:
-                        md = _json.loads(memory_node.memory_metadata)
-                    except Exception:
-                        md = {}
-                # Only promote if not already core
-                if not bool(md.get("core")) and self.is_auto_promote_eligible(md):
-                    md["core"] = True
-                    try:
-                        now_iso = datetime.now(timezone.utc).isoformat()
-                    except Exception:
-                        now_iso = None
-                    if now_iso:
-                        md.setdefault("auto_promoted_at", now_iso)
-                    memory.update_content_and_metadata(
-                        db,
-                        node=memory_node,
-                        content=memory_node.content,
-                        metadata=md,
-                    )
-                    logger.info(
-                        "Auto-promoted memory %s to Core for user %s",
-                        memory_node.faiss_id,
-                        user_id,
-                    )
-            except Exception as _ap_err:
-                logger.warning("Auto-promotion check failed: %s", _ap_err)
-
-            # Opportunistic lifecycle enforcement: soft-forget on write
-            try:
-                if getattr(settings, "MEMORY_SOFT_FORGET_ON_WRITE", True):
-                    # Attempt to suppress stale, low-importance items beyond per-user cap
-                    suppressed = self._maybe_soft_forget(db, user_id)
-                    if suppressed:
-                        logger.info(
-                            "Soft-forgot %s items for user %s after write",
-                            suppressed,
-                            user_id,
-                        )
-            except Exception as _sf_err:
-                logger.warning("Soft-forget on write failed: %s", _sf_err)
-
-            # Opportunistic forgetting/cleanup (soft) throttled per user (no more than once/hour)
-            try:
-                now_ts = time.time()
-                gate_ts = self._cleanup_gate.get(user_id, 0.0)
-                if (now_ts - gate_ts) > 3600.0:
-                    self._cleanup_gate[user_id] = now_ts
-                    self._maybe_soft_forget(db, user_id)
-            except Exception as _ce:
-                logger.debug(f"Cleanup skipped: {_ce}")
-            return faiss_id
 
         except Exception as e:
-            logger.error(f"Error storing memory: {e}")
-            return None
+            logger.warning(f"Memory enhancement failed: {e}")
+        return enhanced_md
+
+    def _extract_temporal_context(self, content: str, conversation_history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        """
+        Extract temporal context from memory content and conversation history.
+        """
+        temporal_context = {
+            "time_references": [],
+            "frequency": "one_time",
+            "seasonal": False,
+            "time_sensitive": False
+        }
+        
+        try:
+            content_lower = content.lower()
+            
+            # Extract time references
+            time_patterns = {
+                "morning": ["morning", "am", "early", "dawn", "sunrise"],
+                "afternoon": ["afternoon", "pm", "midday", "noon"],
+                "evening": ["evening", "night", "pm", "late", "sunset"],
+                "weekend": ["weekend", "saturday", "sunday", "fri", "sat", "sun"],
+                "weekday": ["weekday", "monday", "tuesday", "wednesday", "thursday", "friday"],
+                "seasonal": ["summer", "winter", "spring", "fall", "autumn", "christmas", "holiday"],
+                "frequency": ["always", "never", "sometimes", "often", "rarely", "daily", "weekly", "monthly"]
+            }
+            
+            for time_category, patterns in time_patterns.items():
+                for pattern in patterns:
+                    if pattern in content_lower:
+                        temporal_context["time_references"].append(time_category)
+                        break
+            
+            # Determine frequency
+            if any(word in content_lower for word in ["always", "daily", "every day", "routine"]):
+                temporal_context["frequency"] = "continuous"
+            elif any(word in content_lower for word in ["sometimes", "often", "weekly", "monthly"]):
+                temporal_context["frequency"] = "recurring"
+            elif any(word in content_lower for word in ["never", "once", "one time"]):
+                temporal_context["frequency"] = "one_time"
+            
+            # Check if seasonal
+            if any(word in content_lower for word in ["summer", "winter", "spring", "fall", "christmas", "holiday"]):
+                temporal_context["seasonal"] = True
+            
+            # Check if time sensitive
+            if any(word in content_lower for word in ["deadline", "due", "urgent", "asap", "now", "today"]):
+                temporal_context["time_sensitive"] = True
+            
+            # Add conversation timing context
+            if conversation_history:
+                temporal_context["conversation_timing"] = self._analyze_conversation_timing(conversation_history)
+            
+        except Exception as e:
+            logger.warning(f"Temporal context extraction failed: {e}")
+        
+        return temporal_context
+
+    def _analyze_conversation_timing(self, conversation_history: List[Dict]) -> Dict[str, Any]:
+        """
+        Analyze timing patterns in conversation history.
+        """
+        timing_analysis = {
+            "time_of_day": "unknown",
+            "day_of_week": "unknown",
+            "urgency_level": "normal"
+        }
+        
+        try:
+            # This would ideally use actual timestamps from conversation history
+            # For now, we'll analyze content for timing indicators
+            all_content = " ".join([msg.get("content", "") for msg in conversation_history])
+            content_lower = all_content.lower()
+            
+            # Time of day indicators
+            if any(word in content_lower for word in ["morning", "early", "am"]):
+                timing_analysis["time_of_day"] = "morning"
+            elif any(word in content_lower for word in ["afternoon", "noon", "midday"]):
+                timing_analysis["time_of_day"] = "afternoon"
+            elif any(word in content_lower for word in ["evening", "night", "late", "pm"]):
+                timing_analysis["time_of_day"] = "evening"
+            
+            # Day of week indicators
+            if any(word in content_lower for word in ["monday", "tuesday", "wednesday", "thursday", "friday"]):
+                timing_analysis["day_of_week"] = "weekday"
+            elif any(word in content_lower for word in ["saturday", "sunday", "weekend"]):
+                timing_analysis["day_of_week"] = "weekend"
+            
+            # Urgency indicators
+            if any(word in content_lower for word in ["urgent", "asap", "now", "immediately", "deadline"]):
+                timing_analysis["urgency_level"] = "high"
+            elif any(word in content_lower for word in ["soon", "later", "when you can"]):
+                timing_analysis["urgency_level"] = "medium"
+            
+        except Exception as e:
+            logger.warning(f"Conversation timing analysis failed: {e}")
+        
+        return timing_analysis
+
+    def _analyze_emotional_patterns(self, content: str, emotional_context: Dict[str, Any], conversation_history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+        """
+        Analyze emotional patterns and trends in memory content.
+        """
+        emotional_patterns = {
+            "emotional_state": "neutral",
+            "energy_level": "medium",
+            "mood_trend": "stable",
+            "emotional_triggers": [],
+            "coping_patterns": []
+        }
+        
+        try:
+            # Analyze current emotional state
+            current_emotion = emotional_context.get("emotional_state", "neutral")
+            emotional_patterns["emotional_state"] = current_emotion
+            
+            # Determine energy level
+            content_lower = content.lower()
+            high_energy_words = ["excited", "energetic", "motivated", "passionate", "enthusiastic"]
+            low_energy_words = ["tired", "exhausted", "drained", "overwhelmed", "stressed"]
+            
+            if any(word in content_lower for word in high_energy_words):
+                emotional_patterns["energy_level"] = "high"
+            elif any(word in content_lower for word in low_energy_words):
+                emotional_patterns["energy_level"] = "low"
+            
+            # Identify emotional triggers
+            trigger_patterns = {
+                "stress": ["stress", "overwhelmed", "anxious", "worried", "pressure"],
+                "excitement": ["excited", "thrilled", "can't wait", "looking forward"],
+                "frustration": ["frustrated", "annoyed", "upset", "disappointed"],
+                "joy": ["happy", "joy", "pleased", "delighted", "grateful"],
+                "motivation": ["motivated", "inspired", "determined", "focused"]
+            }
+            
+            for trigger, patterns in trigger_patterns.items():
+                if any(pattern in content_lower for pattern in patterns):
+                    emotional_patterns["emotional_triggers"].append(trigger)
+            
+            # Analyze conversation history for mood trends
+            if conversation_history:
+                mood_trend = self._analyze_mood_trend(conversation_history)
+                emotional_patterns["mood_trend"] = mood_trend
+            
+        except Exception as e:
+            logger.warning(f"Emotional pattern analysis failed: {e}")
+        
+        return emotional_patterns
+
+    def _analyze_mood_trend(self, conversation_history: List[Dict]) -> str:
+        """
+        Analyze mood trends across conversation history.
+        """
+        try:
+            # Simple mood trend analysis based on emotional keywords
+            positive_words = ["happy", "excited", "great", "awesome", "love", "enjoy", "pleased"]
+            negative_words = ["sad", "angry", "frustrated", "disappointed", "worried", "stressed"]
+            neutral_words = ["okay", "fine", "alright", "normal", "usual"]
+            
+            positive_count = 0
+            negative_count = 0
+            neutral_count = 0
+            
+            for msg in conversation_history:
+                content = msg.get("content", "").lower()
+                positive_count += sum(1 for word in positive_words if word in content)
+                negative_count += sum(1 for word in negative_words if word in content)
+                neutral_count += sum(1 for word in neutral_words if word in content)
+            
+            if positive_count > negative_count and positive_count > neutral_count:
+                return "improving"
+            elif negative_count > positive_count and negative_count > neutral_count:
+                return "declining"
+            else:
+                return "stable"
+                
+        except Exception:
+            return "stable"
+
+    def _assess_goal_relevance(self, content: str, categories: List[str], user_id: str, db: Session) -> Dict[str, Any]:
+        """
+        Assess how relevant a memory is to the user's current goals.
+        """
+        goal_relevance = {
+            "fitness_goals": 0.0,
+            "health_goals": 0.0,
+            "career_goals": 0.0,
+            "personal_goals": 0.0,
+            "overall_relevance": 0.0
+        }
+        
+        try:
+            content_lower = content.lower()
+            
+            # Fitness goal relevance
+            fitness_keywords = ["exercise", "workout", "gym", "run", "active", "fit", "healthy"]
+            fitness_score = sum(0.2 for word in fitness_keywords if word in content_lower)
+            goal_relevance["fitness_goals"] = min(1.0, fitness_score)
+            
+            # Health goal relevance
+            health_keywords = ["nutrition", "diet", "sleep", "wellness", "mental health", "stress"]
+            health_score = sum(0.2 for word in health_keywords if word in content_lower)
+            goal_relevance["health_goals"] = min(1.0, health_score)
+            
+            # Career goal relevance
+            career_keywords = ["work", "project", "career", "job", "professional", "skill", "learning"]
+            career_score = sum(0.2 for word in career_keywords if word in content_lower)
+            goal_relevance["career_goals"] = min(1.0, career_score)
+            
+            # Personal goal relevance
+            personal_keywords = ["hobby", "interest", "passion", "relationship", "family", "travel"]
+            personal_score = sum(0.2 for word in personal_keywords if word in content_lower)
+            goal_relevance["personal_goals"] = min(1.0, personal_score)
+            
+            # Overall relevance (average of all goal types)
+            goal_relevance["overall_relevance"] = sum([
+                goal_relevance["fitness_goals"],
+                goal_relevance["health_goals"], 
+                goal_relevance["career_goals"],
+                goal_relevance["personal_goals"]
+            ]) / 4.0
+            
+        except Exception as e:
+            logger.warning(f"Goal relevance assessment failed: {e}")
+        
+        return goal_relevance
+
+    def _extract_memory_categories(self, content: str, content_type: str) -> List[str]:
+        """
+        Extract relevant categories for a memory based on content and type.
+        """
+        categories = []
+        content_lower = content.lower()
+        
+        # Basic category mapping based on content
+        if any(word in content_lower for word in ["like", "love", "enjoy", "prefer"]):
+            categories.append("preference")
+        
+        if any(word in content_lower for word in ["boat", "car", "travel", "vacation"]):
+            categories.append("transportation")
+            categories.append("hobbies")
+        
+        if any(word in content_lower for word in ["morning", "schedule", "routine", "5-8"]):
+            categories.append("daily_patterns")
+            categories.append("schedule")
+        
+        if any(word in content_lower for word in ["fitness", "exercise", "workout", "active"]):
+            categories.append("health")
+            categories.append("fitness")
+        
+        if any(word in content_lower for word in ["food", "eat", "nutrition", "diet"]):
+            categories.append("nutrition")
+            categories.append("food_preferences")
+        
+        if any(word in content_lower for word in ["work", "project", "career", "job"]):
+            categories.append("work")
+            categories.append("career")
+        
+        # Add content type as category
+        if content_type:
+            categories.append(content_type)
+        
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_categories = []
+        for cat in categories:
+            if cat not in seen:
+                seen.add(cat)
+                unique_categories.append(cat)
+        
+        return unique_categories
+
+    def _find_related_memories(self, db: Session, user_id: str, content: str, categories: List[str]) -> List[Dict[str, Any]]:
+        """
+        Find memories that are related to the current content based on categories and content similarity.
+        """
+        related = []
+        try:
+            if not categories:
+                return related
+            
+            # Search for memories with similar categories
+            for category in categories[:3]:  # Limit to top 3 categories
+                memories = memory.get_user_memories_by_category(db, user_id=user_id, category=category, limit=5)
+                for mem in memories:
+                    if mem.content != content:  # Don't include self
+                        related.append({
+                            "faiss_id": mem.faiss_id,
+                            "content": mem.content,
+                            "category": category,
+                            "relevance": self._calculate_memory_relevance(content, mem.content)
+                        })
+            
+            # Sort by relevance and remove duplicates
+            related.sort(key=lambda x: x["relevance"], reverse=True)
+            seen_contents = set()
+            unique_related = []
+            for rel in related:
+                if rel["content"] not in seen_contents:
+                    seen_contents.add(rel["content"])
+                    unique_related.append(rel)
+                    if len(unique_related) >= 5:  # Limit to top 5 related memories
+                        break
+            
+            return unique_related
+            
+        except Exception as e:
+            logger.warning(f"Failed to find related memories: {e}")
+            return []
+
+    def _calculate_memory_relevance(self, content1: str, content2: str) -> float:
+        """
+        Calculate relevance score between two memory contents.
+        """
+        try:
+            # Simple word overlap scoring
+            words1 = set(content1.lower().split())
+            words2 = set(content2.lower().split())
+            
+            if not words1 or not words2:
+                return 0.0
+            
+            intersection = len(words1 & words2)
+            union = len(words1 | words2)
+            
+            if union == 0:
+                return 0.0
+            
+            return intersection / union
+            
+        except Exception:
+            return 0.0
+
+    def _build_memory_relationships(self, related_memories: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Build relationship structure between related memories.
+        """
+        relationships = {
+            "count": len(related_memories),
+            "categories": {},
+            "strength": "weak"
+        }
+        
+        try:
+            if not related_memories:
+                return relationships
+            
+            # Count categories
+            for rel in related_memories:
+                category = rel.get("category", "unknown")
+                if category not in relationships["categories"]:
+                    relationships["categories"][category] = 0
+                relationships["categories"][category] += 1
+            
+            # Determine relationship strength
+            if len(related_memories) >= 3:
+                relationships["strength"] = "strong"
+            elif len(related_memories) >= 1:
+                relationships["strength"] = "moderate"
+            
+            return relationships
+            
+        except Exception:
+            return relationships
+
+    def _determine_usage_contexts(self, content: str, content_type: str, categories: List[str]) -> List[str]:
+        """
+        Determine in what contexts this memory would be most useful.
+        """
+        contexts = []
+        
+        try:
+            # Add content type contexts
+            if content_type == "preference":
+                contexts.extend(["conversation", "planning", "recommendations"])
+            elif content_type == "fact":
+                contexts.extend(["conversation", "planning", "problem_solving"])
+            elif content_type == "profile":
+                contexts.extend(["personalization", "conversation", "planning"])
+            
+            # Add category-specific contexts
+            if "transportation" in categories:
+                contexts.extend(["travel_planning", "weekend_activities", "hobby_discussions"])
+            if "health" in categories or "fitness" in categories:
+                contexts.extend(["health_goals", "motivation", "progress_tracking"])
+            if "schedule" in categories:
+                contexts.extend(["planning", "routine_optimization", "productivity"])
+            if "food_preferences" in categories:
+                contexts.extend(["meal_planning", "restaurant_recommendations", "social_events"])
+            
+            # Remove duplicates
+            return list(set(contexts))
+            
+        except Exception:
+            return ["conversation"]  # Default fallback
 
     def _maybe_soft_forget(self, db: Session, user_id: str) -> int:
-        """Soft-forget stale, low-importance, non-core memories by long suppression.
-        Conditions:
-        - total memories > MEMORY_MAX_MEMORIES (default 500)
-        - item is older than MEMORY_FORGET_AGE_DAYS (default 90)
-        - not core, importance < 0.8, reinforced_count == 0
-        """
-        try:
-            import json as _json
-
-            max_n = int(getattr(settings, "MEMORY_MAX_MEMORIES", 500))
-            forget_age_days = int(getattr(settings, "MEMORY_FORGET_AGE_DAYS", 90))
-            if max_n <= 0:
-                return 0
-            items = memory.get_user_memories(
-                db,
-                user_id=user_id,
-                content_type=None,
-                limit=max_n * 2,
-            )
-            if not items or len(items) <= max_n:
-                return 0
-            now = datetime.now(timezone.utc)
-            stale_cutoff = now - timedelta(days=max(7, forget_age_days))
-            suppressed = 0
-            for n in items:
-                if getattr(n, "timestamp", None) and n.timestamp < stale_cutoff:
-                    try:
-                        md = _json.loads(n.memory_metadata) if n.memory_metadata else {}
-                    except Exception:
-                        md = {}
-                    if md.get("core"):
-                        continue
-                    try:
-                        imp = float(md.get("importance", 1.0))
-                    except Exception:
-                        imp = 1.0
-                    if imp >= 0.8:
-                        continue
-                    try:
-                        rc = int(md.get("reinforced_count", 0))
-                    except Exception:
-                        rc = 0
-                    if rc > 0:
-                        continue
-                    # Long suppression = soft forget (1 year)
-                    md["suppressed_until"] = (now + timedelta(days=365)).isoformat()
-                    memory.update_content_and_metadata(db, node=n, content=n.content, metadata=md)
-                    suppressed += 1
-                    if len(items) - suppressed <= max_n:
-                        break
-            if suppressed:
-                logger.info(
-                    "Soft-forgot %d stale memories for user %s",
-                    suppressed,
-                    user_id,
-                )
-            return suppressed
-        except Exception as e:
-            logger.debug(f"Soft forget failed: {e}")
-            return 0
+        """Delegate to LifecycleMixin._maybe_soft_forget (extracted)."""
+        return super()._maybe_soft_forget(db, user_id)
 
     def consolidate_user_memories(
         self,
@@ -1431,54 +1281,8 @@ class MemoryService:
         user_id: str,
         limit: int = 2000,
     ) -> Dict[str, int]:
-        """
-        Consolidate user memories by consolidation_key, keeping the most recent
-        and suppressing older duplicates.
-
-        Returns a dict of counts: {"keys": n_keys, "suppressed": n_suppressed}
-        """
-        import json as _json
-
-        keys: Dict[str, Any] = {}
-        suppressed = 0
-        try:
-            items = memory.get_user_memories(db, user_id=user_id, content_type=None, limit=limit)
-            # Build map of key -> latest node
-            for n in items:
-                try:
-                    md = _json.loads(n.memory_metadata) if n.memory_metadata else {}
-                except Exception:
-                    md = {}
-                ck = md.get("consolidation_key")
-                if not ck:
-                    continue
-                prev = keys.get(ck)
-                if not prev or (
-                    getattr(n, "timestamp", None)
-                    and getattr(prev, "timestamp", None)
-                    and n.timestamp > prev.timestamp
-                ):
-                    keys[ck] = n
-            # Suppress older duplicates
-            now = datetime.now(timezone.utc)
-            for n in items:
-                try:
-                    md = _json.loads(n.memory_metadata) if n.memory_metadata else {}
-                except Exception:
-                    md = {}
-                ck = md.get("consolidation_key")
-                if not ck:
-                    continue
-                latest = keys.get(ck)
-                if latest and latest.faiss_id != n.faiss_id:
-                    # soft suppress dup for 1 year
-                    md["suppressed_until"] = (now + timedelta(days=365)).isoformat()
-                    memory.update_content_and_metadata(db, node=n, content=n.content, metadata=md)
-                    suppressed += 1
-            return {"keys": len(keys), "suppressed": suppressed}
-        except Exception as e:
-            logger.debug(f"Consolidation failed for user {user_id}: {e}")
-            return {"keys": len(keys), "suppressed": suppressed}
+        """Delegate to LifecycleMixin.consolidate_user_memories (extracted)."""
+        return super().consolidate_user_memories(db, user_id=user_id, limit=limit)
 
     def mark_memories_seen(self, db: Session, *, user_id: str, faiss_ids: List[str]) -> None:
         """Mark memories as seen now; increment seen_count and occasionally reinforce."""
@@ -1492,10 +1296,14 @@ class MemoryService:
                 node = memory.get_memory_by_faiss_id(db, fid)
                 if not node or node.user_id != user_id:
                     continue
+                # Parse metadata whether it's already a dict or a JSON string
                 md = {}
                 if node.memory_metadata:
                     try:
-                        md = _json.loads(node.memory_metadata)
+                        if isinstance(node.memory_metadata, dict):
+                            md = dict(node.memory_metadata)
+                        else:
+                            md = _json.loads(node.memory_metadata)
                     except Exception:
                         md = {}
                 seen = int(md.get("seen_count", 0)) + 1
@@ -1507,6 +1315,7 @@ class MemoryService:
                     md["reinforced_count"] = cur + 1
                 memory.update_content_and_metadata(db, node=node, content=node.content, metadata=md)
             except Exception:
+                # best-effort; skip failures
                 continue
 
     def suppress_memory_by_faiss_id(
@@ -1524,10 +1333,14 @@ class MemoryService:
                 return False
             import json as _json
 
+            # Safe-load metadata that may already be a dict
             md = {}
             if node.memory_metadata:
                 try:
-                    md = _json.loads(node.memory_metadata)
+                    if isinstance(node.memory_metadata, dict):
+                        md = dict(node.memory_metadata)
+                    else:
+                        md = _json.loads(node.memory_metadata)
                 except Exception:
                     md = {}
             until = datetime.now(timezone.utc) + timedelta(days=max(1, ttl_days))
@@ -1556,7 +1369,10 @@ class MemoryService:
             md = {}
             if node.memory_metadata:
                 try:
-                    md = _json.loads(node.memory_metadata)
+                    if isinstance(node.memory_metadata, dict):
+                        md = dict(node.memory_metadata)
+                    else:
+                        md = _json.loads(node.memory_metadata)
                 except Exception:
                     md = {}
             current = int(md.get("reinforced_count", 0))
@@ -1573,33 +1389,179 @@ class MemoryService:
             logger.warning(f"Failed to reinforce memory {faiss_id}: {e}")
             return False
 
-    def enforce_lifecycle(
-        self,
-        db: Session,
-        *,
-        user_id: str,
-        consolidate: bool = True,
-    ) -> Dict[str, int]:
-        """Enforce memory lifecycle controls for a user.
-
-        - Soft-forget stale, low-importance, non-core items beyond cap
-        - Optionally consolidate duplicates by consolidation_key
-
-        Returns counts: {"suppressed": n_suppressed, "consolidated": n_consolidated}
+    def _get_temporal_intelligence_insights(self, categorized_memories: Dict[str, List]) -> List[str]:
         """
-        suppressed = 0
-        consolidated = 0
+        Generate insights about temporal intelligence based on memory content.
+        """
+        insights = []
+        
         try:
-            suppressed = self._maybe_soft_forget(db, user_id)
+            # Look for patterns in time references
+            time_references = set()
+            for mem in categorized_memories.values():
+                for item in mem:
+                    if item.memory_metadata:
+                        import json as _json
+                        try:
+                            if isinstance(item.memory_metadata, dict):
+                                md = dict(item.memory_metadata)
+                            else:
+                                md = _json.loads(item.memory_metadata)
+                        except Exception:
+                            md = {}
+                        if "time_references" in md:
+                            tr = md["time_references"]
+                            if isinstance(tr, list):
+                                for t in tr:
+                                    time_references.add(str(t))
+            for time_category in ["morning", "afternoon", "evening", "weekend", "weekday", "seasonal"]:
+                if time_category in time_references:
+                    insights.append(f"- You have a strong memory for {time_category} activities")
+            
+            # Check for seasonal trends
+            if "summer" in time_references and "winter" in time_references:
+                insights.append("- You have memories spanning both summer and winter")
+            elif "summer" in time_references:
+                insights.append("- You have memories predominantly from the summer season")
+            elif "winter" in time_references:
+                insights.append("- You have memories predominantly from the winter season")
+            
+            # Check for frequency patterns
+            if "continuous" in time_references and "recurring" in time_references:
+                insights.append("- You have memories that span both continuous and recurring patterns")
+            elif "continuous" in time_references:
+                insights.append("- You have memories that span continuous patterns")
+            elif "recurring" in time_references:
+                insights.append("- You have memories that span recurring patterns")
+            
+            # Check for time sensitivity
+            if "time_sensitive" in time_references:
+                insights.append("- You have memories that are time-sensitive")
+            
+            # Check for conversational timing
+            if "conversation_timing" in time_references:
+                insights.append("- You have memories that are timed to the conversation")
+            
         except Exception as e:
-            logger.warning("Lifecycle: soft-forget failed for user %s: %s", user_id, e)
-        if consolidate:
-            try:
-                res = self.consolidate_user_memories(db, user_id=user_id, limit=2000)
-                consolidated = int(res.get("suppressed", 0)) if isinstance(res, dict) else 0
-            except Exception as e:
-                logger.warning("Lifecycle: consolidate failed for user %s: %s", user_id, e)
-        return {"suppressed": suppressed, "consolidated": consolidated}
+            logger.warning(f"Failed to generate temporal intelligence insights: {e}")
+        
+        return insights
+
+    def _get_emotional_intelligence_insights(self, categorized_memories: Dict[str, List]) -> List[str]:
+        """
+        Generate insights about emotional intelligence based on memory content.
+        """
+        insights = []
+        
+        try:
+            # Look for emotional states and trends
+            emotional_states = set()
+            emotional_trends = set()
+            emotional_triggers = set()
+            coping_patterns = set()
+            for mem in categorized_memories.values():
+                for item in mem:
+                    if item.memory_metadata:
+                        import json as _json
+                        try:
+                            if isinstance(item.memory_metadata, dict):
+                                md = dict(item.memory_metadata)
+                            else:
+                                md = _json.loads(item.memory_metadata)
+                        except Exception:
+                            md = {}
+                        # Extract emotional states
+                        if "emotional_states" in md and isinstance(md["emotional_states"], list):
+                            emotional_states.update(set(str(s) for s in md["emotional_states"]))
+                        if "mood_trend" in md:
+                            emotional_trends.add(md["mood_trend"])
+                        if "emotional_triggers" in md:
+                            emotional_triggers.update(md["emotional_triggers"])
+                        if "coping_patterns" in md:
+                            coping_patterns.update(md["coping_patterns"])
+            
+            # Generate insights based on emotional states and trends
+            for state in emotional_states:
+                insights.append(f"- You have a strong memory for {state} emotions")
+            for trend in emotional_trends:
+                insights.append(f"- You have a strong memory for {trend} mood trends")
+            for trigger in emotional_triggers:
+                insights.append(f"- You have a strong memory for {trigger} emotional triggers")
+            for pattern in coping_patterns:
+                insights.append(f"- You have a strong memory for {pattern} coping patterns")
+            
+            # Check for emotional consistency
+            if len(emotional_states) > 1:
+                insights.append("- Your memories show a range of emotional states")
+            if len(emotional_trends) > 1:
+                insights.append("- Your memories show a range of mood trends")
+            if len(emotional_triggers) > 1:
+                insights.append("- Your memories show a range of emotional triggers")
+            if len(coping_patterns) > 1:
+                insights.append("- Your memories show a range of coping patterns")
+            
+            # Check for emotional context
+            if "emotional_context" in categorized_memories:
+                insights.append("- Your memories are emotionally context-aware")
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate emotional intelligence insights: {e}")
+        
+        return insights
+
+    def _generate_proactive_suggestions(self, categorized_memories: Dict[str, List], current_message: str, user_id: str, db: Session) -> List[str]:
+        """
+        Generate proactive suggestions based on current context and memory content.
+        """
+        suggestions = []
+        
+        try:
+            # Look for relevant memories in each category
+            for category, memories in categorized_memories.items():
+                for mem in memories:
+                    if mem.memory_metadata:
+                        import json as _json
+                        try:
+                            if isinstance(mem.memory_metadata, dict):
+                                md = dict(mem.memory_metadata)
+                            else:
+                                md = _json.loads(mem.memory_metadata)
+                        except Exception:
+                            md = {}
+                        if "related_memories" in md:
+                            related = md["related_memories"]
+                            if isinstance(related, list):
+                                for r in related:
+                                    if isinstance(r, dict) and "content" in r:
+                                        suggestions.append(f"- Consider mentioning {r['content']} in your response")
+            
+            # Add general suggestions based on current message
+            suggestions.append(f"- Consider mentioning {current_message} in your response")
+            
+            # Add proactive advice based on emotional context
+            emotional_context = emotional_analyzer.analyze_emotional_context(current_message, [])
+            if emotional_context:
+                if emotional_context["emotional_state"] == "high":
+                    suggestions.append("- Be positive and uplifting in your response")
+                elif emotional_context["emotional_state"] == "low":
+                    suggestions.append("- Be empathetic and supportive in your response")
+                elif emotional_context["emotional_state"] == "neutral":
+                    suggestions.append("- Be neutral and informative in your response")
+            
+            # Add advice based on user's preferences and goals
+            profile_memory = self.get_user_profile_memory(db, user_id)
+            if profile_memory:
+                highlights = self._extract_profile_highlights(profile_memory, max_bullets=3)
+                if highlights:
+                    suggestions.append(f"- Consider mentioning {', '.join(highlights)} in your response")
+            
+            # Add advice based on current topic
+            suggestions.append(f"- Consider mentioning {current_message} in your response")
+            
+        except Exception as e:
+            logger.warning(f"Failed to generate proactive suggestions: {e}")
+        
+        return suggestions
 
 
 # Global instance

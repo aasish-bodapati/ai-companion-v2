@@ -52,24 +52,38 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "test"
     POSTGRES_DB: str = "ai_companion"
-    # For local dev, default directly to Postgres connection string
-    SQLALCHEMY_DATABASE_URI: Optional[str] = (
-        "postgresql://postgres:test@localhost:5432/ai_companion"
-    )
-    DATABASE_URL: Optional[str] = None  # Prefer explicit env; default to Postgres via validator
+    # For local dev, use PostgreSQL
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
+    DATABASE_URL: Optional[str] = None  # Will use PostgreSQL default
 
     # JWT Settings
     ALGORITHM: str = "HS256"  # Algorithm for JWT token generation
 
-    # LLM Provider API Key (renamed from TOGETHER_API_KEY)
+    # Redis (optional) for idempotency and rate limiting
+    REDIS_URL: str = ""
+    IDEMPOTENCY_TTL_SECONDS: int = 600
+
+    # Rate limiting (enabled when Redis is configured)
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    RATE_LIMIT_SEND_PER_WINDOW: int = 60
+    RATE_LIMIT_REPLY_PER_WINDOW: int = 60
+
+    # LLM Provider API Key (OpenRouter - Free Models)
     LLM_KEY: str = ""
-    # Optional: OpenAI-compatible or provider-specific base URL (e.g., aimlapi)
-    LLM_BASE_URL: str = ""
-    # Model routing (env overrides). Leave blank to use in-code defaults.
-    LLM_MODEL_DEFAULT: str = ""
-    LLM_MODEL_FAST: str = ""
-    LLM_MODEL_VISION: str = ""
-    LLM_MODEL_SUMMARY: str = ""
+    # Optional: OpenAI-compatible or provider-specific base URL
+    LLM_BASE_URL: str = "https://openrouter.ai/api/v1"
+    # Model routing (env overrides). Using Llama 3.3 70B for better performance
+    LLM_MODEL_DEFAULT: str = "meta-llama/llama-3.3-70b-instruct"
+    LLM_MODEL_FAST: str = "mistralai/mistral-small-3.2-24b-instruct"
+    LLM_MODEL_VISION: str = "meta-llama/llama-3.2-11b-vision-instruct:free"
+    LLM_MODEL_SUMMARY: str = "meta-llama/llama-3.3-70b-instruct"
+
+    # OpenTelemetry (optional)
+    OTEL_ENABLED: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str = ""  # e.g., http://localhost:4318 or grpc endpoint
+    OTEL_SERVICE_NAME: str = "ai-companion-backend"
+    OTEL_ENVIRONMENT: str = "dev"
 
     # Admin User Credentials
     FIRST_SUPERUSER: str = "admin@example.com"
@@ -81,23 +95,20 @@ class Settings(BaseSettings):
 
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
+    def assemble_db_connection(cls, v: Optional[str], info) -> Any:
         # 1) If provided explicitly and non-empty, use as-is
         if isinstance(v, str) and v.strip():
             return v.strip()
 
         # 2) Prefer DATABASE_URL if set and non-empty
-        db_url = values.get("DATABASE_URL")
+        db_url = info.data.get("DATABASE_URL")
         if isinstance(db_url, str) and db_url.strip():
             return db_url.strip()
 
-        # 3) Default to Postgres on localhost (docker-compose default)
-        #    Example: docker service exposes 5432 and we connect from host backend
-        pg_user = values.get("POSTGRES_USER") or "postgres"
-        pg_pass = values.get("POSTGRES_PASSWORD") or "postgres"
-        pg_host = values.get("POSTGRES_SERVER") or "localhost"
-        pg_db = values.get("POSTGRES_DB") or "ai_companion"
-        return f"postgresql://{pg_user}:{pg_pass}@{pg_host}:5432/{pg_db}"
+        # 3) Default to SQLite file for local development
+        project_root = Path(__file__).resolve().parents[2]
+        sqlite_path = (project_root / "data" / "minimal.db").as_posix()
+        return f"sqlite:///{sqlite_path}"
 
     # JWT
     ALGORITHM: str = "HS256"
@@ -187,11 +198,56 @@ class Settings(BaseSettings):
     # Chat action suggestions: when enabled, assistant replies may include fenced
     # ```actions blocks with suggested actions for the frontend to confirm/execute
     ACTIONS_SUGGESTIONS_ENABLED: bool = True
+    # Two-pass self-critique and refinement (STaR-like) for higher quality replies
+    CRITIQUE_REFINE_ENABLED: bool = False
+    # Streaming (SSE) endpoints toggle. When False, streaming routes are not mounted.
+    STREAMING_ENABLED: bool = False
+    # Dual write: persist chat-captured notes/tasks/reminders to SQL tables and memory
+    DUAL_WRITE_ENABLED: bool = True
+    
+    # Direct command execution: enable immediate action execution from natural language
+    DIRECT_EXECUTION_ENABLED: bool = True
+    
+    # Disable agentic features per user preference
+    AGENT_PLAN_PROGRESS_ENABLED: bool = False
+    
+    # Automatic memory system settings
+    AUTO_MEMORY_ENABLED: bool = True
+    AUTO_IMPORTANCE_THRESHOLD: float = 0.6
+    AUTO_CONSOLIDATION_ENABLED: bool = True
+    AUTO_LIFECYCLE_ENABLED: bool = True
+    MEMORY_UI_VISIBLE: bool = False
+
+    # Auto-capture policy (config-driven)
+    # Whether to capture freeform user messages as memories (subject to gating)
+    CAPTURE_MESSAGES: bool = True
+    # Minimum importance for message-type captures (0..100 UI scale)
+    MESSAGE_IMPORTANCE_MIN: int = 40
+    # Require explicit intent like "remember this" to capture messages
+    REQUIRE_EXPLICIT_REMEMBER: bool = False
+    # Skip transient action logs (e.g., one-off meals/workouts) unless explicitly remembered
+    EXCLUDE_TRANSIENT_LOGS: bool = True
+    # When dedupe/consolidation key repeats, increment reinforcement counter in metadata
+    REINFORCEMENT_ENABLED: bool = True
 
     # Privacy: control whether the full serialized onboarding/profile text may be disclosed verbatim
     # in self-referential queries (e.g., "What do you know about me?"). Defaults to False to prevent
     # verbatim dumping; high-level summaries are provided instead.
     PROFILE_VERBATIM_DISCLOSURE_ALLOWED: bool = False
+
+    # Privacy Redaction Controls
+    # When enabled, content and metadata for memories are passed through a lightweight PII redactor
+    # prior to persistence. Specific categories can be toggled off as needed.
+    PRIVACY_REDACTION_ENABLED: bool = True
+    PRIVACY_REDACT_EMAIL: bool = True
+    PRIVACY_REDACT_PHONE: bool = True
+    PRIVACY_REDACT_CREDIT_CARD: bool = True
+    PRIVACY_REDACT_SSN: bool = True
+    PRIVACY_REDACT_IBAN: bool = True
+
+    # Cookie/CORS hardening
+    COOKIE_SECURE: bool = True
+    COOKIE_SAMESITE: str = "lax"  # options: 'lax' | 'strict' | 'none'
 
     # Load env from backend/.env irrespective of current working directory
     _ENV_PATH = str(Path(__file__).resolve().parents[2] / ".env")
@@ -206,8 +262,40 @@ settings = Settings()
 
 # Log whether LLM key is present (do not log the key itself)
 _logger = logging.getLogger(__name__)
+
+# Check if we're using local Llama (localhost:11434), DeepSeek, or OpenRouter
+is_local_llama = (
+    getattr(settings, "LLM_BASE_URL", "").strip() == "http://localhost:11434/v1" or
+    "localhost:11434" in getattr(settings, "LLM_BASE_URL", "")
+)
+
+is_deepseek = (
+    getattr(settings, "LLM_BASE_URL", "").strip() == "https://api.deepseek.com/v1" or
+    "api.deepseek.com" in getattr(settings, "LLM_BASE_URL", "")
+)
+
+is_openrouter = (
+    getattr(settings, "LLM_BASE_URL", "").strip() == "https://openrouter.ai/api/v1" or
+    "openrouter.ai" in getattr(settings, "LLM_BASE_URL", "")
+)
+
 if getattr(settings, "LLM_KEY", "").strip():
-    _logger.info("LLM key detected from env file.")
+    if is_deepseek:
+        _logger.info("DeepSeek R1 Free API key detected from env file.")
+    elif is_openrouter:
+        _logger.info("OpenRouter API key detected from env file.")
+    else:
+        _logger.info("LLM key detected from env file.")
+elif is_local_llama:
+    _logger.info("Using local Llama - no API key required.")
+elif is_deepseek:
+    _logger.warning(
+        "DeepSeek R1 Free requires API key. Ensure backend/.env has LLM_KEY and the server was restarted."
+    )
+elif is_openrouter:
+    _logger.warning(
+        "OpenRouter requires API key. Ensure backend/.env has LLM_KEY and the server was restarted."
+    )
 else:
     _logger.warning(
         "LLM key not found. Ensure backend/.env has LLM_KEY and the server was restarted."

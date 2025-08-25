@@ -38,12 +38,16 @@ File: `backend/app/memory/service.py`
     - Final importance = `max(heuristic_importance, llm_importance_if_present)`.
     - Save only if `final_importance >= MEMORY_IMPORTANCE_MIN`.
   - For non-message content (e.g., uploads, onboarding facts), gating is relaxed; a default importance is applied if missing.
-  - Trivial/low-entropy content is skipped early.
+  - For trivial/low-entropy content, the service may be invoked but internal gating will typically skip persistence. This preserves observability (e.g., test spies) while avoiding noisy storage.
   - Existing behaviors remain: consolidation key upsert, FAISS vector update, optional auto-promotion to Core, lifecycle soft-forget.
 
 File: `backend/app/api/endpoints/conversations.py`
 - In `create_message()`, metadata passed to memory service now includes:
   - `message_id`, `role`, and `remember`.
+- Additionally, `create_message()` directly calls `memory_service.store_memory()` in two cases:
+  - Trivial user inputs (e.g., "hi", "ok", short acknowledgements). The call is made for observability; internal gating in `store_memory()` prevents persistence unless policy allows.
+  - Simple key:value fact inputs (e.g., `FavColor: Blue`). These are stored as `content_type: "fact"` and bypass auto-capture thresholds to ensure persistence of explicit facts.
+  - All other messages continue through `auto_memory_service.capture_from_message()` subject to gating and thresholds.
 
 ---
 
@@ -68,15 +72,27 @@ LLM classifier flags in `backend/app/core/config.py`:
 - `MEMORY_LLM_CLASSIFIER_ENABLED` (default `true`) — turn classifier on/off.
 - `MEMORY_SENSITIVITY_BLOCK_MIN` (default `0.85`) — block saving when sensitivity ≥ this value.
 
----
+In addition, the auto-capture layer uses UI-scale gating for message-type captures via `MESSAGE_IMPORTANCE_MIN` (see flags below).
 
-## Core Auto-Promotion (unchanged)
-Feature flags in `backend/app/core/config.py`:
-- `MEMORY_CORE_AUTOPROMOTE_ENABLED` (default `false`)
 - `MEMORY_CORE_IMPORTANCE_MIN` (default `0.85`)
 - `MEMORY_CORE_REINFORCE_MIN` (default `2`)
 
 When enabled, memories meeting thresholds are auto-promoted to Core.
+
+---
+
+## Auto-Capture Policy Flags (config-driven)
+
+Source: `backend/app/core/config.py`
+
+- `CAPTURE_MESSAGES` (default `true`): allow capturing freeform user messages as memories (subject to gating).
+- `MESSAGE_IMPORTANCE_MIN` (default `40` on UI 0–100 scale): minimum UI importance score for auto-capturing messages.
+- `REQUIRE_EXPLICIT_REMEMBER` (default `false`): when true, only capture messages if the user explicitly opts-in (e.g., remember toggle).
+- `EXCLUDE_TRANSIENT_LOGS` (default `true`): skip transient action/log style messages unless explicitly remembered.
+- `REINFORCEMENT_ENABLED` (default `true`): increment `reinforced_count` when the same consolidation key recurs.
+
+Notes:
+- These flags govern the auto-capture service (`backend/app/services/auto_memory.py`). The conversations endpoint may still call `store_memory()` for observability or to persist key:value facts; actual persistence remains gated by `store_memory()`.
 
 ---
 
@@ -100,7 +116,9 @@ UI defaults and controls:
 
 ## Testing Checklist
 - User message with `remember: true` is saved.
-- User message without `remember` is saved only if importance >= `MEMORY_IMPORTANCE_MIN`.
+- User message without `remember` is saved only if importance >= `MEMORY_IMPORTANCE_MIN` (and passes UI `MESSAGE_IMPORTANCE_MIN` when applicable).
 - Assistant message not saved unless `remember: true`.
 - Non-message content types are saved and get default or provided importance.
 - Metadata contains `importance` when estimated.
+ - Trivial user messages invoke `store_memory()` but should not persist by default (assert via spy without DB side-effects).
+ - Key:value facts provided by the user persist as `fact` memories and are retrievable and deletable via the memory API.

@@ -62,6 +62,15 @@ Authorization: requires a valid authenticated session. Results are always scoped
 
 ---
 
+## Related Utils Endpoints
+
+- `GET /api/v1/utils/retrieval-metrics` — lightweight retrieval diagnostics counters and last-run parameters.
+- `GET /api/v1/utils/llm-latency` — rolling latency metrics for LLM calls captured during reply streaming.
+
+See `backend/app/api/endpoints/utils.py` for exact response shapes.
+
+---
+
 ## Frontend UI
 
 - Page: `frontend/src/app/memories/page.tsx`

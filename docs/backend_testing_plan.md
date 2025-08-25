@@ -8,7 +8,7 @@ This document describes the backend testing strategy for AI Companion v2, with t
 - **Database:** SQLite (dev), PostgreSQL (prod)
 - **ORM:** SQLAlchemy 1.4+
 - **Auth:** JWT
-- **AI Integration:** Together AI API
+- **AI Integration:** OpenRouter API (OpenAI-compatible)
 - **Testing Framework:** pytest
 
 ---
@@ -87,12 +87,12 @@ Endpoints to cover:
 - `httpx.AsyncClient` for async HTTP calls
 - `factory_boy` for test data
 - `freezegun` for time control
-- `respx` for mocking Together AI API calls
+- `respx` for mocking OpenRouter API calls
 
 **Database in tests:**
 - **Primary:** PostgreSQL (via Docker or testcontainers)
 - Alembic migrations applied in test setup
-- Mock Together AI responses in tests (no live calls in CI)
+- Mock OpenRouter responses in tests (no live calls in CI)
 
 ---
 
@@ -102,7 +102,7 @@ Suggested pytest fixtures:
 - `db_session` – new DB session per test
 - `client` – FastAPI test client with test DB
 - `auth_token` – creates test user & returns JWT
-- `mock_together_api` – mocks LLM responses
+- `mock_openrouter_api` – mocks LLM responses
 
 ---
 
@@ -114,3 +114,4 @@ Suggested pytest fixtures:
 3. Run tests with coverage:
    ```bash
    pytest --cov=app --cov-report=term-missing
+   ```

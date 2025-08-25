@@ -71,6 +71,25 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
         db.refresh(node)
         return node
 
+    def get_user_memories_by_category(
+        self, db: Session, user_id: str, category: str, limit: int = 10
+    ) -> List[MemoryNode]:
+        """Get memories for a specific user filtered by category in metadata."""
+        # Search for memories that have the category in their metadata
+        like_pattern = f'%"categories": ["%{category}%"%'
+        return (
+            db.query(MemoryNode)
+            .filter(
+                and_(
+                    MemoryNode.user_id == user_id,
+                    MemoryNode.memory_metadata.like(like_pattern),
+                )
+            )
+            .order_by(MemoryNode.timestamp.desc())
+            .limit(limit)
+            .all()
+        )
+
     def get_user_memories(
         self, db: Session, user_id: str, content_type: Optional[str] = None, limit: int = 100
     ) -> List[MemoryNode]:
@@ -97,6 +116,50 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
         result = db.query(MemoryNode).filter(MemoryNode.user_id == user_id).delete()
         db.commit()
         return result
+
+    def delete_by_faiss_id(self, db: Session, user_id: str, faiss_id: str) -> bool:
+        """Hard delete a single memory by faiss_id ensuring ownership."""
+        node = self.get_memory_by_faiss_id(db, faiss_id)
+        if not node or str(node.user_id) != str(user_id):
+            return False
+        db.delete(node)
+        db.commit()
+        # Best-effort vector store removal
+        try:
+            from app.memory.vector_store.factory import get_vector_store
+
+            vs = get_vector_store()
+            vs.delete(str(user_id), str(faiss_id))
+        except Exception:
+            pass
+        return True
+
+    def soft_delete_by_faiss_id(self, db: Session, user_id: str, faiss_id: str) -> bool:
+        """Soft delete by setting metadata.deleted=true and deleted_at timestamp."""
+        import json as _json
+        from datetime import datetime, timezone
+
+        node = self.get_memory_by_faiss_id(db, faiss_id)
+        if not node or str(node.user_id) != str(user_id):
+            return False
+        try:
+            md: Dict[str, Any]
+            if node.memory_metadata:
+                try:
+                    md = _json.loads(node.memory_metadata)
+                except Exception:
+                    md = {}
+            else:
+                md = {}
+            md["deleted"] = True
+            md["deleted_at"] = datetime.now(timezone.utc).isoformat()
+            node.memory_metadata = _json.dumps(md)
+            db.commit()
+            db.refresh(node)
+            return True
+        except Exception:
+            db.rollback()
+            return False
 
     def update_relevance_score(
         self, db: Session, faiss_id: str, score: float

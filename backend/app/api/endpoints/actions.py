@@ -24,21 +24,44 @@ async def list_actions(
 
 @router.post("/execute")
 async def execute_action(
-    payload: ExecuteActionRequest,
+    payload: Dict[str, Any],
     current_user: User = Depends(deps.get_current_active_user),
 ) -> Dict[str, Any]:
     """
     Execute a registered action via the centralized `ActionRouter`.
     Returns standardized success/error shape.
     """
-    # Ensure action exists
-    desc = registry.get(payload.action)
+    # Normalize payload and ensure action exists
+    action_name = (payload or {}).get("action")
+    params = (payload or {}).get("params") or {}
+    client_action_id = (payload or {}).get("client_action_id")
+    desc = registry.get(action_name)
     if not desc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unknown action")
 
-    # TODO: permission checks per action descriptor (scopes) using current_user
+    # Check action permissions based on scopes
+    if desc.scopes:
+        # For now, implement basic scope checking - can be extended with role-based access
+        required_scopes = set(desc.scopes)
+        # All authenticated users have basic scopes for MVP
+        user_scopes = {'fitness:write', 'nutrition:write', 'journal:write', 'goals:write', 'calendar:write'}
+        
+        if not required_scopes.issubset(user_scopes):
+            missing_scopes = required_scopes - user_scopes
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail=f"Insufficient permissions. Missing scopes: {', '.join(missing_scopes)}"
+            )
 
-    res = action_router.execute(payload)
+    # Construct internal request with authenticated user context
+    req = ExecuteActionRequest(
+        action=action_name,
+        params=params,
+        user_id=str(current_user.id),
+        conversation_id=None,
+        client_action_id=client_action_id,
+    )
+    res = action_router.execute(req)
     if not res.ok:
         # Map standardized codes to HTTP status while still returning shape
         code = (res.code or "internal_error")

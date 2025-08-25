@@ -1,7 +1,8 @@
 import pytest
 
 from app.memory.service import memory_service
-from app.api.endpoints import conversations as conv_mod
+from app.api.endpoints import conversations_utils as conv_mod
+from app.api.endpoints.conversations_utils import _normalize_user_text, _maybe_capture_preference
 
 
 @pytest.mark.parametrize(
@@ -53,7 +54,7 @@ def test_grade_importance_can_use_llm_when_available(monkeypatch):
     monkeypatch.setattr(memory_service, "_classify_with_llm", lambda _text: _fake_cls(memory_service, _text), raising=False)
     # Also stub low-level LLM call to avoid network if original path is entered
     import app.core.llm as _llm
-    monkeypatch.setattr(_llm, "generate_with_together", lambda *a, **k: "{\n  \"importance\": 0.95, \n  \"sensitivity\": 0.0, \n  \"reason\": \"hi\"\n}")
+    monkeypatch.setattr(_llm, "generate_with_openrouter", lambda *a, **k: "{\n  \"importance\": 0.95, \n  \"sensitivity\": 0.0, \n  \"reason\": \"hi\"\n}")
 
     from app.core.config import settings
 

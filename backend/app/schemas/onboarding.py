@@ -1,60 +1,40 @@
-from typing import List, Optional
-from pydantic import BaseModel, Field, ConfigDict
-
-
-class Identity(BaseModel):
-    name: Optional[str] = None
-    nickname: Optional[str] = None
-    pronouns: Optional[str] = None
-    birthday: Optional[str] = None  # ISO date string
-    location: Optional[str] = None
-
-
-class Interests(BaseModel):
-    topics: Optional[List[str]] = None
-    otherTopic: Optional[str] = None
-    hobbies: Optional[str] = None
-    favorites: Optional[str] = None
-
-
-class Communication(BaseModel):
-    responseStyle: Optional[str] = Field(None, pattern="^(Concise|Detailed|Balanced)$")
-    tone: Optional[List[str]] = None
-    smallTalkLevel: Optional[int] = Field(None, ge=0, le=2)
-
-
-class Goals(BaseModel):
-    primaryReason: Optional[str] = None
-    personalGoals: Optional[str] = None
-    checkinsEnabled: Optional[bool] = None
-
-
-class Boundaries(BaseModel):
-    avoidTopics: Optional[str] = None
-    memoryPolicy: Optional[str] = Field(None, pattern="^(RememberAll|ImportantOnly|NoMemory)$")
-    recallEnabled: Optional[bool] = None
-
-
-class Fun(BaseModel):
-    dreamTrip: Optional[str] = None
-    randomFact: Optional[str] = None
-    aiPersona: Optional[str] = None
+from pydantic import BaseModel, ConfigDict
+from typing import Optional
 
 
 class OnboardingProfileBase(BaseModel):
-    identity: Optional[Identity] = None
-    interests: Optional[Interests] = None
-    communication: Optional[Communication] = None
-    goals: Optional[Goals] = None
-    boundaries: Optional[Boundaries] = None
-    fun: Optional[Fun] = None
+    # Step 1 – Daily Schedule
+    daily_schedule: Optional[str] = None
+    schedule_preferences: Optional[str] = None
+
+    # Step 2 – Fitness & Nutrition Goals
+    fitness_goals: Optional[str] = None
+    nutrition_goals: Optional[str] = None
+    dietary_preferences: Optional[str] = None
+
+    # Step 3 – Communication Style
+    communication_style: Optional[str] = None
+    additional_preferences: Optional[str] = None
 
 
-class OnboardingProfileIn(OnboardingProfileBase):
+class OnboardingProfileCreate(OnboardingProfileBase):
     pass
 
 
-class OnboardingProfileOut(OnboardingProfileBase):
-    completed: bool = False
+class OnboardingProfileUpdate(OnboardingProfileBase):
+    pass
 
+
+class OnboardingProfileInDB(OnboardingProfileBase):
+    id: str
+    user_id: str
+    completed: bool
+    
+    # Pydantic v2 configuration
     model_config = ConfigDict(from_attributes=True)
+
+
+class OnboardingProfile(OnboardingProfileBase):
+    id: str
+    user_id: str
+    completed: bool

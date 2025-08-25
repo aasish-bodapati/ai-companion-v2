@@ -45,8 +45,24 @@ class CRUDConversation(CRUDBase[Conversation, ConversationCreate, ConversationUp
         db.refresh(db_obj)
         return db_obj
 
+    def is_owner(self, db: Session, *, db_obj: Conversation, owner_id: str) -> bool:
+        """
+        Check if a user is the owner of a conversation.
+        """
+        return db_obj.user_id == owner_id
+
 
 class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
+    def get_multi_by_conversation(
+        self, db: Session, *, conversation_id: str, skip: int = 0, limit: int = 100
+    ) -> List[Message]:
+        """
+        Back-compat alias used by API endpoints. Delegates to get_by_conversation.
+        """
+        return self.get_by_conversation(
+            db, conversation_id=conversation_id, skip=skip, limit=limit
+        )
+
     def get_by_conversation(
         self, db: Session, *, conversation_id: str, skip: int = 0, limit: int = 100
     ) -> List[Message]:
@@ -74,6 +90,41 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
             .limit(limit)
             .all()
         )
+
+    def create_with_owner(
+        self,
+        db: Session,
+        *,
+        obj_in: MessageCreate,
+        owner_id: str,
+        conversation_id: str,
+    ) -> Message:
+        """
+        Back-compat helper used by endpoints. Owner is not stored on Message,
+        so this simply creates the message in the given conversation.
+        """
+        # Convert UUID to string if needed
+        if hasattr(conversation_id, "hex"):
+            conversation_id = str(conversation_id)
+
+        payload = obj_in.model_dump()
+        db_obj = Message(
+            role=payload.get("role"),
+            content=payload.get("content"),
+            conversation_id=conversation_id,
+        )
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+
+        # Update the conversation's updated_at timestamp
+        conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if conversation:
+            conversation.updated_at = func.now()
+            db.commit()
+            db.refresh(conversation)
+
+        return db_obj
 
     def create_with_conversation(
         self, db: Session, *, obj_in: MessageCreate, conversation_id: str

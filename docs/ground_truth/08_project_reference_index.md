@@ -27,6 +27,7 @@ The AI builder and developers must reference these before generating answers, co
 - `12_retrieval_and_scoring.md` → Retrieval scoring, boosts, decay
 - `31_memory_scoring.md` → Source of truth for relevance vs importance scoring (backend config + algorithms)
 - `32_retrieval_diagnostics.md` → Retrieval debug endpoint, fields, and frontend UI behavior
+- `38_per_user_memory_toggle.md` → Per-user memory enable/disable behavior, API, and gating rules
 - `13_memory_promotion_policy.md` → Memory capture/promotion policy, tunables
 - `14_brain_meter_and_provenance.md` → Brain meter UX and memory provenance rules
 - `15_document_uploads_to_memory.md` → Uploads UX, API, and security for adding documents/images to memory
@@ -70,7 +71,7 @@ The AI builder and developers must reference these before generating answers, co
 
 ## 🛠 Known Limitations & References
 - `known_issues.md` → Current bugs, blockers, and workarounds.
-- `integration_providers.md` → LLM and embeddings provider details (Together AI, OpenAI).
+- `20_model_selection_and_routing.md` → Current LLM provider setup (OpenRouter), default models, and env configuration.
 - `deployment_guide.md` → Environment setup, Docker config, hosting details.
 
 ---

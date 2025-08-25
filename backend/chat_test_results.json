@@ -1,0 +1,576 @@
+{
+  "timestamp": "2025-08-22T18:26:34.587138",
+  "overall_score": 300,
+  "overall_percentage": 30.0,
+  "test_results": [
+    {
+      "timestamp": "2025-08-22T18:26:34.525308",
+      "user_message": "I need help with my fitness routine",
+      "ai_response": "That's great that you're focusing on fitness! I can help you create a workout plan, track your progress, and stay motivated. Would you like me to help you plan a workout routine? ",
+      "context_analysis": {
+        "detected_domains": [
+          "fitness"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "high",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.525308"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.525308"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.525308"
+          }
+        ],
+        "suggested_actions": [
+          "Would you like me to help you plan a workout routine?",
+          "I can remind you about your fitness goals.",
+          "Let's track your progress together."
+        ]
+      },
+      "suggestions": [],
+      "score": 30,
+      "issues": [],
+      "strengths": [
+        "Correct domain detection",
+        "Detailed response"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.535639",
+      "user_message": "I want to build strength and lose weight",
+      "ai_response": "That's great that you're focusing on fitness! I can help you create a workout plan, track your progress, and stay motivated. Would you like me to help you plan a workout routine? ",
+      "context_analysis": {
+        "detected_domains": [
+          "fitness",
+          "nutrition"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.534225"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.534225"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.534225"
+          }
+        ],
+        "suggested_actions": [
+          "Would you like me to help you plan a workout routine?",
+          "I can remind you about your fitness goals.",
+          "Let's track your progress together."
+        ]
+      },
+      "suggestions": [],
+      "score": 30,
+      "issues": [],
+      "strengths": [
+        "Correct domain detection",
+        "Detailed response"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.541291",
+      "user_message": "I'm feeling stressed about my upcoming presentation",
+      "ai_response": "I can see you're going through a challenging time. It's completely normal to feel stressed sometimes. I can help you develop stress management techniques and find ways to relax. Let's work on stress management techniques together.",
+      "context_analysis": {
+        "detected_domains": [
+          "stress"
+        ],
+        "emotional_state": "negative",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.539291"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.539291"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.539291"
+          }
+        ],
+        "suggested_actions": [
+          "Let's work on stress management techniques together.",
+          "I can help you find ways to relax.",
+          "Would you like to talk about what's causing the stress?"
+        ]
+      },
+      "suggestions": [],
+      "score": 10,
+      "issues": [
+        "Domain detection failed. Expected: ['stress', 'health'], Got: ['stress']",
+        "No context continuity detected"
+      ],
+      "strengths": [
+        "Emotional context detected",
+        "Detailed response"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.546407",
+      "user_message": "I also have trouble sleeping",
+      "ai_response": "Your health is the most important thing. I can help you monitor your health metrics, remember appointments, and maintain wellness. I can help you remember your appointments. ",
+      "context_analysis": {
+        "detected_domains": [
+          "health"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "high",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.544611"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.544611"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.544611"
+          }
+        ],
+        "suggested_actions": [
+          "I can help you remember your appointments.",
+          "Would you like me to track your health metrics?",
+          "I'm here to support your wellness journey."
+        ]
+      },
+      "suggestions": [],
+      "score": 25,
+      "issues": [
+        "No context continuity detected"
+      ],
+      "strengths": [
+        "Correct domain detection",
+        "Detailed response"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.551174",
+      "user_message": "I need to schedule my workouts and meal prep",
+      "ai_response": "That's great that you're focusing on fitness! I can help you create a workout plan, track your progress, and stay motivated. Would you like me to help you plan a workout routine? ",
+      "context_analysis": {
+        "detected_domains": [
+          "fitness",
+          "nutrition",
+          "scheduling"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "high",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.549494"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.549494"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.549494"
+          }
+        ],
+        "suggested_actions": [
+          "Would you like me to help you plan a workout routine?",
+          "I can remind you about your fitness goals.",
+          "Let's track your progress together."
+        ]
+      },
+      "suggestions": [
+        "Great! Let's plan your workout. What type of exercise are you thinking?",
+        "I can help you create a workout routine. What are your fitness goals?",
+        "I can help you plan healthy meals. What are your nutrition goals?"
+      ],
+      "score": 65,
+      "issues": [],
+      "strengths": [
+        "Correct domain detection",
+        "Detailed response",
+        "Provided actionable suggestions",
+        "Shows context continuity"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.558409",
+      "user_message": "What did we talk about regarding my health?",
+      "ai_response": "Your health is the most important thing. I can help you monitor your health metrics, remember appointments, and maintain wellness. I can help you remember your appointments. ",
+      "context_analysis": {
+        "detected_domains": [
+          "health"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.556409"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.556409"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.556409"
+          }
+        ],
+        "suggested_actions": [
+          "I can help you remember your appointments.",
+          "Would you like me to track your health metrics?",
+          "I'm here to support your wellness journey."
+        ]
+      },
+      "suggestions": [],
+      "score": 30,
+      "issues": [],
+      "strengths": [
+        "Detailed response",
+        "Shows context continuity"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.560462",
+      "user_message": "How can I improve my fitness progress?",
+      "ai_response": "That's great that you're focusing on fitness! I can help you create a workout plan, track your progress, and stay motivated. Would you like me to help you plan a workout routine? ",
+      "context_analysis": {
+        "detected_domains": [
+          "fitness"
+        ],
+        "emotional_state": "neutral",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.560462"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.560462"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.560462"
+          }
+        ],
+        "suggested_actions": [
+          "Would you like me to help you plan a workout routine?",
+          "I can remind you about your fitness goals.",
+          "Let's track your progress together."
+        ]
+      },
+      "suggestions": [
+        "I can help you track your fitness progress.",
+        "What would you like to track - workouts, measurements, or goals?"
+      ],
+      "score": 45,
+      "issues": [],
+      "strengths": [
+        "Detailed response",
+        "Provided actionable suggestions",
+        "Shows context continuity"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.568685",
+      "user_message": "I'm not sure what I need help with",
+      "ai_response": "This seems important - let's address it together.",
+      "context_analysis": {
+        "detected_domains": [],
+        "emotional_state": "neutral",
+        "urgency_level": "high",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.567684"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.567684"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.567684"
+          }
+        ],
+        "suggested_actions": [
+          "This seems important - let's address it together."
+        ]
+      },
+      "suggestions": [],
+      "score": -5,
+      "issues": [
+        "No context continuity detected"
+      ],
+      "strengths": []
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.574614",
+      "user_message": "Everything feels overwhelming right now",
+      "ai_response": "I can see you're going through a challenging time. It's completely normal to feel stressed sometimes. I can help you develop stress management techniques and find ways to relax. Let's work on stress management techniques together.",
+      "context_analysis": {
+        "detected_domains": [
+          "stress"
+        ],
+        "emotional_state": "negative",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.572614"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.572614"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.572614"
+          }
+        ],
+        "suggested_actions": [
+          "Let's work on stress management techniques together.",
+          "I can help you find ways to relax.",
+          "Would you like to talk about what's causing the stress?"
+        ]
+      },
+      "suggestions": [],
+      "score": 65,
+      "issues": [],
+      "strengths": [
+        "Correct domain detection",
+        "Emotional context detected",
+        "Detailed response",
+        "Shows context continuity"
+      ]
+    },
+    {
+      "timestamp": "2025-08-22T18:26:34.579840",
+      "user_message": "What patterns have you noticed in our conversations?",
+      "ai_response": "I can help you understand patterns in your conversations and track your progress across different life areas. What specific insights would you like?",
+      "context_analysis": {
+        "detected_domains": [],
+        "emotional_state": "neutral",
+        "urgency_level": "normal",
+        "user_needs": [],
+        "relevant_memories": [
+          {
+            "content": "I like cars",
+            "categories": [
+              "preference",
+              "transportation",
+              "hobbies"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.577926"
+          },
+          {
+            "content": "I like girls",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.577926"
+          },
+          {
+            "content": "I like boats",
+            "categories": [
+              "general"
+            ],
+            "importance": 0.9,
+            "last_accessed": "2025-08-22T12:56:34.577926"
+          }
+        ],
+        "suggested_actions": []
+      },
+      "suggestions": [],
+      "score": 5,
+      "issues": [
+        "No context continuity detected"
+      ],
+      "strengths": [
+        "Detailed response"
+      ]
+    }
+  ],
+  "memory_insights": {
+    "total_conversations": 18,
+    "conversation_patterns": {
+      "I need help with my _unknown": 1,
+      "I want to build stre_unknown": 1,
+      "I'm feeling stressed_unknown": 1,
+      "I also have trouble _unknown": 1,
+      "I need to schedule m_unknown": 1,
+      "What did we talk abo_unknown": 1,
+      "How can I improve my_unknown": 1,
+      "I'm not sure what I _unknown": 1,
+      "Everything feels ove_unknown": 1,
+      "What patterns have y_unknown": 1
+    },
+    "emotional_trends": {},
+    "topic_distribution": {},
+    "learning_progress": {
+      "total_patterns_learned": 10,
+      "emotional_awareness": 0,
+      "context_understanding": 1
+    },
+    "life_domain_engagement": {
+      "fitness": 1,
+      "nutrition": 0,
+      "health": 0,
+      "stress": 0,
+      "scheduling": 0
+    }
+  }
+}

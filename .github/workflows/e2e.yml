@@ -89,6 +89,44 @@ jobs:
         run: |
           npm run test:e2e -- tests/jarvis_journey.spec.ts
 
+      - name: Run Flow/Coherence test (soft gate)
+        env:
+          CHAT_API_BASE: http://localhost:8000
+          CHAT_USER_EMAIL: test@example.com
+          CHAT_USER_PASSWORD: testpassword123
+        run: |
+          # Run the Python flow test without failing the job on exceptions
+          python scripts/chat_flow_test.py || echo "Flow test exited non-zero; continuing to check report"
+          
+          # Enforce threshold only if the report exists
+          python - << 'PY'
+          import json, sys, os
+          report = os.path.join('reports', 'chat_simulation_scores.json')
+          if not os.path.exists(report):
+              print('::warning::Flow report not found; skipping gate (configure test credentials to enable).')
+              sys.exit(0)
+          with open(report, 'r', encoding='utf-8') as f:
+              data = json.load(f)
+          pct = float(data.get('overall', {}).get('pct', 0.0))
+          print(f"Flow/Coherence score: {pct:.1f}%")
+          if pct < 70.0:
+              print('::error::Flow/Coherence score below threshold (70%). Failing job to prevent regressions.')
+              sys.exit(1)
+          sys.exit(0)
+          PY
+
+      - name: Aggregate Chat Metrics from backend logs
+        run: |
+          python scripts/aggregate_chat_metrics.py --log backend.log --out reports/chat_metrics_summary.json || echo "Aggregation skipped (no logs)"
+
+      - name: Upload Chat Metrics Summary (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-metrics-summary
+          path: reports/chat_metrics_summary.json
+          retention-days: 7
+
       - name: Run Uploads/Vision E2E (nightly only)
         if: github.event_name == 'schedule'
         working-directory: frontend

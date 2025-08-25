@@ -108,6 +108,21 @@ Most endpoints under `/api/v1` require a valid JWT. Admin-only endpoints require
   - Response: `{ total_requests: number, last: { query_prefix: string, mmr_lambda: number|null, top_k_limit: number, min_relevance: number, selected_count: number } }`
   - Source: `backend/app/api/endpoints/utils.py::get_retrieval_metrics`
 
+- GET `/api/v1/utils/retrieval-settings` (Auth: Bearer)
+  - Description: Read-only retrieval knobs for display in Settings UI.
+  - Response: `{ MEMORY_ENABLED: boolean, MEMORY_PROVIDER: string, EMBEDDING_MODEL_NAME: string, RETRIEVAL_TOP_K: number, RETRIEVAL_RECENT_MESSAGES: number, MEMORY_MIN_RELEVANCE: number }`
+  - Source: `backend/app/api/endpoints/utils.py::retrieval_settings`
+
+- GET `/api/v1/utils/csrf-token` (Public)
+  - Description: Issues a CSRF token and sets a `csrftoken` cookie (`SameSite=Lax`, `Secure` in production). SPA should send this token in the `X-CSRF-Token` header for state-changing requests.
+  - Response: `{ csrf_token: string }`
+  - Source: `backend/app/api/endpoints/utils.py::get_csrf_token`
+
+- GET `/api/v1/utils/llm-latency` (Auth: Bearer)
+  - Description: Rolling latency metrics for LLM calls recorded by reply streaming.
+  - Response: `{ first_token_ms: { avg: number, min: number, max: number, count: number }, llm_total_ms: { avg: number, min: number, max: number, count: number } }`
+  - Source: `backend/app/api/endpoints/utils.py::get_llm_latency`
+
 ---
 
 ## Conversations
@@ -172,6 +187,9 @@ Endpoints:
   - Description: List messages in a conversation.
   - Path:
     - `conversation_id`: UUID
+  - Query:
+    - `skip`: integer, default 0
+    - `limit`: integer, default 100
   - Response: `Message[]`
   - Errors: 404 not found, 403 not owner
   - Source: `backend/app/api/endpoints/conversations.py::list_messages`
@@ -267,7 +285,7 @@ Endpoints:
   - Path:
     - `conversation_id`: UUID
   - Response: `MemoryNode`
-  - Notes: Uses Together AI LLM to generate a concise summary. The LLM call includes `user_id` and `conversation_id` in the system prompt per AI Integration Rules. The created memory includes `memory_metadata` such as `{ "source": "auto_summary", "meta": true, "llm": "together:meta-llama/Llama-3.3-70B-Instruct-Turbo-Free" }`.
+  - Notes: Uses OpenRouter to generate a concise summary. The LLM call includes `user_id` and `conversation_id` in the system prompt per AI Integration Rules. The created memory includes `memory_metadata` such as `{ "source": "auto_summary", "meta": true, "llm": "openrouter:meta-llama/llama-3.3-70b-instruct" }`.
   - Errors: 404 not found, 403 not owner
   - Source: `backend/app/api/endpoints/memory.py::auto_summarize_conversation`
 

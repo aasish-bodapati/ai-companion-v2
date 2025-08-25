@@ -64,18 +64,32 @@ def client():
 
     app.dependency_overrides[deps.get_current_active_user] = override_get_current_active_user
 
-    # Stub Together API to avoid network during tests
-    try:
-        from app.core import llm as _llm
+    # Stub OpenRouter API to avoid network during tests unless explicitly opting into real LLM
+    orig = None
+    use_real_llm = os.getenv("USE_REAL_LLM", "").lower() in {"1", "true", "yes"}
+    if not use_real_llm:
+        try:
+            from app.core import llm as _llm
 
-        if not hasattr(_llm, "_orig_generate"):
-            _llm._orig_generate = _llm.generate_with_together  # type: ignore[attr-defined]
-        _llm.generate_with_together = lambda model, system_prompt, messages: "TEST_REPLY"
-    except Exception:
-        pass
+            if not hasattr(_llm, "_orig_generate"):
+                _llm._orig_generate = _llm.generate_with_openrouter  # type: ignore[attr-defined]
+            orig = _llm.generate_with_openrouter
+            _llm.generate_with_openrouter = lambda model, system_prompt, messages: "TEST_REPLY"
+        except Exception:
+            pass
 
     with TestClient(app) as c:
-        yield c
+        try:
+            yield c
+        finally:
+            # Restore original if we mocked
+            try:
+                if not use_real_llm and orig is not None:
+                    from app.core import llm as _llm
+
+                    _llm.generate_with_openrouter = orig
+            except Exception:
+                pass
 
 
 @pytest.fixture()
