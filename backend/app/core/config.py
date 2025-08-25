@@ -195,6 +195,9 @@ class Settings(BaseSettings):
     # Retrieval debug: allow endpoints to return extra scoring detail for diagnostics
     DEBUG_RETRIEVAL_ENABLED: bool = True
 
+    # Calendar feature debugging (SQL + command routing traces)
+    CALENDAR_DEBUG_ENABLED: bool = False
+
     # Chat action suggestions: when enabled, assistant replies may include fenced
     # ```actions blocks with suggested actions for the frontend to confirm/execute
     ACTIONS_SUGGESTIONS_ENABLED: bool = True

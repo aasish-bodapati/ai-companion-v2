@@ -3,6 +3,7 @@ from app.models.conversation import Conversation, Message
 from app.models.user import User
 from app.models.onboarding import OnboardingProfile
 from app.models.memory import MemoryNode
+from app.models.memory_audit import MemoryAudit
 from app.models.coaching import Goal as CoachingGoal, Routine as CoachingRoutine
 from app.models.coaching import WorkoutLog, MealLog, HydrationLog, MoodLog, JournalEntry
 from app.models.coaching import WorkoutPlan, NutritionPlan
@@ -19,6 +20,7 @@ __all__ = [
     "Message",
     "OnboardingProfile",
     "MemoryNode",
+    "MemoryAudit",
     "CalendarEvent",
     "Note",
     "Task",

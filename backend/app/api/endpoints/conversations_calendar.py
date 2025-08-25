@@ -39,22 +39,78 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
         
         # Simple explicit delete-by-id: "/calendar delete <uuid>"
         if command_text.lower().startswith("delete "):
-            event_id = command_text.split(" ", 1)[1].strip()
+            # Robust UUID extraction allows punctuation/extra text
+            import re as _re
+            rest = command_text.split(" ", 1)[1].strip()
+            m = _re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", rest, flags=_re.IGNORECASE)
+            event_id = (m.group(0) if m else rest).strip().strip(".,;!()[]{}")
             try:
                 ok = crud_calendar.delete_for_user(db, user_id=str(user.id), event_id=event_id)
                 if ok:
-                    return "Deleted: event removed from your calendar."
+                    return "Deleted."
                 return "I couldn't find that event id."
             except Exception:
                 return "Sorry, I failed to delete that event."
 
-        # Extract calendar intent (best-effort; resilient to failures)
-        intent = extract_calendar_intent(command_text) or CalendarIntent(action="create")  # type: ignore
+        # For explicit slash commands, avoid LLM extraction entirely and route by simple keywords.
+        # This ensures deterministic behavior in tests and local dev without API keys.
+        lower_cmd = command_text.lower()
+        if lower_cmd.startswith("list") or lower_cmd.startswith("show"):
+            events = crud_calendar.get_user_events(db=db, user_id=str(user.id))[:10]
+            if not events:
+                return "Your calendar is clear! No upcoming events scheduled."
+            response = "📅 **Your Upcoming Schedule:**\n\n"
+            for event in events:
+                when = getattr(event, 'start', None)
+                when_s = when.strftime('%B %d at %I:%M %p') if when else ''
+                response += f"• **{event.title}** - {when_s}\n\n"
+            return response
 
-        # Use action string from CalendarIntent schema: "create" | "delete" | "list"
-        if getattr(intent, "action", None) == "create":
+        # Default action for slash command: create
+        if True:
             # Parse the event details (use first parsed line)
-            parsed = parse_block(command_text)
+            # Make parsing robust: strip a leading verb like 'add', 'create', 'schedule', 'book'.
+            _verbs = ("add ", "create ", "schedule ", "book ")
+            cmd_for_parse = command_text
+            lower = command_text.lower()
+            for v in _verbs:
+                if lower.startswith(v):
+                    cmd_for_parse = command_text[len(v):].lstrip()
+                    break
+            # Special-case: "<title> on YYYY-MM-DD from HH:MM to HH:MM" (used by scripts/api_demo.py)
+            import re as _re
+            m = _re.match(
+                r"^(?P<title>.+?)\s+on\s+(?P<date>\d{4}-\d{2}-\d{2})\s+from\s+(?P<start>\d{1,2}:\d{2})\s+to\s+(?P<end>\d{1,2}:\d{2})$",
+                cmd_for_parse,
+                flags=_re.IGNORECASE,
+            )
+            if m:
+                try:
+                    d = m.group("date")
+                    ts = f"{d} {m.group('start')}"
+                    te = f"{d} {m.group('end')}"
+                    start = dateparser.parse(ts)
+                    end = dateparser.parse(te)
+                    title = m.group("title").strip() or "Untitled Event"
+                    calendar_event = CalendarEventCreate(
+                        title=title,
+                        description=None,
+                        start=start,
+                        end=end,
+                        all_day=False,
+                    )
+                    db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
+                    when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
+                    return (
+                        f"Added: **{db_event.title}**\n\n"
+                        f"📅 Date: {when}\n"
+                        f"📝 Description: {(db_event.description or 'No description') if hasattr(db_event, 'description') else 'No description'}\n"
+                        f"🆔 {getattr(db_event, 'id', '')}"
+                    )
+                except Exception:
+                    # Fall through to generic block parsing
+                    pass
+            parsed = parse_block(cmd_for_parse)
             pe: ParsedEvent | None = parsed[0] if parsed else None
             if pe:
                 # Create calendar event
@@ -66,34 +122,40 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                     all_day=bool(getattr(pe, "all_day", False)),
                 )
                 # Save to database for this user
+                try:
+                    logger.info(
+                        "calendar.create (slash) user=%s title=%s start=%s end=%s",
+                        getattr(user, "id", None),
+                        calendar_event.title,
+                        calendar_event.start,
+                        calendar_event.end,
+                    )
+                except Exception:
+                    pass
                 db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
+                try:
+                    logger.info(
+                        "calendar.created (slash) user=%s id=%s title=%s start=%s end=%s",
+                        getattr(user, "id", None),
+                        getattr(db_event, "id", None),
+                        getattr(db_event, "title", None),
+                        getattr(db_event, "start", None),
+                        getattr(db_event, "end", None),
+                    )
+                except Exception:
+                    pass
                 # Ensure the response contains the literal 'Added:' substring for e2e assertions
                 when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
                 return (
                     f"Added: **{db_event.title}**\n\n"
                     f"📅 Date: {when}\n"
-                    f"📝 Description: {(db_event.description or 'No description') if hasattr(db_event, 'description') else 'No description'}"
+                    f"📝 Description: {(db_event.description or 'No description') if hasattr(db_event, 'description') else 'No description'}\n"
+                    f"🆔 {getattr(db_event, 'id', '')}"
                 )
             else:
                 return "I couldn't parse the event details. Please try being more specific, like: '/calendar add meeting with John tomorrow at 2pm'"
-
-        elif getattr(intent, "action", None) == "list":
-            # Get user's upcoming events
-            # Fallback to listing user's events without date filter (ordered by start)
-            events = crud_calendar.get_user_events(db=db, user_id=str(user.id))[:10]
-            
-            if not events:
-                return "Your calendar is clear! No upcoming events scheduled."
-            
-            response = "📅 **Your Upcoming Schedule:**\n\n"
-            for event in events:
-                when = getattr(event, 'start', None)
-                when_s = when.strftime('%B %d at %I:%M %p') if when else ''
-                response += f"• **{event.title}** - {when_s}\n\n"
-            
-            return response
-
-        elif getattr(intent, "action", None) == "delete":
+        # Delete path (explicit keyword)
+        if lower_cmd.startswith("delete "):
             # Best-effort parse for id in the command text if extractor didn't give us one
             parts = command_text.split()
             if len(parts) >= 2 and parts[0].lower() == "delete":
@@ -106,11 +168,11 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                 return "Deleted." if ok else "I couldn't find that event id."
             return "Please specify which event id to delete, e.g., '/calendar delete <event_id>'."
         
-        else:
-            return "I understand you want to work with your calendar, but I'm not sure what specific action you need. Try:\n" \
-                   "• '/calendar add meeting tomorrow at 3pm'\n" \
-                   "• '/calendar show my schedule'\n" \
-                   "• '/calendar add lunch with Sarah on Friday at noon'"
+        # If none matched, prompt user
+        return "I understand you want to work with your calendar, but I'm not sure what specific action you need. Try:\n" \
+               "• '/calendar add meeting tomorrow at 3pm'\n" \
+               "• '/calendar show my schedule'\n" \
+               "• '/calendar add lunch with Sarah on Friday at noon'"
                    
     except Exception as e:
         logger.error(f"Error handling calendar command: {e}")
@@ -242,12 +304,34 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     end=parsed.get("end"),
                     all_day=bool(parsed.get("all_day", False)),
                 )
+                try:
+                    logger.info(
+                        "calendar.create (nl) user=%s title=%s start=%s end=%s",
+                        getattr(user, "id", None),
+                        calendar_event.title,
+                        calendar_event.start,
+                        calendar_event.end,
+                    )
+                except Exception:
+                    pass
                 db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
+                try:
+                    logger.info(
+                        "calendar.created (nl) user=%s id=%s title=%s start=%s end=%s",
+                        getattr(user, "id", None),
+                        getattr(db_event, "id", None),
+                        getattr(db_event, "title", None),
+                        getattr(db_event, "start", None),
+                        getattr(db_event, "end", None),
+                    )
+                except Exception:
+                    pass
                 when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
                 return (
                     f"Added: **{db_event.title}**\n\n"
                     f"📅 Date: {when}\n"
-                    f"📝 Description: {(db_event.description or 'No description') if hasattr(db_event, 'description') else 'No description'}"
+                    f"📝 Description: {(db_event.description or 'No description') if hasattr(db_event, 'description') else 'No description'}\n"
+                    f"🆔 {getattr(db_event, 'id', '')}"
                 )
             # Not enough info—try deterministic heuristics for list/delete before any LLM.
             lo = text_lower

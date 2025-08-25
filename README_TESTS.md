@@ -136,3 +136,36 @@ The following duplicate and legacy test files were removed during reorganization
 Test results are saved to the `reports/` directory:
 - `chat_eval_results.json`: Detailed evaluation results
 - `chat_simulation_scores.json`: Flow simulation results
+
+## Frontend Playwright E2E (Next.js)
+
+- __Location__: `frontend/tests/`
+- __Runner__: Playwright (`@playwright/test`)
+- __Reporters__: line reporter, trace on first retry
+
+### Commands
+
+```bash
+# Run all Playwright E2E tests (line reporter)
+npm run test:e2e            # from frontend/
+
+# Run smoke subset only (fast, stable)
+npm run test:e2e:smoke      # from frontend/
+
+# Direct usage examples
+npx playwright test --reporter=line
+npx playwright test --grep @smoke --reporter=line
+```
+
+### Smoke Suite Scope
+
+- __Included__: `frontend/tests/working_chat_test.spec.ts` (tagged `@smoke`)
+- __Excluded__: other E2E specs; run via full E2E when needed
+
+Rationale: minimize flakiness and runtime by keeping smoke green and focused on the core chat send/receive path using stable `data-testid` selectors and token-based auth fixtures.
+
+## Related Docs
+
+- Calendar Runbook: `docs/runbook_calendar.md`
+- Capabilities (slash commands, fast-path deletion, feature flags): `docs/CAPABILITIES.md`
+- MVP Delivery Plan and roadmap: `docs/MVP_DELIVERY_PLAN.md`

@@ -1,13 +1,15 @@
 from typing import List, Optional, Literal, TypedDict, Any, Dict
 from uuid import UUID, uuid4, UUID as _UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 
 from app.api import deps
 from app.core.config import settings
 from app.crud.memory import memory as memory_crud
+from app.crud.memory_audit import memory_audit
 from app.models.user import User
 from app.schemas.memory import MemoryNodeResponse, MemorySearchResult
+from app.schemas.memory_audit import MemoryAuditResponse
 from app.memory.service import memory_service
 from app import crud
 from app.services.summarization import generate_conversation_summary
@@ -214,25 +216,164 @@ class DeleteMemoryResponse(BaseModel):
 @router.delete("/memories/{faiss_id}", response_model=DeleteMemoryResponse)
 def soft_delete_memory(
     faiss_id: str,
+    request: Request,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
+    # Capture before snapshot
+    node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
+    before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
+    before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
     ok = memory_crud.soft_delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    try:
+        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        ua = request.headers.get("user-agent") if request else None
+        memory_audit.log(
+            db,
+            user_id=str(current_user.id),
+            faiss_id=faiss_id,
+            action="soft_delete",
+            source="api",
+            before_content=before_content,
+            after_content=None,
+            before_metadata=before_metadata,
+            after_metadata=None,
+            request_ip=req_ip,
+            user_agent=ua,
+        )
+    except Exception:
+        pass
     return DeleteMemoryResponse(success=True, mode="soft")
 
 
 @router.delete("/memories/{faiss_id}/hard", response_model=DeleteMemoryResponse)
 def hard_delete_memory(
     faiss_id: str,
+    request: Request,
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
+    # Capture before snapshot
+    node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
+    before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
+    before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
     ok = memory_crud.delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+    try:
+        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        ua = request.headers.get("user-agent") if request else None
+        memory_audit.log(
+            db,
+            user_id=str(current_user.id),
+            faiss_id=faiss_id,
+            action="hard_delete",
+            source="api",
+            before_content=before_content,
+            after_content=None,
+            before_metadata=before_metadata,
+            after_metadata=None,
+            request_ip=req_ip,
+            user_agent=ua,
+        )
+    except Exception:
+        pass
     return DeleteMemoryResponse(success=True, mode="hard")
+
+class UpdateMemoryIn(BaseModel):
+    content: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+    importance_score: Optional[int] = Field(None, ge=0, le=100)
+    source: Optional[str] = Field(None, description="Provenance of edit: chat|api|system")
+    conversation_id: Optional[str] = None
+    message_id: Optional[str] = None
+
+
+@router.patch("/memories/{faiss_id}", response_model=MemoryNodeResponse)
+def update_memory(
+    faiss_id: str,
+    payload: UpdateMemoryIn,
+    request: Request,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Update a memory's content and/or metadata with audit logging."""
+    node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
+    if not node or str(node.user_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+
+    # Before snapshot
+    before_content = getattr(node, "content", None)
+    before_metadata = getattr(node, "memory_metadata", None)
+
+    # Prepare updates
+    new_content = before_content
+    if payload.content is not None:
+        try:
+            red_c, _red_info = redact_text(payload.content)
+            new_content = red_c
+        except Exception:
+            new_content = payload.content
+
+    new_metadata_str = before_metadata
+    if payload.metadata is not None:
+        try:
+            red_md = redact_metadata(payload.metadata)
+            import json as _json
+
+            new_metadata_str = _json.dumps(red_md)
+        except Exception:
+            try:
+                import json as _json
+
+                new_metadata_str = _json.dumps(payload.metadata)
+            except Exception:
+                new_metadata_str = before_metadata
+
+    # Apply content + metadata updates
+    updated = memory_crud.update_content_and_metadata(
+        db,
+        node=node,
+        content=new_content if new_content is not None else before_content or "",
+        metadata=None if new_metadata_str is None else (None if new_metadata_str is None else __import__("json").loads(new_metadata_str) if isinstance(new_metadata_str, str) else new_metadata_str),
+    )
+
+    # Optional importance update
+    if payload.importance_score is not None:
+        try:
+            updated = memory_crud.update_importance_score(db, faiss_id=faiss_id, score=int(payload.importance_score)) or updated
+        except Exception:
+            pass
+
+    # After snapshot from updated
+    after_content = getattr(updated, "content", None)
+    after_metadata = getattr(updated, "memory_metadata", None)
+
+    # Audit log
+    try:
+        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        ua = request.headers.get("user-agent") if request else None
+        memory_audit.log(
+            db,
+            user_id=str(current_user.id),
+            faiss_id=faiss_id,
+            action="update",
+            source=payload.source or "api",
+            conversation_id=payload.conversation_id,
+            message_id=payload.message_id,
+            before_content=before_content,
+            after_content=after_content,
+            before_metadata=before_metadata,
+            after_metadata=after_metadata,
+            request_ip=req_ip,
+            user_agent=ua,
+        )
+    except Exception:
+        pass
+
+    return updated
 
 
 class DeleteAllMemoriesResponse(BaseModel):
@@ -402,6 +543,32 @@ def create_memory(
         importance_score=imp_score,
     )
     return node
+
+
+class MemoryAuditListResponse(BaseModel):
+    items: list[MemoryAuditResponse]
+    total: int
+
+
+@router.get("/memories/{faiss_id}/audit", response_model=MemoryAuditListResponse)
+def list_memory_audit(
+    faiss_id: str,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Return paginated audit history for a memory, newest first."""
+    # Ownership check to avoid leaking existence
+    node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
+    if not node or str(node.user_id) != str(current_user.id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
+
+    items = memory_audit.list_by_faiss_id(
+        db, user_id=str(current_user.id), faiss_id=faiss_id, skip=skip, limit=limit
+    )
+    total = memory_audit.count_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
+    return MemoryAuditListResponse(items=items, total=int(total))
 
 
 class MemoryContextItem(TypedDict):

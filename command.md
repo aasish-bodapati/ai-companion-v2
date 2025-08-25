@@ -21,6 +21,23 @@ Example `.env` toggle:
 DUAL_WRITE_ENABLED=true
 ```
 
+## Calendar Fast-Path & Debugging
+
+- Explicit `/calendar delete <uuid>` is executed immediately during `send_message()` to avoid race conditions with UI polling. The assistant reply still returns `Deleted.` via the calendar handler, but the DB deletion occurs as soon as the message is received.
+- To trace calendar behavior, enable the debug flag in `backend/.env`:
+
+```env
+CALENDAR_DEBUG_ENABLED=true
+```
+
+When enabled, logs include entries like:
+
+```
+calendar.fastpath delete request user_id=... event_id=...
+calendar.delete_for_user start user_id=... event_id=...
+calendar.delete_for_user commit affected=1
+```
+
 ## Database Commands
 ```bash
 # Run migrations

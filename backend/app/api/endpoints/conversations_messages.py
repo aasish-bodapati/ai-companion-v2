@@ -23,6 +23,8 @@ from app.services.auto_memory import auto_memory_service
 from app.core.redis_client import get_redis
 from app.core.rate_limit import check_rate_limit
 from app.cache.simple import cache as _cache
+from app.crud.memory import memory as memory_crud
+from app.crud.memory_audit import memory_audit
 
 # Import utility functions
 from .conversations_utils import _add_proactive_context, _normalize_user_text, _maybe_capture_preference, _polish_ai_response
@@ -312,6 +314,28 @@ async def send_message(
             except Exception as _e:
                 logger.debug(f"Note fast-capture skipped: {_e}")
 
+            # Fast-path side-effect: execute explicit '/calendar delete <uuid>' immediately
+            # so that backend state reflects deletion even if UI hasn't yet fetched the assistant reply.
+            try:
+                txt = (normalized_text or "").strip()
+                if txt.startswith("/calendar"):
+                    # Extract command part and check for delete
+                    cmd = txt[10:].strip()
+                    if cmd.lower().startswith("delete "):
+                        import re as _re
+                        rest = cmd.split(" ", 1)[1].strip()
+                        m = _re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", rest, flags=_re.IGNORECASE)
+                        event_id = (m.group(0) if m else rest).strip().strip(".,;!()[]{}")
+                        try:
+                            from app.crud.calendar import calendar as _crud_calendar
+                            if getattr(settings, "CALENDAR_DEBUG_ENABLED", False):
+                                logger.info(f"calendar.fastpath delete request user_id={current_user.id} event_id={event_id}")
+                            _crud_calendar.delete_for_user(db, user_id=str(current_user.id), event_id=event_id)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
             # Generic auto-capture for messages (skips preferences internally)
             try:
                 auto_memory_service.capture_from_message(
@@ -504,9 +528,173 @@ async def reply_to_conversation(
                         db_obj=conversation,
                         obj_in={"updated_at": datetime.now(timezone.utc).replace(tzinfo=None)},
                     )
-                    return AssistantReply(id=getattr(assistant_message, "id", None), message=assistant_message, used_llm=False)
+                    return AssistantReply(
+                        id=getattr(assistant_message, "id", None),
+                        message=assistant_message,
+                        used_llm=False,
+                    )
         except Exception:
             pass
+
+        # Fast-path: explicit memory commands (/mem ...)
+        # Supported:
+        # - /mem delete <faiss_id>        -> soft delete
+        # - /mem hard-delete <faiss_id>   -> hard delete
+        # - /mem search <query>           -> list top items with ids
+        try:
+            txt_cmd = (normalized_text or "").strip()
+            if txt_cmd.startswith("/mem"):
+                rest = txt_cmd[len("/mem"):].strip()
+                lo = rest.lower()
+                reply_text: str | None = None
+                # Soft delete by faiss id
+                if lo.startswith("delete "):
+                    target = rest.split(" ", 1)[1].strip()
+                    ok = False
+                    try:
+                        # Capture before snapshot
+                        node = memory_crud.get_memory_by_faiss_id(db, target)
+                        before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
+                        before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
+                        ok = memory_crud.soft_delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=target)
+                        if ok:
+                            try:
+                                req_ip = (request.client.host if getattr(request, "client", None) else None)
+                                ua = request.headers.get("user-agent") if request else None
+                                memory_audit.log(
+                                    db,
+                                    user_id=str(current_user.id),
+                                    faiss_id=target,
+                                    action="soft_delete",
+                                    source="chat",
+                                    conversation_id=str(conversation_id),
+                                    message_id=getattr(user_message, "id", None),
+                                    before_content=before_content,
+                                    after_content=None,
+                                    before_metadata=before_metadata,
+                                    after_metadata=None,
+                                    request_ip=req_ip,
+                                    user_agent=ua,
+                                )
+                            except Exception:
+                                pass
+                    except Exception:
+                        ok = False
+                    reply_text = ("Deleted." if ok else "I couldn't find that memory id.")
+                # Hard delete by faiss id
+                elif lo.startswith("hard-delete ") or lo.startswith("harddelete "):
+                    target = rest.split(" ", 1)[1].strip()
+                    ok = False
+                    try:
+                        # Capture before snapshot
+                        node = memory_crud.get_memory_by_faiss_id(db, target)
+                        before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
+                        before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
+                        ok = memory_crud.delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=target)
+                        if ok:
+                            try:
+                                req_ip = (request.client.host if getattr(request, "client", None) else None)
+                                ua = request.headers.get("user-agent") if request else None
+                                memory_audit.log(
+                                    db,
+                                    user_id=str(current_user.id),
+                                    faiss_id=target,
+                                    action="hard_delete",
+                                    source="chat",
+                                    conversation_id=str(conversation_id),
+                                    message_id=getattr(user_message, "id", None),
+                                    before_content=before_content,
+                                    after_content=None,
+                                    before_metadata=before_metadata,
+                                    after_metadata=None,
+                                    request_ip=req_ip,
+                                    user_agent=ua,
+                                )
+                            except Exception:
+                                pass
+                    except Exception:
+                        ok = False
+                    reply_text = ("Deleted permanently." if ok else "I couldn't find that memory id.")
+                # Search memories with a query
+                elif lo.startswith("search "):
+                    query = rest.split(" ", 1)[1].strip()
+                    try:
+                        results = memory_service.search_memories(
+                            db=db,
+                            query=query,
+                            user_id=str(current_user.id),
+                            content_types=None,
+                            limit=5,
+                            min_relevance=0.0,
+                            debug=False,
+                        )
+                        if not results:
+                            reply_text = "No matching memories."
+                        else:
+                            # Build short lines with faiss_id and truncated content
+                            lines: list[str] = []
+                            for r in results:
+                                content = (getattr(r, "content", "") or "").strip()
+                                snippet = (content[:80] + ("..." if len(content) > 80 else "")) if content else "(empty)"
+                                lines.append(f"- {getattr(r, 'faiss_id', '')}: {snippet}")
+                            reply_text = "Here are the top matches:\n" + "\n".join(lines)
+                        # Audit the search action (store query and hit count in after_metadata)
+                        try:
+                            import json as _json
+                            req_ip = (request.client.host if getattr(request, "client", None) else None)
+                            ua = request.headers.get("user-agent") if request else None
+                            memory_audit.log(
+                                db,
+                                user_id=str(current_user.id),
+                                faiss_id="__search__",
+                                action="search",
+                                source="chat",
+                                conversation_id=str(conversation_id),
+                                message_id=getattr(user_message, "id", None),
+                                before_content=None,
+                                after_content=None,
+                                before_metadata=None,
+                                after_metadata=_json.dumps({"query": query, "hits": int(len(results or []))}),
+                                request_ip=req_ip,
+                                user_agent=ua,
+                            )
+                        except Exception:
+                            pass
+                    except Exception:
+                        reply_text = "Sorry, search failed."
+
+                if reply_text is not None:
+                    # Allergy sanitization pass
+                    reply_text = _sanitize_text_allergies(db, str(current_user.id), str(conversation_id), reply_text)
+                    assistant_message = crud.message.create_with_owner(
+                        db=db,
+                        obj_in=MessageCreate(role="assistant", content=reply_text),
+                        owner_id=current_user.id,
+                        conversation_id=conversation_id,
+                    )
+                    if idem_key:
+                        try:
+                            await _idem_set(
+                                str(current_user.id),
+                                str(conversation_id),
+                                idem_key,
+                                "reply",
+                                {"assistant_message_id": getattr(assistant_message, "id", None)},
+                            )
+                        except Exception:
+                            pass
+                    crud.conversation.update(
+                        db=db,
+                        db_obj=conversation,
+                        obj_in={"updated_at": datetime.now(timezone.utc).replace(tzinfo=None)},
+                    )
+                    return AssistantReply(
+                        id=getattr(assistant_message, "id", None),
+                        message=assistant_message,
+                        used_llm=False,
+                    )
+        except Exception as _e:
+            logger.debug(f"Memory command handler skipped: {_e}")
 
         # Fast-path: handle explicit calendar commands and simple NL calendar requests
         try:

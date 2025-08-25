@@ -79,6 +79,13 @@ jobs:
         run: |
           npx wait-on http://localhost:8000/api/v1/openapi.json http://localhost:3000
 
+      - name: Run Memory Audit integration tests (pytest)
+        working-directory: backend
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          pytest -q ../tests/integration/test_memory_audit.py --maxfail=1
+
       - name: Run Playwright smoke tests
         working-directory: frontend
         run: |
@@ -140,3 +147,14 @@ jobs:
           name: playwright-report
           path: frontend/playwright-report
           retention-days: 7
+
+      - name: Post test docs links to summary (always)
+        if: always()
+        run: |
+          {
+            echo "## Test & Runbook Links";
+            echo "- Calendar Runbook: docs/runbook_calendar.md";
+            echo "- Capabilities (slash commands, fast-path deletion, flags): docs/CAPABILITIES.md";
+            echo "- MVP Delivery Plan & Roadmap: docs/MVP_DELIVERY_PLAN.md";
+            echo "- Playwright Smoke Scope: frontend/tests/working_chat_test.spec.ts (@smoke)";
+          } >> "$GITHUB_STEP_SUMMARY"

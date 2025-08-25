@@ -1,4 +1,6 @@
 from typing import List, Optional
+from datetime import datetime, timezone
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import OperationalError
@@ -18,6 +20,7 @@ from app.crud.calendar import calendar as crud_calendar
 from app.services.calendar_parser import parse_block
 
 router = APIRouter(prefix="/calendar")
+logger = logging.getLogger(__name__)
 
 
 @router.get("/events", response_model=List[CalendarEvent])
@@ -29,7 +32,42 @@ def list_events(
     end: Optional[str] = None,
 ):
     try:
-        return crud_calendar.get_user_events(db, user_id=current_user.id, start=start, end=end)
+        def parse_dt(val: Optional[str]) -> Optional[datetime]:
+            if not val:
+                return None
+            # Accept ISO 8601; if naive, assume UTC
+            dt = datetime.fromisoformat(val.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+
+        start_dt = parse_dt(start)
+        end_dt = parse_dt(end)
+
+        def to_naive_utc(dt: Optional[datetime]) -> Optional[datetime]:
+            if dt is None:
+                return None
+            return dt.astimezone(timezone.utc).replace(tzinfo=None)
+
+        s_naive = to_naive_utc(start_dt)
+        e_naive = to_naive_utc(end_dt)
+        events = crud_calendar.get_user_events(
+            db,
+            user_id=current_user.id,
+            start=s_naive,
+            end=e_naive,
+        )
+        try:
+            logger.info(
+                "calendar.list_events user=%s start=%s end=%s count=%s",
+                getattr(current_user, "id", None),
+                s_naive,
+                e_naive,
+                len(events) if events is not None else None,
+            )
+        except Exception:
+            pass
+        return events
     except OperationalError:
         # Table likely missing (migrations not run)
         raise HTTPException(
