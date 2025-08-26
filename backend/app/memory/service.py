@@ -23,14 +23,35 @@ from app.memory.service_mixins_storage import StorageMixin
 logger = logging.getLogger(__name__)
 
 try:
-    from app.memory.emotional_memory import emotional_analyzer
     from app.memory.contextual_retrieval import contextual_retriever
     EMOTIONAL_ANALYSIS_ENABLED = True
 except ImportError as e:
-    logger.warning(f"Emotional analysis modules not available: {e}")
-    emotional_analyzer = None
+    logger.warning(f"Contextual retrieval modules not available: {e}")
     contextual_retriever = None
     EMOTIONAL_ANALYSIS_ENABLED = False
+
+# Provide a safe fallback emotional analyzer to prevent NameError during calls.
+# If a real analyzer exists elsewhere, it can override this via import order.
+try:
+    # If a module defines emotional_analyzer, prefer it
+    from app.memory.contextual_retrieval import emotional_analyzer  # type: ignore
+except Exception:
+    class _FallbackEmotionalAnalyzer:
+        def analyze_emotional_context(self, text: str, memories: list) -> dict:
+            try:
+                t = (text or "").lower()
+                # very lightweight heuristic
+                if any(k in t for k in ("sad", "upset", "frustrated", "disappointed", "anxious")):
+                    state = "low"
+                elif any(k in t for k in ("happy", "excited", "proud", "great", "awesome")):
+                    state = "high"
+                else:
+                    state = "neutral"
+            except Exception:
+                state = "neutral"
+            return {"emotional_state": state}
+
+    emotional_analyzer = _FallbackEmotionalAnalyzer()  # type: ignore
 
 
 class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
@@ -40,6 +61,10 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         # Simple in-process caches with short TTL to reduce repeated work between quick turns
         self._sys_prompt_cache: Dict[str, Dict[str, Any]] = {}
         self._conv_ctx_cache: Dict[str, Dict[str, Any]] = {}
+        # Compatibility alias expected by some unit tests
+        # _memory_cache historically stored conversation/memory snippets
+        # Map it to the consolidated conversation context cache
+        self._memory_cache = self._conv_ctx_cache
         self._sys_prompt_ttl_sec = 60
         self._conv_ctx_ttl_sec = 20
         # Cleanup throttle per user
@@ -509,65 +534,83 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                 content = (msg.content or "")[:200] + ("..." if len(msg.content or "") > 200 else "")
                 context_parts.append(f"- {role_prefix}: {content}")
 
-        # Enhanced contextual memory retrieval using new system
-        if memory_limit > 0 and current_message and EMOTIONAL_ANALYSIS_ENABLED:
-            try:
-                # Analyze emotional context of current message
-                emotional_context = emotional_analyzer.analyze_emotional_context(
-                    current_message,
-                    [{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else []
-                )
+        # Include rolling per-conversation summary if available
+        try:
+            summaries = self.search_memories(
+                db=db,
+                query="",
+                user_id=user_id,
+                content_types=["summary"],
+                limit=5,
+                min_relevance=0.0,
+                debug=False,
+            ) or []
+            selected_summary = None
+            if summaries:
+                import json as _json
+                for s in summaries:
+                    try:
+                        md = _json.loads(s.memory_metadata) if s.memory_metadata else {}
+                    except Exception:
+                        md = {}
+                    ck = (md.get("consolidation_key") or "").strip().lower()
+                    if ck == f"summary:{conversation_id}".lower():
+                        selected_summary = s
+                        break
+            if selected_summary and (selected_summary.content or "").strip():
+                context_parts.append("")
+                context_parts.append("Conversation Summary (rolling):")
+                context_parts.append(selected_summary.content.strip())
+        except Exception:
+            # Non-fatal: proceed without summary if retrieval fails
+            pass
 
-                # Use contextual retrieval for human-like memory selection
-                general_memories = contextual_retriever.get_contextual_memories(
-                    memory_service=self,
-                    db=db,
-                    user_id=user_id,
-                    current_message=current_message,
-                    conversation_history=[{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else [],
-                    emotional_context=emotional_context,
-                    limit=memory_limit
-                )
-            except Exception as e:
-                logger.warning(f"Enhanced memory retrieval failed, falling back to basic: {e}")
-                # Fallback to basic memory search
-                query_parts = []
-                if conversation_memories:
-                    for msg in conversation_memories[-3:]:
-                        if msg.content:
-                            query_parts.append(msg.content)
-
-                query = " ".join(query_parts) if query_parts else "general context"
+        # Get user memories - use broader search for "what do you know about me" queries
+        if memory_limit > 0:
+            if current_message and any(phrase in current_message.lower() for phrase in ["what do you know", "tell me about", "who am i", "about me"]):
+                # For profile queries, get general memories without strict relevance filtering
                 general_memories = self.search_memories(
                     db=db,
-                    query=query,
+                    query="preferences interests likes",
                     user_id=user_id,
                     content_types=None,
                     limit=memory_limit,
-                    min_relevance=0.25,
+                    min_relevance=0.1,
                 )
-        elif memory_limit > 0:
-            # Fallback to original method if no current message
-            query_parts = []
-            if conversation_memories:
-                for msg in conversation_memories[-3:]:
-                    if msg.content:
-                        query_parts.append(msg.content)
-
-            query = " ".join(query_parts) if query_parts else "general context"
-            general_memories = self.search_memories(
-                db=db,
-                query=query,
-                user_id=user_id,
-                content_types=None,
-                limit=memory_limit,
-                min_relevance=0.25,
-            )
+            elif current_message:
+                # For specific queries, use current message with moderate relevance
+                general_memories = self.search_memories(
+                    db=db,
+                    query=current_message,
+                    user_id=user_id,
+                    content_types=None,
+                    limit=memory_limit,
+                    min_relevance=0.2,
+                )
+            else:
+                general_memories = []
         else:
             general_memories = []
 
         # Process memories with enhanced contextual presentation
         if general_memories:
+            # Skip lexical filtering for profile queries to show stored memories
+            def _overlap_ok(mem_text: str, cur_text: str) -> bool:
+                if current_message and any(phrase in current_message.lower() for phrase in ["what do you know", "tell me about", "who am i", "about me"]):
+                    return True  # Always include memories for profile queries
+                try:
+                    a = set((mem_text or "").lower().split())
+                    b = set((cur_text or "").lower().split())
+                    if not a or not b:
+                        return False
+                    inter = len(a & b)
+                    union = max(1, len(a | b))
+                    jacc = inter / union
+                    # Loosen lexical gating: allow if Jaccard >= 0.05 or at least 1 overlapping token
+                    return jacc >= 0.05 or inter >= 1
+                except Exception:
+                    return False
+
             dedup_general = []
             seen_gen: Set[str] = set()
 
@@ -577,6 +620,9 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             for mem in general_memories:
                 norm = (mem.content or "").strip().lower()
                 if not norm or norm in seen_gen:
+                    continue
+                # Only keep if it overlaps with current message to reduce off-topic recalls
+                if current_message and not _overlap_ok(norm, current_message):
                     continue
                 seen_gen.add(norm)
 
@@ -641,17 +687,8 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                     context_parts.append("Emotional Intelligence:")
                     context_parts.extend(emotional_insights)
 
-                # Add proactive suggestions based on current context
-                proactive_suggestions = self._generate_proactive_suggestions(
-                    categorized_memories,
-                    current_message,
-                    user_id,
-                    db
-                )
-                if proactive_suggestions:
-                    context_parts.append("")
-                    context_parts.append("Proactive Suggestions:")
-                    context_parts.extend(proactive_suggestions)
+                # Proactive domain suggestions disabled to keep assistant memory-first and user-led
+                # (previous proactive suggestions removed)
 
         t1 = time.perf_counter()
         logger.info(
@@ -663,6 +700,34 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         )
 
         return "\n".join(context_parts) if context_parts else "No specific context available."
+
+    def has_known_fact_contains(self, db: Session, user_id: str, phrases: List[str]) -> bool:
+        """Return True if any of the given phrases appear in stored profile/preference/fact memories.
+
+        This supports a check-before-ask gate in the reply path.
+        """
+        try:
+            if not phrases:
+                return False
+            mems = self.search_memories(
+                db=db,
+                query=" ".join(phrases),
+                user_id=user_id,
+                content_types=["profile", "preference", "fact"],
+                limit=16,
+                min_relevance=0.0,
+                debug=False,
+            ) or []
+            if not mems:
+                return False
+            ph_low = [p.lower() for p in phrases if isinstance(p, str) and p.strip()]
+            for m in mems:
+                txt = (m.content or "").lower()
+                if any(p in txt for p in ph_low):
+                    return True
+            return False
+        except Exception:
+            return False
 
     def build_personalized_system_prompt(self, db: Session, user_id: str) -> str:
         """
@@ -694,6 +759,7 @@ CRITICAL RULES - NEVER VIOLATE THESE:
 - NEVER say "I recall" or "I remember" unless the information is actually in the Context
 - If you don't have specific information about something, say so honestly
 - Do not invent past conversations or interactions
+ - Do not propose managing calendar, fitness, or nutrition unless the user asks explicitly; when in doubt, ask for permission with one short question
 
 Personality & Voice:
 - Speak like a knowledgeable friend who truly cares
@@ -704,6 +770,19 @@ Personality & Voice:
 - Demonstrate empathy by acknowledging their feelings and challenges
 - Celebrate achievements with genuine excitement
 - Offer encouragement during difficult times
+
+Personal Assistant Mode (Notepad):
+- Behave like a human personal assistant with a notepad, quietly capturing facts and preferences as notes. Do not announce note-taking.
+- Use known facts without re-asking. If something is missing and necessary, ask at most one short clarifying question.
+- Propose next steps concisely (one sentence). For any action that changes data or creates artifacts, ask one short confirmation first.
+- If the user says “yes”, proceed. If the user ignores or says “no”, drop the action gracefully.
+- Keep responses succinct and natural; avoid templates or checklists unless the user requests structure.
+
+Output format:
+- Keep replies short and readable (2-5 sentences unless the user asks for detail)
+- Use bullets only when helpful
+- Avoid repeating yourself or restating the user's message
+- Be concrete and actionable when making suggestions
 
 Conversational Style:
 - Connect new topics to what you know about them

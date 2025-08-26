@@ -1,6 +1,6 @@
 """
 Life Management Service
-Handles calendar planning, fitness tracking, and nutrition guidance through conversation.
+Handles calendar planning through conversation.
 """
 
 import logging
@@ -16,27 +16,18 @@ logger = logging.getLogger(__name__)
 class LifeManagementService:
     """
     Service for managing life aspects through conversational AI.
-    Handles calendar, fitness, and nutrition planning.
+    Handles calendar planning.
     """
     
     def __init__(self):
         self.calendar_events = {}  # In-memory storage for now
-        self.fitness_goals = {}
-        self.nutrition_plans = {}
+        # Deprecated fields removed: fitness/nutrition
         
         # Life management patterns
         self.life_patterns = {
             "calendar": {
                 "keywords": ["schedule", "appointment", "meeting", "event", "reminder", "plan", "organize"],
                 "actions": ["schedule", "remind", "plan", "organize", "reschedule", "cancel"]
-            },
-            "fitness": {
-                "keywords": ["workout", "exercise", "gym", "running", "walking", "training", "goal", "progress"],
-                "actions": ["track", "plan", "schedule", "monitor", "set_goal", "log"]
-            },
-            "nutrition": {
-                "keywords": ["food", "diet", "meal", "nutrition", "healthy", "eating", "planning"],
-                "actions": ["plan", "track", "suggest", "log", "monitor", "set_goal"]
             }
         }
     
@@ -58,14 +49,7 @@ class LifeManagementService:
         if "calendar" in detected_domains:
             calendar_response = self._handle_calendar_request(user_message, user_id)
             response.update(calendar_response)
-        
-        if "fitness" in detected_domains:
-            fitness_response = self._handle_fitness_request(user_message, user_id)
-            response.update(fitness_response)
-        
-        if "nutrition" in detected_domains:
-            nutrition_response = self._handle_nutrition_request(user_message, user_id)
-            response.update(nutrition_response)
+        # fitness/nutrition handling removed
         
         # Store this interaction in memory
         self._store_life_management_memory(user_message, response, user_id)
@@ -201,10 +185,6 @@ class LifeManagementService:
             # Add specific domains
             if "calendar_action" in response and response["calendar_action"]:
                 categories.append("calendar")
-            if "fitness_action" in response and response["fitness_action"]:
-                categories.append("fitness")
-            if "nutrition_action" in response and response["nutrition_action"]:
-                categories.append("nutrition")
             
             # Create memory
             memory_id = f"life_mgmt_{int(datetime.now().timestamp())}"
@@ -226,7 +206,7 @@ class LifeManagementService:
         try:
             # Get relevant memories from neural system
             relevant_memories = neural_memory_system.activate_memory_network(
-                query="life management fitness nutrition calendar",
+                query="life management calendar",
                 user_id=user_id,
                 conversation_context={"summary_request": True}
             )
@@ -234,8 +214,6 @@ class LifeManagementService:
             # Categorize memories
             summary = {
                 "calendar_events": [],
-                "fitness_goals": [],
-                "nutrition_plans": [],
                 "recent_activities": [],
                 "suggestions": []
             }
@@ -247,28 +225,8 @@ class LifeManagementService:
                         "importance": memory.importance,
                         "last_accessed": memory.last_activated.isoformat() if memory.last_activated else None
                     })
-                
-                if "fitness" in memory.categories:
-                    summary["fitness_goals"].append({
-                        "content": memory.content,
-                        "importance": memory.importance,
-                        "last_accessed": memory.last_activated.isoformat() if memory.last_activated else None
-                    })
-                
-                if "nutrition" in memory.categories:
-                    summary["nutrition_plans"].append({
-                        "content": memory.content,
-                        "importance": memory.importance,
-                        "last_accessed": memory.last_activated.isoformat() if memory.last_activated else None
-                    })
             
             # Generate suggestions based on patterns
-            if len(summary["fitness_goals"]) == 0:
-                summary["suggestions"].append("Consider setting some fitness goals to stay motivated.")
-            
-            if len(summary["nutrition_plans"]) == 0:
-                summary["suggestions"].append("Planning your nutrition can help you achieve your health goals.")
-            
             if len(summary["calendar_events"]) == 0:
                 summary["suggestions"].append("Keeping track of important events can help reduce stress.")
             

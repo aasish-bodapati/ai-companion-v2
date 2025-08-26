@@ -1,28 +1,26 @@
-# MVP Delivery Plan (10 Days)
+# MVP Delivery Plan (Personal Companion)
 
 ## Goal
-Ship a usable MVP of AI Companion v2: a 24/7 assistant that remembers you, avoids repeated context, and can bridge chat → calendar, fitness, and nutrition with explainable memory.
+Ship a usable MVP of a Personal Companion that remembers over time, avoids re-asking known facts, and replies naturally like a human personal assistant with a notepad. Domain bridges (calendar) are deprioritized and off by default unless explicitly requested by the user.
 
 ## Current Status
 - ✅ 40+ tests passing locally (`pytest -q`).
-- ✅ Storage modularization complete: `MemoryService.store_memory()` → `StorageMixin`; FAISS adapter fixed.
-- ✅ Vision updated (`vision.md`) to emphasize “no repeated context.”
-- ✅ Local dev DB defaults to SQLite; `init_db.py` seeds all core tables (`users`, `notes`, `tasks`, `reminders`).
-- ✅ Calendar NL guard prevents swallowing `/todo`/`/note`/`/remind`.
-- ✅ Dual-write `/todo` → `/api/v1/tasks` fixed with test.
-- ✅ RFC 7807 problem+json error shape standardized.
-- ✅ Recap fast-path (no LLM) implemented with flow test.
-- ✅ Selective retrieval in reply pipeline reduces redundancy.
-- ✅ Minimal Memory Manager UI at `/memories/manage`.
-- ✅ Calendar delete regression resolved: fast-path executes `/calendar delete <uuid>` during `send_message()`; E2E test green. Debug flag `CALENDAR_DEBUG_ENABLED` available for traces.
- - ✅ Audit transparency delivered: History drawer with pagination, action icons, IP/UA, inline diff; Prometheus counters exposed at `/metrics`.
+- ✅ Memory-first reply path: known-facts retrieval injected into system prompt; per-conversation rolling summary injected.
+- ✅ Fact capture + dedupe on first mention; memory types: `profile`, `preference`, `fact`, `summary`.
+- ✅ Repetition guard suppresses duplicate assistant replies; check-before-ask gate removes questions about known facts.
+- ✅ “Human PA (notepad)” tone and rules added to system prompt; proactive domain suggestions removed.
+- ✅ Confirm-before-write guard for actions (calendar/hydration/mood) when invoked from chat.
+- ✅ Storage modularization; FAISS adapter fixed.
+- ✅ Local dev DB defaults to SQLite; seeds core tables.
+- ✅ RFC 7807 error shape; metrics wired.
 
-## MVP Scope
-- Core: Chat-first workflow with memory persistence and no repeated context.
-- Bridges (happy path only): Calendar, Fitness, Nutrition.
+## MVP Scope (Personal Companion)
+- Core: Chat-first workflow with memory capture/retrieval, no re-asking known facts, repetition guard, rolling summary.
+- Behavioral: Human personal assistant with a notepad—quietly captures facts, proposes concise next steps; asks one short confirm only for data-changing actions.
+- Bridges: Off by default; only engaged on explicit user request; always confirm-before-write.
 - Mind Palace: Read-only visualization (graph, timeline, patterns).
 - Safety: Peanut sanitization + JWT-protected endpoints.
-- Memory Management: List + delete UI, explainability endpoint.
+- Memory Management: List/delete UI, explainability endpoint.
 
 ## Immediate Blocker (Dev)
 - Resolved: local DB accessibility (switched to SQLite).
@@ -56,20 +54,19 @@ Acceptance:
 - Flow test: continuity references last event correctly.
 - Golden recap snapshot stable across runs.
 
-### Days 5–7: Action Bridges
-- Calendar: basic add/list events (with “after that” reminders).
-- Fitness: create/update routine avoiding dislikes (preference heuristic).
-- Nutrition: populate plan respecting allergies/preferences.
-- Confirmations logged + minimal UI artifacts.
+### Days 5–7: Human PA Fit & Guardrails
+- Finalize check-before-ask across more phrases (timezone, diet, allergies, name, email, phone, schedule windows).
+- Confirm-before-write guard complete (done).
+- Optional: add chat confirmation UX wrapper when actions are wired.
 
 Acceptance:
-- From chat, user can create a basic schedule, fitness plan, and nutrition plan.
-- Preferences respected (e.g., no running if “don’t like running”).
- - Calendar deletion by UUID verified within 10s polling window (regression covered by Playwright spec).
+- From chat, user can create a basic schedule.
+- Preferences respected.
+- Calendar deletion by UUID verified within 10s polling window (regression covered by Playwright spec).
 
-### Days 7–8: Mind Palace + Adherence Basics
+### Days 7–8: Mind Palace + Memory Edges
 - Mind Palace read-only renders memory graph, timeline, and patterns.
-- Adherence stubs (boolean toggles) influence next suggestions.
+- Add small heuristics for rolling summary quality (cap bullets, trim noise).
 
 Acceptance:
 - Mind Palace page renders recent memories without errors.
@@ -79,7 +76,7 @@ Acceptance:
 - Add latency histogram + memory hit % to metrics endpoint.
 - CI collects metrics (artifacts).
 - Extend eval dimensions (coherence, recall, safety, tone) into report.
- - Add feature flags documentation, including `CALENDAR_DEBUG_ENABLED` for calendar traces.
+- Add feature flags documentation, including `CALENDAR_DEBUG_ENABLED`.
 
 Acceptance:
 - `scripts/chat_eval.py` produces per-dimension JSON.
@@ -95,7 +92,7 @@ Acceptance:
 - **Integration fragility** → bridges limited to happy paths for MVP.
 - **Scope creep** → enforce memory-first + continuity as the MVP; bridges are bonus.
 
-## Gaps to True “No Repeated Context Assistant”
+## Gaps to True “Personal Companion”
 
 - **Memory richness vs. read-only Mind Palace**
   - Current Mind Palace is explainability-only; no editing/corrections yet.
@@ -104,35 +101,33 @@ Acceptance:
 - **Continuity heuristic still narrow**
   - Covers “after that” and a few phrases, but not deeper discourse markers (e.g., “like last week”, “same place as usual”).
 
-- **Scope of bridges**
-  - Calendar supports basic CRUD and demo-style create; broader NL scheduling limited to happy path.
-  - Fitness and nutrition plans generate initial structures; adherence-linked evolution is stubbed only.
+- **Bridges minimal by design for MVP**
+  - Domain features are off by default; we only act on explicit request and confirmation.
+  - Rich NL scheduling and plan generation remain post-MVP.
 
 - **Learning depth**
   - Adaptive learning mostly stubbed for adherence (boolean toggles).
-  - To avoid re-explaining, the assistant must adapt when patterns change (e.g., skips morning workouts → suggest evenings).
+  - To avoid re-explaining, the assistant must adapt when patterns change (e.g., skips mornings → suggest evenings).
 
 - **Scalability of memory**
   - SQLite + FAISS fine for local MVP; multi-user production may impact retrieval latency and write/read throughput.
 
 ### Next Steps to Close Gaps
-- Enable conversational memory edits: secure endpoints + chat intents to update/override `preference`, `fact`, and `message` memories.
-- Broaden continuity: add rules for time/place anaphora (“last week”, “same place”) and lightweight entity linking in recent context.
-- Calendar NL: incrementally expand parser patterns (dates, recurrence, locations) with deterministic fallbacks and confirmations.
-- Learning loop: record adherence outcomes and adjust future suggestions; add simple decay/reinforcement to preferences.
-- Scale plan: evaluate Postgres + pgvector, async retrieval pipeline, and batched FAISS reads; add indices and pagination where needed.
+- Conversational memory edits: secure endpoints + chat intents to update/override `preference`, `fact`, and `message` memories.
+- Broaden continuity: rules for time/place anaphora (“last week”, “same place”) and lightweight entity linking in recent context.
+- Optional: chat confirmation UX wrapper for action attempts.
+- Scale plan: evaluate Postgres + pgvector, async retrieval; indices and pagination.
 
-## Success Criteria
+## Success Criteria (Personal Companion)
 - ✅ All tests pass locally + CI.
 - ✅ Flow score ≥ 70% in `chat_eval.py`.
 - ✅ Recap snapshot stable; continuity heuristics deterministic.
 - ✅ Peanut sanitization always enforced.
 - ✅ User can:
-  - Create a task via chat (`/todo`) → see in `/tasks`.
-  - Chat about schedule → recap → continue without re-explaining.
-  - Populate at least one calendar, fitness, and nutrition artifact.
-  - View Mind Palace with memories.
-  - Correct or delete memories with a full audit trail (update/soft_delete/hard_delete/search logged; strict ownership; JWT enforced).
+  - Have multi-turn chats where the assistant remembers facts without re-asking and avoids repeating itself.
+  - See continuity via rolling summary (assistant stays on track without large prompts).
+  - View Mind Palace with memories; correct or delete memories with full audit trail.
+  - Optionally request domain actions; assistant asks one short confirm before writing.
 
 ## Roadmap Beyond MVP (Sketch)
 

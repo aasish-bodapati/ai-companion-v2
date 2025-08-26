@@ -1,13 +1,20 @@
 from __future__ import annotations
 from typing import List, Optional, Dict, Any
+import json
 from datetime import datetime, timezone
-from sqlalchemy.orm import Session
 import logging
+import time
+import uuid
+
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.crud.user import user as user_crud
 from app.crud.memory import memory
 from app.memory.vector_store.factory import get_vector_store
 import app.memory.embeddings as embeddings
+from app.memory.deduplication import deduplication_service
+from app.memory.context_tracker import context_tracker
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +48,35 @@ class StorageMixin:
             if not s:
                 return None
 
+            # Optionally bypass dedup for structured fact KV so consolidation can run
+            _has_structured_kv = False
+            try:
+                if ":" in s:
+                    _k = s.split(":", 1)[0].strip()
+                    if 1 <= len(_k) <= 64 and (" " not in _k):
+                        _has_structured_kv = True
+            except Exception:
+                _has_structured_kv = False
+
+            # Re-enable dedup for non-fact content; keep bypass for facts and structured KV
+            bypass_dedup = (content_type or "").lower() == "fact" or _has_structured_kv
+
+            # Check for semantic duplicates before storing (unless bypassed)
+            if not bypass_dedup:
+                is_duplicate, existing_id = deduplication_service.check_for_duplicates(
+                    db, user_id, s, content_type
+                )
+                if is_duplicate:
+                    # Translate DB id to faiss_id for API consistency
+                    try:
+                        existing_node = memory.get(db, existing_id)
+                        if existing_node and existing_node.faiss_id:
+                            return existing_node.faiss_id
+                    except Exception:
+                        pass
+                    logger.info(f"Skipping duplicate memory for user {user_id}")
+                    return existing_id
+
             # Normalize metadata
             md: Dict[str, Any] = {}
             if metadata:
@@ -49,6 +85,16 @@ class StorageMixin:
             # Heuristic + optional LLM extraction pipeline
             remember_explicit = bool(md.get("remember", False))
             norm = s
+
+            # Detect simple structured key:value pattern early (e.g., "email: user@example.com")
+            has_structured_kv = False
+            try:
+                if ":" in s:
+                    key_part = s.split(":", 1)[0].strip()
+                    if 1 <= len(key_part) <= 64 and (" " not in key_part):
+                        has_structured_kv = True
+            except Exception:
+                has_structured_kv = False
 
             # Importance gating when not explicit
             importance_source = "heuristic"
@@ -66,7 +112,11 @@ class StorageMixin:
                         importance_source = "heuristic+llm"
                     except Exception:
                         pass
-                if final_importance < importance_min:
+                # For structured facts, allow a lower effective threshold to avoid LLM dependency in common cases
+                effective_min = importance_min
+                if (content_type or "").lower() == "fact" and has_structured_kv:
+                    effective_min = min(importance_min, 0.3)
+                if final_importance < effective_min:
                     return None
                 md["importance_source"] = importance_source
                 md["importance_score"] = float(final_importance)
@@ -96,13 +146,28 @@ class StorageMixin:
             # Consolidation key and hashing
             import hashlib as _hashlib
 
+            # Compute a content hash for change detection
             content_hash = _hashlib.sha1(norm.encode("utf-8")).hexdigest()
-            consolidation_key = md.get("consolidation_key") or content_hash
+
+            # Derive a stable, human-readable consolidation key when possible.
+            # Example: "email: user@example.com" -> consolidation_key == "email"
+            derived_key = None
+            try:
+                if ":" in s:
+                    candidate = s.split(":", 1)[0].strip().lower()
+                    # Keep alnum + underscore/hyphen; drop other punctuation/spaces
+                    derived_key = "".join(ch for ch in candidate if ch.isalnum() or ch in ("_", "-"))
+                    if not derived_key:
+                        derived_key = None
+            except Exception:
+                derived_key = None
+
+            consolidation_key = md.get("consolidation_key") or derived_key or content_hash
             md["consolidation_key"] = consolidation_key
             md["content_hash"] = content_hash
 
             # Check if existing memory with same key
-            existing = memory.get_by_consolidation_key(db, user_id=user_id, consolidation_key=consolidation_key)
+            existing = memory.get_by_consolidation_key(db, user_id=user_id, key=consolidation_key)
             embedding = None
 
             # Compute embedding once if needed
@@ -113,10 +178,24 @@ class StorageMixin:
                 embedding = None
 
             if existing:
-                # Update DB content/metadata
+                # Determine if content actually changed using stored content_hash in metadata
+                prev_hash = None
+                try:
+                    prev_md = existing.memory_metadata or {}
+                    if isinstance(prev_md, dict):
+                        prev_hash = prev_md.get("content_hash")
+                    else:
+                        prev_hash = (json.loads(prev_md or "{}") or {}).get("content_hash")
+                except Exception:
+                    prev_hash = None
+
+                changed = (prev_hash != content_hash)
+
+                # Update DB content and metadata (content persists exact 'norm')
                 memory.update_content_and_metadata(db, node=existing, content=norm, metadata=md)
-                # Try updating vector if we have an embedding and a FAISS id
-                if embedding is not None and existing.faiss_id:
+
+                # Only update the vector when the content actually changed
+                if changed and embedding is not None and existing.faiss_id:
                     try:
                         vector_store = get_vector_store()
                         vector_store.update_vector(user_id, existing.faiss_id, embedding[0])
@@ -124,38 +203,42 @@ class StorageMixin:
                         logger.warning(f"Vector update failed for user={user_id}, id={existing.faiss_id}: {_fe}")
                 return existing.faiss_id or None
 
-            # Create DB record first to ensure we have authoritative state
-            created = memory.create(
+            # Create DB record with a generated faiss_id (required by schema)
+            faiss_id = str(uuid.uuid4())
+            # Map importance (0..1) to integer (0..100) if available
+            importance_int = 0
+            try:
+                if "importance_score" in md:
+                    importance_int = max(0, min(100, int(float(md["importance_score"]) * 100)))
+            except Exception:
+                importance_int = 0
+
+            created = memory.create_memory_node(
                 db,
-                user_id=user_id,
+                faiss_id=faiss_id,
                 content=norm,
                 content_type=content_type,
+                user_id=user_id,
                 conversation_id=conversation_id,
                 metadata=md,
+                importance_score=importance_int,
             )
             if not created:
                 return None
 
             # Insert into vector store (non-fatal)
-            faiss_id = None
             if embedding is not None:
-                import uuid as _uuid
-
-                faiss_id = str(_uuid.uuid4())
                 try:
                     vector_store = get_vector_store()
                     vector_store.add(user_id, [faiss_id], [embedding[0]])
                 except Exception as _fe:
                     logger.warning(f"Vector add failed for user={user_id}, id={faiss_id}: {_fe}")
-                    faiss_id = None
 
-            # Persist faiss_id and a baseline relevance score
-            if faiss_id:
-                try:
-                    memory.update_faiss_id(db, node=created, faiss_id=faiss_id)
-                    memory.update_relevance_score(db, faiss_id=faiss_id, score=1.0)
-                except Exception:
-                    pass
+            # Baseline relevance score
+            try:
+                memory.update_relevance_score(db, faiss_id=faiss_id, score=1.0)
+            except Exception:
+                pass
 
             return faiss_id
         except Exception as e:

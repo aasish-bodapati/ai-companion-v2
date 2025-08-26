@@ -9,9 +9,10 @@ from app.api.endpoints import (
     conversations_main,
     conversations_crud,
     conversations_messages,
-    memory_visualization,
     conversation,
     memory,
+    memory_visualization,
+    deduplication,
     calendar,
     notes,
     tasks,
@@ -46,11 +47,11 @@ if getattr(settings, "STREAMING_ENABLED", False):
     from app.api.endpoints import conversations_streaming as _conversations_streaming  # type: ignore
     api_router.include_router(_conversations_streaming.router, prefix="/conversations", tags=["conversations"])
 
-# Memory and related
-# Mount under /memory (new) and also without prefix (legacy) to satisfy tests expecting both
+# Memory and related (standardized under /memory) and legacy alias /memories for tests
 api_router.include_router(memory.router, prefix="/memory", tags=["memory"])
-api_router.include_router(memory.router, tags=["memory-legacy"])
-api_router.include_router(memory_visualization.router, prefix="/memory-visualization", tags=["memory-visualization"])
+api_router.include_router(memory.router, prefix="/memories", tags=["memory"])
+api_router.include_router(memory_visualization.router, prefix="/memory-visualization", tags=["memory"])
+api_router.include_router(deduplication.router, prefix="/deduplication", tags=["deduplication"])
 
 # Additional feature areas
 api_router.include_router(calendar.router, tags=["calendar"])

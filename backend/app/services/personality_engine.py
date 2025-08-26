@@ -271,8 +271,6 @@ class PersonalityEngine:
         
         if "stress" in domains or "health" in domains:
             return self.personal_opinions["self_care"]
-        elif "fitness" in domains or "nutrition" in domains:
-            return self.personal_opinions["health"]
         elif "work" in domains or "scheduling" in domains:
             return self.personal_opinions["work_life_balance"]
         

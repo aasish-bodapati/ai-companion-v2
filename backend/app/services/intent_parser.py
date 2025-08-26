@@ -169,16 +169,8 @@ class IntentParser:
     
     def parse_any_intent(self, text: str) -> Optional[Dict[str, Any]]:
         """Try to parse any supported intent from text."""
-        # Try fitness first
-        intent = self.parse_fitness_intent(text)
-        if intent:
-            return intent
-            
-        # Try nutrition
-        intent = self.parse_nutrition_intent(text)
-        if intent:
-            return intent
-            
+        # Note: fitness and nutrition intents are deprecated/removed
+        # Only consider currently supported domains
         # Try hydration
         intent = self.parse_hydration_intent(text)
         if intent:

@@ -69,3 +69,26 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
         return vecs
     vectors = model.encode(texts, normalize_embeddings=True, convert_to_numpy=True)
     return vectors.tolist()
+
+
+def get_embedding(text: str) -> List[float]:
+    """
+    Compatibility helper: return a single embedding for a text.
+    Unit tests patch this symbol directly.
+    """
+    vecs = embed_texts([text])
+    return vecs[0] if vecs else []
+
+
+def get_embedding_dimension() -> int:
+    """Compatibility helper returning the embedding dimension (default 384)."""
+    try:
+        # If model is loaded, infer from a tiny probe
+        model_name = getattr(settings, "EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
+        model = _lazy_load(model_name)
+        if model is None:
+            return 384
+        v = model.encode(["probe"], normalize_embeddings=True)
+        return int(v.shape[1]) if hasattr(v, "shape") and len(getattr(v, "shape", [])) == 2 else 384
+    except Exception:
+        return 384

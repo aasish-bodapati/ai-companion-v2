@@ -9,8 +9,6 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from app.services.personality_engine import personality_engine
-from app.services.context_intelligence import context_intelligence
-from app.memory.neural_system import neural_memory_system
 
 logger = logging.getLogger(__name__)
 
@@ -66,16 +64,6 @@ class HumanResponseGenerator:
         ]
         
         self.follow_up_questions = {
-            "fitness": [
-                "How does that make you feel physically?",
-                "What's your energy level like with this?",
-                "How does this fit into your overall routine?"
-            ],
-            "nutrition": [
-                "How does this affect your eating patterns?",
-                "What's your relationship with food like right now?",
-                "How does this impact your energy throughout the day?"
-            ],
             "stress": [
                 "What's your stress level like right now?",
                 "How are you coping with this?",
@@ -145,11 +133,7 @@ class HumanResponseGenerator:
     
     def _generate_contextual_message(self, user_message: str, domains: List[str], emotional_state: str) -> str:
         """Generate a contextual message based on domains and emotional state."""
-        if "fitness" in domains:
-            return "I can help you create a workout plan, track your progress, and stay motivated."
-        elif "nutrition" in domains:
-            return "I can help you create a meal plan that supports your goals."
-        elif "stress" in domains:
+        if "stress" in domains:
             return "I can help you develop stress management techniques and find ways to relax."
         elif "health" in domains:
             return "I can help you monitor your health metrics, remember appointments, and maintain wellness."
@@ -161,20 +145,6 @@ class HumanResponseGenerator:
     def _generate_contextual_actions(self, domains: List[str], emotional_state: str) -> List[str]:
         """Generate contextual action suggestions."""
         actions = []
-        
-        if "fitness" in domains:
-            actions.extend([
-                "Would you like me to help you plan a workout routine?",
-                "I can remind you about your fitness goals.",
-                "Let's track your progress together."
-            ])
-        
-        if "nutrition" in domains:
-            actions.extend([
-                "Should we create a meal plan?",
-                "I can help you track your nutrition.",
-                "Let's plan some healthy meals."
-            ])
         
         if "stress" in domains:
             actions.extend([
@@ -262,11 +232,7 @@ class HumanResponseGenerator:
         # Add domain-specific understanding
         if domains:
             domain = domains[0]
-            if domain == "fitness":
-                response += "It's completely normal to feel this way about your fitness journey. "
-            elif domain == "nutrition":
-                response += "Nutrition can be such a complex and emotional topic. "
-            elif domain == "stress":
+            if domain == "stress":
                 response += "Stress has a way of affecting every part of our lives. "
             elif domain == "work":
                 response += "Work challenges can really take a toll on our overall wellbeing. "
@@ -288,11 +254,7 @@ class HumanResponseGenerator:
         # Add domain-specific support
         if domains:
             domain = domains[0]
-            if domain == "fitness":
-                response += "Your health and fitness matter, and it's okay to ask for help. "
-            elif domain == "nutrition":
-                response += "Making changes to your nutrition takes time and support. "
-            elif domain == "stress":
+            if domain == "stress":
                 response += "Managing stress is a skill that we all need to develop. "
         
         # Add urgency-based guidance
@@ -337,11 +299,7 @@ class HumanResponseGenerator:
         # Add domain acknowledgment
         if domains:
             domain = domains[0]
-            if domain == "fitness":
-                response += "I love how you're thinking about your fitness. "
-            elif domain == "nutrition":
-                response += "It's great that you're focusing on your nutrition. "
-            elif domain == "stress":
+            if domain == "stress":
                 response += "Taking care of your stress is so important. "
         
         return response
@@ -417,10 +375,7 @@ class HumanResponseGenerator:
             for msg in conversation_history[-3:]:
                 if msg.get("role") == "user":
                     content = msg.get("content", "").lower()
-                    if any(word in content for word in ["fitness", "workout", "exercise", "strength"]):
-                        last_topics.add("fitness")
-                    if any(word in content for word in ["nutrition", "food", "diet", "weight"]):
-                        last_topics.add("nutrition")
+                    # fitness/nutrition topics removed
                     if any(word in content for word in ["stress", "anxiety", "worried", "overwhelmed", "presentation"]):
                         last_topics.add("stress")
                     if any(word in content for word in ["health", "sleep", "tired", "wellness"]):
@@ -430,10 +385,8 @@ class HumanResponseGenerator:
             
             # Check for topic continuity or related topics
             related_topics = {
-                "fitness": ["health", "nutrition"],
-                "nutrition": ["fitness", "health"],
                 "stress": ["health", "sleep"],
-                "health": ["fitness", "nutrition", "stress", "sleep"],
+                "health": ["stress", "sleep"],
                 "sleep": ["health", "stress"]
             }
             
@@ -518,10 +471,7 @@ class HumanResponseGenerator:
                 content = msg.get("content", "").lower()
                 
                 # Extract themes
-                if any(word in content for word in ["fitness", "workout", "exercise"]):
-                    themes.add("fitness")
-                if any(word in content for word in ["nutrition", "food", "diet"]):
-                    themes.add("nutrition")
+                # fitness/nutrition themes removed
                 if any(word in content for word in ["stress", "anxiety", "worried"]):
                     themes.add("stress")
                 if any(word in content for word in ["work", "job", "career"]):

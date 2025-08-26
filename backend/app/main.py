@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
+from app.api.endpoints import conversations_messages, conversations_main, memory, conversation, deduplication
 from app.core.config import settings
 from app.core.metrics import dump_prometheus as dump_llm_metrics
 from app.core.tracing import init_tracing
@@ -251,6 +252,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         "title": title,
         "status": status_code,
         "detail": str(detail),
+        "message": str(detail),
         "instance": str(getattr(request.url, "path", "/")),
         # Extensions
         "errors": None,
@@ -272,6 +274,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         "title": title,
         "status": status_code,
         "detail": "Validation Error",
+        "message": "Validation Error",
         "instance": str(getattr(request.url, "path", "/")),
         # Extensions
         "errors": exc.errors(),

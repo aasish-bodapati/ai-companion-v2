@@ -79,8 +79,6 @@ class AutoMemoryService:
             'goal': 0.9,
             'preference': 0.8, 
             'profile': 0.8,
-            'workout': 0.7,
-            'nutrition': 0.7,
             'fact': 0.6,
             'conversation': 0.4,
             'message': 0.3
@@ -98,9 +96,6 @@ class AutoMemoryService:
                 
         # Actionable information
         actionable_patterns = [
-            r'\d+\s*(kg|lbs|pounds|kilos)',  # weights
-            r'\d+\s*(reps|sets|minutes|hours)',  # exercise metrics
-            r'\d+\s*(calories|kcal)',  # nutrition
             r'\d{1,2}[:/]\d{2}',  # times
             r'\d{1,2}/\d{1,2}/\d{2,4}',  # dates
             r'by\s+\w+\s+\d{1,2}',  # deadlines
@@ -282,7 +277,11 @@ class AutoMemoryService:
                 content=red_content,
                 content_type=ct,
                 user_id=user_id,
-                conversation_id=context.get('metadata', {}).get('conversation_id'),
+                conversation_id=(
+                    str(context.get('metadata', {}).get('conversation_id'))
+                    if context.get('metadata', {}).get('conversation_id') is not None
+                    else None
+                ),
                 metadata=red_meta,
                 importance_score=int(importance * 100)
             )
@@ -335,14 +334,7 @@ class AutoMemoryService:
         content_parts = [f"Action: {action_name}"]
         
         # Extract key information from params
-        if 'exercises' in action_params:
-            exercises = action_params['exercises']
-            if exercises:
-                exercise_names = [ex.get('name', 'Unknown') for ex in exercises]
-                content_parts.append(f"Exercises: {', '.join(exercise_names)}")
-        
-        if 'meal_name' in action_params:
-            content_parts.append(f"Meal: {action_params['meal_name']}")
+        # fitness/nutrition extraction removed
             
         if 'goal_description' in action_params:
             content_parts.append(f"Goal: {action_params['goal_description']}")
@@ -427,7 +419,7 @@ class AutoMemoryService:
             user_id=user_id,
             content=content,
             content_type="preference",
-            conversation_id=conversation_id,
+            conversation_id=(str(conversation_id) if conversation_id is not None else None),
             metadata=meta,
             importance_score=80,
         )
@@ -435,10 +427,6 @@ class AutoMemoryService:
     def _get_action_content_type(self, action_name: str) -> str:
         """Map action names to memory content types"""
         action_type_map = {
-            'fitness.log_workout': 'workout',
-            'fitness.create_goal': 'goal',
-            'nutrition.log_meal': 'nutrition',
-            'nutrition.create_plan': 'goal',
             'hydration.log_water': 'fact',
             'mood.log_checkin': 'fact',
             'journal.add_entry': 'fact'

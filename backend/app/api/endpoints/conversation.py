@@ -10,8 +10,6 @@ from datetime import datetime
 
 from app.db.session import get_db
 from app.api.deps import get_current_user
-from app.services.conversation_intelligence import conversation_intelligence
-from app.memory.neural_system import neural_memory_system
 
 router = APIRouter()
 

@@ -14,6 +14,8 @@ from app.crud.memory import memory
 from app.memory.vector_store.factory import get_vector_store
 import app.memory.embeddings as embeddings
 from app.schemas.memory import MemorySearchResult
+from app.memory.context_tracker import context_tracker
+from app.memory.deduplication import deduplication_service
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,7 @@ class RetrievalMixin:
         limit: int = 8,
         min_relevance: float = 0.5,
         debug: bool = False,
+        conversation_id: Optional[str] = None,
     ) -> List[MemorySearchResult]:
         """
         Search for relevant memories using FAISS and return enriched results.
@@ -163,6 +166,17 @@ class RetrievalMixin:
                         continue
                 scored.sort(key=lambda t: t[1], reverse=True)
                 faiss_results = scored[: max(1, limit)]
+
+            # Filter out already used memories if conversation_id provided
+            if conversation_id:
+                used_memory_ids = context_tracker.get_used_memory_ids(conversation_id)
+                filtered_faiss_results = []
+                for faiss_id, score in faiss_results:
+                    # Check if this memory was already used
+                    memory_node = memory.get_memory_by_faiss_id(db, faiss_id)
+                    if memory_node and memory_node.id not in used_memory_ids:
+                        filtered_faiss_results.append((faiss_id, score))
+                faiss_results = filtered_faiss_results
 
             # Retrieve memory nodes from database (collect more for reranking)
             memory_results = []
@@ -463,14 +477,8 @@ class RetrievalMixin:
         # Enhanced contextual memory retrieval using new system
         if memory_limit > 0 and current_message and getattr(self, 'EMOTIONAL_ANALYSIS_ENABLED', True):
             try:
-                # Analyze emotional context of current message
-                from app.memory.emotional_memory import emotional_analyzer as _ea
                 from app.memory.contextual_retrieval import contextual_retriever as _cr
-                emotional_context = _ea.analyze_emotional_context(
-                    current_message,
-                    [{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else []
-                )
-
+                
                 # Use contextual retrieval for human-like memory selection
                 general_memories = _cr.get_contextual_memories(
                     memory_service=self,
@@ -478,7 +486,7 @@ class RetrievalMixin:
                     user_id=user_id,
                     current_message=current_message,
                     conversation_history=[{'content': msg.content, 'role': msg.role} for msg in conversation_memories] if conversation_memories else [],
-                    emotional_context=emotional_context,
+                    emotional_context={},
                     limit=memory_limit
                 )
             except Exception as e:

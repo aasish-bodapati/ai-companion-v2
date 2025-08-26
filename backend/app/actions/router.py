@@ -64,6 +64,16 @@ class ActionRouter:
 
         # Timeline start (stub): In future, emit SSE/timeline events
         try:
+            # Confirm-before-write guard: if invoked from chat (conversation_id present),
+            # require explicit confirmation for domain write actions.
+            guarded_scopes = {"calendar:write", "fitness:write", "nutrition:write", "hydration:write", "mood:write"}
+            params = req.params or {}
+            if req.conversation_id and desc.scopes and any(s in guarded_scopes for s in desc.scopes):
+                if not bool(params.get("_confirm")):
+                    raise PermissionError(
+                        "This action changes your data. Please confirm to proceed. Reply 'yes' or re-issue with _confirm=true."
+                    )
+
             handler = self._handlers.get(req.action)
             if not handler:
                 # Default echo handler

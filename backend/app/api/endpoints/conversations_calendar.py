@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from dateutil import parser as dateparser
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone, timedelta
 
 from app import crud
 from app.api import deps
@@ -297,6 +298,90 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                 except Exception:
                     parsed = parsed
             if parsed and parsed.get("start"):
+                # Before creating, check for conflicts
+                try:
+                    start_dt = parsed.get("start")
+                    end_dt = parsed.get("end")
+                    # If end missing, default 60 minutes or infer from text
+                    dur_minutes = 60
+                    try:
+                        import re as _re
+                        lo = (text or "").lower()
+                        m_dur = _re.search(r"\b(\d+)\s*-?\s*hour\b", lo) or _re.search(r"\b(\d+)\s*hours\b", lo)
+                        if m_dur:
+                            dur_minutes = int(m_dur.group(1)) * 60
+                        else:
+                            m_min = _re.search(r"\b(\d+)\s*minutes?\b", lo)
+                            if m_min:
+                                dur_minutes = int(m_min.group(1))
+                    except Exception:
+                        pass
+                    if end_dt is None and start_dt is not None:
+                        end_dt = start_dt + timedelta(minutes=dur_minutes)
+                    # Build wide window ±12h around requested time to fetch potentially overlapping events
+                    window_start = start_dt - timedelta(hours=12)
+                    window_end = start_dt + timedelta(hours=12)
+                    # Normalize to naive UTC for querying
+                    def _naive_utc(x):
+                        try:
+                            if getattr(x, 'tzinfo', None) is not None:
+                                return x.astimezone(timezone.utc).replace(tzinfo=None)
+                            return x
+                        except Exception:
+                            return x
+                    events = crud_calendar.get_user_events(
+                        db,
+                        user_id=str(user.id),
+                        start=_naive_utc(window_start),
+                        end=_naive_utc(window_end),
+                    ) or []
+                    # Overlap predicate
+                    def _get(obj, k):
+                        try:
+                            return getattr(obj, k, None)
+                        except Exception:
+                            try:
+                                return obj.get(k) if isinstance(obj, dict) else None
+                            except Exception:
+                                return None
+                    def _to_naive_utc(x):
+                        if x is None:
+                            return None
+                        try:
+                            if getattr(x, 'tzinfo', None) is not None:
+                                return x.astimezone(timezone.utc).replace(tzinfo=None)
+                            return x
+                        except Exception:
+                            return None
+                    ms = _to_naive_utc(start_dt)
+                    me = _to_naive_utc(end_dt) or ms
+                    def _overlaps(ev):
+                        try:
+                            es = _to_naive_utc(_get(ev, 'start'))
+                            ee = _to_naive_utc(_get(ev, 'end')) or es
+                            if es is None or ee is None or ms is None or me is None:
+                                return False
+                            return not (me <= es or ms >= ee)
+                        except Exception:
+                            return False
+                    overlaps = [ev for ev in events if _overlaps(ev)]
+                    if overlaps:
+                        titles = []
+                        for ev in overlaps:
+                            t = _get(ev, 'title')
+                            titles.append(t if t else 'event')
+                        when_str = (
+                            start_dt.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+                            if getattr(start_dt, 'tzinfo', None) is None else
+                            start_dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                        )
+                        return (
+                            f"There seems to be a conflict at {when_str} with: {', '.join(titles)}. "
+                            "Would you like to pick a different time or adjust one of the events?"
+                        )
+                except Exception:
+                    # If conflict detection fails, proceed to create as before
+                    pass
                 calendar_event = CalendarEventCreate(
                     title=parsed.get("title", "Untitled Event"),
                     description=parsed.get("description"),

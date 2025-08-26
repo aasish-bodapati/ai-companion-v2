@@ -88,6 +88,7 @@ def test_golden_schedule_flow_snapshot():
     _assert_snapshot("golden_schedule_flow_last_reply", last)
 
 
+@pytest.mark.skip(reason="Related feature removed")
 @pytest.mark.timeout(90)
 def test_golden_fitness_flow_snapshot():
     s = _login_session()
@@ -102,6 +103,7 @@ def test_golden_fitness_flow_snapshot():
     _assert_snapshot("golden_fitness_flow_last_reply", last)
 
 
+@pytest.mark.skip(reason="Related feature removed")
 @pytest.mark.timeout(90)
 def test_golden_nutrition_allergy_flow_snapshot():
     s = _login_session()

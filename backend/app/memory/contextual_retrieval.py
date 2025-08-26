@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.schemas.memory import MemorySearchResult
-from app.memory.emotional_memory import emotional_analyzer
 
 logger = logging.getLogger(__name__)
 

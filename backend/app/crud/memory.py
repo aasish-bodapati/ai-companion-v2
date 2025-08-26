@@ -151,6 +151,9 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
                     md = {}
             else:
                 md = {}
+            # If already deleted, report no-op to caller
+            if isinstance(md, dict) and md.get("deleted") is True:
+                return False
             md["deleted"] = True
             md["deleted_at"] = datetime.now(timezone.utc).isoformat()
             node.memory_metadata = _json.dumps(md)

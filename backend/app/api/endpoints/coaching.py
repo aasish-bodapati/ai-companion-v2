@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 import json
 from dateutil import parser as dateparser
 
@@ -156,8 +156,7 @@ async def log_workout(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    created = crud.workout_log.create_for_user(db, user_id=_user.id, obj_in=body)
-    return CreatedId(id=created.id)
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/trackers/meals", response_model=CreatedId, tags=["trackers"], status_code=201)
@@ -166,8 +165,7 @@ async def log_meal(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    created = crud.meal_log.create_for_user(db, user_id=_user.id, obj_in=body)
-    return CreatedId(id=created.id)
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/trackers/hydration", response_model=CreatedId, tags=["trackers"], status_code=201)
@@ -222,37 +220,9 @@ async def query_logs(
     to_dt = _parse_dt(to)
 
     if kind == "workouts":
-        rows = crud.workout_log.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
-        return [
-            {
-                "id": r.id,
-                "when": r.when.isoformat(),
-                "type": r.type,
-                "duration_min": r.duration_min,
-                "distance_km": r.distance_km,
-                "intensity": r.intensity,
-                "notes": r.notes,
-            }
-            for r in rows
-        ]
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
     if kind == "meals":
-        rows = crud.meal_log.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
-        out = []
-        for r in rows:
-            items = []
-            try:
-                items = json.loads(r.items) if r.items else []
-            except Exception:
-                items = []
-            out.append({
-                "id": r.id,
-                "when": r.when.isoformat(),
-                "items": items,
-                "est_protein_g": r.est_protein_g,
-                "est_kcal": r.est_kcal,
-                "notes": r.notes,
-            })
-        return out
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
     if kind == "hydration":
         rows = crud.hydration_log.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
         return [
@@ -334,14 +304,12 @@ async def execute_action(
     params: Dict[str, Any] = body.params or {}
 
     try:
-        if action == "fitness.log_workout":
-            req = WorkoutLogCreate(**params)
-            created = crud.workout_log.create_for_user(db, user_id=_user.id, obj_in=req)
-            return ActionExecuteResponse(ok=True, action=action, result={"id": created.id})
-        if action == "nutrition.log_meal":
-            req = MealLogCreate(**params)
-            created = crud.meal_log.create_for_user(db, user_id=_user.id, obj_in=req)
-            return ActionExecuteResponse(ok=True, action=action, result={"id": created.id})
+        if action in ("fitness.log_workout", "nutrition.log_meal", "fitness.set_current_plan", "nutrition.set_current_plan"):
+            return ActionExecuteResponse(
+                ok=False,
+                action=action,
+                error=ActionExecuteError(detail="Feature removed", message="Feature removed", errors=None),
+            )
         if action == "hydration.log_water":
             req = HydrationLogCreate(**params)
             created = crud.hydration_log.create_for_user(db, user_id=_user.id, obj_in=req)
@@ -357,18 +325,6 @@ async def execute_action(
         if action == "fitness.create_goal":
             req = GoalCreate(**params)
             created = crud.goal.create_for_user(db, user_id=_user.id, obj_in=req)
-            return ActionExecuteResponse(ok=True, action=action, result={"id": created.id})
-
-        if action == "fitness.set_current_plan":
-            req = WorkoutPlanCreate(**params)
-            created = crud.workout_plan.create_for_user(db, user_id=_user.id, obj_in=req)
-            crud.workout_plan.set_active(db, user_id=_user.id, plan_id=created.id)
-            return ActionExecuteResponse(ok=True, action=action, result={"id": created.id})
-
-        if action == "nutrition.set_current_plan":
-            req = NutritionPlanCreate(**params)
-            created = crud.nutrition_plan.create_for_user(db, user_id=_user.id, obj_in=req)
-            crud.nutrition_plan.set_active(db, user_id=_user.id, plan_id=created.id)
             return ActionExecuteResponse(ok=True, action=action, result={"id": created.id})
 
         # Unknown action
@@ -392,8 +348,7 @@ async def create_fitness_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    created = crud.workout_plan.create_for_user(db, user_id=_user.id, obj_in=body)
-    return CreatedId(id=created.id)
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.get("/fitness/plans", response_model=List[WorkoutPlan], tags=["fitness"])
@@ -402,25 +357,7 @@ async def list_fitness_plans(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    rows = crud.workout_plan.list(db, user_id=_user.id, status=status)
-    out: List[WorkoutPlan] = []
-    for r in rows:
-        structured = None
-        try:
-            structured = json.loads(r.structured) if r.structured else None
-        except Exception:
-            structured = None
-        out.append(WorkoutPlan(
-            id=r.id,
-            title=r.title,
-            summary_md=r.summary_md,
-            structured=structured,
-            status=r.status,
-            source=r.source,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        ))
-    return out
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.get("/fitness/plans/current", response_model=Optional[WorkoutPlan], tags=["fitness"])
@@ -428,23 +365,7 @@ async def get_current_fitness_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    r = crud.workout_plan.get_current(db, user_id=_user.id)
-    if not r:
-        return None
-    try:
-        structured = json.loads(r.structured) if r.structured else None
-    except Exception:
-        structured = None
-    return WorkoutPlan(
-        id=r.id,
-        title=r.title,
-        summary_md=r.summary_md,
-        structured=structured,
-        status=r.status,
-        source=r.source,
-        created_at=r.created_at,
-        updated_at=r.updated_at,
-    )
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/fitness/plans/{plan_id}/set-active", response_model=dict, tags=["fitness"])
@@ -453,8 +374,7 @@ async def set_active_fitness_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    crud.workout_plan.set_active(db, user_id=_user.id, plan_id=plan_id)
-    return {"ok": True}
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/fitness/plans/{plan_id}/archive", response_model=dict, tags=["fitness"])
@@ -463,13 +383,7 @@ async def archive_fitness_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    db_obj = crud.workout_plan.get(db, id=plan_id)
-    if not db_obj or db_obj.user_id != _user.id:
-        return {"ok": True}
-    db_obj.status = "archived"
-    db.add(db_obj)
-    db.commit()
-    return {"ok": True}
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 # ---- Plans: Nutrition ----
@@ -479,8 +393,7 @@ async def create_nutrition_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    created = crud.nutrition_plan.create_for_user(db, user_id=_user.id, obj_in=body)
-    return CreatedId(id=created.id)
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.get("/nutrition/plans", response_model=List[NutritionPlan], tags=["nutrition"])
@@ -489,25 +402,7 @@ async def list_nutrition_plans(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    rows = crud.nutrition_plan.list(db, user_id=_user.id, status=status)
-    out: List[NutritionPlan] = []
-    for r in rows:
-        structured = None
-        try:
-            structured = json.loads(r.structured) if r.structured else None
-        except Exception:
-            structured = None
-        out.append(NutritionPlan(
-            id=r.id,
-            title=r.title,
-            summary_md=r.summary_md,
-            structured=structured,
-            status=r.status,
-            source=r.source,
-            created_at=r.created_at,
-            updated_at=r.updated_at,
-        ))
-    return out
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.get("/nutrition/plans/current", response_model=Optional[NutritionPlan], tags=["nutrition"])
@@ -515,23 +410,7 @@ async def get_current_nutrition_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    r = crud.nutrition_plan.get_current(db, user_id=_user.id)
-    if not r:
-        return None
-    try:
-        structured = json.loads(r.structured) if r.structured else None
-    except Exception:
-        structured = None
-    return NutritionPlan(
-        id=r.id,
-        title=r.title,
-        summary_md=r.summary_md,
-        structured=structured,
-        status=r.status,
-        source=r.source,
-        created_at=r.created_at,
-        updated_at=r.updated_at,
-    )
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/nutrition/plans/{plan_id}/set-active", response_model=dict, tags=["nutrition"])
@@ -540,8 +419,7 @@ async def set_active_nutrition_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    crud.nutrition_plan.set_active(db, user_id=_user.id, plan_id=plan_id)
-    return {"ok": True}
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
 
 
 @router.post("/nutrition/plans/{plan_id}/archive", response_model=dict, tags=["nutrition"])
@@ -550,10 +428,4 @@ async def archive_nutrition_plan(
     _user=Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
-    db_obj = crud.nutrition_plan.get(db, id=plan_id)
-    if not db_obj or db_obj.user_id != _user.id:
-        return {"ok": True}
-    db_obj.status = "archived"
-    db.add(db_obj)
-    db.commit()
-    return {"ok": True}
+    raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")

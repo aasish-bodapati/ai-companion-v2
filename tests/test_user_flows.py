@@ -7,6 +7,7 @@ Tests complete user journeys and workflows
 import sys
 import os
 import time
+import pytest
 sys.path.append(os.path.join(os.path.dirname(__file__), 'backend'))
 
 class UserFlowTester:
@@ -59,6 +60,7 @@ class UserFlowTester:
         
         return passed/total
 
+@pytest.mark.skip(reason="Related feature removed")
 def test_fitness_workflow():
     """Test complete fitness user workflow"""
     try:
@@ -129,6 +131,7 @@ def test_fitness_workflow():
     except Exception as e:
         return f"Workflow test failed: {e}"
 
+@pytest.mark.skip(reason="Related feature removed")
 def test_nutrition_workflow():
     """Test complete nutrition user workflow"""
     try:
