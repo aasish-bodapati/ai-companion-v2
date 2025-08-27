@@ -1,15 +1,45 @@
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 import json
+import uuid
 
 from app.crud.base import CRUDBase
 from app.models.memory import MemoryNode
-from app.schemas.memory import MemoryNodeCreate, MemoryNodeUpdate
+from app.schemas.memory import MemoryNodeCreate, MemoryNodeUpdate, MemoryCreate as LegacyMemoryCreate
 
 
 class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
     """CRUD operations for MemoryNode model."""
+
+    def create(
+        self, db: Session, *, obj_in: Union[MemoryNodeCreate, LegacyMemoryCreate]
+    ) -> MemoryNode:
+        """Create a memory node supporting both MemoryNodeCreate and back-compat MemoryCreate.
+
+        - When LegacyMemoryCreate is provided, this method will:
+          - generate a new faiss_id (uuid4)
+          - scale importance_score from [0,1] float to 0..100 int
+          - JSON-encode memory_metadata dict to string
+        """
+        if isinstance(obj_in, LegacyMemoryCreate):
+            faiss_id = str(uuid.uuid4())
+            importance = int(round(max(0.0, min(1.0, float(obj_in.importance_score))) * 100))
+            metadata = json.dumps(obj_in.memory_metadata) if obj_in.memory_metadata else None
+
+            node_in = MemoryNodeCreate(
+                faiss_id=faiss_id,
+                content=obj_in.content,
+                content_type=obj_in.content_type,
+                user_id=obj_in.user_id,
+                conversation_id=obj_in.conversation_id,
+                relevance_score=1.0,
+                importance_score=importance,
+                memory_metadata=metadata,
+            )
+            return super().create(db, obj_in=node_in)
+        # Already a MemoryNodeCreate
+        return super().create(db, obj_in=obj_in)
 
     def create_memory_node(
         self,

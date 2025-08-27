@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
 from app.api import deps
-from app.core.llm import generate_with_openrouter_vision
+from app.core.llm import generate_response
 from app.core.config import settings
 from app.schemas.user import User as UserSchema  # type: ignore
 from app.api.endpoints.uploads import _load_index  # reuse local upload index
@@ -87,16 +87,9 @@ async def analyze_image(
     model = body.model or (settings.LLM_MODEL_VISION or "meta-llama/Llama-Vision-Free")
 
     try:
-        out = generate_with_openrouter_vision(
-            model=model,
-            system_prompt="You are a helpful vision assistant. Be concise.",
-            prompt=prompt,
-            image_url=resolved_url or "",
-            max_tokens=128,
-        )
-        if not isinstance(out, str) or not out:
-            raise ValueError("Empty response from vision model")
-        return VisionAnalyzeOut(text=out)
+        # Vision functionality temporarily disabled - using stub response
+        # TODO: Implement vision support for Gemini or other providers
+        return VisionAnalyzeOut(text="Vision analysis is currently not available. Please try again later.")
     except Exception as e:
         # Return generic error without leaking provider details
         raise HTTPException(

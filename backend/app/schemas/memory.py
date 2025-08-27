@@ -93,3 +93,22 @@ class MemorySearchResult(BaseModel):
             except Exception:
                 return None
         return v
+
+
+# Back-compat schema used by tests expecting a simpler memory creation payload
+class MemoryCreate(BaseModel):
+    """Lightweight creation schema expected by legacy tests.
+
+    Fields intentionally differ from `MemoryNodeCreate` and will be adapted by
+    the CRUD layer:
+    - importance_score: float in [0,1] (will be scaled to 0..100 int)
+    - memory_metadata: dict (will be JSON-encoded by CRUD)
+    - conversation_id: optional
+    """
+
+    content: str
+    content_type: str
+    user_id: str
+    importance_score: float = 0.0
+    memory_metadata: Optional[Dict[str, Any]] = None
+    conversation_id: Optional[str] = None

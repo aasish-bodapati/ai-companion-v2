@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
-import uuid
+from uuid import UUID
 
 # Shared properties
 
@@ -27,8 +27,8 @@ class MessageCreate(MessageBase):
 
 # Properties to return via API
 class Message(MessageBase):
-    id: uuid.UUID
-    conversation_id: uuid.UUID
+    id: UUID
+    conversation_id: UUID
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -55,8 +55,8 @@ class ConversationUpdate(ConversationBase):
 
 # Properties to return via API
 class Conversation(ConversationBase):
-    id: uuid.UUID
-    user_id: uuid.UUID
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -75,14 +75,13 @@ class ConversationList(BaseModel):
 
 # Assistant reply with provenance for explainability
 from app.schemas.memory import MemorySearchResult
-import uuid as _uuid
 
 
 class AssistantReply(BaseModel):
     """Response shape for non-streaming assistant reply including provenance."""
 
     # Back-compat convenience: expose the assistant message id at the top level
-    id: _uuid.UUID | None = None
+    id: UUID | None = None
     message: Message
     provenance: List[MemorySearchResult] = []
     # Diagnostics: whether a real LLM call was used (False if local stub or deterministic handler)

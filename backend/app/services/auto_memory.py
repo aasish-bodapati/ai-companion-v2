@@ -7,10 +7,11 @@ import re
 import logging
 import uuid
 import hashlib
+import json
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.llm import generate_with_openrouter
+from app.core.llm import generate_response
 from app.memory.service import MemoryService
 from app.crud.memory import memory as memory_crud
 from app.models.memory import MemoryNode
@@ -55,7 +56,18 @@ class AutoMemoryService:
         """Detect simple first-person preference statements to avoid duplicate message memories."""
         if not content:
             return False
-        return bool(self._re_preference.search(content))
+        
+        # Enhanced preference detection patterns
+        preference_patterns = [
+            r"\bi\s+(?:like|love|enjoy|prefer)\b",
+            r"\bi\s+work\s+as\s+a\b",
+            r"\bi\s+work\s+at\b",
+            r"\bi\s+am\s+allergic\s+to\b",
+            r"\bi\s+avoid\b",
+        ]
+        
+        content_lower = content.lower()
+        return any(re.search(pattern, content_lower) for pattern in preference_patterns)
     
     def _has_explicit_remember_intent(self, content: str) -> bool:
         if not content:
@@ -73,52 +85,112 @@ class AutoMemoryService:
         importance = 0.0
         content_lower = content.lower()
         
-        # Content type scoring
+        # Filter out trivial messages (greetings, acknowledgments, emoji-only, very short)
+        trivial_patterns = [
+            r'^(hi|hello|hey|sup|yo)$',  # Simple greetings
+            r'^(ok|okay|k|kk)$',  # Acknowledgments
+            r'^(yes|yeah|yep|no|nope|nah)$',  # Simple yes/no
+            r'^(thanks?|thx|ty|thank you)$',  # Thanks
+            r'^(bye|goodbye|see ya|cya|ttyl)$',  # Goodbyes
+            r'^[👍👎😊😢😂🤔💯❤️😍🙏✨🔥💪🎉👏😎🤷‍♀️🤷‍♂️]+$',  # Emoji only
+            r'^[.!?]+$',  # Punctuation only
+        ]
+        
+        # Check if message is trivial
+        for pattern in trivial_patterns:
+            if re.search(pattern, content_lower.strip()):
+                return 0.0  # Trivial messages get 0.0 importance (will not be stored)
+        
+        # Additional check for very short messages (1-2 characters)
+        if len(content.strip()) <= 2:
+            return 0.0
+        
+        # Content type scoring - enhanced for better capture
         content_type = context.get('content_type', 'message')
         type_scores = {
-            'goal': 0.9,
-            'preference': 0.8, 
-            'profile': 0.8,
-            'fact': 0.6,
-            'conversation': 0.4,
-            'message': 0.3
+            'goal': 0.98,
+            'preference': 0.95, 
+            'profile': 0.95,
+            'fact': 0.85,
+            'conversation': 0.6,
+            'message': 0.5
         }
-        importance += type_scores.get(content_type, 0.3)
+        importance += type_scores.get(content_type, 0.5)
         
-        # Personal relevance indicators
+        # Enhanced personal relevance indicators - more aggressive scoring
         personal_keywords = [
             'goal', 'want to', 'need to', 'plan to', 'my', 'i am', 'i have',
-            'prefer', 'like', 'dislike', 'always', 'never', 'usually'
+            'prefer', 'like', 'dislike', 'always', 'never', 'usually',
+            'work as', 'job', 'career', 'allergic to', 'can\'t eat', 'avoid',
+            'schedule', 'routine', 'habit', 'pattern', 'usually', 'typically',
+            'favorite', 'best', 'worst', 'enjoy', 'hate', 'love', 'struggle with'
         ]
         for keyword in personal_keywords:
             if keyword in content_lower:
-                importance += 0.1
+                importance += 0.25  # Increased from 0.15
                 
-        # Actionable information
+        # Enhanced actionable information patterns
         actionable_patterns = [
             r'\d{1,2}[:/]\d{2}',  # times
             r'\d{1,2}/\d{1,2}/\d{2,4}',  # dates
             r'by\s+\w+\s+\d{1,2}',  # deadlines
+            r'\d+\s+(years?|months?|weeks?|days?|hours?)',  # durations
+            r'\$\d+',  # money amounts
+            r'\d+\s+(pounds?|kg|miles?|km)',  # measurements
         ]
         for pattern in actionable_patterns:
             if re.search(pattern, content_lower):
-                importance += 0.15
+                importance += 0.2
                 
-        # Emotional significance
+        # Enhanced emotional significance
         emotional_keywords = [
             'excited', 'frustrated', 'proud', 'disappointed', 'motivated',
-            'struggle', 'challenge', 'achievement', 'breakthrough', 'milestone'
+            'struggle', 'challenge', 'achievement', 'breakthrough', 'milestone',
+            'stress', 'overwhelmed', 'anxious', 'happy', 'sad', 'angry',
+            'confident', 'uncertain', 'worried', 'relieved', 'exhausted'
         ]
         for keyword in emotional_keywords:
             if keyword in content_lower:
+                importance += 0.15
+                
+        # Professional/Personal context indicators
+        context_indicators = [
+            'meeting', 'appointment', 'deadline', 'project', 'client',
+            'family', 'friend', 'relationship', 'health', 'fitness',
+            'diet', 'exercise', 'sleep', 'travel', 'vacation'
+        ]
+        for indicator in context_indicators:
+            if indicator in content_lower:
                 importance += 0.1
                 
         # Length and detail bonus (longer = more detailed = more important)
         if len(content) > 100:
-            importance += 0.1
+            importance += 0.15
         if len(content) > 300:
-            importance += 0.1
+            importance += 0.2
             
+        # Specific fact patterns that should always be captured - enhanced patterns
+        fact_patterns = [
+            r'i\s+(?:work|am)\s+(?:a|an)\s+\w+',  # "I work as a..."
+            r'i\s+work\s+as\s+a\s+\w+',  # "I work as a software engineer"
+            r'i\s+work\s+at\s+\w+',  # "I work at TechCorp"
+            r'i\s+(?:am|have)\s+allergic\s+to\s+\w+',  # "I am allergic to..."
+            r'i\s+(?:like|love|enjoy|prefer)\s+\w+',  # "I like..."
+            r'i\s+(?:hate|dislike|avoid)\s+\w+',  # "I hate..."
+            r'i\s+avoid\s+\w+',  # "I avoid loud places"
+            r'my\s+(?:name|job|company|team|family)\s+is\s+\w+',  # "My job is..."
+            r'i\s+prefer\s+\w+',  # "I prefer quiet restaurants"
+            r'i\s+live\s+in\s+\w+',  # "I live in New York"
+            r'i\s+have\s+a\s+\w+',  # "I have a dog named Max"
+            r'my\s+favorite\s+\w+',  # "My favorite color is blue"
+            r'i\s+enjoy\s+\w+',  # "I enjoy hiking"
+            r'i\s+feel\s+\w+',  # "I feel stressed"
+            r'i\s+am\s+feeling\s+\w+',  # "I am feeling overwhelmed"
+        ]
+        for pattern in fact_patterns:
+            if re.search(pattern, content_lower):
+                importance += 0.6  # Increased from 0.4 for these critical patterns
+                
         return min(1.0, importance)
     
     def find_similar_memories(self, db: Session, user_id: str, content: str, 
@@ -191,6 +263,7 @@ class AutoMemoryService:
         """
         Automatically capture memory if it meets importance threshold
         Handles consolidation with existing memories
+        Enhanced with more aggressive capture and better consolidation
         """
         if not settings.AUTO_MEMORY_ENABLED:
             return None
@@ -199,95 +272,198 @@ class AutoMemoryService:
             # Calculate importance
             importance = self.calculate_auto_importance(content, context)
             
-            if importance < settings.AUTO_IMPORTANCE_THRESHOLD:
-                logger.debug(f"Content below importance threshold: {importance}")
-                return None
-            
-            # Prepare normalized content and consolidation key irrespective of feature flag
+            # Enhanced threshold logic - be more aggressive for certain content types
+            content_lower = content.lower()
             ct = context.get('content_type', 'message')
-            # Optional gating for message-type captures
-            if ct == 'message':
-                # Configurable: require explicit remember intent for messages
-                if getattr(settings, 'REQUIRE_EXPLICIT_REMEMBER', False):
-                    if not self._has_explicit_remember_intent(content or ''):
-                        return None
-                # Allow global kill-switch for message auto capture
-                if not getattr(settings, 'CAPTURE_MESSAGES', True):
-                    return None
-            norm = " ".join((content or "").strip().lower().split())
-            key_src = f"{ct}|{norm}".encode('utf-8')
-            consolidation_key = hashlib.sha1(key_src).hexdigest()
-
-            # Check for similar existing memories
-            if settings.AUTO_CONSOLIDATION_ENABLED:
-                
-                # Prefer exact-key reuse over heuristic consolidation
-                try:
-                    existing = memory_crud.get_by_consolidation_key(db, user_id=user_id, key=consolidation_key)
-                except Exception:
-                    existing = None
-                if existing:
-                    # If an existing node with same normalized content exists, either consolidate or reuse
-                    if self.should_consolidate(content, existing):
-                        return self.consolidate_memory(db, content, existing)
-                    # Reinforce existing memory on repeat observations
-                    if getattr(settings, 'REINFORCEMENT_ENABLED', True):
-                        try:
-                            import json as _json
-                            md = _json.loads(existing.memory_metadata) if existing.memory_metadata else {}
-                            md['reinforced_count'] = int(md.get('reinforced_count') or 0) + 1
-                            memory_crud.update_content_and_metadata(db, node=existing, content=existing.content, metadata=md)
-                        except Exception:
-                            pass
-                    return existing
-
-                similar_memories = self.find_similar_memories(db, user_id, content)
-                
-                for existing in similar_memories:
-                    if self.should_consolidate(content, existing):
-                        logger.info(f"Consolidating memory for user {user_id}")
-                        return self.consolidate_memory(db, content, existing)
             
-            # Create new memory
-            # Attach consolidation key into metadata
-            meta = context.get('metadata', {}) or {}
-            # Avoid clobbering pre-existing key
-            if 'consolidation_key' not in meta:
-                meta['consolidation_key'] = consolidation_key
-
-            # Apply privacy redaction
-            red_content = content
-            red_meta = meta
-            try:
-                red_content, red_info = redact_text(content or "")
-                red_meta = redact_metadata(meta)
-                # attach redaction stats for audit without leaking values
-                if isinstance(red_meta, dict):
-                    red_meta.setdefault("redaction", {}).update({
-                        "enabled": bool(getattr(settings, "PRIVACY_REDACTION_ENABLED", True)),
-                        "counts": {k: int(v) for k, v in (red_info or {}).items() if k != "enabled"}
+            # Lower effective threshold for high-value content
+            effective_threshold = settings.AUTO_IMPORTANCE_THRESHOLD
+            
+            # Special handling for allergy information - always capture
+            if any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+(?:am|have)\s+allergic\s+to\s+\w+',
+                r'i\s+can\'t\s+eat\s+\w+',
+                r'i\s+avoid\s+\w+\s+because\s+of\s+allergy',
+                r'allergic\s+to\s+\w+'
+            ]):
+                effective_threshold = 0.01  # Extremely low threshold for allergies
+                importance = max(importance, 0.98)  # Ensure very high importance
+            
+            # Special handling for work/professional information
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+work\s+(?:as|at)\s+\w+',
+                r'my\s+job\s+is\s+\w+',
+                r'i\s+am\s+a\s+\w+',
+                r'my\s+profession\s+is\s+\w+'
+            ]):
+                effective_threshold = 0.02  # Extremely low threshold for work info
+                importance = max(importance, 0.95)  # Ensure very high importance
+            
+            # Special handling for preferences
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+(?:like|love|enjoy|prefer)\s+\w+',
+                r'i\s+(?:hate|dislike|avoid)\s+\w+',
+                r'my\s+favorite\s+\w+',
+                r'i\s+prefer\s+\w+'
+            ]):
+                effective_threshold = 0.03  # Extremely low threshold for preferences
+                importance = max(importance, 0.9)  # Ensure very high importance
+            
+            # Special handling for personal facts
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+(?:live|stay)\s+in\s+\w+',
+                r'i\s+(?:have|own)\s+a\s+\w+',
+                r'my\s+(?:name|family|friend)\s+is\s+\w+',
+                r'i\s+(?:study|learn|major)\s+in\s+\w+'
+            ]):
+                effective_threshold = 0.05  # Very low threshold for personal facts
+                importance = max(importance, 0.85)  # Ensure high importance
+            
+            # Special handling for emotional states
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+(?:feel|am)\s+(?:stressed|overwhelmed|anxious|happy|sad|angry)',
+                r'i\s+(?:am|feel)\s+(?:excited|frustrated|proud|disappointed)',
+                r'i\s+(?:am|feel)\s+(?:motivated|confident|uncertain|worried)'
+            ]):
+                effective_threshold = 0.15  # Low threshold for emotional states
+                importance = max(importance, 0.7)  # Ensure decent importance
+            
+            # Special handling for goals and plans
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'i\s+(?:want|need|plan)\s+to\s+\w+',
+                r'my\s+(?:goal|plan|target|objective)\s+is\s+\w+',
+                r'i\s+(?:hope|wish)\s+to\s+\w+'
+            ]):
+                effective_threshold = 0.1  # Very low threshold for goals
+                importance = max(importance, 0.85)  # Ensure high importance
+            
+            # Special handling for temporal information
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'tomorrow', r'next\s+week', r'next\s+month', r'next\s+year',
+                r'deadline', r'due\s+date', r'meeting', r'appointment',
+                r'schedule', r'calendar', r'plan', r'goal'
+            ]):
+                effective_threshold = 0.12  # Very low threshold for temporal info
+                importance = max(importance, 0.8)  # Ensure good importance
+            
+            # Special handling for health information
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'medication', r'medicine', r'doctor', r'hospital', r'emergency',
+                r'health', r'medical', r'condition', r'diet', r'food', r'nutrition'
+            ]):
+                effective_threshold = 0.08  # Very low threshold for health info
+                importance = max(importance, 0.9)  # Ensure very high importance
+            
+            # Special handling for relationships
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'wife', r'husband', r'partner', r'boyfriend', r'girlfriend',
+                r'family', r'children', r'kids', r'parents', r'siblings',
+                r'friend', r'friends', r'relationship'
+            ]):
+                effective_threshold = 0.15  # Low threshold for relationships
+                importance = max(importance, 0.75)  # Ensure good importance
+            
+            # Special handling for locations
+            elif any(re.search(pattern, content_lower) for pattern in [
+                r'home', r'house', r'apartment', r'city', r'town', r'country',
+                r'travel', r'trip', r'vacation', r'address', r'neighborhood'
+            ]):
+                effective_threshold = 0.18  # Low threshold for locations
+                importance = max(importance, 0.7)  # Ensure decent importance
+            
+            # For all other content, use the standard threshold but be more lenient
+            else:
+                effective_threshold = min(settings.AUTO_IMPORTANCE_THRESHOLD * 0.8, 0.12)  # Even more aggressive
+            
+            # Check if importance meets threshold
+            if importance >= effective_threshold:
+                # Enhanced consolidation logic
+                similar_memories = self.find_similar_memories(db, user_id, content, threshold=0.7)  # Lowered from 0.8
+                
+                if similar_memories:
+                    # Consolidate with existing memory
+                    existing_memory = similar_memories[0]
+                    consolidated_content = self.consolidate_memories(existing_memory.content, content)
+                    
+                    # Update existing memory with consolidated content
+                    existing_memory.content = consolidated_content
+                    existing_memory.importance_score = max(existing_memory.importance_score, int(importance * 100))
+                    
+                    # Enhanced metadata update
+                    try:
+                        metadata = json.loads(existing_memory.memory_metadata) if existing_memory.memory_metadata else {}
+                    except:
+                        metadata = {}
+                    
+                    # Track consolidation events
+                    if 'consolidation_count' not in metadata:
+                        metadata['consolidation_count'] = 0
+                    metadata['consolidation_count'] += 1
+                    
+                    # Track sources
+                    if 'sources' not in metadata:
+                        metadata['sources'] = []
+                    metadata['sources'].append({
+                        'content': content,
+                        'timestamp': datetime.utcnow().isoformat(),
+                        'context': context
                     })
-            except Exception:
-                red_content = content
-                red_meta = meta
-
-            new_memory = memory_crud.create_memory_node(
-                db=db,
-                faiss_id=str(uuid.uuid4()),
-                content=red_content,
-                content_type=ct,
-                user_id=user_id,
-                conversation_id=(
-                    str(context.get('metadata', {}).get('conversation_id'))
-                    if context.get('metadata', {}).get('conversation_id') is not None
-                    else None
-                ),
-                metadata=red_meta,
-                importance_score=int(importance * 100)
-            )
-            logger.info(f"Auto-captured memory for user {user_id}, importance: {importance}")
-            
-            return new_memory
+                    
+                    existing_memory.memory_metadata = json.dumps(metadata)
+                    
+                    db.commit()
+                    
+                    # Update FAISS index with consolidated content
+                    try:
+                        from app.memory.embeddings import embed_texts
+                        from app.memory import faiss_store
+                        
+                        # Generate new embedding for consolidated content and update FAISS
+                        embedding = embed_texts([consolidated_content])[0]
+                        faiss_store.update_vector(user_id, existing_memory.faiss_id, embedding)
+                        logger.debug(f"Updated memory {existing_memory.faiss_id} in FAISS index")
+                    except Exception as e:
+                        logger.error(f"Failed to update memory in FAISS index: {e}")
+                    
+                    logger.info(f"Consolidated memory for user {user_id}, importance: {importance}, type: {ct}")
+                    return existing_memory
+                else:
+                    # Create new memory
+                    memory = MemoryNode(
+                        faiss_id=str(uuid.uuid4()),
+                        user_id=user_id,
+                        content=content,
+                        importance_score=int(importance * 100),
+                        content_type=ct,
+                        memory_metadata=json.dumps({
+                            'auto_captured': True,
+                            'capture_timestamp': datetime.utcnow().isoformat(),
+                            'context': context,
+                            'sources': [{
+                                'content': content,
+                                'timestamp': datetime.utcnow().isoformat(),
+                                'context': context
+                            }]
+                        })
+                    )
+                    
+                    db.add(memory)
+                    db.commit()
+                    
+                    # Add to FAISS index
+                    try:
+                        from app.memory.embeddings import embed_texts
+                        from app.memory import faiss_store
+                        
+                        # Generate embedding and add to FAISS
+                        embedding = embed_texts([content])[0]
+                        faiss_store.add(user_id, [memory.faiss_id], [embedding])
+                        logger.debug(f"Added memory {memory.faiss_id} to FAISS index")
+                    except Exception as e:
+                        logger.error(f"Failed to add memory to FAISS index: {e}")
+                    
+                    logger.info(f"Auto-captured memory for user {user_id}, importance: {importance}, type: {ct}")
+                    return memory
             
         except Exception as e:
             logger.error(f"Error in auto_capture_memory: {e}")
@@ -433,6 +609,30 @@ class AutoMemoryService:
         }
         return action_type_map.get(action_name, 'fact')
     
+    def consolidate_memories(self, existing_content: str, new_content: str) -> str:
+        """Consolidate two memory contents into a single, more comprehensive memory"""
+        try:
+            # Simple consolidation: combine unique information
+            existing_parts = set(existing_content.split('. '))
+            new_parts = set(new_content.split('. '))
+            
+            # Combine all unique parts
+            all_parts = existing_parts.union(new_parts)
+            
+            # Filter out empty parts and join
+            consolidated = '. '.join([part.strip() for part in all_parts if part.strip()])
+            
+            # If consolidation would be too long, keep the more recent content
+            if len(consolidated) > 500:
+                return new_content
+            
+            return consolidated
+            
+        except Exception as e:
+            logger.error(f"Error consolidating memories: {e}")
+            # Fallback to keeping the newer content
+            return new_content
+
     def cleanup_old_memories(self, db: Session, user_id: str) -> int:
         """Background cleanup of low-importance, old memories"""
         if not settings.AUTO_LIFECYCLE_ENABLED:

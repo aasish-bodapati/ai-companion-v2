@@ -219,7 +219,7 @@ class StorageMixin:
                 content=norm,
                 content_type=content_type,
                 user_id=user_id,
-                conversation_id=conversation_id,
+                conversation_id=(str(conversation_id) if conversation_id is not None else None),
                 metadata=md,
                 importance_score=importance_int,
             )

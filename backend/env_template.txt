@@ -2,15 +2,27 @@
 # Copy this file to .env and fill in your actual values
 
 # =============================================================================
-# LLM Configuration - DeepSeek R1 Free
+# LLM Configuration - OpenRouter (Mistral) + Fallback Options
 # =============================================================================
-# Get your API key from: https://platform.deepseek.com/
-LLM_KEY=your_deepseek_api_key_here
-LLM_BASE_URL=https://api.deepseek.com/v1
-LLM_MODEL_DEFAULT=deepseek-chat
-LLM_MODEL_FAST=deepseek-chat
-LLM_MODEL_VISION=deepseek-vision
-LLM_MODEL_SUMMARY=deepseek-chat
+# Primary: OpenRouter with Mistral - Get your API key from: https://openrouter.ai/
+LLM_API_KEY=your_openrouter_api_key_here
+LLM_BASE_URL=https://openrouter.ai/api/v1
+
+# Model Configuration
+LLM_PROVIDER=openrouter  # Options: openrouter, gemini, stub
+LLM_MODEL_DEFAULT=mistralai/mistral-7b-instruct  # Mistral 7B (fast and efficient)
+LLM_MODEL_FAST=mistralai/mistral-7b-instruct  # Mistral 7B (fast and efficient)
+LLM_MODEL_VISION=meta-llama/llama-3.2-11b-vision-instruct:free  # Vision model
+LLM_MODEL_SUMMARY=mistralai/mistral-7b-instruct  # Mistral 7B for summaries
+
+# Alternative: Google AI Studio (Gemini) - Get your API key from: https://aistudio.google.com/
+# GEMINI_API_KEY=your-gemini-api-key-here
+# GEMINI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+# LLM_PROVIDER=gemini
+# LLM_MODEL_DEFAULT=gemini-2.0-flash
+# LLM_MODEL_FAST=gemini-1.5-flash
+# LLM_MODEL_VISION=gemini-2.0-flash-exp
+# LLM_MODEL_SUMMARY=gemini-2.0-flash
 
 # =============================================================================
 # Database Configuration

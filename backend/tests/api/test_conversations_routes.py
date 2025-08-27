@@ -13,7 +13,7 @@ def _enable_memory(monkeypatch):
     from app.memory import embeddings as _emb
     from app.memory import faiss_store as _faiss
 
-    monkeypatch.setattr(_emb, "embed_texts", lambda texts: [[0.1] * 8 for _ in texts])
+    monkeypatch.setattr(_emb, "embed_texts", lambda texts: [[0.1] * 384 for _ in texts])
     monkeypatch.setattr(_faiss, "add", lambda user_id, ids, vecs: None)
     monkeypatch.setattr(_faiss, "update_vector", lambda user_id, id_, vec: True)
 
@@ -55,7 +55,7 @@ def test_conversation_crud_and_messages(client: TestClient):
     assert rep.status_code == 200, rep.text
 
     # Memory context
-    ctx = client.get(f"/api/v1/conversations/{conv_id}/memory-context")
+    ctx = client.get(f"/api/v1/memory/conversations/{conv_id}/memory-context")
     assert ctx.status_code == 200
     payload = ctx.json()
     # Expect keys: context (list) and maybe meta fields
@@ -87,7 +87,7 @@ def test_missing_ids_return_404(client: TestClient):
     for path in [
         f"/api/v1/conversations/{bogus}",
         f"/api/v1/conversations/{bogus}/messages",
-        f"/api/v1/conversations/{bogus}/memory-context",
+        f"/api/v1/memory/conversations/{bogus}/memory-context",
         f"/api/v1/conversations/{bogus}/reply",
     ]:
         if path.endswith("/messages"):

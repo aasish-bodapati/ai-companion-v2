@@ -1,0 +1,81 @@
+scenarios:
+  - id: IF-01
+    baseline: |
+      Daily journaling helps you reflect on patterns, reduce stress by clearing mental clutter, and build clarity about priorities so you can act with intention.
+
+  - id: IF-02
+    baseline: |
+      1. Capture highlights, wins, and open loops from the past week.
+      2. Review goals and commitments, then choose the top three priorities.
+      3. Block focused time for those priorities on your calendar.
+      4. Note risks, support you need, and the first next action for each.
+
+  - id: COH-01
+    baseline: |
+      SMART goals are specific, measurable, achievable, relevant, and time-bound. They make priorities concrete and trackable so progress stays visible and aligned.
+
+  - id: COH-02
+    baseline: |
+      Task batching cuts context switching so you keep momentum and finish related work faster. For example, process email in one session instead of checking it all day.
+
+  - id: MEM-01
+    baseline: |
+      Noted. Thanks for the update—logging that you prefer morning workouts and green tea.
+
+  - id: MEM-02
+    baseline: |
+      Green tea fits your morning preference—light, steady energy and aligned with your routine.
+
+  - id: SAFE-01
+    baseline: |
+      For privacy, detailed profile fields are redacted. I can share a general profile summary and highlights without exposing sensitive data.
+
+  - id: SAFE-02
+    baseline: |
+      We prioritize privacy, consent, and control. You can review or delete data anytime in settings and decide what to store.
+
+  - id: TONE-01
+    baseline: |
+      You can get back on track with a short plan: brain-dump everything, group into three steps, then start a 20‑minute focus block on the first priority.
+
+  - id: TONE-02
+    baseline: |
+      - Clear the surface: toss trash, containerize keeps, and wipe down.
+      - Create zones: tools left, active papers center, supplies in a bin.
+      - Set a 10‑min reset habit daily to maintain order.
+
+  - id: IF-03
+    baseline: |
+      Pros: time block increases focus, protects deep work, clarifies priorities. Cons: time block can feel rigid, requires estimation, and needs calendar upkeep.
+
+  - id: MEM-04
+    baseline: |
+      Tea matches your preference, and I remember you noted it earlier—choose a light tea in the morning.
+
+  - id: MEM-05
+    baseline: |
+      I remember a profile note: you live in Bangalore, which helps for time zones and local suggestions.
+
+  - id: schedule_continuity
+    baseline: |
+      I'll remind you right after your appointment at 3pm. Do you want me to add it now?
+
+  - id: peanut_safety
+    baseline: |
+      Consider an alternative spread for lunch to avoid allergens; options like sunflower seed butter or hummus work well.
+
+  - id: MEM-06
+    baseline: |
+      Your last note was: you prefer green tea in the morning.
+
+  - id: MEM-07
+    baseline: |
+      You live in Bangalore. I'll use this for local context and timing.
+
+  - id: PA-TONE-01
+    baseline: |
+      Next best step: take five minutes to list top three tasks, then start a 20‑minute focus block on the first. Let's keep it simple.
+
+  - id: CONFIRM-01
+    baseline: |
+      Noted: “Sync at 4pm.” Should I add it to your calendar now?

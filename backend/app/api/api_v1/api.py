@@ -6,9 +6,8 @@ from app.api.endpoints import (
     public,
     users,
     onboarding,
+    conversations_simple,
     conversations_main,
-    conversations_crud,
-    conversations_messages,
     conversation,
     memory,
     memory_visualization,
@@ -23,6 +22,7 @@ from app.api.endpoints import (
     uploads,
     vision,
     utils,
+    web_search,
 )
 from app.core.config import settings
 
@@ -40,8 +40,6 @@ api_router.include_router(onboarding.router, prefix="/users/me/onboarding", tags
 
 # Conversations suite (include CRUD first, then messages to let messages override conflicts)
 api_router.include_router(conversations_main.router, prefix="/conversations", tags=["conversations"])
-api_router.include_router(conversations_crud.router, prefix="/conversations", tags=["conversations"])
-api_router.include_router(conversations_messages.router, prefix="/conversations", tags=["conversations"])
 if getattr(settings, "STREAMING_ENABLED", False):
     # Import lazily to avoid import errors when streaming module is removed
     from app.api.endpoints import conversations_streaming as _conversations_streaming  # type: ignore
@@ -64,6 +62,7 @@ api_router.include_router(actions.router, tags=["actions"])
 api_router.include_router(uploads.router, tags=["uploads"])
 api_router.include_router(vision.router, tags=["vision"])
 api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
+api_router.include_router(web_search.router, prefix="/web-search", tags=["web-search"])
 
 
 

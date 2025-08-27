@@ -7,6 +7,7 @@ import logging
 import re
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.models.user import User
@@ -70,13 +71,14 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
         if not s:
             return None, False
             
-        # Look for simple "I like X" patterns
+        # Look for simple "I like X" patterns (only actual preferences)
         like_patterns = [
             r"^i\s+like\s+(.+)$",
             r"^i\s+love\s+(.+)$",
             r"^i\s+enjoy\s+(.+)$",
             r"^i\s+prefer\s+(.+)$",
             r"^i\s+am\s+into\s+(.+)$",
+            r"^i\s+avoid\s+(.+)$",
         ]
         
         for pattern in like_patterns:
@@ -98,11 +100,13 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
                         logger.warning(f"Failed to store preference: {e}")
                         return subject, True
                         
-        # Look for embedded preferences
+        # Look for embedded preferences (only actual preferences)
         embedded_patterns = [
             r"\bi\s+like\s+([^.]+)",
             r"\bi\s+love\s+([^.]+)",
             r"\bi\s+enjoy\s+([^.]+)",
+            r"\bi\s+prefer\s+([^.]+)",
+            r"\bi\s+avoid\s+([^.]+)",
         ]
         
         for pattern in embedded_patterns:
@@ -129,6 +133,93 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
     except Exception as e:
         logger.warning(f"Error in preference capture: {e}")
         return None, False
+
+def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: str) -> bool:
+    """
+    Detect fact statements and store them as facts.
+    
+    Returns True if facts were captured, False otherwise.
+    """
+    try:
+        s = (text or "").strip()
+        if not s:
+            return False
+            
+        # Look for fact patterns
+        fact_patterns = [
+            r"^i\s+work\s+as\s+a\s+(.+)$",
+            r"^i\s+work\s+at\s+(.+)$",
+            r"^i\s+am\s+allergic\s+to\s+(.+)$",
+            r"^i\s+have\s+an\s+allergy\s+to\s+(.+)$",
+            r"^i\s+can't\s+eat\s+(.+)$",
+            r"^i'm\s+allergic\s+to\s+(.+)$",
+        ]
+        
+        for pattern in fact_patterns:
+            match = re.match(pattern, s.lower())
+            if match:
+                subject = _clean_subject(match.group(1))
+                if subject:
+                    # Store the fact
+                    try:
+                        auto_memory_service.auto_capture_memory(
+                            db=db,
+                            user_id=str(user.id),
+                            content=text,
+                            context={
+                                'content_type': 'fact',
+                                'source': 'chat:fact',
+                                'metadata': {
+                                    'conversation_id': str(conversation_id),
+                                    'captured_at': datetime.now(timezone.utc).isoformat()
+                                }
+                            }
+                        )
+                        return True
+                    except Exception as e:
+                        logger.warning(f"Failed to store fact: {e}")
+                        return True
+                        
+        # Look for embedded facts
+        embedded_fact_patterns = [
+            r"\bi\s+work\s+as\s+a\s+([^.]+)",
+            r"\bi\s+work\s+at\s+([^.]+)",
+            r"\bi\s+am\s+allergic\s+to\s+([^.]+)",
+            r"\bi\s+have\s+an\s+allergy\s+to\s+([^.]+)",
+            r"\bi\s+can't\s+eat\s+([^.]+)",
+            r"\bi'm\s+allergic\s+to\s+([^.]+)",
+        ]
+        
+        for pattern in embedded_fact_patterns:
+            match = re.search(pattern, s.lower())
+            if match:
+                subject = _clean_subject(match.group(1))
+                if subject:
+                    # Store the fact
+                    try:
+                        auto_memory_service.auto_capture_memory(
+                            db=db,
+                            user_id=str(user.id),
+                            content=text,
+                            context={
+                                'content_type': 'fact',
+                                'source': 'chat:fact',
+                                'metadata': {
+                                    'conversation_id': str(conversation_id),
+                                    'captured_at': datetime.now(timezone.utc).isoformat()
+                                }
+                            }
+                        )
+                        return True
+                    except Exception as e:
+                        logger.warning(f"Failed to store embedded fact: {e}")
+                        return True
+                        
+        return False
+        
+    except Exception as e:
+        logger.warning(f"Error in fact capture: {e}")
+        return False
 
 def _clean_subject(subj: str) -> str:
     """

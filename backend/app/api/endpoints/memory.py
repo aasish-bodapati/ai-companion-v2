@@ -20,6 +20,12 @@ from app.privacy.redaction import redact_text, redact_metadata
 router = APIRouter()
 
 
+class MemoryUpdateRequest(BaseModel):
+    content: str
+    content_type: Optional[str] = None
+    importance_score: Optional[float] = None
+
+
 class MemoryStatusResponse(BaseModel):
     enabled: bool
     stats: Dict[str, Any]
@@ -1595,6 +1601,170 @@ def consolidate_my_memories(
     """Consolidate duplicates by consolidation_key for the current user."""
     res = memory_service.consolidate_user_memories(db, user_id=str(current_user.id), limit=2000)
     return {"status": "ok", **res}
+
+
+@router.put("/users/me/memories/{memory_id}", response_model=MemoryNodeResponse)
+def update_my_memory(
+    memory_id: str,
+    update_request: MemoryUpdateRequest,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Update a memory's content and metadata for the current user."""
+    # Get existing memory and verify ownership
+    existing = memory_crud.get(db, id=memory_id)
+    if not existing or existing.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Memory not found")
+    
+    # Update content
+    updated_data = {"content": update_request.content.strip()}
+    
+    # Update metadata if provided
+    import json
+    try:
+        metadata = json.loads(existing.memory_metadata) if existing.memory_metadata else {}
+        
+        if update_request.content_type:
+            metadata["content_type"] = update_request.content_type
+            
+        if update_request.importance_score is not None:
+            metadata["importance"] = max(0.0, min(1.0, update_request.importance_score))
+            
+        # Add edit timestamp
+        from datetime import datetime, timezone
+        metadata["last_edited"] = datetime.now(timezone.utc).isoformat()
+        metadata["edited_by"] = "user"
+        
+        updated_data["memory_metadata"] = json.dumps(metadata)
+    except Exception:
+        pass
+    
+    # Perform update
+    updated = memory_crud.update(db, db_obj=existing, obj_in=updated_data)
+    
+    # Update vector store if enabled
+    try:
+        from app.memory.vector_store.factory import get_vector_store
+        vs = get_vector_store()
+        if vs and hasattr(vs, 'update_memory'):
+            vs.update_memory(memory_id, update_request.content)
+    except Exception as e:
+        # Non-fatal: log but don't fail the update
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to update vector store for memory {memory_id}: {e}")
+    
+    return updated
+
+
+@router.delete("/users/me/memories/{memory_id}")
+def delete_my_memory(
+    memory_id: str,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Delete a memory for the current user."""
+    # Get existing memory and verify ownership
+    existing = memory_crud.get(db, id=memory_id)
+    if not existing or existing.user_id != str(current_user.id):
+        raise HTTPException(status_code=404, detail="Memory not found")
+    
+    # Soft delete by updating metadata
+    import json
+    from datetime import datetime, timezone
+    
+    try:
+        metadata = json.loads(existing.memory_metadata) if existing.memory_metadata else {}
+        metadata["deleted"] = True
+        metadata["deleted_at"] = datetime.now(timezone.utc).isoformat()
+        metadata["deleted_by"] = "user"
+        
+        memory_crud.update(db, db_obj=existing, obj_in={"memory_metadata": json.dumps(metadata)})
+    except Exception:
+        # Fallback to hard delete if soft delete fails
+        memory_crud.remove(db, id=memory_id)
+    
+    # Remove from vector store if enabled
+    try:
+        from app.memory.vector_store.factory import get_vector_store
+        vs = get_vector_store()
+        if vs and hasattr(vs, 'delete_memory'):
+            vs.delete_memory(memory_id)
+    except Exception as e:
+        # Non-fatal: log but don't fail the delete
+        import logging
+        logging.getLogger(__name__).warning(f"Failed to delete from vector store for memory {memory_id}: {e}")
+    
+    return {"status": "deleted", "memory_id": memory_id}
+
+
+@router.get("/users/me/memories/daily-learnings")
+def get_daily_learnings(
+    days: int = 7,
+    db: Session = Depends(deps.get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """Get daily learning summaries for the past N days."""
+    from datetime import datetime, timedelta, timezone
+    import json
+    
+    # Calculate date range
+    end_date = datetime.now(timezone.utc)
+    start_date = end_date - timedelta(days=days)
+    
+    # Get memories in date range
+    memories = memory_crud.get_user_memories(
+        db=db, 
+        user_id=str(current_user.id), 
+        limit=1000
+    )
+    
+    # Filter by date and group by day
+    daily_learnings = {}
+    
+    for memory in memories:
+        # Use timestamp if available, otherwise created_at
+        mem_date = getattr(memory, 'timestamp', None) or getattr(memory, 'created_at', None)
+        if not mem_date or mem_date < start_date:
+            continue
+            
+        date_key = mem_date.date().isoformat()
+        
+        if date_key not in daily_learnings:
+            daily_learnings[date_key] = {
+                "date": date_key,
+                "memories_learned": 0,
+                "key_insights": [],
+                "categories": set()
+            }
+        
+        daily_learnings[date_key]["memories_learned"] += 1
+        
+        # Extract key insights from high-importance memories
+        try:
+            metadata = json.loads(memory.memory_metadata) if memory.memory_metadata else {}
+            importance = float(metadata.get("importance", 0.0))
+            
+            if importance > 0.7 and memory.content:
+                insight = memory.content[:100] + ("..." if len(memory.content) > 100 else "")
+                if len(daily_learnings[date_key]["key_insights"]) < 5:
+                    daily_learnings[date_key]["key_insights"].append(insight)
+            
+            # Track content types
+            content_type = getattr(memory, 'content_type', None) or metadata.get('content_type')
+            if content_type:
+                daily_learnings[date_key]["categories"].add(content_type)
+                
+        except Exception:
+            pass
+    
+    # Convert sets to lists and sort by date
+    result = []
+    for date_key in sorted(daily_learnings.keys(), reverse=True):
+        learning = daily_learnings[date_key]
+        learning["categories"] = list(learning["categories"])
+        result.append(learning)
+    
+    return result
 
 
 # Admin-only maintenance endpoints (moved to bottom to avoid interrupting other handlers)

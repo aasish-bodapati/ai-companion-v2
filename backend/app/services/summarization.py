@@ -7,7 +7,7 @@ import time
 
 from sqlalchemy.orm import Session
 
-from app.core.llm import generate_with_openrouter
+from app.core.llm import generate_response
 from app.core.config import settings
 from app import crud
 
@@ -21,7 +21,7 @@ MODEL = (
     or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
 ).strip()
 TEMPERATURE = 0.7
-MAX_TOKENS = 1024  # enforced in core.llm.generate_with_openrouter
+MAX_TOKENS = 1024  # enforced in core.llm.generate_response
 
 
 def _build_system_prompt(user_id: str, conversation_id: str) -> str:
@@ -102,7 +102,7 @@ def generate_conversation_summary(
             len(transcript) + 1,  # +1 for the summarization instruction
         )
         start = time.perf_counter()
-        summary = generate_with_openrouter(
+        summary = generate_response(
             model=MODEL,
             system_prompt=system_prompt,
             messages=_build_messages(transcript),

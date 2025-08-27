@@ -99,12 +99,12 @@ class ConversationStateManager:
                 opportunities.append(f"How's your progress with {goal}?")
         
         # Theme-based follow-ups
-        if "fitness" in state.current_themes:
-            opportunities.append("How was your last workout?")
-        if "nutrition" in state.current_themes:
-            opportunities.append("How's your nutrition plan going?")
         if "work" in state.current_themes:
             opportunities.append("How are things at work?")
+        if "health" in state.current_themes:
+            opportunities.append("How's your wellness journey going?")
+        if "learning" in state.current_themes:
+            opportunities.append("How's your learning progress?")
         
         return opportunities[:3]  # Limit to top 3
     

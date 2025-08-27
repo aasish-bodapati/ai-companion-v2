@@ -414,7 +414,9 @@ class RetrievalMixin:
             return out
 
         except Exception as e:
+            import traceback
             logger.error(f"Error searching memories: {e}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             try:
                 self._retrieval_metrics["total_requests"] = int(
                     self._retrieval_metrics.get("total_requests", 0)

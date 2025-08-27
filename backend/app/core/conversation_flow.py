@@ -23,8 +23,6 @@ class ConversationFlowAnalyzer:
     
     def __init__(self):
         self.topic_keywords = {
-            'fitness': ['workout', 'exercise', 'gym', 'training', 'fitness', 'strength', 'cardio', 'run', 'lift'],
-            'nutrition': ['food', 'eat', 'meal', 'diet', 'nutrition', 'calories', 'protein', 'healthy'],
             'health': ['health', 'medical', 'doctor', 'appointment', 'symptoms', 'medication', 'wellness'],
             'goals': ['goal', 'target', 'achieve', 'progress', 'milestone', 'objective', 'plan'],
             'work': ['work', 'job', 'career', 'project', 'meeting', 'deadline', 'office', 'business'],
@@ -227,19 +225,6 @@ class ConversationFlowAnalyzer:
         content = last_user_message.get('content', '').lower()
         
         # Topic-specific follow-ups
-        if 'fitness' in topic_transitions or any(kw in content for kw in self.topic_keywords['fitness']):
-            opportunities.extend([
-                "How did your last workout feel?",
-                "What's your next fitness goal?",
-                "Need help adjusting your routine?"
-            ])
-        
-        if 'nutrition' in topic_transitions or any(kw in content for kw in self.topic_keywords['nutrition']):
-            opportunities.extend([
-                "How are your eating habits lately?",
-                "Want to track today's meals?",
-                "Any nutrition goals you're working on?"
-            ])
         
         if 'goals' in topic_transitions or any(kw in content for kw in self.topic_keywords['goals']):
             opportunities.extend([
@@ -267,24 +252,14 @@ class ConversationFlowAnalyzer:
     def get_natural_transition_phrases(self, from_topic: str, to_topic: str) -> List[str]:
         """Get natural phrases for transitioning between topics."""
         transitions = {
-            ('fitness', 'nutrition'): [
-                "Speaking of fitness, how's your nutrition supporting your workouts?",
-                "That reminds me, are you fueling your workouts properly?",
-                "On the topic of health, let's talk about your eating habits."
+            ('goals', 'health'): [
+                "Speaking of goals, how's your health journey progressing?",
+                "That's a great goal! How does your health fit into this?",
+                "Let's see how your wellness routine supports this goal."
             ],
-            ('nutrition', 'fitness'): [
-                "With your nutrition on track, how are your workouts going?",
-                "That's great! How is this affecting your exercise routine?",
-                "Now that we've covered nutrition, let's check on your fitness."
-            ],
-            ('goals', 'fitness'): [
-                "Speaking of goals, how's your fitness journey progressing?",
-                "That's a great goal! How does fitness fit into this?",
-                "Let's see how your workout routine supports this goal."
-            ],
-            ('fitness', 'goals'): [
-                "Your fitness progress is great! What are your bigger goals?",
-                "This workout success - what's the ultimate goal behind it?",
+            ('health', 'goals'): [
+                "Your health progress is great! What are your bigger goals?",
+                "This wellness success - what's the ultimate goal behind it?",
                 "You're building momentum! What other goals are you working on?"
             ]
         }

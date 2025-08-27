@@ -2,6 +2,8 @@
 
 Purpose: See the big picture, even if flexible. Dates are anchors; adjust as we learn.
 
+Scope: MVP focuses strictly on a chat interface with reliable memory (capture, retrieval, confirm-before-write). No calendar/bridges or wellness/fitness/nutrition features in MVP.
+
 ## Month 1: Core MVP
 - Auth/session plumbing (reuse existing dev auth where possible)
 - Chat-first experience (basic MessageList + Composer)
@@ -26,3 +28,7 @@ Purpose: See the big picture, even if flexible. Dates are anchors; adjust as we 
 - Evaluate Postgres + pgvector for scale (keep SQLite+FAISS for local)
 - Insights: Weekly reviews (read-only), adherence analytics
 - Consider monetization experiments (paywalls, quotas, value metrics)
+
+Notes:
+- Fitness/nutrition features are deprecated for now; any wellness-related work is policy-gated and post-MVP only.
+- Supported trackers (hydration, mood, journal) may be considered after MVP with confirm-before-write and privacy controls.

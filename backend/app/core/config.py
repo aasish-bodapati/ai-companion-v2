@@ -69,15 +69,23 @@ class Settings(BaseSettings):
     RATE_LIMIT_SEND_PER_WINDOW: int = 60
     RATE_LIMIT_REPLY_PER_WINDOW: int = 60
 
-    # LLM Provider API Key (OpenRouter - Free Models)
-    LLM_KEY: str = ""
-    # Optional: OpenAI-compatible or provider-specific base URL
+    # LLM Provider Configuration
+    LLM_PROVIDER: str = "openrouter"  # Options: openrouter, gemini, openai, anthropic, stub
+    
+    # Generic LLM Configuration (works with any provider)
+    LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://openrouter.ai/api/v1"
-    # Model routing (env overrides). Using Llama 3.3 70B for better performance
-    LLM_MODEL_DEFAULT: str = "meta-llama/llama-3.3-70b-instruct"
-    LLM_MODEL_FAST: str = "mistralai/mistral-small-3.2-24b-instruct"
+    
+    # Model Configuration (Generic names that work with any provider)
+    LLM_MODEL_DEFAULT: str = "mistralai/mistral-7b-instruct"
+    LLM_MODEL_FAST: str = "mistralai/mistral-7b-instruct"
     LLM_MODEL_VISION: str = "meta-llama/llama-3.2-11b-vision-instruct:free"
-    LLM_MODEL_SUMMARY: str = "meta-llama/llama-3.3-70b-instruct"
+    LLM_MODEL_SUMMARY: str = "mistralai/mistral-7b-instruct"
+    
+    # OpenRouter Fallback Models
+    OPENROUTER_MODEL_DEFAULT: str = "mistralai/mistral-7b-instruct"
+    OPENROUTER_MODEL_FAST: str = "mistralai/mistral-7b-instruct"
+    OPENROUTER_MODEL_VISION: str = "meta-llama/llama-3.2-11b-vision-instruct:free"
 
     # OpenTelemetry (optional)
     OTEL_ENABLED: bool = False
@@ -121,12 +129,11 @@ class Settings(BaseSettings):
     MEMORY_PROVIDER: str = "faiss"  # future: "faiss" | "none"
     EMBEDDING_MODEL_NAME: str = "all-MiniLM-L6-v2"
     FAISS_DATA_DIR: str = "data/faiss"
-    RETRIEVAL_TOP_K: int = 12
-    RETRIEVAL_RECENT_MESSAGES: int = 5
+    RETRIEVAL_TOP_K: int = 20  # Increased from 15 for better coverage
+    RETRIEVAL_RECENT_MESSAGES: int = 10  # Increased from 8 for better context
     # MMR diversification strength (0 -> focus on similarity, 1 -> focus on diversity)
-    RETRIEVAL_MMR_LAMBDA: float = 0.7
-    MEMORY_MIN_RELEVANCE: float = 0.5
-    # Memory Evolution Flags
+    RETRIEVAL_MMR_LAMBDA: float = 0.7  # Increased from 0.6 for better diversity
+    MEMORY_MIN_RELEVANCE: float = 0.25  # Lowered from 0.3 for better recall
     MEMORY_DECAY_ENABLED: bool = True
     MEMORY_DECAY_HALF_LIFE_DAYS: int = 90
     MEMORY_MAX_MEMORIES: int = 500
@@ -138,7 +145,7 @@ class Settings(BaseSettings):
     MEMORY_CORE_IMPORTANCE_MIN: float = 0.85
     MEMORY_CORE_REINFORCE_MIN: int = 2
     # Smart gating threshold for saving non-explicit chat messages
-    MEMORY_IMPORTANCE_MIN: float = 0.7
+    MEMORY_IMPORTANCE_MIN: float = 0.6  # Lowered from 0.7 for better capture
     # Hybrid LLM classifier flags
     MEMORY_LLM_CLASSIFIER_ENABLED: bool = True
     MEMORY_SENSITIVITY_BLOCK_MIN: float = 0.85
@@ -153,14 +160,14 @@ class Settings(BaseSettings):
     RELEVANCE_HALFLIFE_MESSAGE_DAYS: int = 7
     RELEVANCE_HALFLIFE_CONVERSATION_DAYS: int = 14
     # Type/source priors
-    RELEVANCE_PRIOR_PREFERENCE: float = 0.05
-    RELEVANCE_PRIOR_PROFILE: float = 0.03
-    RELEVANCE_PRIOR_FACT: float = 0.02
-    RELEVANCE_PRIOR_MESSAGE: float = 0.02
-    RELEVANCE_PRIOR_CONVERSATION: float = 0.01
+    RELEVANCE_PRIOR_PREFERENCE: float = 0.08  # Increased from 0.05
+    RELEVANCE_PRIOR_PROFILE: float = 0.05  # Increased from 0.03
+    RELEVANCE_PRIOR_FACT: float = 0.04  # Increased from 0.02
+    RELEVANCE_PRIOR_MESSAGE: float = 0.03  # Increased from 0.02
+    RELEVANCE_PRIOR_CONVERSATION: float = 0.02  # Increased from 0.01
     # Overlap bonus
-    RELEVANCE_OVERLAP_BONUS_PER_MATCH: float = 0.02
-    RELEVANCE_OVERLAP_BONUS_MAX: float = 0.08
+    RELEVANCE_OVERLAP_BONUS_PER_MATCH: float = 0.03  # Increased from 0.02
+    RELEVANCE_OVERLAP_BONUS_MAX: float = 0.12  # Increased from 0.08
     # Memory policy: auto-capture allowlist and quotas
     MEMORY_ALLOWED_TYPES: list[str] = [
         "preference",
@@ -170,13 +177,13 @@ class Settings(BaseSettings):
         "onboarding",
         "conversation",
     ]
-    MEMORY_MAX_AUTOSAVED_PER_MINUTE: int = 2
-    MEMORY_MAX_AUTOSAVED_PER_DAY: int = 40
+    MEMORY_MAX_AUTOSAVED_PER_MINUTE: int = 3  # Increased from 2
+    MEMORY_MAX_AUTOSAVED_PER_DAY: int = 60  # Increased from 40
     # PII handling
     MEMORY_BLOCK_PII: bool = True
     MEMORY_REDACT_PII: bool = False
     # Importance floor when LLM extraction succeeds (0..1)
-    MEMORY_EXTRACTION_IMPORTANCE_FLOOR: float = 0.75
+    MEMORY_EXTRACTION_IMPORTANCE_FLOOR: float = 0.7  # Lowered from 0.75
     # Calendar NL via LLM extraction
     CALENDAR_NL_LLM_ENABLED: bool = False
     # Lifecycle controls
@@ -214,24 +221,26 @@ class Settings(BaseSettings):
     # Disable agentic features per user preference
     AGENT_PLAN_PROGRESS_ENABLED: bool = False
     
-    # Automatic memory system settings
+    # Automatic memory system settings - Enhanced for better performance
     AUTO_MEMORY_ENABLED: bool = True
-    AUTO_IMPORTANCE_THRESHOLD: float = 0.6
+    AUTO_IMPORTANCE_THRESHOLD: float = 0.15  # Lowered from 0.2 for even more aggressive capture
     AUTO_CONSOLIDATION_ENABLED: bool = True
     AUTO_LIFECYCLE_ENABLED: bool = True
     MEMORY_UI_VISIBLE: bool = False
 
-    # Auto-capture policy (config-driven)
+    # Auto-capture policy (config-driven) - Enhanced for better capture
     # Whether to capture freeform user messages as memories (subject to gating)
     CAPTURE_MESSAGES: bool = True
     # Minimum importance for message-type captures (0..100 UI scale)
-    MESSAGE_IMPORTANCE_MIN: int = 40
+    MESSAGE_IMPORTANCE_MIN: int = 15  # Lowered from 20 for better capture
     # Require explicit intent like "remember this" to capture messages
     REQUIRE_EXPLICIT_REMEMBER: bool = False
-    # Skip transient action logs (e.g., one-off meals/workouts) unless explicitly remembered
-    EXCLUDE_TRANSIENT_LOGS: bool = True
-    # When dedupe/consolidation key repeats, increment reinforcement counter in metadata
-    REINFORCEMENT_ENABLED: bool = True
+    # Skip transient action logs (e.g., "I clicked the button")
+    SKIP_ACTION_LOGS: bool = True
+    # Skip very short messages (e.g., "ok", "yes", "no")
+    SKIP_SHORT_MESSAGES: bool = True
+    # Minimum message length to consider for capture
+    MIN_MESSAGE_LENGTH: int = 3  # Lowered from 5 for better capture
 
     # Privacy: control whether the full serialized onboarding/profile text may be disclosed verbatim
     # in self-referential queries (e.g., "What do you know about me?"). Defaults to False to prevent
@@ -266,7 +275,7 @@ settings = Settings()
 # Log whether LLM key is present (do not log the key itself)
 _logger = logging.getLogger(__name__)
 
-# Check if we're using local Llama (localhost:11434), DeepSeek, or OpenRouter
+# Check if we're using local Llama (localhost:11434) or DeepSeek
 is_local_llama = (
     getattr(settings, "LLM_BASE_URL", "").strip() == "http://localhost:11434/v1" or
     "localhost:11434" in getattr(settings, "LLM_BASE_URL", "")
@@ -277,29 +286,18 @@ is_deepseek = (
     "api.deepseek.com" in getattr(settings, "LLM_BASE_URL", "")
 )
 
-is_openrouter = (
-    getattr(settings, "LLM_BASE_URL", "").strip() == "https://openrouter.ai/api/v1" or
-    "openrouter.ai" in getattr(settings, "LLM_BASE_URL", "")
-)
-
-if getattr(settings, "LLM_KEY", "").strip():
+if getattr(settings, "LLM_API_KEY", "").strip():
     if is_deepseek:
         _logger.info("DeepSeek R1 Free API key detected from env file.")
-    elif is_openrouter:
-        _logger.info("OpenRouter API key detected from env file.")
     else:
         _logger.info("LLM key detected from env file.")
 elif is_local_llama:
     _logger.info("Using local Llama - no API key required.")
 elif is_deepseek:
     _logger.warning(
-        "DeepSeek R1 Free requires API key. Ensure backend/.env has LLM_KEY and the server was restarted."
-    )
-elif is_openrouter:
-    _logger.warning(
-        "OpenRouter requires API key. Ensure backend/.env has LLM_KEY and the server was restarted."
+        "DeepSeek R1 Free requires API key. Ensure backend/.env has LLM_API_KEY and the server was restarted."
     )
 else:
     _logger.warning(
-        "LLM key not found. Ensure backend/.env has LLM_KEY and the server was restarted."
+        "LLM key not found. Ensure backend/.env has LLM_API_KEY and the server was restarted."
     )

@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import Optional
 from pydantic import ValidationError
 from app.schemas.calendar_intent import CalendarIntent
-from app.core.llm import generate_with_openrouter
+from app.core.llm import generate_response
+from app.core.config import settings
 
 EXTRACTION_SYSTEM = (
     "You are a calendar intent extractor. Return ONLY compact JSON matching the schema. "
@@ -29,7 +30,12 @@ EXTRACTION_USER_TMPL = (
 def extract_calendar_intent(user_text: str) -> Optional[CalendarIntent]:
     prompt = EXTRACTION_USER_TMPL.format(user_text=user_text)
     try:
-        raw = generate_with_openrouter(system=EXTRACTION_SYSTEM, user=prompt, max_tokens=256, temperature=0.2)
+        raw = generate_response(
+            model=getattr(settings, "LLM_MODEL_DEFAULT", "gemini-2.0-flash"),
+            system_prompt=EXTRACTION_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=256,
+        )
         # raw is expected to be JSON text or contain a JSON block; try to locate braces
         txt = raw.strip()
         start = txt.find("{")

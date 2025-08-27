@@ -41,6 +41,8 @@ Vision: Build a 24/7 personal assistant that starts with zero knowledge and cont
 - __Scope Discipline__
   - Ship the smallest learning loop that proves value: capture → retrieve → adapt.
   - Prioritize: “doesn’t re‑ask,” “remembers reliably,” “adapts scheduling.”
+  - MVP Scope: Chat interface + reliable memory only (capture, retrieval, confirm‑before‑write). No calendar/bridges or wellness/fitness/nutrition features in MVP.
+  - Deprecated domains: Fitness/nutrition features are removed from near‑term scope; supported trackers are hydration, mood, journal (post‑MVP, confirm‑before‑write).
 
 - __Quality Gates__
   - DoD includes security review, memory persistence verified, smoke tests, demoable stories, telemetry dashboards.
@@ -69,6 +71,7 @@ Vision: Build a 24/7 personal assistant that starts with zero knowledge and cont
 - __Interfaces & Contracts__
   - Versioned APIs; RFC 7807 errors.
   - Validate inputs at boundaries; sanitize user text; treat external content as untrusted.
+  - Use a shared helper to produce `application/problem+json` responses consistently (status, type, title, detail, instance).
 
 - __Security__
   - Never log secrets/tokens.

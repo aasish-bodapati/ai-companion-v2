@@ -10,9 +10,10 @@ import json
 
 from app.core.config import settings
 from app.crud.user import user as user_crud
-from app.core.llm import generate_with_openrouter
+from app.core.llm import generate_response
 from app.crud.memory import memory
 from app.crud.onboarding import get_by_user_id
+from app.crud.conversation import message as message_crud
 from app.memory.vector_store.factory import get_vector_store
 import app.memory.embeddings as embeddings
 from app.schemas.memory import MemorySearchResult
@@ -50,6 +51,23 @@ except Exception:
             except Exception:
                 state = "neutral"
             return {"emotional_state": state}
+
+        # Safe no-op fallback to avoid warnings when called elsewhere
+        def enhance_memory_with_emotion(self, content: str, emotional_context: dict) -> dict:  # type: ignore
+            try:
+                # Return a basic emotional analysis based on content
+                emotional_state = "neutral"
+                if any(word in content.lower() for word in ["happy", "excited", "great", "wonderful", "amazing"]):
+                    emotional_state = "positive"
+                elif any(word in content.lower() for word in ["sad", "angry", "frustrated", "worried", "anxious"]):
+                    emotional_state = "negative"
+                
+                return {
+                    "emotional_state": emotional_state,
+                    "emotional_context": emotional_context
+                }
+            except Exception:
+                return {"emotional_state": "neutral", "emotional_context": emotional_context}
 
     emotional_analyzer = _FallbackEmotionalAnalyzer()  # type: ignore
 
@@ -262,7 +280,7 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                 or getattr(settings, "LLM_MODEL_DEFAULT", "")
                 or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
             )
-            reply = generate_with_openrouter(
+            reply = generate_response(
                 model=model,
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": s}],
@@ -332,12 +350,11 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             user_prompt = (
                 "Message:\n" + s + "\n\nRespond with JSON only."
             )
-            resp = generate_with_openrouter(
+            resp = generate_response(
                 model=(getattr(settings, "LLM_MODEL_DEFAULT", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")),
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
                 max_tokens=256,
-                temperature=0.2,
             )
             if not resp:
                 return None
@@ -492,214 +509,190 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         db: Session,
         user_id: str,
         conversation_id: str,
-        recent_messages: int = 5,
-        memory_limit: int = 5,
+        recent_messages: int = 6,
+        memory_limit: int = 6,
         self_referential: bool = False,
         current_message: str = "",
     ) -> str:
         """
-        Get conversation context by combining recent messages with relevant memories.
-        Enhanced for human-like conversations with better memory integration and
-        contextual awareness. Prioritizes memories that create natural conversation flow.
+        Enhanced conversation context with improved memory integration and attribution.
         """
-        t0 = time.perf_counter()
-        context_parts: List[str] = []
-
-        # Always ground personalization on the profile; redact on self-referential queries
-        profile_memory = self.get_user_profile_memory(db, user_id)
-        if profile_memory:
-            context_parts.append("User Profile & Preferences:")
-            if self_referential and not getattr(settings, "PROFILE_VERBATIM_DISCLOSURE_ALLOWED", False):
-                # Only provide high-level highlights to prevent verbatim disclosure
-                hl = self._extract_profile_highlights(profile_memory, max_bullets=3)
-                if hl:
-                    context_parts.append("Profile highlights (high-level, no verbatim):")
-                    context_parts.extend(hl)
-                    context_parts.append("")
-                # Do NOT include full serialized profile in self-referential mode
-            else:
-                # Include full serialized profile as reference for personalization
-                context_parts.append(profile_memory)
-
-        # Fetch conversation-specific memories (recent messages from this conversation)
-        from app import crud
-        conversation_memories = crud.message.get_by_conversation(
-            db, conversation_id=conversation_id, skip=0, limit=recent_messages
-        )
-
-        if conversation_memories:
-            context_parts.append("Recent conversation:")
-            for msg in reversed(conversation_memories[-recent_messages:]):
-                role_prefix = "You" if msg.role == "assistant" else "User"
-                content = (msg.content or "")[:200] + ("..." if len(msg.content or "") > 200 else "")
-                context_parts.append(f"- {role_prefix}: {content}")
-
-        # Include rolling per-conversation summary if available
         try:
-            summaries = self.search_memories(
+            # Get user profile memory as foundation
+            profile_memory = self.get_user_profile_memory(db, user_id)
+            
+            # Get recent conversation messages
+            recent_context = self._get_recent_conversation_context(
+                db, conversation_id, recent_messages
+            )
+            
+            # Enhanced memory retrieval with better relevance scoring
+            relevant_memories = self._get_enhanced_relevant_memories(
+                db, user_id, current_message, memory_limit
+            )
+            
+            # Build enhanced context with memory attribution
+            context_parts = []
+            
+            # Add profile foundation
+            if profile_memory:
+                context_parts.append(f"User Profile: {profile_memory}")
+            
+            # Add recent conversation context
+            if recent_context:
+                context_parts.append(f"Recent Conversation: {recent_context}")
+            
+            # Add relevant memories with attribution
+            if relevant_memories:
+                memory_context = self._format_memories_with_attribution(relevant_memories)
+                context_parts.append(f"Relevant Memories: {memory_context}")
+            
+            # Add conversation continuity hints
+            if recent_context and relevant_memories:
+                context_parts.append("Remember to maintain conversation continuity and reference previous context when appropriate.")
+            
+            return "\n\n".join(context_parts)
+            
+        except Exception as e:
+            logger.warning(f"Error building conversation context: {e}")
+            return ""
+
+    def _get_recent_conversation_context(
+        self,
+        db: Session,
+        conversation_id: str,
+        recent_messages: int,
+    ) -> str:
+        """Get recent conversation context for continuity."""
+        try:
+            from app import crud
+            messages = crud.message.get_by_conversation(
+                db, conversation_id=conversation_id, skip=0, limit=recent_messages
+            )
+            
+            if not messages:
+                return ""
+            
+            context_parts = []
+            for msg in messages[-3:]:  # Last 3 messages for context
+                role = "User" if msg.role == "user" else "Assistant"
+                content = msg.content[:100] if msg.content else ""  # Truncate long messages
+                if content:
+                    context_parts.append(f"{role}: {content}")
+            
+            return " | ".join(context_parts) if context_parts else ""
+            
+        except Exception as e:
+            logger.warning(f"Error getting recent conversation context: {e}")
+            return ""
+
+    def _get_enhanced_relevant_memories(
+        self,
+        db: Session,
+        user_id: str,
+        current_message: str,
+        memory_limit: int,
+    ) -> List[MemorySearchResult]:
+        """Enhanced memory retrieval with better relevance and diversity."""
+        try:
+            # Get memories using enhanced search
+            memories = self.search_memories(
                 db=db,
-                query="",
+                query=current_message,
                 user_id=user_id,
-                content_types=["summary"],
-                limit=5,
-                min_relevance=0.0,
-                debug=False,
-            ) or []
-            selected_summary = None
-            if summaries:
-                import json as _json
-                for s in summaries:
-                    try:
-                        md = _json.loads(s.memory_metadata) if s.memory_metadata else {}
-                    except Exception:
-                        md = {}
-                    ck = (md.get("consolidation_key") or "").strip().lower()
-                    if ck == f"summary:{conversation_id}".lower():
-                        selected_summary = s
-                        break
-            if selected_summary and (selected_summary.content or "").strip():
-                context_parts.append("")
-                context_parts.append("Conversation Summary (rolling):")
-                context_parts.append(selected_summary.content.strip())
-        except Exception:
-            # Non-fatal: proceed without summary if retrieval fails
-            pass
+                content_types=None,
+                limit=memory_limit * 2,  # Get more for intelligent filtering
+                min_relevance=0.3,  # Lower threshold for more options
+            )
+            
+            # Apply intelligent filtering and ranking
+            enhanced_memories = self._apply_enhanced_memory_filtering(memories, current_message)
+            
+            return enhanced_memories[:memory_limit]
+            
+        except Exception as e:
+            logger.warning(f"Error retrieving enhanced memories: {e}")
+            return []
 
-        # Get user memories - use broader search for "what do you know about me" queries
-        if memory_limit > 0:
-            if current_message and any(phrase in current_message.lower() for phrase in ["what do you know", "tell me about", "who am i", "about me"]):
-                # For profile queries, get general memories without strict relevance filtering
-                general_memories = self.search_memories(
-                    db=db,
-                    query="preferences interests likes",
-                    user_id=user_id,
-                    content_types=None,
-                    limit=memory_limit,
-                    min_relevance=0.1,
-                )
-            elif current_message:
-                # For specific queries, use current message with moderate relevance
-                general_memories = self.search_memories(
-                    db=db,
-                    query=current_message,
-                    user_id=user_id,
-                    content_types=None,
-                    limit=memory_limit,
-                    min_relevance=0.2,
-                )
+    def _apply_enhanced_memory_filtering(
+        self,
+        memories: List[MemorySearchResult],
+        current_message: str,
+    ) -> List[MemorySearchResult]:
+        """Apply intelligent filtering to select the most relevant and diverse memories."""
+        if not memories:
+            return []
+        
+        # Score memories based on multiple factors
+        scored_memories = []
+        for memory in memories:
+            score = 0.0
+            
+            # Base relevance score
+            score += memory.relevance_score * 0.4
+            
+            # Content type priority
+            type_priority = {
+                'preference': 0.3,
+                'profile': 0.25,
+                'fact': 0.2,
+                'conversation': 0.15,
+                'message': 0.1,
+            }
+            score += type_priority.get(memory.content_type, 0.1) * 0.3
+            
+            # Recency bonus
+            if memory.timestamp:
+                days_old = (datetime.now(timezone.utc) - memory.timestamp).days
+                if days_old < 7:
+                    score += 0.2
+                elif days_old < 30:
+                    score += 0.1
+            
+            # Diversity bonus (prefer different content types)
+            content_types_seen = set()
+            for other_memory in memories:
+                if other_memory != memory:
+                    content_types_seen.add(other_memory.content_type)
+            
+            if memory.content_type not in content_types_seen:
+                score += 0.1
+            
+            scored_memories.append((memory, score))
+        
+        # Sort by score and return top memories
+        scored_memories.sort(key=lambda x: x[1], reverse=True)
+        return [memory for memory, score in scored_memories]
+
+    def _format_memories_with_attribution(self, memories: List[MemorySearchResult]) -> str:
+        """Format memories with clear attribution and context."""
+        if not memories:
+            return ""
+        
+        formatted_parts = []
+        for memory in memories:
+            # Add attribution prefix based on content type
+            if memory.content_type == 'preference':
+                prefix = "User preference"
+            elif memory.content_type == 'profile':
+                prefix = "User profile"
+            elif memory.content_type == 'fact':
+                prefix = "Known fact"
+            elif memory.content_type == 'conversation':
+                prefix = "From conversation"
             else:
-                general_memories = []
-        else:
-            general_memories = []
-
-        # Process memories with enhanced contextual presentation
-        if general_memories:
-            # Skip lexical filtering for profile queries to show stored memories
-            def _overlap_ok(mem_text: str, cur_text: str) -> bool:
-                if current_message and any(phrase in current_message.lower() for phrase in ["what do you know", "tell me about", "who am i", "about me"]):
-                    return True  # Always include memories for profile queries
-                try:
-                    a = set((mem_text or "").lower().split())
-                    b = set((cur_text or "").lower().split())
-                    if not a or not b:
-                        return False
-                    inter = len(a & b)
-                    union = max(1, len(a | b))
-                    jacc = inter / union
-                    # Loosen lexical gating: allow if Jaccard >= 0.05 or at least 1 overlapping token
-                    return jacc >= 0.05 or inter >= 1
-                except Exception:
-                    return False
-
-            dedup_general = []
-            seen_gen: Set[str] = set()
-
-            # Group memories by category for better organization
-            categorized_memories = {}
-
-            for mem in general_memories:
-                norm = (mem.content or "").strip().lower()
-                if not norm or norm in seen_gen:
-                    continue
-                # Only keep if it overlaps with current message to reduce off-topic recalls
-                if current_message and not _overlap_ok(norm, current_message):
-                    continue
-                seen_gen.add(norm)
-
-                # Extract categories from metadata
-                categories = []
-                try:
-                    if mem.memory_metadata:
-                        import json as _json
-                        md = _json.loads(mem.memory_metadata)
-                        categories = md.get("categories", [])
-                except Exception:
-                    pass
-
-                # Group by primary category
-                primary_category = categories[0] if categories else "general"
-                if primary_category not in categorized_memories:
-                    categorized_memories[primary_category] = []
-
-                categorized_memories[primary_category].append(mem)
-
-                if len(dedup_general) >= memory_limit:
-                    break
-
-            if categorized_memories:
-                context_parts.append("EXACT MEMORIES - ONLY reference these (do not invent others):")
-
-                # Present memories by category for better context
-                for category, memories in categorized_memories.items():
-                    if memories:
-                        # Human-readable category names
-                        category_display = {
-                            "preference": "Preferences & Likes",
-                            "transportation": "Transportation & Travel",
-                            "hobbies": "Hobbies & Interests",
-                            "daily_patterns": "Daily Patterns & Schedule",
-                            "schedule": "Schedule & Routine",
-                            "health": "Health & Wellness",
-                            "fitness": "Fitness & Exercise",
-                            "nutrition": "Nutrition & Food",
-                            "food_preferences": "Food Preferences",
-                            "work": "Work & Career",
-                            "career": "Career & Professional"
-                        }.get(category, category.title())
-
-                        context_parts.append(f"\n{category_display}:")
-                        for mem in memories:
-                            context_parts.append(f"- {mem.content}")
-
-                context_parts.append("")
-                context_parts.append("IMPORTANT: Only use the memories listed above. Do not reference any other conversations, memories, or facts that are not explicitly listed.")
-
-                # Add temporal and emotional intelligence insights
-                temporal_insights = self._get_temporal_intelligence_insights(categorized_memories)
-                if temporal_insights:
-                    context_parts.append("")
-                    context_parts.append("Temporal Intelligence:")
-                    context_parts.extend(temporal_insights)
-
-                emotional_insights = self._get_emotional_intelligence_insights(categorized_memories)
-                if emotional_insights:
-                    context_parts.append("")
-                    context_parts.append("Emotional Intelligence:")
-                    context_parts.extend(emotional_insights)
-
-                # Proactive domain suggestions disabled to keep assistant memory-first and user-led
-                # (previous proactive suggestions removed)
-
-        t1 = time.perf_counter()
-        logger.info(
-            "Enhanced context assembly timings: total=%.2fms (conv_mem=%d, gen_mem_in=%d, gen_mem_out=%d)",
-            (t1 - t0) * 1000.0,
-            len(conversation_memories) if conversation_memories else 0,
-            len(general_memories) if general_memories else 0,
-            len(dedup_general) if 'dedup_general' in locals() else 0,
-        )
-
-        return "\n".join(context_parts) if context_parts else "No specific context available."
+                prefix = "Memory"
+            
+            # Add relevance indicator
+            relevance_indicator = ""
+            if memory.relevance_score > 0.8:
+                relevance_indicator = " (highly relevant)"
+            elif memory.relevance_score > 0.6:
+                relevance_indicator = " (relevant)"
+            
+            formatted_parts.append(f"{prefix}{relevance_indicator}: {memory.content}")
+        
+        return "; ".join(formatted_parts)
 
     def has_known_fact_contains(self, db: Session, user_id: str, phrases: List[str]) -> bool:
         """Return True if any of the given phrases appear in stored profile/preference/fact memories.
@@ -750,8 +743,12 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             if name_match:
                 user_name = name_match.group(1).strip()
 
+        from app.core.prompts import MEMORY_FIRST_PROMPT
+        
         base_prompt = f"""
-You are an expert AI companion who knows {user_name} well. You're warm, intelligent, and genuinely care about their wellbeing and goals. You remember everything about them and weave that knowledge naturally into conversations.
+{MEMORY_FIRST_PROMPT}
+
+You know {user_name} well and remember everything about them. Use this knowledge naturally in conversations.
 
 CRITICAL RULES - NEVER VIOLATE THESE:
 - ONLY reference information that is explicitly provided in the Context below

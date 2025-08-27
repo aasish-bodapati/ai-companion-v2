@@ -45,7 +45,7 @@ playwright-report/
 .test-results/
 
 # Reports/coverage
-reports/
+
 coverage/
 coverage-*.json
 

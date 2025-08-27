@@ -8,7 +8,7 @@ from fastapi import APIRouter
 
 # Import all conversation modules with routers
 from .conversations_crud import router as crud_router
-from .conversations_messages import router as messages_router
+from .conversations_simple import router as messages_router
 
 logger = logging.getLogger(__name__)
 
