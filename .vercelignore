@@ -8,3 +8,9 @@ backend/.pytest_cache
 .cache
 dist
 build
+frontend/jest.setup.ts
+frontend/jest.config.ts
+frontend/tsconfig.jest.json
+frontend/tests/
+frontend/coverage/
+frontend/test-results/
