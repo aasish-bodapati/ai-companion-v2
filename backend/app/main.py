@@ -58,8 +58,31 @@ async def lifespan(app: FastAPI):
 
             _init_db()
             logger.info("Local SQLite init complete.")
+        elif isinstance(db_url, str) and db_url.startswith("postgresql://"):
+            logger.info("Detected PostgreSQL DB; running Alembic migrations...")
+            try:
+                from alembic.config import Config
+                from alembic import command
+                import os
+                
+                # Get the alembic.ini path
+                alembic_ini_path = os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini")
+                if os.path.exists(alembic_ini_path):
+                    cfg = Config(alembic_ini_path)
+                    # Set the database URL from settings
+                    cfg.set_main_option("sqlalchemy.url", db_url)
+                    # Run migrations
+                    command.upgrade(cfg, "head")
+                    logger.info("PostgreSQL migrations completed successfully.")
+                else:
+                    logger.warning("alembic.ini not found, skipping migrations")
+            except Exception as migration_error:
+                logger.error(f"Failed to run migrations: {migration_error}")
+                # Don't fail startup on migration errors
+        else:
+            logger.info(f"Database URL format not recognized: {db_url}")
     except Exception as e:
-        logger.warning("SQLite auto-init skipped/failed: %s", e)
+        logger.warning("Database initialization failed: %s", e)
 
     # Startup: log registered routes after inclusion
     yield
