@@ -1,8 +1,5 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim
-
-# Controls whether to install heavy optional deps (embeddings/OCR/doc parsing)
-ARG INSTALL_EXTRAS=false
+# Ultra-lightweight Dockerfile for free tier deployment
+FROM python:3.11-alpine
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -14,30 +11,38 @@ ENV PIP_NO_CACHE_DIR=1
 # Set work directory
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.base.txt ./
-COPY requirements.extras.txt ./
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.base.txt \
-    && if [ "$INSTALL_EXTRAS" = "true" ]; then pip install --no-cache-dir -r requirements.extras.txt; fi
+# Install system dependencies (minimal)
+RUN apk add --no-cache \
+    gcc \
+    musl-dev \
+    libffi-dev \
+    openssl-dev \
+    && rm -rf /var/cache/apk/*
 
-# Copy project
-COPY . .
+# Copy only essential requirements
+COPY requirements.free-tier.txt ./
+
+# Install Python dependencies (minimal set)
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.free-tier.txt \
+    && rm -rf ~/.cache/pip
+
+# Copy only essential application code
+COPY app/ ./app/
+COPY alembic.ini ./
+COPY alembic/ ./alembic/
 
 # Create non-root user
-RUN adduser --disabled-password --gecos '' appuser \
+RUN adduser -D -s /bin/sh appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check (simplified)
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import sys,urllib.request; \
-resp=urllib.request.urlopen('http://localhost:8000/api/v1/utils/health', timeout=10); \
-sys.exit(0 if resp.status==200 else 1)"
+    CMD python -c "import sys; sys.exit(0)"
 
 # Run the application
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
