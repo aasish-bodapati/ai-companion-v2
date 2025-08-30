@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from app.main import app
 
+
 def test_metrics_endpoint_emits_basic_metrics():
     client = TestClient(app)
     # Trigger a couple of requests to populate metrics

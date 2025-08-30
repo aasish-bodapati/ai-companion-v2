@@ -14,12 +14,12 @@ def _enable_memory(monkeypatch):
     monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
     # Make FAISS functions no-op by faking embeddings and add/update
     from app.memory import embeddings as _emb
-    from app.memory import faiss_store as _faiss
 
     # Mock embeddings with deterministic but varied vectors
     def mock_embed_texts(texts):
         import hashlib
         import numpy as np
+
         results = []
         for text in texts:
             # Create a hash-based seed for deterministic but varied vectors
@@ -32,7 +32,7 @@ def _enable_memory(monkeypatch):
                 vector = vector / norm
             results.append(vector.tolist())
         return results
-    
+
     monkeypatch.setattr(_emb, "embed_texts", mock_embed_texts)
     # Don't mock FAISS add/update - let them work with our 384-dim vectors
     # monkeypatch.setattr(_faiss, "add", lambda user_id, ids, vecs: None)
@@ -49,7 +49,7 @@ def _cleanup_database():
         from app.models.memory import Memory
         from app.models.conversation import Conversation
         from app.models.message import Message
-        
+
         db = SessionLocal()
         try:
             # Delete all test data
@@ -62,13 +62,13 @@ def _cleanup_database():
     except Exception:
         # Ignore cleanup errors
         pass
-    
+
     # Also clean up FAISS indices
     try:
         import os
         import glob
         from app.core.config import settings
-        
+
         # Find and remove FAISS index files
         faiss_dir = os.path.join(settings.FAISS_INDEX_DIR or "faiss_indices")
         if os.path.exists(faiss_dir):
@@ -132,6 +132,7 @@ def test_trivial_messages_not_stored(monkeypatch, client: TestClient):
     calls = {"count": 0}
 
     from app.services.auto_memory import auto_memory_service
+
     real_auto_capture = auto_memory_service.auto_capture_memory
 
     def spy_auto_capture(*args, **kwargs):
@@ -148,17 +149,25 @@ def test_trivial_messages_not_stored(monkeypatch, client: TestClient):
     _ = list_messages(client, conv_id)
     # Auto-capture should be attempted for all messages
     assert calls["count"] >= 6  # All messages attempted auto-capture
-    
+
     # But only the non-trivial message should be stored in memory
     r = client.get("/api/v1/memory/users/me/memories")
     assert r.status_code == 200, r.text
     memories = r.json()
     # Should only have the important message, not the trivial ones
-    important_memories = [m for m in memories if "software engineer" in (m.get("content") or "").lower()]
-    trivial_memories = [m for m in memories if any(trivial in (m.get("content") or "").lower() for trivial in ["hi", "ok", "👍"])]
-    
+    important_memories = [
+        m for m in memories if "software engineer" in (m.get("content") or "").lower()
+    ]
+    trivial_memories = [
+        m
+        for m in memories
+        if any(trivial in (m.get("content") or "").lower() for trivial in ["hi", "ok", "👍"])
+    ]
+
     assert len(important_memories) >= 1, "Important message should be stored"
-    assert len(trivial_memories) == 0, f"Trivial messages should not be stored, but found: {trivial_memories}"
+    assert len(trivial_memories) == 0, (
+        f"Trivial messages should not be stored, but found: {trivial_memories}"
+    )
 
 
 def test_personalization_toggle_skips_memory_when_off(monkeypatch, client: TestClient):
@@ -195,7 +204,7 @@ def test_personalization_toggle_uses_memory_when_on(monkeypatch, client: TestCli
 
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
-            # Avoid external OpenRouter API calls and rate limits
+    # Avoid external OpenRouter API calls and rate limits
     try:
         import app.core.llm as _llm
 
@@ -236,8 +245,17 @@ def test_delete_memory_endpoint_removes_item(client: TestClient):
     r = client.get("/api/v1/memory/users/me/memories")
     assert r.status_code == 200, r.text
     items = r.json()
-    assert any("favcolor" in (m.get("content") or "").lower() and "blue" in (m.get("content") or "").lower() for m in items)
-    target = next(m for m in items if "favcolor" in (m.get("content") or "").lower() and "blue" in (m.get("content") or "").lower())
+    assert any(
+        "favcolor" in (m.get("content") or "").lower()
+        and "blue" in (m.get("content") or "").lower()
+        for m in items
+    )
+    target = next(
+        m
+        for m in items
+        if "favcolor" in (m.get("content") or "").lower()
+        and "blue" in (m.get("content") or "").lower()
+    )
 
     # Delete
     delr = client.delete(f"/api/v1/memory/memories/{target['id']}")
@@ -259,24 +277,38 @@ def test_feedback_down_suppresses_memory_in_context(client: TestClient):
     send_message(client, conv_id, "What is my FavColor?")
 
     # Get memory context before feedback (should include our fact)
-    ctx_before = client.get(f"/api/v1/memory/conversations/{conv_id}/memory-context").json()["context"]
-    print(f"DEBUG: Memory context before feedback: {[item.get('content', '')[:50] for item in ctx_before]}")
-    
+    ctx_before = client.get(f"/api/v1/memory/conversations/{conv_id}/memory-context").json()[
+        "context"
+    ]
+    print(
+        f"DEBUG: Memory context before feedback: {[item.get('content', '')[:50] for item in ctx_before]}"
+    )
+
     # Find the fact memory (FavColor: Blue) from all memories, not just context
     # Add a more robust retry mechanism to handle potential race conditions
     import time
+
     max_retries = 10
     for attempt in range(max_retries):
         all_memories = client.get("/api/v1/memory/users/me/memories").json()
-        print(f"DEBUG: Attempt {attempt + 1}, all_memories: {[m.get('content', '')[:50] for m in all_memories]}")
-        fact_memories = [m for m in all_memories if "favcolor" in (m.get("content") or "").lower() and "blue" in (m.get("content") or "").lower()]
+        print(
+            f"DEBUG: Attempt {attempt + 1}, all_memories: {[m.get('content', '')[:50] for m in all_memories]}"
+        )
+        fact_memories = [
+            m
+            for m in all_memories
+            if "favcolor" in (m.get("content") or "").lower()
+            and "blue" in (m.get("content") or "").lower()
+        ]
         if fact_memories:
             print(f"DEBUG: Found fact memory: {fact_memories[0].get('content', '')}")
             break
         if attempt < max_retries - 1:
             time.sleep(0.5)  # Longer delay before retry
-    
-    assert fact_memories, f"No fact memory found in all memories after {max_retries} attempts: {all_memories}"
+
+    assert fact_memories, (
+        f"No fact memory found in all memories after {max_retries} attempts: {all_memories}"
+    )
     target_memory = fact_memories[0]
     faiss_id = target_memory["faiss_id"]
 
@@ -293,5 +325,7 @@ def test_feedback_down_suppresses_memory_in_context(client: TestClient):
     assert fb.status_code == 200, fb.text
 
     # Memory context after feedback should no longer include suppressed item
-    ctx_after = client.get(f"/api/v1/memory/conversations/{conv_id}/memory-context").json()["context"]
+    ctx_after = client.get(f"/api/v1/memory/conversations/{conv_id}/memory-context").json()[
+        "context"
+    ]
     assert all(item.get("id") != faiss_id for item in ctx_after), ctx_after

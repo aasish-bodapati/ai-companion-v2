@@ -3,6 +3,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
+from app.schemas.memory import MemorySearchResult
+
 # Shared properties
 
 
@@ -74,9 +76,6 @@ class ConversationList(BaseModel):
 
 
 # Assistant reply with provenance for explainability
-from app.schemas.memory import MemorySearchResult
-
-
 class AssistantReply(BaseModel):
     """Response shape for non-streaming assistant reply including provenance."""
 

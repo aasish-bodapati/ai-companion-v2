@@ -6,22 +6,21 @@ from app.core.llm import generate_response
 from app.core.config import settings
 
 EXTRACTION_SYSTEM = (
-    "You are a calendar intent extractor. Return ONLY compact JSON matching the schema. "
-    "No prose."
+    "You are a calendar intent extractor. Return ONLY compact JSON matching the schema. No prose."
 )
 
 EXTRACTION_USER_TMPL = (
     "Extract a calendar intent from the user's message and return JSON matching this schema.\n\n"
     "Schema (JSON):\n"
     "{\n"
-    "  \"action\": \"create|delete|list\",\n"
-    "  \"title\": string|null,\n"
-    "  \"time\": HH:MM 24h|string|null,\n"
-    "  \"duration_minutes\": number|null,\n"
-    "  \"timezone_hint\": string|null,\n"
-    "  \"window\": { \"mode\": \"next_week|next_7_days|date_range\", \"start_date\": YYYY-MM-DD|null, \"end_date\": YYYY-MM-DD|null }|null,\n"
-    "  \"recurrence\": { \"type\": \"none|daily|weekdays\", \"count\": number|null }|null,\n"
-    "  \"confidence\": number|null\n"
+    '  "action": "create|delete|list",\n'
+    '  "title": string|null,\n'
+    '  "time": HH:MM 24h|string|null,\n'
+    '  "duration_minutes": number|null,\n'
+    '  "timezone_hint": string|null,\n'
+    '  "window": { "mode": "next_week|next_7_days|date_range", "start_date": YYYY-MM-DD|null, "end_date": YYYY-MM-DD|null }|null,\n'
+    '  "recurrence": { "type": "none|daily|weekdays", "count": number|null }|null,\n'
+    '  "confidence": number|null\n'
     "}\n\n"
     "User: \n{user_text}\n"
 )
@@ -31,7 +30,7 @@ def extract_calendar_intent(user_text: str) -> Optional[CalendarIntent]:
     prompt = EXTRACTION_USER_TMPL.format(user_text=user_text)
     try:
         raw = generate_response(
-            model=getattr(settings, "LLM_MODEL_DEFAULT", "gemini-2.0-flash"),
+            model=getattr(settings, "LLM_MODEL_DEFAULT", "mistralai/mistral-7b-instruct"),
             system_prompt=EXTRACTION_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=256,

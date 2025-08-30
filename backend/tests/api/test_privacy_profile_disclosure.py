@@ -5,6 +5,7 @@ import pytest
 @pytest.fixture(autouse=True)
 def _enable_memory_and_privacy_defaults(monkeypatch):
     from app.core.config import settings
+
     # Ensure memory on and disclosure disabled by default
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "PROFILE_VERBATIM_DISCLOSURE_ALLOWED", False, raising=False)

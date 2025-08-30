@@ -59,9 +59,7 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
         """
         Back-compat alias used by API endpoints. Delegates to get_by_conversation.
         """
-        return self.get_by_conversation(
-            db, conversation_id=conversation_id, skip=skip, limit=limit
-        )
+        return self.get_by_conversation(db, conversation_id=conversation_id, skip=skip, limit=limit)
 
     def get_by_conversation(
         self, db: Session, *, conversation_id: str, skip: int = 0, limit: int = 100

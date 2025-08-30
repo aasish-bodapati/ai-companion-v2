@@ -3,8 +3,11 @@ from fastapi import APIRouter, Response
 from app.core.config import settings
 import secrets
 
-router = APIRouter()
 from app.memory.service import memory_service
+from app.core.metrics import dump_prometheus
+from app.monitoring.memory_metrics import memory_monitor
+
+router = APIRouter()
 
 
 @router.post("/test-email")
@@ -91,6 +94,37 @@ def get_retrieval_metrics():
         return {"total_requests": 0, "last": {}}
 
 
+@router.get("/metrics/prometheus")
+def get_prometheus_metrics():
+    """Expose Prometheus-formatted metrics for scraping."""
+    try:
+        data = dump_prometheus()
+        return Response(content=data, media_type="text/plain; version=0.0.4")
+    except Exception:
+        return Response(content="", media_type="text/plain; version=0.0.4")
+
+
+@router.get("/metrics/retrieval-summary")
+def get_retrieval_summary(hours: int = 1):
+    """Aggregated retrieval metrics from memory_monitor (rolling window)."""
+    try:
+        metrics = memory_monitor.metrics_collector.get_aggregated_metrics(hours=hours)
+        # Include some derived layman rollups
+        out = {
+            "window_hours": int(hours),
+            "metrics": metrics,
+            "rollups": {
+                "avg_retrieval_ms": metrics.get("retrieval_ms", {}).get("avg", 0.0),
+                "avg_mmr_ms": metrics.get("mmr_ms", {}).get("avg", 0.0),
+                "avg_selected": metrics.get("retrieval_selected_count", {}).get("avg", 0.0),
+                "avg_diversity": metrics.get("retrieval_diversity", {}).get("avg", 0.0),
+            },
+        }
+        return out
+    except Exception:
+        return {"window_hours": int(hours), "metrics": {}, "rollups": {}}
+
+
 @router.get("/llm-latency")
 def get_llm_latency():
     """Return rolling latency metrics for LLM calls recorded by reply_stream.
@@ -104,6 +138,7 @@ def get_llm_latency():
         from app.main import app as _app
 
         store = getattr(_app.state, "llm_latency", None) or {}
+
         def stats(arr):
             try:
                 data = list(arr or [])
@@ -124,3 +159,58 @@ def get_llm_latency():
             "first_token_ms": {"avg": 0.0, "min": 0.0, "max": 0.0, "count": 0},
             "llm_total_ms": {"avg": 0.0, "min": 0.0, "max": 0.0, "count": 0},
         }
+
+
+@router.get("/llm-latency/latest")
+def get_llm_latency_latest():
+    """Return the most recent first-token and total latency samples.
+
+    Shape: { first_token_ms: float | null, llm_total_ms: float | null }
+    """
+    try:
+        from app.main import app as _app
+
+        store = getattr(_app.state, "llm_latency", None) or {}
+        ft = store.get("first_token_ms") or []
+        tt = store.get("llm_total_ms") or []
+        return {
+            "first_token_ms": float(ft[-1]) if ft else None,
+            "llm_total_ms": float(tt[-1]) if tt else None,
+        }
+    except Exception:
+        return {"first_token_ms": None, "llm_total_ms": None}
+
+
+@router.get("/metrics/taxonomy")
+def get_metrics_taxonomy():
+    """Return canonical metrics taxonomy and definitions used by the system.
+
+    Shape: { categories: { Retrieval: {...}, RAG_QA: {...}, Ops: {...} } }
+    """
+    try:
+        taxonomy = {
+            "categories": {
+                "Retrieval": {
+                    "retrieval_ms": "End-to-end retrieval latency including vector search, filters, reranking.",
+                    "mmr_ms": "Latency spent in MMR reranking.",
+                    "retrieval_selected_count": "Number of memories selected for the final context window.",
+                    "retrieval_diversity": "Diversity of selected memories (1 - avg Jaccard token similarity).",
+                    "no_result_count": "Number of retrievals that returned no results.",
+                },
+                "RAG_QA": {
+                    "llm_total_ms": "LLM total generation latency for a reply (first byte to done).",
+                    "first_token_ms": "Time to first streamed token in the reply.",
+                    "prompt_tokens": "Tokens in prompt (if provided by provider).",
+                    "completion_tokens": "Tokens in completion (if provided).",
+                    "cost_usd": "Cost in USD for the call (if available).",
+                },
+                "Ops": {
+                    "request_count": "HTTP requests handled by the API server.",
+                    "route_avg_latency_ms": "Average per-route latency computed in-process.",
+                    "errors": "Number of 5xx errors (if available in Prometheus dump).",
+                },
+            }
+        }
+        return taxonomy
+    except Exception:
+        return {"categories": {}}

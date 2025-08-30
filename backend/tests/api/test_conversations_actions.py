@@ -18,6 +18,7 @@ pytestmark = pytest.mark.skipif(
 def _enable_actions_and_memory(monkeypatch):
     # Ensure flags are enabled for this suite
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "ACTIONS_SUGGESTIONS_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
 
@@ -42,10 +43,13 @@ def _add_user_message(client: TestClient, conv_id: str, content: str) -> Dict[st
 
 def test_stream_emits_actions_event_and_fenced_block(client: TestClient, monkeypatch):
     # Force deterministic suggestions so assertions are stable
-    from app.api.endpoints.conversations_utils import _suggest_actions_for
 
     fixed = [
-        {"action": "nutrition.log_meal", "label": "Log meal", "params": {"description": "salad", "when": "now"}},
+        {
+            "action": "nutrition.log_meal",
+            "label": "Log meal",
+            "params": {"description": "salad", "when": "now"},
+        },
         {"action": "journal.add_entry", "label": "Save to journal", "params": {"text": "note"}},
     ]
     monkeypatch.setattr(conv_mod, "_suggest_actions_for", lambda _t: fixed, raising=False)
@@ -77,9 +81,9 @@ def test_stream_emits_actions_event_and_fenced_block(client: TestClient, monkeyp
                     bracket_count = 0
                     end_pos = 0
                     for i, char in enumerate(json_str):
-                        if char == '[':
+                        if char == "[":
                             bracket_count += 1
-                        elif char == ']':
+                        elif char == "]":
                             bracket_count -= 1
                             if bracket_count == 0:
                                 end_pos = i + 1

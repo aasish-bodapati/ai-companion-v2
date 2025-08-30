@@ -10,7 +10,11 @@ class CRUDTasks:
         self.model = TaskModel
 
     def get_user_tasks(self, db: Session, *, user_id: str, limit: int = 100) -> List[TaskModel]:
-        q = db.query(self.model).filter(self.model.user_id == user_id).order_by(self.model.created_at.desc())
+        q = (
+            db.query(self.model)
+            .filter(self.model.user_id == user_id)
+            .order_by(self.model.created_at.desc())
+        )
         if limit:
             q = q.limit(limit)
         return q.all()
@@ -25,8 +29,14 @@ class CRUDTasks:
         db.refresh(db_obj)
         return db_obj
 
-    def update_for_user(self, db: Session, *, user_id: str, task_id: str, obj_in: TaskUpdate) -> Optional[TaskModel]:
-        db_obj = db.query(self.model).filter(self.model.id == task_id, self.model.user_id == user_id).first()
+    def update_for_user(
+        self, db: Session, *, user_id: str, task_id: str, obj_in: TaskUpdate
+    ) -> Optional[TaskModel]:
+        db_obj = (
+            db.query(self.model)
+            .filter(self.model.id == task_id, self.model.user_id == user_id)
+            .first()
+        )
         if not db_obj:
             return None
         data = obj_in.model_dump(exclude_unset=True)
@@ -38,7 +48,11 @@ class CRUDTasks:
         return db_obj
 
     def delete_for_user(self, db: Session, *, user_id: str, task_id: str) -> bool:
-        db_obj = db.query(self.model).filter(self.model.id == task_id, self.model.user_id == user_id).first()
+        db_obj = (
+            db.query(self.model)
+            .filter(self.model.id == task_id, self.model.user_id == user_id)
+            .first()
+        )
         if not db_obj:
             return False
         db.delete(db_obj)

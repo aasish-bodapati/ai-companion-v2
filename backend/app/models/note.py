@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, text
+from sqlalchemy import Column, String, DateTime, ForeignKey
 from datetime import datetime
 import uuid
 
@@ -9,7 +9,9 @@ class Note(Base):
     __tablename__ = "notes"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     title = Column(String, nullable=False)
     body = Column(String, nullable=True)

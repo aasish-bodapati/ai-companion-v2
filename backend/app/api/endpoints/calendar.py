@@ -32,6 +32,7 @@ def list_events(
     end: Optional[str] = None,
 ):
     try:
+
         def parse_dt(val: Optional[str]) -> Optional[datetime]:
             if not val:
                 return None
@@ -106,6 +107,7 @@ def create_from_intents(
                 end = start + (start - start)  # keep mypy happy
                 end = start
                 from datetime import timedelta
+
                 end = start + timedelta(minutes=body.default_duration_minutes)
 
             title = pe.title.strip() if pe.title else body.text.strip()
@@ -140,7 +142,11 @@ def create_from_intents(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Calendar feature not available: database is not migrated (missing calendar_events table).",
         )
-@router.post("/events/bulk", response_model=List[CalendarEvent], status_code=status.HTTP_201_CREATED)
+
+
+@router.post(
+    "/events/bulk", response_model=List[CalendarEvent], status_code=status.HTTP_201_CREATED
+)
 def create_events_bulk(
     *,
     db: Session = Depends(deps.get_db),
@@ -196,7 +202,9 @@ def update_event(
     body: CalendarEventUpdate,
 ):
     try:
-        updated = crud_calendar.update_for_user(db, user_id=current_user.id, event_id=event_id, obj_in=body)
+        updated = crud_calendar.update_for_user(
+            db, user_id=current_user.id, event_id=event_id, obj_in=body
+        )
         if not updated:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
         return updated

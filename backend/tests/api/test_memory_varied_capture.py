@@ -36,7 +36,7 @@ def _add_user_message(client: TestClient, conv_id: str, content: str) -> Dict:
 
 
 def _list_memories(client: TestClient, limit: int = 200) -> List[Dict]:
-    r = client.get(f"/api/v1/users/me/memories", params={"limit": limit})
+    r = client.get("/api/v1/users/me/memories", params={"limit": limit})
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -122,7 +122,9 @@ def test_note_fast_capture_persists_fact(client: TestClient):
         if "pick up dry cleaning" in (m.get("content", "") or "").lower():
             hit = m
             break
-    assert hit is not None, f"Expected a memory containing the note body, got: {[m.get('content') for m in mems[:5]]}"
+    assert hit is not None, (
+        f"Expected a memory containing the note body, got: {[m.get('content') for m in mems[:5]]}"
+    )
     # Optionally verify it is typed as a fact
     assert (hit.get("content_type") or "").lower() == "fact"
 

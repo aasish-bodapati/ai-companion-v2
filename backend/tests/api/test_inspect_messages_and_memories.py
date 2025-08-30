@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(autouse=True)
 def _enable_auto_memory(monkeypatch):
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "AUTO_MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_CONSOLIDATION_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_IMPORTANCE_THRESHOLD", 0.0, raising=False)
@@ -76,30 +77,50 @@ def test_inspect_messages_and_memories(client: TestClient):
     _add_user_message(client, conv_id, "What do you know about me?")
 
     # Trigger replies
-    non_stream = _reply_once(client, conv_id)
-    stream_chunks = _reply_stream_once(client, conv_id)
+    _reply_once(client, conv_id)
+    _reply_stream_once(client, conv_id)
 
     # Fetch and print conversation messages
     msgs = _list_messages(client, conv_id)
     print("\n=== Conversation Messages ===")
-    print(json.dumps([
-        {"id": m.get("id"), "role": m.get("role"), "content": (m.get("content") or "")[:120]} for m in msgs
-    ], indent=2))
+    print(
+        json.dumps(
+            [
+                {
+                    "id": m.get("id"),
+                    "role": m.get("role"),
+                    "content": (m.get("content") or "")[:120],
+                }
+                for m in msgs
+            ],
+            indent=2,
+        )
+    )
 
     # Fetch and print memories (deduped)
     mems = _list_memories(client, 200)
     print("\n=== Memories (deduped) ===")
-    print(json.dumps([
-        {
-            "id": it.get("id"),
-            "type": it.get("content_type"),
-            "content": (it.get("content") or "")[:160],
-            "importance_score": it.get("importance_score"),
-            "metadata": it.get("memory_metadata"),
-        } for it in mems[:20]
-    ], indent=2))
+    print(
+        json.dumps(
+            [
+                {
+                    "id": it.get("id"),
+                    "type": it.get("content_type"),
+                    "content": (it.get("content") or "")[:160],
+                    "importance_score": it.get("importance_score"),
+                    "metadata": it.get("memory_metadata"),
+                }
+                for it in mems[:20]
+            ],
+            indent=2,
+        )
+    )
 
     # Basic sanity assertions
     assert any(m.get("role") == "assistant" for m in msgs), "No assistant messages persisted"
-    assert any("alice" in (it.get("content", "").lower()) for it in mems), "Expected 'Alice' in memories"
-    assert any("coffee" in (it.get("content", "").lower()) for it in mems), "Expected 'coffee' in memories"
+    assert any("alice" in (it.get("content", "").lower()) for it in mems), (
+        "Expected 'Alice' in memories"
+    )
+    assert any("coffee" in (it.get("content", "").lower()) for it in mems), (
+        "Expected 'coffee' in memories"
+    )

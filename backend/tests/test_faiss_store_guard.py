@@ -1,6 +1,3 @@
-import importlib
-from typing import List, Tuple
-
 import pytest
 
 from app.memory import faiss_store

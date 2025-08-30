@@ -40,6 +40,7 @@ def test_store_memory_empty_content(monkeypatch):
 
     # Disable LLM classifier to avoid external calls
     import app.memory.service as svc_mod
+
     monkeypatch.setattr(svc_mod.settings, "MEMORY_LLM_CLASSIFIER_ENABLED", False, raising=False)
 
     # Fake embeddings to deterministic vector

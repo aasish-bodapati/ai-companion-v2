@@ -1,4 +1,3 @@
-import pytest
 from datetime import datetime, timezone, timedelta
 
 # Uses the shared TestClient fixtures from tests/conftest.py:
@@ -14,19 +13,25 @@ def iso(dt: datetime) -> str:
 
 # --------------------- Auth ---------------------
 
+
 def test_coaching_endpoints_require_auth(unauth_client):
     # Pick a few protected endpoints to assert 401
     r1 = unauth_client.get(f"{API}/goals")
     assert r1.status_code == 401
 
-    r2 = unauth_client.post(f"{API}/trackers/workouts", json={"when": iso(datetime.now(timezone.utc)), "type": "run"})
+    r2 = unauth_client.post(
+        f"{API}/trackers/workouts", json={"when": iso(datetime.now(timezone.utc)), "type": "run"}
+    )
     assert r2.status_code == 401
 
-    r3 = unauth_client.post(f"{API}/reviews/daily", json={"date": datetime.now().date().isoformat()})
+    r3 = unauth_client.post(
+        f"{API}/reviews/daily", json={"date": datetime.now().date().isoformat()}
+    )
     assert r3.status_code == 401
 
 
 # --------------------- Goals ---------------------
+
 
 def test_goals_create_list_update(client):
     # Create goal
@@ -52,12 +57,15 @@ def test_goals_create_list_update(client):
     assert any(g["id"] == goal_id for g in data)
 
     # Update goal (partial)
-    resp = client.patch(f"{API}/goals/{goal_id}", json={"name": "5k under 28m", "notes": "shin splints"})
+    resp = client.patch(
+        f"{API}/goals/{goal_id}", json={"name": "5k under 28m", "notes": "shin splints"}
+    )
     assert resp.status_code == 200
     assert resp.json() == {"ok": True}
 
 
 # --------------------- Routines ---------------------
+
 
 def test_routines_create_list_update(client):
     # Create routine
@@ -90,6 +98,7 @@ def test_routines_create_list_update(client):
 
 
 # --------------------- Trackers ---------------------
+
 
 def test_trackers_end_to_end(client):
     now = datetime.now(timezone.utc)
@@ -161,6 +170,7 @@ def test_trackers_end_to_end(client):
 
 # --------------------- Reviews ---------------------
 
+
 def test_reviews_daily_and_weekly(client):
     # Daily
     resp = client.post(f"{API}/reviews/daily", json={"date": datetime.now().date().isoformat()})
@@ -169,7 +179,10 @@ def test_reviews_daily_and_weekly(client):
     assert "suggestions" in body and isinstance(body["suggestions"], list)
 
     # Weekly
-    payload = {"week_start": (datetime.now().date() - timedelta(days=7)).isoformat(), "domains": ["fitness", "nutrition", "mood"]}
+    payload = {
+        "week_start": (datetime.now().date() - timedelta(days=7)).isoformat(),
+        "domains": ["fitness", "nutrition", "mood"],
+    }
     resp = client.post(f"{API}/reviews/weekly", json=payload)
     assert resp.status_code == 200
     body = resp.json()
@@ -177,6 +190,7 @@ def test_reviews_daily_and_weekly(client):
 
 
 # --------------------- Actions ---------------------
+
 
 def test_actions_execute_known_and_unknown(client):
     now = datetime.now(timezone.utc)

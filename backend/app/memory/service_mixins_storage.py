@@ -2,21 +2,86 @@ from __future__ import annotations
 from typing import List, Optional, Dict, Any
 import json
 from datetime import datetime, timezone
+import time as _time
 import logging
-import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.crud.user import user as user_crud
 from app.crud.memory import memory
 from app.memory.vector_store.factory import get_vector_store
 import app.memory.embeddings as embeddings
 from app.memory.deduplication import deduplication_service
-from app.memory.context_tracker import context_tracker
+from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
+
+# Lightweight PII/sensitive data patterns (blocklist)
+# Note: keep patterns conservative to avoid false positives; expand cautiously
+_RE_SSN = re_compile = None
+try:
+    import re as _re
+
+    _RE_PATTERNS = {
+        "password_like": _re.compile(r"(?i)\b(pass(?:word)?|pwd)\b\s*[:=]\s*\S{3,}"),
+        "api_key_common": _re.compile(r"(?i)\b(api[_-]?key|secret|token|bearer)\b\s*[:=]\s*[A-Za-z0-9_\-]{8,}"),
+        "openai_key": _re.compile(r"\bsk-[A-Za-z0-9]{20,}\b"),
+        "github_pat": _re.compile(r"\bghp_[A-Za-z0-9]{30,}\b"),
+        "slack_bot": _re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),
+        "aws_access_key": _re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        "aws_secret_key": _re.compile(r"(?i)aws(.{0,20})secret(.{0,5})key\s*[:=]\s*[A-Za-z0-9/+=]{30,}"),
+        "ssn": _re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
+        # Basic credit card (Luhn not enforced here; we just avoid storing card-like strings)
+        "credit_card": _re.compile(r"\b(?:\d[ -]*?){13,19}\b"),
+    }
+
+    _RE_EMAIL = _re.compile(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+")
+    _RE_PHONE = _re.compile(r"\b(?:\+?\d{1,3}[\s-]?)?(?:\(?\d{3}\)?[\s-]?)?\d{3}[\s-]?\d{4}\b")
+except Exception:
+    _RE_PATTERNS = {}
+    _RE_EMAIL = None
+    _RE_PHONE = None
+
+
+def _apply_pii_policy(text: str) -> tuple[str, bool]:
+    """Return (sanitized_text, blocked).
+
+    Block if credentials/secrets-like content is detected. Otherwise, redact low-risk identifiers.
+    Never log or return the original sensitive content.
+    """
+    try:
+        t = (text or "").strip()
+        if not t:
+            return t, False
+
+        # Block on high-risk secrets
+        for name, rx in (_RE_PATTERNS or {}).items():
+            try:
+                if rx.search(t):
+                    # Replace obvious key substrings to avoid leaking if upstream mishandles
+                    safe = "[REDACTED_SECRET]"
+                    return safe, True
+            except Exception:
+                continue
+
+        # Redact low-risk PII: emails/phones (keep usefulness without exact identifiers)
+        redacted = t
+        try:
+            if _RE_EMAIL is not None:
+                redacted = _RE_EMAIL.sub("[REDACTED_EMAIL]", redacted)
+        except Exception:
+            pass
+        try:
+            if _RE_PHONE is not None:
+                redacted = _RE_PHONE.sub("[REDACTED_PHONE]", redacted)
+        except Exception:
+            pass
+
+        return redacted, False
+    except Exception:
+        return text, False
 
 
 class StorageMixin:
@@ -47,6 +112,15 @@ class StorageMixin:
             s = (content or "").strip()
             if not s:
                 return None
+
+            # Enforce PII policy before any further processing
+            sanitized, blocked = _apply_pii_policy(s)
+            if blocked:
+                # Do not store or embed secrets
+                logger.info("Sensitive content blocked from memory storage")
+                return None
+            # Continue with sanitized text (emails/phones redacted)
+            s = sanitized
 
             # Optionally bypass dedup for structured fact KV so consolidation can run
             _has_structured_kv = False
@@ -135,19 +209,56 @@ class StorageMixin:
                     "emotional_state": md.get("emotional_state", "neutral"),
                     "energy_level": md.get("energy_level", "medium"),
                 }
-                md.update(self._enhance_memory_metadata(norm, content_type, user_id, db, emotional_context, conversation_history))
-                md.update({
-                    "temporal_context": self._extract_temporal_context(norm, conversation_history),
-                    "emotional_patterns": self._analyze_emotional_patterns(norm, emotional_context, conversation_history),
-                })
+                md.update(
+                    self._enhance_memory_metadata(
+                        norm, content_type, user_id, db, emotional_context, conversation_history
+                    )
+                )
+                md.update(
+                    {
+                        "temporal_context": self._extract_temporal_context(
+                            norm, conversation_history
+                        ),
+                        "emotional_patterns": self._analyze_emotional_patterns(
+                            norm, emotional_context, conversation_history
+                        ),
+                    }
+                )
             except Exception:
                 pass
 
             # Consolidation key and hashing
             import hashlib as _hashlib
 
-            # Compute a content hash for change detection
+            # Compute a content hash for change detection and idempotency keying
             content_hash = _hashlib.sha1(norm.encode("utf-8")).hexdigest()
+
+            # Idempotency guard (short-lived, process-local)
+            try:
+                guard = getattr(self, "_recent_write_guard", None)
+                if guard is None:
+                    self._recent_write_guard = {}
+                    guard = self._recent_write_guard
+                ttl = int(getattr(settings, "MEMORY_WRITE_IDEMPOTENCY_TTL_SEC", 30))
+                now_ts = _time.time()
+                # purge expired
+                try:
+                    for k, v in list(guard.items()):
+                        if now_ts - float(v.get("ts", 0.0)) > ttl:
+                            del guard[k]
+                except Exception:
+                    pass
+                id_key = f"{user_id}:{content_hash}"
+                entry = guard.get(id_key)
+                if entry and (now_ts - float(entry.get("ts", 0.0)) <= ttl):
+                    cached = entry.get("faiss_id")
+                    if cached:
+                        return cached
+                    # Soft-block duplicate in-flight writes within TTL
+                    return None
+                guard[id_key] = {"ts": now_ts, "faiss_id": None}
+            except Exception:
+                pass
 
             # Derive a stable, human-readable consolidation key when possible.
             # Example: "email: user@example.com" -> consolidation_key == "email"
@@ -156,7 +267,9 @@ class StorageMixin:
                 if ":" in s:
                     candidate = s.split(":", 1)[0].strip().lower()
                     # Keep alnum + underscore/hyphen; drop other punctuation/spaces
-                    derived_key = "".join(ch for ch in candidate if ch.isalnum() or ch in ("_", "-"))
+                    derived_key = "".join(
+                        ch for ch in candidate if ch.isalnum() or ch in ("_", "-")
+                    )
                     if not derived_key:
                         derived_key = None
             except Exception:
@@ -189,7 +302,7 @@ class StorageMixin:
                 except Exception:
                     prev_hash = None
 
-                changed = (prev_hash != content_hash)
+                changed = prev_hash != content_hash
 
                 # Update DB content and metadata (content persists exact 'norm')
                 memory.update_content_and_metadata(db, node=existing, content=norm, metadata=md)
@@ -200,7 +313,17 @@ class StorageMixin:
                         vector_store = get_vector_store()
                         vector_store.update_vector(user_id, existing.faiss_id, embedding[0])
                     except Exception as _fe:
-                        logger.warning(f"Vector update failed for user={user_id}, id={existing.faiss_id}: {_fe}")
+                        logger.warning(
+                            f"Vector update failed for user={user_id}, id={existing.faiss_id}: {_fe}"
+                        )
+                try:
+                    # populate idempotency cache
+                    id_key = f"{user_id}:{content_hash}"
+                    guard = getattr(self, "_recent_write_guard", None)
+                    if isinstance(guard, dict) and id_key in guard:
+                        guard[id_key]["faiss_id"] = existing.faiss_id or None
+                except Exception:
+                    pass
                 return existing.faiss_id or None
 
             # Create DB record with a generated faiss_id (required by schema)
@@ -240,10 +363,90 @@ class StorageMixin:
             except Exception:
                 pass
 
+            try:
+                # populate idempotency cache
+                id_key = f"{user_id}:{content_hash}"
+                guard = getattr(self, "_recent_write_guard", None)
+                if isinstance(guard, dict) and id_key in guard:
+                    guard[id_key]["faiss_id"] = faiss_id
+            except Exception:
+                pass
             return faiss_id
         except Exception as e:
             logger.warning(f"store_memory failed for user={user_id}: {e}")
             return None
+
+    # -------- Async path (fire-and-forget) --------
+    _store_exec: ThreadPoolExecutor | None = None
+
+    def _get_store_executor(self) -> ThreadPoolExecutor:
+        exec_inst = getattr(self, "_store_exec", None)
+        if exec_inst is None:
+            # Small pool; memory writes are lightweight
+            exec_inst = ThreadPoolExecutor(max_workers=2, thread_name_prefix="mem-store")
+            setattr(self, "_store_exec", exec_inst)
+        return exec_inst
+
+    def store_memory_async(
+        self,
+        *,
+        user_id: str,
+        content: str,
+        content_type: str,
+        conversation_id: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        conversation_history: Optional[List[Dict]] = None,
+    ) -> None:
+        """Submit a background job to persist memory using a fresh DB session.
+
+        - Respects settings.MEMORY_ASYNC_WRITES_ENABLED (default True)
+        - Uses the same idempotency guard as store_memory()
+        - Fire-and-forget: returns immediately
+        """
+        try:
+            if not bool(getattr(settings, "MEMORY_ASYNC_WRITES_ENABLED", True)):
+                # Fallback to synchronous write with a new session
+                db = SessionLocal()
+                try:
+                    self.store_memory(
+                        db,
+                        content=content,
+                        content_type=content_type,
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        metadata=metadata,
+                        conversation_history=conversation_history,
+                    )
+                finally:
+                    db.close()
+                return
+
+            def _task() -> None:
+                db = SessionLocal()
+                try:
+                    self.store_memory(
+                        db,
+                        content=content,
+                        content_type=content_type,
+                        user_id=user_id,
+                        conversation_id=conversation_id,
+                        metadata=metadata,
+                        conversation_history=conversation_history,
+                    )
+                except Exception:
+                    # Swallow exceptions; async path is best-effort
+                    pass
+                finally:
+                    try:
+                        db.close()
+                    except Exception:
+                        pass
+
+            exec_inst = self._get_store_executor()
+            exec_inst.submit(_task)
+        except Exception:
+            # As a safety net, avoid raising in caller path
+            pass
 
     def mark_memories_seen(self, db: Session, *, user_id: str, faiss_ids: List[str]) -> None:
         """Mark memories as seen; increment seen_count and occasionally reinforce."""
@@ -341,7 +544,11 @@ class StorageMixin:
             except Exception:
                 new_score = 1.0
             memory.update_content_and_metadata(db, node=node, content=node.content, metadata=md)
-            memory.update_relevance_score(db, faiss_id=faiss_id, score=new_score)
+            memory.update_relevance_score(
+                db,
+                faiss_id=faiss_id,
+                score=new_score,
+            )
             return True
         except Exception as e:
             logger.warning(f"Failed to reinforce memory {faiss_id}: {e}")

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from app.core.config import settings
+
+if TYPE_CHECKING:
+    from redis.asyncio import Redis
 
 _redis: Optional["Redis"] = None
 

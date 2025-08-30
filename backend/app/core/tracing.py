@@ -36,10 +36,12 @@ def init_tracing(app) -> Optional[object]:
         environment = getattr(settings, "OTEL_ENVIRONMENT", "dev")
         endpoint = getattr(settings, "OTEL_EXPORTER_OTLP_ENDPOINT", "").strip()
 
-        resource = Resource.create({
-            "service.name": service_name,
-            "deployment.environment": environment,
-        })
+        resource = Resource.create(
+            {
+                "service.name": service_name,
+                "deployment.environment": environment,
+            }
+        )
 
         provider = TracerProvider(resource=resource)
         trace.set_tracer_provider(provider)
@@ -55,7 +57,9 @@ def init_tracing(app) -> Optional[object]:
 
         # Instrument FastAPI app and ASGI middleware
         try:
-            FastAPIInstrumentor.instrument_app(app, server_request_hook=None, client_request_hook=None)
+            FastAPIInstrumentor.instrument_app(
+                app, server_request_hook=None, client_request_hook=None
+            )
         except Exception as e:
             logger.debug("FastAPIInstrumentor.instrument_app failed: %s", e)
         try:
@@ -76,7 +80,12 @@ def init_tracing(app) -> Optional[object]:
         except Exception as e:
             logger.debug("SQLAlchemyInstrumentor.instrument failed: %s", e)
 
-        logger.info("OpenTelemetry initialized: service=%s env=%s endpoint=%s", service_name, environment, endpoint or "env-defaults")
+        logger.info(
+            "OpenTelemetry initialized: service=%s env=%s endpoint=%s",
+            service_name,
+            environment,
+            endpoint or "env-defaults",
+        )
         return provider
     except Exception as e:
         logger.error("Failed to initialize OpenTelemetry: %s", e, exc_info=True)

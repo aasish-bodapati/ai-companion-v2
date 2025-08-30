@@ -82,7 +82,7 @@ def test_lifecycle_and_consolidate_endpoints(client: TestClient):
     _ = _create_memory(client, content="FavColor: Blue")
     _ = _create_memory(client, content="City: SF")
 
-    r1 = client.post("/api/v1/users/me/memories/lifecycle", json={})
+    r1 = client.post("/api/v1/memories/users/me/memories/lifecycle", json={})
     assert r1.status_code in (200, 201), r1.text
     data1 = r1.json()
     if isinstance(data1, str):
@@ -92,7 +92,7 @@ def test_lifecycle_and_consolidate_endpoints(client: TestClient):
             data1 = {}
     assert set(["suppressed", "consolidated"]).issubset(set(data1.keys()))
 
-    r2 = client.post("/api/v1/users/me/memories/consolidate", json={})
+    r2 = client.post("/api/v1/memories/users/me/memories/consolidate", json={})
     assert r2.status_code in (200, 201), r2.text
     data2 = r2.json()
     if isinstance(data2, str):

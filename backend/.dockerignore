@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Test & tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage*
+htmlcov/
+.coverage
+
+# Editors/OS
+.DS_Store
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Local data
+/data/
+!data/.gitkeep
+*.db
+
+# Logs
+logs/
+*.log
+
+# Secrets (mounted or provided via env, not baked)
+.env
+.env.*
+.secrets.baseline
+
+# Node leftovers (if any)
+node_modules/
+
+# Alembic cache
+alembic/*cache*
+
+# Tests (not needed in runtime image)
+tests/

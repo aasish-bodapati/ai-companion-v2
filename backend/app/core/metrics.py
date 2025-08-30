@@ -41,7 +41,9 @@ def record_llm_call(
         if isinstance(prompt_tokens, int):
             llm["prompt_tokens_total"] = int(llm.get("prompt_tokens_total", 0)) + prompt_tokens
         if isinstance(completion_tokens, int):
-            llm["completion_tokens_total"] = int(llm.get("completion_tokens_total", 0)) + completion_tokens
+            llm["completion_tokens_total"] = (
+                int(llm.get("completion_tokens_total", 0)) + completion_tokens
+            )
         if isinstance(latency_ms, (int, float)):
             llm["latency_ms_total"] = float(llm.get("latency_ms_total", 0.0)) + float(latency_ms)
         if isinstance(cost_usd, (int, float)):
@@ -79,11 +81,15 @@ def dump_prometheus() -> str:
         m = str(model).replace("\\", "\\\\").replace('"', '\\"')
         lines.append(f'ai_companion_llm_requests_total{{model="{m}"}} {int(c)}')
 
-    lines.append("# HELP ai_companion_llm_prompt_tokens_total Total prompt tokens across LLM calls.")
+    lines.append(
+        "# HELP ai_companion_llm_prompt_tokens_total Total prompt tokens across LLM calls."
+    )
     lines.append("# TYPE ai_companion_llm_prompt_tokens_total counter")
     lines.append(f"ai_companion_llm_prompt_tokens_total {pt}")
 
-    lines.append("# HELP ai_companion_llm_completion_tokens_total Total completion tokens across LLM calls.")
+    lines.append(
+        "# HELP ai_companion_llm_completion_tokens_total Total completion tokens across LLM calls."
+    )
     lines.append("# TYPE ai_companion_llm_completion_tokens_total counter")
     lines.append(f"ai_companion_llm_completion_tokens_total {ct}")
 
@@ -106,7 +112,9 @@ def dump_prometheus() -> str:
 
     per_action = audit.get("per_action_writes", {})
     if isinstance(per_action, dict):
-        lines.append("# HELP ai_companion_audit_writes_by_action_total Total successful audit writes by action.")
+        lines.append(
+            "# HELP ai_companion_audit_writes_by_action_total Total successful audit writes by action."
+        )
         lines.append("# TYPE ai_companion_audit_writes_by_action_total counter")
         for action, c in per_action.items():
             a = str(action).replace("\\", "\\\\").replace('"', '\\"')

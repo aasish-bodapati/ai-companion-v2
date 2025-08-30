@@ -51,7 +51,9 @@ def upgrade() -> None:
     op.add_column("onboarding_profiles", sa.Column("help_preference", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("primary_device", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("tech_comfort", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("technical_constraints", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("technical_constraints", sa.Text(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("weekly_goals", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("timeline", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("daily_time", sa.String(), nullable=True))

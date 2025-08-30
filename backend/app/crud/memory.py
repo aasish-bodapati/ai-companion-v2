@@ -6,7 +6,11 @@ import uuid
 
 from app.crud.base import CRUDBase
 from app.models.memory import MemoryNode
-from app.schemas.memory import MemoryNodeCreate, MemoryNodeUpdate, MemoryCreate as LegacyMemoryCreate
+from app.schemas.memory import (
+    MemoryNodeCreate,
+    MemoryNodeUpdate,
+    MemoryCreate as LegacyMemoryCreate,
+)
 
 
 class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):

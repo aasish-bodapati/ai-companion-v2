@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
-from app.api.endpoints import conversations_messages, conversations_main, memory, conversation, deduplication
 from app.core.config import settings
 from app.core.metrics import dump_prometheus as dump_llm_metrics
 from app.core.tracing import init_tracing
@@ -51,6 +50,7 @@ async def lifespan(app: FastAPI):
     # Startup: auto-init DB for local SQLite to avoid login failures in dev/tests
     try:
         from app.core.config import settings as _settings
+
         db_url = getattr(_settings, "SQLALCHEMY_DATABASE_URI", "") or ""
         if isinstance(db_url, str) and db_url.startswith("sqlite:///"):
             logger.info("Detected SQLite DB; running init_db.init_db() for local dev...")
@@ -142,7 +142,17 @@ app.state.metrics = {
     "duration_hist": {
         "buckets": [50, 100, 250, 500, 1000, 2500, 5000, 10000],
         # le (as str) -> count
-        "counts": {"50": 0, "100": 0, "250": 0, "500": 0, "1000": 0, "2500": 0, "5000": 0, "10000": 0, "+Inf": 0},
+        "counts": {
+            "50": 0,
+            "100": 0,
+            "250": 0,
+            "500": 0,
+            "1000": 0,
+            "2500": 0,
+            "5000": 0,
+            "10000": 0,
+            "+Inf": 0,
+        },
         "sum_ms": 0.0,
         "count": 0,
     },
@@ -161,6 +171,22 @@ try:
     # Add cookie authentication middleware
     app.add_middleware(AuthCookieMiddleware)
     
+    # Add rate limiting middleware if enabled
+    if getattr(settings, "RATE_LIMIT_ENABLED", False):
+        from app.middleware.rate_limit import RateLimitMiddleware, RateLimitConfig
+        _rpm = max(1, int(getattr(settings, "RATE_LIMIT_SEND_PER_WINDOW", 60) or 60))
+        _window = max(1, int(getattr(settings, "RATE_LIMIT_WINDOW_SECONDS", 60) or 60))
+        # Make burst limit more permissive for dev: allow up to per-window count as burst
+        # to accommodate React strict mode and concurrent requests.
+        _burst = max(10, _rpm)
+        rate_limit_config = RateLimitConfig(
+            requests_per_minute=_rpm,
+            requests_per_hour=1000,
+            burst_limit=_burst,
+            window_size=_window,
+        )
+        app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
+
     # Include API router with version prefix
     app.include_router(api_router, prefix=settings.API_V1_STR)
     logger.info(f"API router included with prefix: {settings.API_V1_STR}")
@@ -168,6 +194,7 @@ try:
 except Exception as e:
     logger.error(f"Error importing or including API router: {str(e)}", exc_info=True)
     raise
+
 
 # Correlation ID middleware (adds X-Request-ID header)
 @app.middleware("http")
@@ -178,6 +205,7 @@ async def correlation_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = req_id
     return response
+
 
 # Simple HTTP middleware to record request counts and latency
 @app.middleware("http")
@@ -237,6 +265,7 @@ async def metrics_middleware(request: Request, call_next):
         except Exception as e:
             logger.debug("metrics_middleware failure: %s", e)
 
+
 # Standardized error handlers (return consistent error shape)
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -258,7 +287,12 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         "errors": None,
     }
     headers = getattr(exc, "headers", None) or {}
-    return JSONResponse(status_code=status_code, content=problem, headers=headers, media_type="application/problem+json")
+    return JSONResponse(
+        status_code=status_code,
+        content=problem,
+        headers=headers,
+        media_type="application/problem+json",
+    )
 
 
 @app.exception_handler(RequestValidationError)
@@ -279,7 +313,9 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         # Extensions
         "errors": exc.errors(),
     }
-    return JSONResponse(status_code=status_code, content=problem, media_type="application/problem+json")
+    return JSONResponse(
+        status_code=status_code, content=problem, media_type="application/problem+json"
+    )
 
 
 # Add root endpoint
@@ -317,27 +353,32 @@ async def metrics():
         lines.append("# TYPE ai_companion_requests_total counter")
         lines.append(f"ai_companion_requests_total {total}")
 
-        lines.append("# HELP ai_companion_request_latency_ms_total Total request latency in milliseconds by path.")
+        lines.append(
+            "# HELP ai_companion_request_latency_ms_total Total request latency in milliseconds by path."
+        )
         lines.append("# TYPE ai_companion_request_latency_ms_total counter")
         for path, node in per.items():
-            count = int(node.get("count", 0))
             total_ms = float(node.get("total_ms", 0.0))
             # sanitize path label value by escaping quotes and backslashes
-            label_path = str(path).replace("\\", "\\\\").replace("\"", "\\\"")
+            label_path = str(path).replace("\\", "\\\\").replace('"', '\\"')
             lines.append(f'ai_companion_request_latency_ms_total{{path="{label_path}"}} {total_ms}')
 
         # Per-method/status requests counter
         pms = store.get("per_method_status", {})
-        lines.append("# HELP ai_companion_requests_by_method_status_total Total HTTP requests by method and status.")
+        lines.append(
+            "# HELP ai_companion_requests_by_method_status_total Total HTTP requests by method and status."
+        )
         lines.append("# TYPE ai_companion_requests_by_method_status_total counter")
         for key, c in pms.items():
             try:
                 method, status = key.split(":", 1)
             except ValueError:
                 method, status = "", ""
-            method_esc = method.replace("\\", "\\\\").replace("\"", "\\\"")
-            status_esc = status.replace("\\", "\\\\").replace("\"", "\\\"")
-            lines.append(f'ai_companion_requests_by_method_status_total{{method="{method_esc}",status="{status_esc}"}} {int(c)}')
+            method_esc = method.replace("\\", "\\\\").replace('"', '\\"')
+            status_esc = status.replace("\\", "\\\\").replace('"', '\\"')
+            lines.append(
+                f'ai_companion_requests_by_method_status_total{{method="{method_esc}",status="{status_esc}"}} {int(c)}'
+            )
 
         # Request duration histogram
         hist = store.get("duration_hist", {})
@@ -352,7 +393,9 @@ async def metrics():
             val = int(counts.get(str(b), 0))
             lines.append(f'ai_companion_request_duration_ms_bucket{{le="{b}"}} {val}')
         # +Inf bucket
-        lines.append(f'ai_companion_request_duration_ms_bucket{{le="+Inf"}} {int(counts.get("+Inf", 0))}')
+        lines.append(
+            f'ai_companion_request_duration_ms_bucket{{le="+Inf"}} {int(counts.get("+Inf", 0))}'
+        )
         # count and sum
         lines.append(f"ai_companion_request_duration_ms_count {cnt}")
         lines.append(f"ai_companion_request_duration_ms_sum {sum_ms}")

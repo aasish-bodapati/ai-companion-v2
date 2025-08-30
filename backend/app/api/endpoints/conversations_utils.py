@@ -16,7 +16,10 @@ from app.services.auto_memory import auto_memory_service
 
 logger = logging.getLogger(__name__)
 
-def _add_proactive_context(db: Session, user_id: str, conversation_id: str, system_prompt: str) -> str:
+
+def _add_proactive_context(
+    db: Session, user_id: str, conversation_id: str, system_prompt: str
+) -> str:
     """
     Augment the system prompt with lightweight proactive context.
 
@@ -34,6 +37,7 @@ def _add_proactive_context(db: Session, user_id: str, conversation_id: str, syst
     except Exception:
         return system_prompt
 
+
 def _normalize_user_text(text: str) -> str:
     """
     Lightweight normalization for common benign typos.
@@ -43,7 +47,7 @@ def _normalize_user_text(text: str) -> str:
     - collapse multiple spaces
     - trim
     """
-    s = (text or "")
+    s = text or ""
     if not s:
         return s
     t = s.strip()
@@ -58,7 +62,10 @@ def _normalize_user_text(text: str) -> str:
     lo = re.sub(r"\s+", " ", lo).strip()
     return lo
 
-def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, text: str) -> Tuple[Optional[str], bool]:
+
+def _maybe_capture_preference(
+    db: Session, user: User, conversation_id: UUID, text: str
+) -> Tuple[Optional[str], bool]:
     """
     Detect simple preference statements and store them.
 
@@ -70,7 +77,7 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
         s = (text or "").strip()
         if not s:
             return None, False
-            
+
         # Look for simple "I like X" patterns (only actual preferences)
         like_patterns = [
             r"^i\s+like\s+(.+)$",
@@ -80,7 +87,7 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
             r"^i\s+am\s+into\s+(.+)$",
             r"^i\s+avoid\s+(.+)$",
         ]
-        
+
         for pattern in like_patterns:
             match = re.match(pattern, s.lower())
             if match:
@@ -99,7 +106,7 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
                     except Exception as e:
                         logger.warning(f"Failed to store preference: {e}")
                         return subject, True
-                        
+
         # Look for embedded preferences (only actual preferences)
         embedded_patterns = [
             r"\bi\s+like\s+([^.]+)",
@@ -108,7 +115,7 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
             r"\bi\s+prefer\s+([^.]+)",
             r"\bi\s+avoid\s+([^.]+)",
         ]
-        
+
         for pattern in embedded_patterns:
             match = re.search(pattern, s.lower())
             if match:
@@ -127,24 +134,25 @@ def _maybe_capture_preference(db: Session, user: User, conversation_id: UUID, te
                     except Exception as e:
                         logger.warning(f"Failed to store embedded preference: {e}")
                         return subject, False
-                        
+
         return None, False
-        
+
     except Exception as e:
         logger.warning(f"Error in preference capture: {e}")
         return None, False
 
+
 def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: str) -> bool:
     """
     Detect fact statements and store them as facts.
-    
+
     Returns True if facts were captured, False otherwise.
     """
     try:
         s = (text or "").strip()
         if not s:
             return False
-            
+
         # Look for fact patterns
         fact_patterns = [
             r"^i\s+work\s+as\s+a\s+(.+)$",
@@ -154,7 +162,7 @@ def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: s
             r"^i\s+can't\s+eat\s+(.+)$",
             r"^i'm\s+allergic\s+to\s+(.+)$",
         ]
-        
+
         for pattern in fact_patterns:
             match = re.match(pattern, s.lower())
             if match:
@@ -167,19 +175,19 @@ def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: s
                             user_id=str(user.id),
                             content=text,
                             context={
-                                'content_type': 'fact',
-                                'source': 'chat:fact',
-                                'metadata': {
-                                    'conversation_id': str(conversation_id),
-                                    'captured_at': datetime.now(timezone.utc).isoformat()
-                                }
-                            }
+                                "content_type": "fact",
+                                "source": "chat:fact",
+                                "metadata": {
+                                    "conversation_id": str(conversation_id),
+                                    "captured_at": datetime.now(timezone.utc).isoformat(),
+                                },
+                            },
                         )
                         return True
                     except Exception as e:
                         logger.warning(f"Failed to store fact: {e}")
                         return True
-                        
+
         # Look for embedded facts
         embedded_fact_patterns = [
             r"\bi\s+work\s+as\s+a\s+([^.]+)",
@@ -189,7 +197,7 @@ def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: s
             r"\bi\s+can't\s+eat\s+([^.]+)",
             r"\bi'm\s+allergic\s+to\s+([^.]+)",
         ]
-        
+
         for pattern in embedded_fact_patterns:
             match = re.search(pattern, s.lower())
             if match:
@@ -202,24 +210,25 @@ def _maybe_capture_facts(db: Session, user: User, conversation_id: UUID, text: s
                             user_id=str(user.id),
                             content=text,
                             context={
-                                'content_type': 'fact',
-                                'source': 'chat:fact',
-                                'metadata': {
-                                    'conversation_id': str(conversation_id),
-                                    'captured_at': datetime.now(timezone.utc).isoformat()
-                                }
-                            }
+                                "content_type": "fact",
+                                "source": "chat:fact",
+                                "metadata": {
+                                    "conversation_id": str(conversation_id),
+                                    "captured_at": datetime.now(timezone.utc).isoformat(),
+                                },
+                            },
                         )
                         return True
                     except Exception as e:
                         logger.warning(f"Failed to store embedded fact: {e}")
                         return True
-                        
+
         return False
-        
+
     except Exception as e:
         logger.warning(f"Error in fact capture: {e}")
         return False
+
 
 def _clean_subject(subj: str) -> str:
     """
@@ -229,7 +238,9 @@ def _clean_subject(subj: str) -> str:
         if not subj:
             return ""
         # Remove common trailing words
-        subj = re.sub(r"\s+(?:a\s+lot|very\s+much|so\s+much|really)\s*$", "", subj, flags=re.IGNORECASE)
+        subj = re.sub(
+            r"\s+(?:a\s+lot|very\s+much|so\s+much|really)\s*$", "", subj, flags=re.IGNORECASE
+        )
         # Remove punctuation at the end
         subj = re.sub(r"[.!?,\s]+$", "", subj)
         # Remove leading articles
@@ -237,6 +248,7 @@ def _clean_subject(subj: str) -> str:
         return subj.strip()
     except Exception:
         return subj.strip() if subj else ""
+
 
 def _polish_ai_response(text: str, user_text: str) -> str:
     """
@@ -269,6 +281,7 @@ def _polish_ai_response(text: str, user_text: str) -> str:
     except Exception:
         return (text or "").strip()
 
+
 def _suggest_actions_for(text: str) -> List[Dict[str, Any]]:
     """
     Suggest relevant actions based on the user's message.
@@ -276,39 +289,49 @@ def _suggest_actions_for(text: str) -> List[Dict[str, Any]]:
     try:
         suggestions = []
         text_lower = text.lower()
-        
+
         # Calendar suggestions
-        if any(word in text_lower for word in ["meeting", "appointment", "schedule", "calendar", "event"]):
-            suggestions.append({
-                "type": "calendar",
-                "action": "add_event",
-                "description": "Add this to your calendar",
-                "icon": "📅"
-            })
-        
+        if any(
+            word in text_lower
+            for word in ["meeting", "appointment", "schedule", "calendar", "event"]
+        ):
+            suggestions.append(
+                {
+                    "type": "calendar",
+                    "action": "add_event",
+                    "description": "Add this to your calendar",
+                    "icon": "📅",
+                }
+            )
+
         # Memory suggestions
         if any(word in text_lower for word in ["remember", "remind", "note", "save"]):
-            suggestions.append({
-                "type": "memory",
-                "action": "save_memory",
-                "description": "Save this to memory",
-                "icon": "💾"
-            })
-        
+            suggestions.append(
+                {
+                    "type": "memory",
+                    "action": "save_memory",
+                    "description": "Save this to memory",
+                    "icon": "💾",
+                }
+            )
+
         # Task suggestions
         if any(word in text_lower for word in ["todo", "task", "action", "do", "need to"]):
-            suggestions.append({
-                "type": "task",
-                "action": "create_task",
-                "description": "Create a task",
-                "icon": "✅"
-            })
-        
+            suggestions.append(
+                {
+                    "type": "task",
+                    "action": "create_task",
+                    "description": "Create a task",
+                    "icon": "✅",
+                }
+            )
+
         return suggestions
-        
+
     except Exception as e:
         logger.warning(f"Error suggesting actions: {e}")
         return []
+
 
 def _seems_specific(text: str) -> bool:
     """
@@ -317,9 +340,9 @@ def _seems_specific(text: str) -> bool:
     try:
         if not text:
             return False
-            
+
         text_lower = text.lower()
-        
+
         # Specific patterns
         specific_indicators = [
             r"\b\d{1,2}:\d{2}\s*(?:am|pm)\b",  # Time
@@ -328,19 +351,20 @@ def _seems_specific(text: str) -> bool:
             r"\b(?:with\s+\w+)\b",  # People
             r"\b(?:at\s+\w+)\b",  # Location
         ]
-        
+
         for pattern in specific_indicators:
             if re.search(pattern, text_lower):
                 return True
-                
+
         # Check for specific nouns and proper names
         if re.search(r"\b[A-Z][a-z]+\b", text):  # Proper nouns
             return True
-            
+
         return False
-        
+
     except Exception:
         return False
+
 
 def _fetch_recent_messages(conv_id: str, limit: int = 10) -> List[Dict[str, Any]]:
     """
@@ -354,6 +378,7 @@ def _fetch_recent_messages(conv_id: str, limit: int = 10) -> List[Dict[str, Any]
         logger.warning(f"Error fetching recent messages: {e}")
         return []
 
+
 def _build_memory(user_id_str: str, conv_id_str: str, recent_n: int = 5, top_k: int = 3) -> str:
     """
     Build memory context for the conversation.
@@ -361,31 +386,29 @@ def _build_memory(user_id_str: str, conv_id_str: str, recent_n: int = 5, top_k: 
     try:
         # Get recent conversation context
         recent_messages = _fetch_recent_messages(conv_id_str, recent_n)
-        
+
         # Get relevant memories
         memories = memory_service.get_relevant_memories(
-            user_id=user_id_str,
-            context="conversation",
-            limit=top_k
+            user_id=user_id_str, context="conversation", limit=top_k
         )
-        
+
         # Build context string
         context_parts = []
-        
+
         if recent_messages:
             context_parts.append("Recent conversation context:")
             for msg in recent_messages[-3:]:  # Last 3 messages
                 role = "User" if msg.get("is_user") else "Assistant"
                 content = msg.get("content", "")[:100]  # Truncate long messages
                 context_parts.append(f"{role}: {content}")
-        
+
         if memories:
             context_parts.append("\nRelevant memories:")
             for memory in memories:
                 context_parts.append(f"- {memory.get('content', '')[:150]}")
-        
+
         return "\n".join(context_parts) if context_parts else ""
-        
+
     except Exception as e:
         logger.warning(f"Error building memory context: {e}")
         return ""

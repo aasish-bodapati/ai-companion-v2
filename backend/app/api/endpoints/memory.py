@@ -48,12 +48,12 @@ def get_memory_status(
             enabled = bool(current_user.memory_enabled)
     except Exception:
         pass
-    
+
     stats = {
         "totalMemories": 0,
         "lastIndexed": None,
     }
-    
+
     if enabled:
         try:
             # Get total memory count for user
@@ -61,14 +61,18 @@ def get_memory_status(
                 db=db, user_id=str(current_user.id), limit=1000
             )
             stats["totalMemories"] = len(memories)
-            
+
             # Get last indexed timestamp
             if memories:
-                latest = max(memories, key=lambda m: m.timestamp if hasattr(m, 'timestamp') else m.created_at)
-                stats["lastIndexed"] = (latest.timestamp if hasattr(latest, 'timestamp') else latest.created_at).isoformat()
+                latest = max(
+                    memories, key=lambda m: m.timestamp if hasattr(m, "timestamp") else m.created_at
+                )
+                stats["lastIndexed"] = (
+                    latest.timestamp if hasattr(latest, "timestamp") else latest.created_at
+                ).isoformat()
         except Exception:
             pass
-    
+
     return MemoryStatusResponse(enabled=enabled, stats=stats)
 
 
@@ -91,13 +95,23 @@ def toggle_memory(
     try:
         from app.crud.user import user as user_crud
 
-        updated = user_crud.update(db, db_obj=current_user, obj_in={"memory_enabled": bool(request.enabled)})
+        updated = user_crud.update(
+            db, db_obj=current_user, obj_in={"memory_enabled": bool(request.enabled)}
+        )
         db.refresh(updated)
-        effective = bool(updated.memory_enabled) if updated.memory_enabled is not None else bool(settings.MEMORY_ENABLED)
+        effective = (
+            bool(updated.memory_enabled)
+            if updated.memory_enabled is not None
+            else bool(settings.MEMORY_ENABLED)
+        )
         return {"enabled": effective}
     except Exception:
         # Fallback to current effective
-        eff = bool(current_user.memory_enabled) if getattr(current_user, "memory_enabled", None) is not None else bool(settings.MEMORY_ENABLED)
+        eff = (
+            bool(current_user.memory_enabled)
+            if getattr(current_user, "memory_enabled", None) is not None
+            else bool(settings.MEMORY_ENABLED)
+        )
         return {"enabled": eff}
 
 
@@ -119,8 +133,10 @@ def list_my_memories(
     # Filter out soft-deleted items via metadata.deleted
     try:
         import json as _json
+
         items = [
-            it for it in items
+            it
+            for it in items
             if not (
                 (lambda _md: bool(_md.get("deleted")))(
                     (_json.loads(it.memory_metadata) if it.memory_metadata else {})
@@ -134,6 +150,7 @@ def list_my_memories(
     seen: set[str] = set()
     deduped: List[MemoryNodeResponse] = []
     import re
+
     boilerplate_patterns = [
         r"\bplease\s+remember\s+it\b",
         r"\bremember\s+this\b",
@@ -154,7 +171,7 @@ def list_my_memories(
             # Collapse whitespace
             norm = " ".join(raw.split())
         except Exception:
-            norm = (it.content or "")
+            norm = it.content or ""
         if not norm:
             # Allow empty content entries through once
             key = "__empty__"
@@ -229,13 +246,21 @@ def soft_delete_memory(
 ):
     # Capture before snapshot
     node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
-    before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
-    before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
+    before_content = (
+        getattr(node, "content", None)
+        if node and str(node.user_id) == str(current_user.id)
+        else None
+    )
+    before_metadata = (
+        getattr(node, "memory_metadata", None)
+        if node and str(node.user_id) == str(current_user.id)
+        else None
+    )
     ok = memory_crud.soft_delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
     try:
-        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        req_ip = request.client.host if getattr(request, "client", None) else None
         ua = request.headers.get("user-agent") if request else None
         memory_audit.log(
             db,
@@ -253,6 +278,7 @@ def soft_delete_memory(
     except Exception:
         pass
     return DeleteMemoryResponse(success=True, mode="soft")
+
 
 @router.delete("/{faiss_id}", response_model=DeleteMemoryResponse)
 def soft_delete_memory_flat(
@@ -274,13 +300,21 @@ def hard_delete_memory(
 ):
     # Capture before snapshot
     node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
-    before_content = getattr(node, "content", None) if node and str(node.user_id) == str(current_user.id) else None
-    before_metadata = getattr(node, "memory_metadata", None) if node and str(node.user_id) == str(current_user.id) else None
+    before_content = (
+        getattr(node, "content", None)
+        if node and str(node.user_id) == str(current_user.id)
+        else None
+    )
+    before_metadata = (
+        getattr(node, "memory_metadata", None)
+        if node and str(node.user_id) == str(current_user.id)
+        else None
+    )
     ok = memory_crud.delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
     try:
-        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        req_ip = request.client.host if getattr(request, "client", None) else None
         ua = request.headers.get("user-agent") if request else None
         memory_audit.log(
             db,
@@ -298,6 +332,7 @@ def hard_delete_memory(
     except Exception:
         pass
     return DeleteMemoryResponse(success=True, mode="hard")
+
 
 @router.delete("/{faiss_id}/hard", response_model=DeleteMemoryResponse)
 def hard_delete_memory_flat(
@@ -336,11 +371,13 @@ def delete_memory_by_id(
         pass
 
     # Reuse soft-delete by faiss id to keep audit trails consistent
-    ok = memory_crud.soft_delete_by_faiss_id(db, user_id=str(current_user.id), faiss_id=str(node.faiss_id))
+    ok = memory_crud.soft_delete_by_faiss_id(
+        db, user_id=str(current_user.id), faiss_id=str(node.faiss_id)
+    )
     if not ok:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
     try:
-        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        req_ip = request.client.host if getattr(request, "client", None) else None
         ua = request.headers.get("user-agent") if request else None
         memory_audit.log(
             db,
@@ -358,6 +395,7 @@ def delete_memory_by_id(
     except Exception:
         pass
     return DeleteMemoryResponse(success=True, mode="soft")
+
 
 class UpdateMemoryIn(BaseModel):
     content: Optional[str] = None
@@ -417,12 +455,18 @@ def update_memory(
     if payload.core is not None:
         try:
             import json as _json
-            base_md = _json.loads(new_metadata_str) if isinstance(new_metadata_str, str) and new_metadata_str else {}
+
+            base_md = (
+                _json.loads(new_metadata_str)
+                if isinstance(new_metadata_str, str) and new_metadata_str
+                else {}
+            )
         except Exception:
             base_md = {}
         base_md["core"] = bool(payload.core)
         try:
             import json as _json
+
             new_metadata_str = _json.dumps(base_md)
         except Exception:
             # fallback: ignore merge failure
@@ -433,20 +477,38 @@ def update_memory(
         db,
         node=node,
         content=new_content if new_content is not None else before_content or "",
-        metadata=None if new_metadata_str is None else (None if new_metadata_str is None else __import__("json").loads(new_metadata_str) if isinstance(new_metadata_str, str) else new_metadata_str),
+        metadata=None
+        if new_metadata_str is None
+        else (
+            None
+            if new_metadata_str is None
+            else __import__("json").loads(new_metadata_str)
+            if isinstance(new_metadata_str, str)
+            else new_metadata_str
+        ),
     )
 
     # Optional importance update
     if payload.importance_score is not None:
         try:
-            updated = memory_crud.update_importance_score(db, faiss_id=str(updated.faiss_id), score=int(payload.importance_score)) or updated
+            updated = (
+                memory_crud.update_importance_score(
+                    db, faiss_id=str(updated.faiss_id), score=int(payload.importance_score)
+                )
+                or updated
+            )
         except Exception:
             pass
 
     # Optional relevance score update
     if payload.relevance_score is not None:
         try:
-            updated = memory_crud.update_relevance_score(db, faiss_id=str(updated.faiss_id), score=float(payload.relevance_score)) or updated
+            updated = (
+                memory_crud.update_relevance_score(
+                    db, faiss_id=str(updated.faiss_id), score=float(payload.relevance_score)
+                )
+                or updated
+            )
         except Exception:
             pass
 
@@ -456,7 +518,7 @@ def update_memory(
 
     # Audit log
     try:
-        req_ip = (request.client.host if getattr(request, "client", None) else None)
+        req_ip = request.client.host if getattr(request, "client", None) else None
         ua = request.headers.get("user-agent") if request else None
         memory_audit.log(
             db,
@@ -478,6 +540,7 @@ def update_memory(
 
     return updated
 
+
 @router.patch("/{faiss_id}", response_model=MemoryNodeResponse)
 def update_memory_by_faiss_id(
     faiss_id: str,
@@ -490,7 +553,9 @@ def update_memory_by_faiss_id(
     node = memory_crud.get_memory_by_faiss_id(db, faiss_id)
     if not node or str(node.user_id) != str(current_user.id):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Memory not found")
-    return update_memory(id=str(node.id), payload=payload, request=request, db=db, current_user=current_user)
+    return update_memory(
+        id=str(node.id), payload=payload, request=request, db=db, current_user=current_user
+    )
 
 
 class DeleteAllMemoriesResponse(BaseModel):
@@ -641,10 +706,12 @@ def create_memory(
         red_content, red_info = redact_text(canonical_content)
         red_meta = redact_metadata(metadata)
         if isinstance(red_meta, dict):
-            red_meta.setdefault("redaction", {}).update({
-                "enabled": True,
-                "counts": {k: int(v) for k, v in (red_info or {}).items() if k != "enabled"}
-            })
+            red_meta.setdefault("redaction", {}).update(
+                {
+                    "enabled": True,
+                    "counts": {k: int(v) for k, v in (red_info or {}).items() if k != "enabled"},
+                }
+            )
     except Exception:
         red_content = canonical_content
         red_meta = metadata
@@ -660,6 +727,7 @@ def create_memory(
         importance_score=imp_score,
     )
     return node
+
 
 @router.post("", response_model=MemoryNodeResponse)
 def create_memory_flat(
@@ -696,6 +764,7 @@ def list_memory_audit(
     total = memory_audit.count_by_faiss_id(db, user_id=str(current_user.id), faiss_id=faiss_id)
     return MemoryAuditListResponse(items=items, total=int(total))
 
+
 @router.get("/{faiss_id}/audit", response_model=MemoryAuditListResponse)
 def list_memory_audit_flat(
     faiss_id: str,
@@ -705,7 +774,9 @@ def list_memory_audit_flat(
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Alias for GET /memories/{faiss_id}/audit when mounted at '/memories'."""
-    return list_memory_audit(faiss_id=faiss_id, skip=skip, limit=limit, db=db, current_user=current_user)
+    return list_memory_audit(
+        faiss_id=faiss_id, skip=skip, limit=limit, db=db, current_user=current_user
+    )
 
 
 class MemoryContextItem(TypedDict):
@@ -738,7 +809,9 @@ def get_memory_context(
     seen_norm: set[str] = set()
 
     # Honor per-user memory flag
-    if not bool(settings.MEMORY_ENABLED) or (getattr(current_user, "memory_enabled", None) is False):
+    if not bool(settings.MEMORY_ENABLED) or (
+        getattr(current_user, "memory_enabled", None) is False
+    ):
         return {"context": context_items}
 
     # Use last user message to shape context and detect self-referential prompt
@@ -751,13 +824,25 @@ def get_memory_context(
     def _asks_about_user(t: str) -> bool:
         lu = (t or "").strip().lower()
         return (
-            ("what do you know" in lu and ("about me" in lu or "about my" in lu or "about us" in lu))
+            (
+                "what do you know" in lu
+                and ("about me" in lu or "about my" in lu or "about us" in lu)
+            )
             or ("what do you remember" in lu and ("about me" in lu or "about us" in lu))
             or ("what do you have" in lu and "on me" in lu)
             or ("my profile" in lu and ("what" in lu or "tell" in lu))
             or ("tell me about myself" in lu)
             or ("tell me about me" in lu)
-            or ("about myself" in lu and ("tell" in lu or "what" in lu or "who" in lu or "describe" in lu or "summarize" in lu))
+            or (
+                "about myself" in lu
+                and (
+                    "tell" in lu
+                    or "what" in lu
+                    or "who" in lu
+                    or "describe" in lu
+                    or "summarize" in lu
+                )
+            )
             or ("describe me" in lu)
             or ("summarize me" in lu)
             or ("who am i" in lu and "to you" in lu)
@@ -787,7 +872,9 @@ def get_memory_context(
                         bullets.append(f"- {key}")
                     if len(bullets) >= 3:
                         break
-                content_for_ctx = "\n".join(bullets) if bullets else "- Profile available (redacted)"
+                content_for_ctx = (
+                    "\n".join(bullets) if bullets else "- Profile available (redacted)"
+                )
                 reason = "Profile highlights (redacted)"
 
             # Deduplicate based on normalized content to avoid duplicates
@@ -854,6 +941,7 @@ def get_memory_context(
                     # Parse metadata once for category and reasons
                     try:
                         import json as _json
+
                         md = _json.loads(r.memory_metadata) if r.memory_metadata else {}
                     except Exception:
                         md = {}
@@ -884,7 +972,14 @@ def get_memory_context(
                     # Prefer metadata.category when it maps to allowed types
                     try:
                         cat = str(md.get("category") or "").strip().lower()
-                        if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                        if cat in (
+                            "conversation",
+                            "profile",
+                            "preference",
+                            "onboarding",
+                            "message",
+                            "fact",
+                        ):
                             mapped_type = cat  # type: ignore[assignment]
                     except Exception:
                         pass
@@ -940,6 +1035,7 @@ def get_memory_context(
             # preference memories and interleave them for diversity.
             if not results:
                 import json as _json
+
                 # Collect recent conversation memories
                 try:
                     conv_mems = memory_crud.get_conversation_memories(
@@ -1023,7 +1119,14 @@ def get_memory_context(
                         mtype: MemoryContextItem["type"] = "preference"
                         try:
                             cat = str(md.get("category") or "").strip().lower()
-                            if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                            if cat in (
+                                "conversation",
+                                "profile",
+                                "preference",
+                                "onboarding",
+                                "message",
+                                "fact",
+                            ):
                                 mtype = cat  # type: ignore[assignment]
                         except Exception:
                             pass
@@ -1087,7 +1190,14 @@ def get_memory_context(
                         mtype: MemoryContextItem["type"] = "profile"
                         try:
                             cat = str(md.get("category") or "").strip().lower()
-                            if cat in ("conversation", "profile", "preference", "onboarding", "message", "fact"):
+                            if cat in (
+                                "conversation",
+                                "profile",
+                                "preference",
+                                "onboarding",
+                                "message",
+                                "fact",
+                            ):
                                 mtype = cat  # type: ignore[assignment]
                         except Exception:
                             pass
@@ -1147,45 +1257,64 @@ def get_memory_context(
 
                 K = int(getattr(settings, "RETRIEVAL_TOP_K", 8) or 8)
                 from math import ceil
+
                 per_type_cap = ceil(K / 2)
 
                 type_counts: dict[str, int] = {}
                 i = j = k = 0
                 # 2) Cycle preference -> conversation -> profile to maintain diversity
-                while len(context_items) < K and (i < len(conv_ctx) or j < len(pref_ctx) or k < len(profile_ctx)):
+                while len(context_items) < K and (
+                    i < len(conv_ctx) or j < len(pref_ctx) or k < len(profile_ctx)
+                ):
                     # preference
                     if j < len(pref_ctx) and len(context_items) < K:
                         item = pref_ctx[j]
-                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type")), 0) < per_type_cap:
+                        if (
+                            item["_norm"] not in seen_norm
+                            and type_counts.get(str(item.get("type")), 0) < per_type_cap
+                        ):
                             seen_norm.add(item["_norm"])  # reserve
                             item.pop("_norm", None)
                             item.pop("_score", None)
                             context_items.append(item)  # type: ignore[arg-type]
-                            type_counts[str(item.get("type"))] = type_counts.get(str(item.get("type")), 0) + 1
+                            type_counts[str(item.get("type"))] = (
+                                type_counts.get(str(item.get("type")), 0) + 1
+                            )
                         j += 1
                         if len(context_items) >= K:
                             break
                     # conversation
                     if i < len(conv_ctx) and len(context_items) < K:
                         item = conv_ctx[i]
-                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type", "conversation")), 0) < per_type_cap:
+                        if (
+                            item["_norm"] not in seen_norm
+                            and type_counts.get(str(item.get("type", "conversation")), 0)
+                            < per_type_cap
+                        ):
                             seen_norm.add(item["_norm"])  # reserve
                             item.pop("_norm", None)
                             item.pop("_score", None)
                             context_items.append(item)  # type: ignore[arg-type]
-                            type_counts[str(item.get("type", "conversation"))] = type_counts.get(str(item.get("type", "conversation")), 0) + 1
+                            type_counts[str(item.get("type", "conversation"))] = (
+                                type_counts.get(str(item.get("type", "conversation")), 0) + 1
+                            )
                         i += 1
                         if len(context_items) >= K:
                             break
                     # profile
                     if k < len(profile_ctx) and len(context_items) < K:
                         item = profile_ctx[k]
-                        if item["_norm"] not in seen_norm and type_counts.get(str(item.get("type", "profile")), 0) < per_type_cap:
+                        if (
+                            item["_norm"] not in seen_norm
+                            and type_counts.get(str(item.get("type", "profile")), 0) < per_type_cap
+                        ):
                             seen_norm.add(item["_norm"])  # reserve
                             item.pop("_norm", None)
                             item.pop("_score", None)
                             context_items.append(item)  # type: ignore[arg-type]
-                            type_counts[str(item.get("type", "profile"))] = type_counts.get(str(item.get("type", "profile")), 0) + 1
+                            type_counts[str(item.get("type", "profile"))] = (
+                                type_counts.get(str(item.get("type", "profile")), 0) + 1
+                            )
                         k += 1
         except Exception:
             # Don't fail; return what we have
@@ -1203,7 +1332,10 @@ def get_memory_context(
     # Track discussed content and used memory ids to reduce repetition next turn
     try:
         context_tracker.track_discussed_content(
-            str(conversation_id), last_user_input or "", "conversation", memory_ids=[str(x) for x in seen_faiss_ids]
+            str(conversation_id),
+            last_user_input or "",
+            "conversation",
+            memory_ids=[str(x) for x in seen_faiss_ids],
         )
     except Exception:
         pass
@@ -1615,44 +1747,50 @@ def update_my_memory(
     existing = memory_crud.get(db, id=memory_id)
     if not existing or existing.user_id != str(current_user.id):
         raise HTTPException(status_code=404, detail="Memory not found")
-    
+
     # Update content
     updated_data = {"content": update_request.content.strip()}
-    
+
     # Update metadata if provided
     import json
+
     try:
         metadata = json.loads(existing.memory_metadata) if existing.memory_metadata else {}
-        
+
         if update_request.content_type:
             metadata["content_type"] = update_request.content_type
-            
+
         if update_request.importance_score is not None:
             metadata["importance"] = max(0.0, min(1.0, update_request.importance_score))
-            
+
         # Add edit timestamp
         from datetime import datetime, timezone
+
         metadata["last_edited"] = datetime.now(timezone.utc).isoformat()
         metadata["edited_by"] = "user"
-        
+
         updated_data["memory_metadata"] = json.dumps(metadata)
     except Exception:
         pass
-    
+
     # Perform update
     updated = memory_crud.update(db, db_obj=existing, obj_in=updated_data)
-    
+
     # Update vector store if enabled
     try:
         from app.memory.vector_store.factory import get_vector_store
+
         vs = get_vector_store()
-        if vs and hasattr(vs, 'update_memory'):
+        if vs and hasattr(vs, "update_memory"):
             vs.update_memory(memory_id, update_request.content)
     except Exception as e:
         # Non-fatal: log but don't fail the update
         import logging
-        logging.getLogger(__name__).warning(f"Failed to update vector store for memory {memory_id}: {e}")
-    
+
+        logging.getLogger(__name__).warning(
+            f"Failed to update vector store for memory {memory_id}: {e}"
+        )
+
     return updated
 
 
@@ -1667,33 +1805,37 @@ def delete_my_memory(
     existing = memory_crud.get(db, id=memory_id)
     if not existing or existing.user_id != str(current_user.id):
         raise HTTPException(status_code=404, detail="Memory not found")
-    
+
     # Soft delete by updating metadata
     import json
     from datetime import datetime, timezone
-    
+
     try:
         metadata = json.loads(existing.memory_metadata) if existing.memory_metadata else {}
         metadata["deleted"] = True
         metadata["deleted_at"] = datetime.now(timezone.utc).isoformat()
         metadata["deleted_by"] = "user"
-        
+
         memory_crud.update(db, db_obj=existing, obj_in={"memory_metadata": json.dumps(metadata)})
     except Exception:
         # Fallback to hard delete if soft delete fails
         memory_crud.remove(db, id=memory_id)
-    
+
     # Remove from vector store if enabled
     try:
         from app.memory.vector_store.factory import get_vector_store
+
         vs = get_vector_store()
-        if vs and hasattr(vs, 'delete_memory'):
+        if vs and hasattr(vs, "delete_memory"):
             vs.delete_memory(memory_id)
     except Exception as e:
         # Non-fatal: log but don't fail the delete
         import logging
-        logging.getLogger(__name__).warning(f"Failed to delete from vector store for memory {memory_id}: {e}")
-    
+
+        logging.getLogger(__name__).warning(
+            f"Failed to delete from vector store for memory {memory_id}: {e}"
+        )
+
     return {"status": "deleted", "memory_id": memory_id}
 
 
@@ -1706,64 +1848,60 @@ def get_daily_learnings(
     """Get daily learning summaries for the past N days."""
     from datetime import datetime, timedelta, timezone
     import json
-    
+
     # Calculate date range
     end_date = datetime.now(timezone.utc)
     start_date = end_date - timedelta(days=days)
-    
+
     # Get memories in date range
-    memories = memory_crud.get_user_memories(
-        db=db, 
-        user_id=str(current_user.id), 
-        limit=1000
-    )
-    
+    memories = memory_crud.get_user_memories(db=db, user_id=str(current_user.id), limit=1000)
+
     # Filter by date and group by day
     daily_learnings = {}
-    
+
     for memory in memories:
         # Use timestamp if available, otherwise created_at
-        mem_date = getattr(memory, 'timestamp', None) or getattr(memory, 'created_at', None)
+        mem_date = getattr(memory, "timestamp", None) or getattr(memory, "created_at", None)
         if not mem_date or mem_date < start_date:
             continue
-            
+
         date_key = mem_date.date().isoformat()
-        
+
         if date_key not in daily_learnings:
             daily_learnings[date_key] = {
                 "date": date_key,
                 "memories_learned": 0,
                 "key_insights": [],
-                "categories": set()
+                "categories": set(),
             }
-        
+
         daily_learnings[date_key]["memories_learned"] += 1
-        
+
         # Extract key insights from high-importance memories
         try:
             metadata = json.loads(memory.memory_metadata) if memory.memory_metadata else {}
             importance = float(metadata.get("importance", 0.0))
-            
+
             if importance > 0.7 and memory.content:
                 insight = memory.content[:100] + ("..." if len(memory.content) > 100 else "")
                 if len(daily_learnings[date_key]["key_insights"]) < 5:
                     daily_learnings[date_key]["key_insights"].append(insight)
-            
+
             # Track content types
-            content_type = getattr(memory, 'content_type', None) or metadata.get('content_type')
+            content_type = getattr(memory, "content_type", None) or metadata.get("content_type")
             if content_type:
                 daily_learnings[date_key]["categories"].add(content_type)
-                
+
         except Exception:
             pass
-    
+
     # Convert sets to lists and sort by date
     result = []
     for date_key in sorted(daily_learnings.keys(), reverse=True):
         learning = daily_learnings[date_key]
         learning["categories"] = list(learning["categories"])
         result.append(learning)
-    
+
     return result
 
 

@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 def _enable_memory_and_stubs(monkeypatch):
     # Ensure memory features are enabled and avoid heavy FAISS/embeddings
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
     # Keep retrieval debug default True unless a test overrides
@@ -82,10 +83,13 @@ def test_reply_debug_gating_respects_flag(client: TestClient, monkeypatch):
     prov1 = r1.json().get("provenance", [])
     if prov1:
         # If we have any provenance, at least one item should include _retrieval_debug
-        assert any(((it.get("memory_metadata") or {}).get("_retrieval_debug") is not None) for it in prov1)
+        assert any(
+            ((it.get("memory_metadata") or {}).get("_retrieval_debug") is not None) for it in prov1
+        )
 
     # Case 2: server disallows even if client asks
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "DEBUG_RETRIEVAL_ENABLED", False, raising=False)
     r2 = client.post(f"/api/v1/conversations/{conv_id}/reply", params={"debug": True})
     assert r2.status_code == 200, r2.text
@@ -100,7 +104,9 @@ def test_reply_stream_emits_provenance_event_first(client: TestClient):
     _add_user_message(client, conv_id, "What did I tell you about my favorite color yesterday?")
 
     # Use streaming to capture SSE frames; FastAPI TestClient supports stream context
-    with client.stream("POST", f"/api/v1/conversations/{conv_id}/reply/stream", params={"debug": True}) as resp:
+    with client.stream(
+        "POST", f"/api/v1/conversations/{conv_id}/reply/stream", params={"debug": True}
+    ) as resp:
         assert resp.status_code == 200
         # Content-Type should be text/event-stream
         ctype = resp.headers.get("content-type", "")

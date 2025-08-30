@@ -17,6 +17,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(autouse=True)
 def _enable_memory_features(monkeypatch):
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_CONSOLIDATION_ENABLED", True, raising=False)

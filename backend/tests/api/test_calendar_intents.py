@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_intents_normalize_no_persist(client):
     resp = client.post(
         "/api/v1/calendar/intents",

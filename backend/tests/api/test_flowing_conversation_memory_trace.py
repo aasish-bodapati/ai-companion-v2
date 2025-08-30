@@ -18,6 +18,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(autouse=True)
 def _enable_auto_memory(monkeypatch):
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_CONSOLIDATION_ENABLED", True, raising=False)
@@ -34,7 +35,9 @@ def _create_conversation(client: TestClient, title: str) -> str:
 
 
 def _add_user_message(client: TestClient, conv_id: str, content: str) -> Dict:
-    r = client.post(f"/api/v1/conversations/{conv_id}/messages", json={"role": "user", "content": content})
+    r = client.post(
+        f"/api/v1/conversations/{conv_id}/messages", json={"role": "user", "content": content}
+    )
     assert r.status_code in (200, 201), r.text
     return r.json()
 
@@ -275,7 +278,9 @@ def test_flowing_conversation_memory_trace(client: TestClient):
         if idx % 10 == 0 or idx in (1, len(msgs)):
             # Fetch assistant last message preview
             msgs_all = _list_messages(client, conv_id, 2000)
-            last_assistant = next((m for m in reversed(msgs_all) if m.get("role") == "assistant"), {})
+            last_assistant = next(
+                (m for m in reversed(msgs_all) if m.get("role") == "assistant"), {}
+            )
             assistant_preview = _short((last_assistant.get("content") or ""), 180)
 
             # New memories since last checkpoint
@@ -298,7 +303,9 @@ def test_flowing_conversation_memory_trace(client: TestClient):
             ]
 
             # Console: compact summary only
-            print(f"-- Step {idx}: user msg '{_short(text, 60)}' | assistant preview '{_short(assistant_preview, 60)}' | new_mems={len(new_mems)} | ctx={len(ctx_preview)}")
+            print(
+                f"-- Step {idx}: user msg '{_short(text, 60)}' | assistant preview '{_short(assistant_preview, 60)}' | new_mems={len(new_mems)} | ctx={len(ctx_preview)}"
+            )
 
             # File: full JSON details
             with open(log_path, "a", encoding="utf-8") as f:

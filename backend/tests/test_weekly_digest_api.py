@@ -6,11 +6,13 @@ import pytest
 def _weekly_env(monkeypatch):
     # Keep memory enabled and vector ops stubbed like other API tests
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
 
     from app.memory import embeddings as _emb
     from app.memory import faiss_store as _faiss
+
     monkeypatch.setattr(_emb, "embed_texts", lambda texts: [[0.1] * 8 for _ in texts])
     monkeypatch.setattr(_faiss, "add", lambda user_id, ids, vecs: None)
     monkeypatch.setattr(_faiss, "update_vector", lambda user_id, id_, vec: True)

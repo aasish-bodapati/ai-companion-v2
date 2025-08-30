@@ -29,7 +29,7 @@ class OnboardingProfileInDB(OnboardingProfileBase):
     id: str
     user_id: str
     completed: bool
-    
+
     # Pydantic v2 configuration
     model_config = ConfigDict(from_attributes=True)
 

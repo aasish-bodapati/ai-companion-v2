@@ -13,9 +13,11 @@ from fastapi.testclient import TestClient
 def _enable_memory(monkeypatch):
     # Enable memory; mock embeddings/FAISS for speed/determinism
     from app.core.config import settings
+
     try:
         from app.memory import embeddings as _emb
         from app.memory import faiss_store as _faiss
+
         monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
         monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
         monkeypatch.setattr(_emb, "embed_texts", lambda texts: [[0.1] * 8 for _ in texts])
@@ -80,22 +82,25 @@ def _ask(client: TestClient, conv_id: str, content: str) -> dict:
     # Build a lightweight preview of provenance for diagnostics (type, score, snippet)
     preview = []
     try:
-        for itm in (prov[:3] if isinstance(prov, list) else []):
+        for itm in prov[:3] if isinstance(prov, list) else []:
             ctype = (itm.get("content_type") if isinstance(itm, dict) else None) or "unknown"
-            score = (itm.get("relevance_score") if isinstance(itm, dict) else None)
+            score = itm.get("relevance_score") if isinstance(itm, dict) else None
             snippet = (itm.get("content") if isinstance(itm, dict) else "") or ""
             snippet = snippet[:160]
-            preview.append({
-                "type": ctype,
-                "score": score,
-                "snippet": snippet,
-            })
+            preview.append(
+                {
+                    "type": ctype,
+                    "score": score,
+                    "snippet": snippet,
+                }
+            )
     except Exception:
         preview = []
     return {"text": text, "ctx_count": len(prov), "ctx_preview": preview}
 
 
 # ---- Scoring helpers ----
+
 
 def _score_response(text: str) -> Tuple[float, Dict[str, float]]:
     t = (text or "").strip()
@@ -131,19 +136,21 @@ def _score_response(text: str) -> Tuple[float, Dict[str, float]]:
 
     # warmth
     warm_tokens = [
-        "happy to", "glad to", "can help", "let me know", "here's", "let's",
-        "i suggest", "you could",
+        "happy to",
+        "glad to",
+        "can help",
+        "let me know",
+        "here's",
+        "let's",
+        "i suggest",
+        "you could",
     ]
     warmth_hits = sum(1 for w in warm_tokens if w in t.lower())
     warmth = 10.0 if warmth_hits >= 2 else (8.0 if warmth_hits == 1 else 6.5)
 
     # weighted score
     score = (
-        0.20 * brevity +
-        0.20 * questions +
-        0.25 * markdown +
-        0.25 * actionability +
-        0.10 * warmth
+        0.20 * brevity + 0.20 * questions + 0.25 * markdown + 0.25 * actionability + 0.10 * warmth
     )
 
     details = {
@@ -165,23 +172,53 @@ def _aggregate(scores: List[float]) -> float:
 # ---- Session-level scoring (understanding, proactivity, uncertainty, memory) ----
 
 _SAFE_GUARD_PHRASES: Set[str] = {
-    "i don't have", "i do not have", "i can't see", "i cannot see",
-    "could you share", "can you share", "do you have", "please provide",
+    "i don't have",
+    "i do not have",
+    "i can't see",
+    "i cannot see",
+    "could you share",
+    "can you share",
+    "do you have",
+    "please provide",
 }
 
 _PROACTIVE_PHRASES: Set[str] = {
-    "next you could", "you could", "you might", "i can also",
-    "want me to", "shall i", "i can help", "let me know if you want me",
+    "next you could",
+    "you could",
+    "you might",
+    "i can also",
+    "want me to",
+    "shall i",
+    "i can help",
+    "let me know if you want me",
 }
 
 
 def _content_words(s: str) -> Set[str]:
     s = re.sub(r"[^a-zA-Z0-9]+", " ", (s or "").lower())
-    stop = {"i", "a", "an", "the", "and", "or", "to", "of", "in", "it", "is", "are", "on", "for", "me"}
+    stop = {
+        "i",
+        "a",
+        "an",
+        "the",
+        "and",
+        "or",
+        "to",
+        "of",
+        "in",
+        "it",
+        "is",
+        "are",
+        "on",
+        "for",
+        "me",
+    }
     return {w for w in s.split() if len(w) > 2 and w not in stop}
 
 
-def _session_scores(user_turns: List[str], assistant_turns: List[str]) -> Tuple[float, Dict[str, float]]:
+def _session_scores(
+    user_turns: List[str], assistant_turns: List[str]
+) -> Tuple[float, Dict[str, float]]:
     # Understanding: average token overlap ratio per turn
     understand_scores: List[float] = []
     for u, a in zip(user_turns, assistant_turns):
@@ -213,7 +250,9 @@ def _session_scores(user_turns: List[str], assistant_turns: List[str]) -> Tuple[
     uncertainty = 9.0 if safeguard_hits >= 1 else 7.5  # neutral unless seen
 
     # Memory usage: detect referencing earlier preferences (e.g., jazz, dark mode)
-    prefs = _content_words(next((u for u in user_turns if "like" in u.lower() or "prefer" in u.lower()), ""))
+    prefs = _content_words(
+        next((u for u in user_turns if "like" in u.lower() or "prefer" in u.lower()), "")
+    )
     # keep only plausible preference nouns/adjectives by excluding verbs
     likely_prefs = {w for w in prefs if w not in {"like", "prefer", "love"}}
     memory_mentions = 0
@@ -224,7 +263,9 @@ def _session_scores(user_turns: List[str], assistant_turns: List[str]) -> Tuple[
     memory = 10.0 if memory_mentions >= 1 else 7.5  # neutral if not used
 
     # Weighted session score (keep light to avoid flakiness)
-    session_score = round(0.06 * understanding + 0.05 * proactivity + 0.04 * uncertainty + 0.06 * memory, 2)
+    session_score = round(
+        0.06 * understanding + 0.05 * proactivity + 0.04 * uncertainty + 0.06 * memory, 2
+    )
     details = {
         "understanding": understanding,
         "proactivity": round(proactivity, 2),
@@ -272,10 +313,10 @@ def test_full_chat_simulation_and_score(client: TestClient):
     # Emit a readable summary
     print("\nChat Simulation Scores:")
     for i, (req, resp, s, d) in enumerate(zip(user_turns, responses, per_scores, breakdowns)):
-        print(f"Turn {i+1} User: {req}")
-        print(f"Turn {i+1} Assistant score: {s} — {d}")
+        print(f"Turn {i + 1} User: {req}")
+        print(f"Turn {i + 1} Assistant score: {s} — {d}")
         ctx_used = (resp.get("ctx_count", 0) or 0) > 0
-        print(f"Turn {i+1} Context used: {ctx_used} (items={resp.get('ctx_count', 0)})")
+        print(f"Turn {i + 1} Context used: {ctx_used} (items={resp.get('ctx_count', 0)})")
     print("Session-level:")
     print(session_details)
     print(f"Overall (turns only): {overall}")

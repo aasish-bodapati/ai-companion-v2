@@ -92,3 +92,17 @@ def get_embedding_dimension() -> int:
         return int(v.shape[1]) if hasattr(v, "shape") and len(getattr(v, "shape", [])) == 2 else 384
     except Exception:
         return 384
+
+
+class EmbeddingService:
+    """Embedding service for compatibility with the retrieval system."""
+    
+    def get_embedding(self, text: str) -> List[List[float]]:
+        """Get embedding for a single text, wrapped in a list for compatibility."""
+        embedding = get_embedding(text)
+        return [embedding] if embedding else []
+
+
+def get_embedding_service() -> EmbeddingService:
+    """Get the embedding service instance."""
+    return EmbeddingService()

@@ -1,4 +1,3 @@
-import pytest
 from fastapi import Response
 
 from app.middleware.auth_cookies import set_auth_cookies
@@ -16,7 +15,6 @@ def test_set_auth_cookies_flags():
     set_auth_cookies(resp, token)
 
     # Starlette stores cookies in headers
-    hdrs = dict(resp.headers)
     set_cookie_values = [v for (k, v) in resp.raw_headers if k.lower() == b"set-cookie"]
     cookie_blob = b"\n".join(set_cookie_values).decode()
 

@@ -27,7 +27,7 @@ def test_schedule_conflict_clarification(client: TestClient):
     conv_id = convo.json()["id"]
 
     # Ask to schedule at the same exact ISO time to trigger conflict heuristic
-    msg = f"Please schedule a doctor visit at {start.isoformat().replace('+00:00','Z')}"
+    msg = f"Please schedule a doctor visit at {start.isoformat().replace('+00:00', 'Z')}"
     rep = client.post(
         f"/api/v1/conversations/{conv_id}/reply",
         json={"role": "user", "content": msg},

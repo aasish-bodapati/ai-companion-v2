@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 @router.get("/", response_model=List[Conversation])
 async def list_conversations(
     skip: int = 0,
@@ -46,6 +47,7 @@ async def list_conversations(
         logger.error(f"Error listing conversations: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve conversations")
 
+
 @router.post("/", response_model=Conversation, status_code=status.HTTP_201_CREATED)
 async def create_conversation(
     *,
@@ -64,6 +66,7 @@ async def create_conversation(
     except Exception as e:
         logger.error(f"Error creating conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to create conversation")
+
 
 @router.get("/{conversation_id}", response_model=ConversationWithMessages)
 async def get_conversation(
@@ -87,6 +90,7 @@ async def get_conversation(
     except Exception as e:
         logger.error(f"Error getting conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve conversation")
+
 
 @router.put("/{conversation_id}", response_model=Conversation)
 async def update_conversation(
@@ -113,6 +117,7 @@ async def update_conversation(
         logger.error(f"Error updating conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to update conversation")
 
+
 @router.delete("/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_conversation(
     *,
@@ -137,6 +142,7 @@ async def delete_conversation(
         logger.error(f"Error deleting conversation: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete conversation")
 
+
 @router.get("/{conversation_id}/messages", response_model=List[Message])
 async def get_conversation_messages(
     *,
@@ -155,7 +161,7 @@ async def get_conversation_messages(
             raise HTTPException(status_code=404, detail="Conversation not found")
         if not crud.conversation.is_owner(db=db, db_obj=conversation, owner_id=current_user.id):
             raise HTTPException(status_code=400, detail="Not enough permissions")
-        
+
         messages = crud.message.get_multi_by_conversation(
             db=db, conversation_id=conversation_id, skip=skip, limit=limit
         )
@@ -166,7 +172,10 @@ async def get_conversation_messages(
         logger.error(f"Error getting conversation messages: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve messages")
 
-@router.post("/{conversation_id}/messages/raw", response_model=Message, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/{conversation_id}/messages/raw", response_model=Message, status_code=status.HTTP_201_CREATED
+)
 async def create_message(
     *,
     db: Session = Depends(deps.get_db),
@@ -187,7 +196,7 @@ async def create_message(
             raise HTTPException(status_code=404, detail="Conversation not found")
         if not crud.conversation.is_owner(db=db, db_obj=conversation, owner_id=current_user.id):
             raise HTTPException(status_code=400, detail="Not enough permissions")
-        
+
         # Create the message
         message = crud.message.create_with_conversation(
             db=db, obj_in=message_in, conversation_id=conversation_id
@@ -196,7 +205,7 @@ async def create_message(
         # Auto-rename conversation title based on the first user message
         try:
             raw_title = (getattr(conversation, "title", "") or "").strip()
-            is_default_title = (raw_title == "" or raw_title == "New Conversation")
+            is_default_title = raw_title == "" or raw_title == "New Conversation"
             is_user_msg = (message_in.role or "").lower() == "user"
             content = (message_in.content or "").strip()
             if is_default_title and is_user_msg and content:
@@ -228,9 +237,9 @@ async def create_message(
                     txt_lo = normalized_text.lower()
                     note_body = None
                     if txt_lo.startswith("note:"):
-                        note_body = normalized_text[len("note:"):].strip()
+                        note_body = normalized_text[len("note:") :].strip()
                     elif txt_lo.startswith("/note"):
-                        note_body = normalized_text[len("/note"):].strip()
+                        note_body = normalized_text[len("/note") :].strip()
                     if note_body:
                         ctx = {
                             "content_type": "fact",

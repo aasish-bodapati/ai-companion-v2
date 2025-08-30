@@ -2,7 +2,7 @@
 Deduplication API endpoints for memory management
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -15,13 +15,16 @@ from app.memory.context_tracker import context_tracker
 
 router = APIRouter()
 
+
 class ContentCheckRequest(BaseModel):
     content: str
+
 
 class ConsolidationResponse(BaseModel):
     consolidated: int
     removed: int
     message: str
+
 
 class DeduplicationMetrics(BaseModel):
     total_memories: int
@@ -29,32 +32,31 @@ class DeduplicationMetrics(BaseModel):
     consolidation_opportunities: int
     storage_efficiency: float
 
+
 @router.post("/check-duplicate")
 async def check_content_duplication(
     request: ContentCheckRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ) -> Dict[str, Any]:
     """Check if content is a duplicate of existing memories."""
     try:
         is_duplicate = await deduplication_service.is_duplicate(
-            request.content, 
-            current_user.id, 
-            db
+            request.content, current_user.id, db
         )
-        
+
         return {
             "is_duplicate": is_duplicate,
             "threshold": deduplication_service.similarity_threshold,
-            "content_hash": deduplication_service._generate_content_hash(request.content)
+            "content_hash": deduplication_service._generate_content_hash(request.content),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Duplication check failed: {str(e)}")
 
+
 @router.get("/conversation-context/{conversation_id}")
 async def get_conversation_context(
-    conversation_id: str,
-    current_user = Depends(get_current_user)
+    conversation_id: str, current_user=Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Get conversation context tracking data."""
     try:
@@ -63,68 +65,64 @@ async def get_conversation_context(
             "conversation_id": conversation_id,
             "discussed_topics": list(context.get("discussed_topics", set())),
             "used_memory_ids": list(context.get("used_memory_ids", set())),
-            "content_hashes": list(context.get("content_hashes", set()))
+            "content_hashes": list(context.get("content_hashes", set())),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Context retrieval failed: {str(e)}")
 
+
 @router.post("/consolidate")
 async def consolidate_memories(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ) -> ConsolidationResponse:
     """Trigger memory consolidation for the user."""
     try:
-        result = await consolidation_service.consolidate_user_memories(
-            current_user.id, 
-            db
-        )
-        
+        result = await consolidation_service.consolidate_user_memories(current_user.id, db)
+
         return ConsolidationResponse(
             consolidated=result.get("consolidated", 0),
             removed=result.get("removed", 0),
-            message=f"Successfully consolidated {result.get('consolidated', 0)} memory groups"
+            message=f"Successfully consolidated {result.get('consolidated', 0)} memory groups",
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Consolidation failed: {str(e)}")
 
+
 @router.get("/metrics")
 async def get_deduplication_metrics(
-    db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    db: Session = Depends(get_db), current_user=Depends(get_current_user)
 ) -> DeduplicationMetrics:
     """Get deduplication and efficiency metrics."""
     try:
         # Get total memories
         from app.models.memory import MemoryNode
-        total_memories = db.query(MemoryNode).filter(
-            MemoryNode.user_id == current_user.id
-        ).count()
-        
+
+        total_memories = db.query(MemoryNode).filter(MemoryNode.user_id == current_user.id).count()
+
         # Get duplicate count (simplified - could be enhanced)
         duplicate_count = await deduplication_service.count_duplicates(current_user.id, db)
-        
+
         # Calculate consolidation opportunities
         consolidation_opportunities = await consolidation_service.count_consolidation_opportunities(
             current_user.id, db
         )
-        
+
         # Calculate storage efficiency
         storage_efficiency = 1.0 - (duplicate_count / max(total_memories, 1))
-        
+
         return DeduplicationMetrics(
             total_memories=total_memories,
             duplicate_count=duplicate_count,
             consolidation_opportunities=consolidation_opportunities,
-            storage_efficiency=storage_efficiency
+            storage_efficiency=storage_efficiency,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Metrics calculation failed: {str(e)}")
 
+
 @router.delete("/reset-context/{conversation_id}")
 async def reset_conversation_context(
-    conversation_id: str,
-    current_user = Depends(get_current_user)
+    conversation_id: str, current_user=Depends(get_current_user)
 ) -> Dict[str, str]:
     """Reset conversation context tracking."""
     try:

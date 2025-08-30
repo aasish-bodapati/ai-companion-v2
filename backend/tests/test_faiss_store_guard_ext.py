@@ -1,6 +1,3 @@
-import builtins
-from typing import List
-
 import app.memory.faiss_store as fs
 
 

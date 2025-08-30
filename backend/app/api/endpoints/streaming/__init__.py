@@ -9,7 +9,7 @@ from .calendar_handler import stream_calendar_response
 
 __all__ = [
     "client_disconnected",
-    "stream_text_chunks", 
+    "stream_text_chunks",
     "finalize_stream",
     "persist_assistant_message",
     "stream_llm_response",

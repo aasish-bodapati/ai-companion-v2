@@ -45,7 +45,9 @@ def _should_raise_import_error() -> bool:
 
 if _should_raise_import_error():
     # Simulate removed module for the specific unit test
-    raise ImportError("app.services.conversation_intelligence has been removed in the simplified build")
+    raise ImportError(
+        "app.services.conversation_intelligence has been removed in the simplified build"
+    )
 
 
 def _detect_domains(message: str) -> List[str]:
@@ -68,20 +70,26 @@ def _suggest_actions(domains: List[str]) -> List[Dict[str, str]]:
     """Return a few generic suggested actions per domain."""
     actions: List[Dict[str, str]] = []
     if "stress" in domains:
-        actions.append({
-            "type": "stress_tips",
-            "title": "Share stress management techniques",
-        })
+        actions.append(
+            {
+                "type": "stress_tips",
+                "title": "Share stress management techniques",
+            }
+        )
     if "health" in domains:
-        actions.append({
-            "type": "sleep_hygiene",
-            "title": "Provide sleep hygiene tips",
-        })
+        actions.append(
+            {
+                "type": "sleep_hygiene",
+                "title": "Provide sleep hygiene tips",
+            }
+        )
     if "scheduling" in domains:
-        actions.append({
-            "type": "calendar_suggest",
-            "title": "Propose calendar entries",
-        })
+        actions.append(
+            {
+                "type": "calendar_suggest",
+                "title": "Propose calendar entries",
+            }
+        )
     return actions[:5]
 
 
@@ -102,7 +110,6 @@ class ConversationIntelligence:
     def analyze_conversation_context(
         self, message: str, conversation_history: Optional[List[Dict[str, str]]] = None
     ) -> Dict[str, object]:
-        history = conversation_history or []
         domains = _detect_domains(message)
         return {
             "detected_domains": domains,
@@ -123,7 +130,9 @@ class ConversationIntelligence:
         parts: List[str] = []
         parts.append("Hello! Let's work through this together.")
         if "scheduling" in domains:
-            parts.append("I can help schedule a meeting (e.g., tomorrow 2pm) and manage your calendar.")
+            parts.append(
+                "I can help schedule a meeting (e.g., tomorrow 2pm) and manage your calendar."
+            )
         if "stress" in domains:
             parts.append("Here are a few stress management tips to try.")
         if "health" in domains:

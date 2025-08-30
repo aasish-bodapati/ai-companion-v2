@@ -58,14 +58,16 @@ async def list_goals(
     # Transform DB rows into API Goal schema shape
     result: List[Goal] = []
     for r in rows:
-        result.append(Goal(
-            id=r.id,
-            name=r.name,
-            category=r.category,
-            status=r.status,
-            target_date=r.target_date or None,
-            notes=r.notes,
-        ))
+        result.append(
+            Goal(
+                id=r.id,
+                name=r.name,
+                category=r.category,
+                status=r.status,
+                target_date=r.target_date or None,
+                notes=r.notes,
+            )
+        )
     return result
 
 
@@ -124,14 +126,16 @@ async def list_routines(
                 schedule = json.loads(schedule)
             except Exception:
                 schedule = {"days": [], "time": None, "tz": None}
-        result.append(Routine(
-            id=r.id,
-            name=r.name,
-            category=r.category,
-            schedule=schedule,
-            goal_id=r.goal_id,
-            notes=r.notes,
-        ))
+        result.append(
+            Routine(
+                id=r.id,
+                name=r.name,
+                category=r.category,
+                schedule=schedule,
+                goal_id=r.goal_id,
+                notes=r.notes,
+            )
+        )
     return result
 
 
@@ -224,11 +228,10 @@ async def query_logs(
     if kind == "meals":
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Feature removed")
     if kind == "hydration":
-        rows = crud.hydration_log.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
-        return [
-            {"id": r.id, "when": r.when.isoformat(), "amount_ml": r.amount_ml}
-            for r in rows
-        ]
+        rows = crud.hydration_log.list(
+            db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit
+        )
+        return [{"id": r.id, "when": r.when.isoformat(), "amount_ml": r.amount_ml} for r in rows]
     if kind == "mood":
         rows = crud.mood_log.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
         out = []
@@ -238,17 +241,21 @@ async def query_logs(
                 tags = json.loads(r.tags) if r.tags else None
             except Exception:
                 tags = None
-            out.append({
-                "id": r.id,
-                "when": r.when.isoformat(),
-                "val": r.val,
-                "scale": r.scale,
-                "tags": tags,
-                "notes": r.notes,
-            })
+            out.append(
+                {
+                    "id": r.id,
+                    "when": r.when.isoformat(),
+                    "val": r.val,
+                    "scale": r.scale,
+                    "tags": tags,
+                    "notes": r.notes,
+                }
+            )
         return out
     if kind == "journal":
-        rows = crud.journal_entry.list(db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit)
+        rows = crud.journal_entry.list(
+            db, user_id=_user.id, from_dt=from_dt, to_dt=to_dt, limit=limit
+        )
         out = []
         for r in rows:
             tags = None
@@ -256,13 +263,15 @@ async def query_logs(
                 tags = json.loads(r.tags) if r.tags else None
             except Exception:
                 tags = None
-            out.append({
-                "id": r.id,
-                "when": r.when.isoformat(),
-                "title": r.title,
-                "content": r.content,
-                "tags": tags,
-            })
+            out.append(
+                {
+                    "id": r.id,
+                    "when": r.when.isoformat(),
+                    "title": r.title,
+                    "content": r.content,
+                    "tags": tags,
+                }
+            )
         return out
     return []
 
@@ -274,11 +283,13 @@ async def daily_nudge(
     _user=Depends(deps.get_current_active_user),
 ):
     # Placeholder suggestions
-    return DailyNudgeResponse(suggestions=[
-        "Run 30 min at 7am",
-        "Aim for 120g protein today",
-        "2L water target",
-    ])
+    return DailyNudgeResponse(
+        suggestions=[
+            "Run 30 min at 7am",
+            "Aim for 120g protein today",
+            "2L water target",
+        ]
+    )
 
 
 @router.post("/reviews/weekly", response_model=WeeklyReviewResponse, tags=["reviews"])
@@ -304,11 +315,18 @@ async def execute_action(
     params: Dict[str, Any] = body.params or {}
 
     try:
-        if action in ("fitness.log_workout", "nutrition.log_meal", "fitness.set_current_plan", "nutrition.set_current_plan"):
+        if action in (
+            "fitness.log_workout",
+            "nutrition.log_meal",
+            "fitness.set_current_plan",
+            "nutrition.set_current_plan",
+        ):
             return ActionExecuteResponse(
                 ok=False,
                 action=action,
-                error=ActionExecuteError(detail="Feature removed", message="Feature removed", errors=None),
+                error=ActionExecuteError(
+                    detail="Feature removed", message="Feature removed", errors=None
+                ),
             )
         if action == "hydration.log_water":
             req = HydrationLogCreate(**params)
@@ -331,7 +349,9 @@ async def execute_action(
         return ActionExecuteResponse(
             ok=False,
             action=action,
-            error=ActionExecuteError(detail="Unknown action", message="Unknown action", errors=None),
+            error=ActionExecuteError(
+                detail="Unknown action", message="Unknown action", errors=None
+            ),
         )
     except Exception as e:  # keep generic; logs should not include secrets
         return ActionExecuteResponse(

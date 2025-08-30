@@ -2,6 +2,7 @@
 Handlers for notes, tasks, and reminders captured from chat text.
 Extracted from conversations_messages.py to keep files small and modular.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
@@ -51,7 +52,9 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                     nc = NoteCreate(title=body[:80], body=None, tags=None)
                     # Lightweight dedupe: check for recent identical title for this user within 2 minutes
                     try:
-                        window = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=2)
+                        window = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(
+                            minutes=2
+                        )
                         norm_title = (nc.title or "").strip().lower()
                         existing = (
                             db.query(NoteModel)
@@ -62,7 +65,10 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                             .order_by(NoteModel.created_at.desc())
                             .all()
                         )
-                        if not any((getattr(e, "title", "") or "").strip().lower() == norm_title for e in existing):
+                        if not any(
+                            (getattr(e, "title", "") or "").strip().lower() == norm_title
+                            for e in existing
+                        ):
                             _db_note = crud_notes.create_for_user(db, user_id=user.id, obj_in=nc)
                     except Exception as _dedupe_e:
                         logger.debug(f"Note dedupe check failed: {_dedupe_e}")
@@ -100,7 +106,9 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
         # Dual write: SQL first if enabled
         if bool(getattr(settings, "DUAL_WRITE_ENABLED", False)):
             try:
-                tc = TaskCreate(title=task_text, due_at=due_at, status=None, priority=None, tags=None)
+                tc = TaskCreate(
+                    title=task_text, due_at=due_at, status=None, priority=None, tags=None
+                )
                 # Lightweight dedupe: check for recent identical title and due_at within 2 minutes
                 try:
                     window = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(minutes=2)
@@ -114,6 +122,7 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                         .order_by(TaskModel.created_at.desc())
                         .all()
                     )
+
                     def _same_due(a, b):
                         if not a and not b:
                             return True
@@ -121,8 +130,10 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                             return False
                         # within one minute considered same
                         return abs((a - b).total_seconds()) <= 60
+
                     if not any(
-                        (getattr(e, "title", "") or "").strip().lower() == norm_title and _same_due(getattr(e, "due_at", None), due_at)
+                        (getattr(e, "title", "") or "").strip().lower() == norm_title
+                        and _same_due(getattr(e, "due_at", None), due_at)
                         for e in existing
                     ):
                         _db_task = crud_tasks.create_for_user(db, user_id=user.id, obj_in=tc)
@@ -137,9 +148,7 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
         except Exception as _e:
             logger.debug(f"Task capture failed: {_e}")
         when = due_at.strftime("%b %d, %I:%M %p") if due_at else None
-        return (
-            f"Added task: {task_text}" + (f" • due {when}" if when else "")
-        )
+        return f"Added task: {task_text}" + (f" • due {when}" if when else "")
 
     # Reminder capture: "/remind ..." or "remind me ..."
     m_rem = re.match(r"^(?:/remind\b|remind\s+me\b)\s*(.+)$", s, re.IGNORECASE)
@@ -148,7 +157,11 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
         trigger: datetime | None = None
         # Try simple "in Xh/m" pattern first
         try:
-            m_in = re.search(r"\bin\s*(\d+)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes)\b", s, re.IGNORECASE)
+            m_in = re.search(
+                r"\bin\s*(\d+)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes)\b",
+                s,
+                re.IGNORECASE,
+            )
             if m_in:
                 amt = int(m_in.group(1))
                 unit = m_in.group(2).lower()
@@ -192,14 +205,17 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                         .order_by(ReminderModel.created_at.desc())
                         .all()
                     )
+
                     def _same_trigger(a, b):
                         if not a and not b:
                             return True
                         if not a or not b:
                             return False
                         return abs((a - b).total_seconds()) <= 60
+
                     if not any(
-                        (getattr(e, "content", "") or "").strip().lower() == norm_content and _same_trigger(getattr(e, "trigger_at", None), trigger)
+                        (getattr(e, "content", "") or "").strip().lower() == norm_content
+                        and _same_trigger(getattr(e, "trigger_at", None), trigger)
                         for e in existing
                     ):
                         _db_rem = crud_reminders.create_for_user(db, user_id=user.id, obj_in=rc)
@@ -214,8 +230,6 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
         except Exception as _e:
             logger.debug(f"Reminder capture failed: {_e}")
         when = trigger.strftime("%b %d, %I:%M %p") if trigger else None
-        return (
-            f"Reminder set: {rem_text}" + (f" • at {when}" if when else "")
-        )
+        return f"Reminder set: {rem_text}" + (f" • at {when}" if when else "")
 
     return None

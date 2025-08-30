@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 from typing import Iterable, List
 import logging
@@ -52,11 +51,13 @@ def _sanitize_sensitive_terms(text: str) -> str:
         out = re.sub(r"(?i)\b(passcode|pass codes?)\b", "sensitive info", out)
         out = re.sub(r"(?i)\b(api key|access token|secret)\b", "sensitive info", out)
         # SSN and similar
-        out = re.sub(r"(?i)\b(ssn|social\s+security\s+number|social\s+security)\b", "sensitive info", out)
+        out = re.sub(
+            r"(?i)\b(ssn|social\s+security\s+number|social\s+security)\b", "sensitive info", out
+        )
         # Credit card
         out = re.sub(r"(?i)\b(credit\s*card|debit\s*card|cvv|cvc)\b", "sensitive info", out)
         # Allergy related (mirror endpoint sanitizer in a lightweight way)
-        hyphen_class = "[-\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]?"
+        hyphen_class = "[-\u2010-\u2015\u2212\ufe58\ufe63\uff0d]?"
         out = re.sub(rf"(?i)peanut{hyphen_class}free", "allergen-safe", out)
         out = re.sub(r"(?i)peanuts?", "allergen", out)
         out = re.sub(r"(?i)tree[\s\-]+nuts?", "tree-nut allergen", out)
@@ -142,12 +143,12 @@ def _add_confirmation(text: str) -> str:
         "want me to proceed",
         "should we",
         "is that okay",
-        "does this work"
+        "does this work",
     ]
     # Force confirmation if no question mark and no confirmation cues
     has_question = stripped.endswith("?")
     has_confirmation_cue = any(cue in lower for cue in confirmation_cues)
-    
+
     if not has_question and not has_confirmation_cue:
         if stripped.endswith((".", "!")):
             return f"{stripped} {CONFIRMATION_PROMPT}"

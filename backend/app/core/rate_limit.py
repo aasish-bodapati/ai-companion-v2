@@ -76,7 +76,9 @@ async def check_rate_limit(
         except Exception:
             reset_in = window_seconds
         # Raise 429 with Retry-After header
-        raise HTTPException(status_code=429, detail="Rate limit exceeded", headers={"Retry-After": str(reset_in)})
+        raise HTTPException(
+            status_code=429, detail="Rate limit exceeded", headers={"Retry-After": str(reset_in)}
+        )
 
     # Estimate reset time relative to window start
     reset_in = window_seconds

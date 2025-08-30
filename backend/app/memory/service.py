@@ -1,22 +1,17 @@
-from typing import List, Optional, Dict, Any, Set
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 import logging
-import uuid
 import time
-import math
 import hashlib
 import json
 
 from app.core.config import settings
-from app.crud.user import user as user_crud
 from app.core.llm import generate_response
 from app.crud.memory import memory
 from app.crud.onboarding import get_by_user_id
-from app.crud.conversation import message as message_crud
-from app.memory.vector_store.factory import get_vector_store
-import app.memory.embeddings as embeddings
 from app.schemas.memory import MemorySearchResult
+from app.schemas.memory_extractor import ExtractedMemories
 from app.memory.service_mixins_lifecycle import LifecycleMixin
 from app.memory.service_mixins_retrieval import RetrievalMixin
 from app.memory.service_mixins_storage import StorageMixin
@@ -25,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from app.memory.contextual_retrieval import contextual_retriever
+
     EMOTIONAL_ANALYSIS_ENABLED = True
 except ImportError as e:
     logger.warning(f"Contextual retrieval modules not available: {e}")
@@ -37,6 +33,7 @@ try:
     # If a module defines emotional_analyzer, prefer it
     from app.memory.contextual_retrieval import emotional_analyzer  # type: ignore
 except Exception:
+
     class _FallbackEmotionalAnalyzer:
         def analyze_emotional_context(self, text: str, memories: list) -> dict:
             try:
@@ -57,15 +54,18 @@ except Exception:
             try:
                 # Return a basic emotional analysis based on content
                 emotional_state = "neutral"
-                if any(word in content.lower() for word in ["happy", "excited", "great", "wonderful", "amazing"]):
+                if any(
+                    word in content.lower()
+                    for word in ["happy", "excited", "great", "wonderful", "amazing"]
+                ):
                     emotional_state = "positive"
-                elif any(word in content.lower() for word in ["sad", "angry", "frustrated", "worried", "anxious"]):
+                elif any(
+                    word in content.lower()
+                    for word in ["sad", "angry", "frustrated", "worried", "anxious"]
+                ):
                     emotional_state = "negative"
-                
-                return {
-                    "emotional_state": emotional_state,
-                    "emotional_context": emotional_context
-                }
+
+                return {"emotional_state": emotional_state, "emotional_context": emotional_context}
             except Exception:
                 return {"emotional_state": "neutral", "emotional_context": emotional_context}
 
@@ -139,7 +139,9 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             bullets = [ln for ln in lines if ln.startswith("- ")]
             if not bullets:
                 # fallback: use short lines
-                bullets = [ln if ln.startswith("- ") else f"- {ln}" for ln in lines if len(ln) <= 140]
+                bullets = [
+                    ln if ln.startswith("- ") else f"- {ln}" for ln in lines if len(ln) <= 140
+                ]
             # Trim and cap
             out: List[str] = []
             for b in bullets:
@@ -217,7 +219,9 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
 
             # Optional LLM rubric
             imp_llm: Optional[float] = None
-            if getattr(settings, "MEMORY_LLM_CLASSIFIER_ENABLED", True) and getattr(settings, "IMPORTANCE_LLM_ENABLED", True):
+            if getattr(settings, "MEMORY_LLM_CLASSIFIER_ENABLED", True) and getattr(
+                settings, "IMPORTANCE_LLM_ENABLED", True
+            ):
                 try:
                     cls = self._classify_with_llm(s)
                     if cls and isinstance(cls.get("importance"), (int, float)):
@@ -343,15 +347,19 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                 return None
             system_prompt = (
                 "Extract only concrete, reusable facts or preferences suitable for future recall. "
-                "Return strict JSON: {\"memories\": [\"...\", \"...\"]}. "
+                'Return strict JSON: {"memories": ["...", "..."]}. '
                 "Rules: keep items short (<= 200 chars), no PII unless explicitly provided by user, "
                 "omit greetings, general chit-chat, or one-off requests."
             )
-            user_prompt = (
-                "Message:\n" + s + "\n\nRespond with JSON only."
-            )
+            user_prompt = "Message:\n" + s + "\n\nRespond with JSON only."
             resp = generate_response(
-                model=(getattr(settings, "LLM_MODEL_DEFAULT", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")),
+                model=(
+                    getattr(
+                        settings,
+                        "LLM_MODEL_DEFAULT",
+                        "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+                    )
+                ),
                 system_prompt=system_prompt,
                 messages=[{"role": "user", "content": user_prompt}],
                 max_tokens=256,
@@ -373,16 +381,12 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                     parsed = None
             if not isinstance(parsed, dict):
                 return None
-            arr = parsed.get("memories")
-            if not isinstance(arr, list):
+            # Validate via strict schema
+            try:
+                model = ExtractedMemories.model_validate(parsed)
+            except Exception:
                 return None
-            out: List[str] = []
-            for item in arr:
-                if isinstance(item, str):
-                    it = item.strip()
-                    if it and len(it) <= 200:
-                        out.append(it)
-            return out or None
+            return model.memories or None
         except Exception:
             return None
 
@@ -442,18 +446,6 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         except Exception as e:
             logger.warning(f"Failed to increase rank_boost for {faiss_id}: {e}")
             return False
-        if not metadata:
-            return False
-        try:
-            importance_min = float(getattr(settings, "MEMORY_CORE_IMPORTANCE_MIN", 0.85))
-            reinforce_min = int(getattr(settings, "MEMORY_CORE_REINFORCE_MIN", 2))
-            imp = float(metadata.get("importance", 0.0) or 0.0)
-            reinforced = int(metadata.get("reinforced_count", 0) or 0)
-            if imp >= importance_min and reinforced >= reinforce_min:
-                return True
-        except Exception:
-            return False
-        return False
 
     def get_user_profile_memory(self, db: Session, user_id: str) -> Optional[str]:
         """
@@ -503,7 +495,6 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             debug=debug,
         )
 
-
     def get_conversation_context(
         self,
         db: Session,
@@ -520,39 +511,41 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         try:
             # Get user profile memory as foundation
             profile_memory = self.get_user_profile_memory(db, user_id)
-            
+
             # Get recent conversation messages
             recent_context = self._get_recent_conversation_context(
                 db, conversation_id, recent_messages
             )
-            
+
             # Enhanced memory retrieval with better relevance scoring
             relevant_memories = self._get_enhanced_relevant_memories(
-                db, user_id, current_message, memory_limit
+                db, user_id, current_message, memory_limit, conversation_id
             )
-            
+
             # Build enhanced context with memory attribution
             context_parts = []
-            
+
             # Add profile foundation
             if profile_memory:
                 context_parts.append(f"User Profile: {profile_memory}")
-            
+
             # Add recent conversation context
             if recent_context:
                 context_parts.append(f"Recent Conversation: {recent_context}")
-            
+
             # Add relevant memories with attribution
             if relevant_memories:
                 memory_context = self._format_memories_with_attribution(relevant_memories)
                 context_parts.append(f"Relevant Memories: {memory_context}")
-            
+
             # Add conversation continuity hints
             if recent_context and relevant_memories:
-                context_parts.append("Remember to maintain conversation continuity and reference previous context when appropriate.")
-            
+                context_parts.append(
+                    "Remember to maintain conversation continuity and reference previous context when appropriate."
+                )
+
             return "\n\n".join(context_parts)
-            
+
         except Exception as e:
             logger.warning(f"Error building conversation context: {e}")
             return ""
@@ -566,22 +559,23 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         """Get recent conversation context for continuity."""
         try:
             from app import crud
+
             messages = crud.message.get_by_conversation(
                 db, conversation_id=conversation_id, skip=0, limit=recent_messages
             )
-            
+
             if not messages:
                 return ""
-            
+
             context_parts = []
             for msg in messages[-3:]:  # Last 3 messages for context
                 role = "User" if msg.role == "user" else "Assistant"
                 content = msg.content[:100] if msg.content else ""  # Truncate long messages
                 if content:
                     context_parts.append(f"{role}: {content}")
-            
+
             return " | ".join(context_parts) if context_parts else ""
-            
+
         except Exception as e:
             logger.warning(f"Error getting recent conversation context: {e}")
             return ""
@@ -592,6 +586,7 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         user_id: str,
         current_message: str,
         memory_limit: int,
+        conversation_id: Optional[str] = None,
     ) -> List[MemorySearchResult]:
         """Enhanced memory retrieval with better relevance and diversity."""
         try:
@@ -603,13 +598,14 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                 content_types=None,
                 limit=memory_limit * 2,  # Get more for intelligent filtering
                 min_relevance=0.3,  # Lower threshold for more options
+                conversation_id=conversation_id,
             )
-            
+
             # Apply intelligent filtering and ranking
             enhanced_memories = self._apply_enhanced_memory_filtering(memories, current_message)
-            
+
             return enhanced_memories[:memory_limit]
-            
+
         except Exception as e:
             logger.warning(f"Error retrieving enhanced memories: {e}")
             return []
@@ -622,76 +618,76 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         """Apply intelligent filtering to select the most relevant and diverse memories."""
         if not memories:
             return []
-        
+
         # Score memories based on multiple factors
         scored_memories = []
-        for memory in memories:
+        for mem in memories:
             score = 0.0
-            
+
             # Base relevance score
-            score += memory.relevance_score * 0.4
-            
+            score += mem.relevance_score * 0.4
+
             # Content type priority
             type_priority = {
-                'preference': 0.3,
-                'profile': 0.25,
-                'fact': 0.2,
-                'conversation': 0.15,
-                'message': 0.1,
+                "preference": 0.3,
+                "profile": 0.25,
+                "fact": 0.2,
+                "conversation": 0.15,
+                "message": 0.1,
             }
-            score += type_priority.get(memory.content_type, 0.1) * 0.3
-            
+            score += type_priority.get(mem.content_type, 0.1) * 0.3
+
             # Recency bonus
-            if memory.timestamp:
-                days_old = (datetime.now(timezone.utc) - memory.timestamp).days
+            if mem.timestamp:
+                days_old = (datetime.now(timezone.utc) - mem.timestamp).days
                 if days_old < 7:
                     score += 0.2
                 elif days_old < 30:
                     score += 0.1
-            
+
             # Diversity bonus (prefer different content types)
             content_types_seen = set()
             for other_memory in memories:
-                if other_memory != memory:
+                if other_memory != mem:
                     content_types_seen.add(other_memory.content_type)
-            
-            if memory.content_type not in content_types_seen:
+
+            if mem.content_type not in content_types_seen:
                 score += 0.1
-            
-            scored_memories.append((memory, score))
-        
+
+            scored_memories.append((mem, score))
+
         # Sort by score and return top memories
         scored_memories.sort(key=lambda x: x[1], reverse=True)
-        return [memory for memory, score in scored_memories]
+        return [mem for mem, score in scored_memories]
 
     def _format_memories_with_attribution(self, memories: List[MemorySearchResult]) -> str:
         """Format memories with clear attribution and context."""
         if not memories:
             return ""
-        
+
         formatted_parts = []
-        for memory in memories:
+        for mem in memories:
             # Add attribution prefix based on content type
-            if memory.content_type == 'preference':
+            if mem.content_type == "preference":
                 prefix = "User preference"
-            elif memory.content_type == 'profile':
+            elif mem.content_type == "profile":
                 prefix = "User profile"
-            elif memory.content_type == 'fact':
+            elif mem.content_type == "fact":
                 prefix = "Known fact"
-            elif memory.content_type == 'conversation':
+            elif mem.content_type == "conversation":
                 prefix = "From conversation"
             else:
                 prefix = "Memory"
-            
+
             # Add relevance indicator
             relevance_indicator = ""
-            if memory.relevance_score > 0.8:
+            if mem.relevance_score > 0.8:
                 relevance_indicator = " (highly relevant)"
-            elif memory.relevance_score > 0.6:
+            elif mem.relevance_score > 0.6:
                 relevance_indicator = " (relevant)"
-            
-            formatted_parts.append(f"{prefix}{relevance_indicator}: {memory.content}")
-        
+
+            formatted_parts.append(f"{prefix}{relevance_indicator}: {mem.content}")
+
         return "; ".join(formatted_parts)
 
     def has_known_fact_contains(self, db: Session, user_id: str, phrases: List[str]) -> bool:
@@ -702,15 +698,18 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         try:
             if not phrases:
                 return False
-            mems = self.search_memories(
-                db=db,
-                query=" ".join(phrases),
-                user_id=user_id,
-                content_types=["profile", "preference", "fact"],
-                limit=16,
-                min_relevance=0.0,
-                debug=False,
-            ) or []
+            mems = (
+                self.search_memories(
+                    db=db,
+                    query=" ".join(phrases),
+                    user_id=user_id,
+                    content_types=["profile", "preference", "fact"],
+                    limit=16,
+                    min_relevance=0.0,
+                    debug=False,
+                )
+                or []
+            )
             if not mems:
                 return False
             ph_low = [p.lower() for p in phrases if isinstance(p, str) and p.strip()]
@@ -724,7 +723,7 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
 
     def build_personalized_system_prompt(self, db: Session, user_id: str) -> str:
         """
-        Build a personalized system prompt that creates human-like conversations.
+        Build a simplified, natural system prompt for the user.
         """
         # Cache by user
         now = time.time()
@@ -735,7 +734,7 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         profile_memory = self.get_user_profile_memory(db, user_id)
 
         # Get user's name from profile if available
-        user_name = "there"
+        user_name = "the user"
         if profile_memory:
             # Extract name from profile
             import re
@@ -743,125 +742,27 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
             if name_match:
                 user_name = name_match.group(1).strip()
 
-        from app.core.prompts import MEMORY_FIRST_PROMPT
-        
+        from app.core.prompts import SIMPLIFIED_SYSTEM_PROMPT
+
         base_prompt = f"""
-{MEMORY_FIRST_PROMPT}
+{SIMPLIFIED_SYSTEM_PROMPT}
 
-You know {user_name} well and remember everything about them. Use this knowledge naturally in conversations.
+You know {user_name} well and remember information about them. Use this knowledge naturally in conversations.
 
-CRITICAL RULES - NEVER VIOLATE THESE:
-- ONLY reference information that is explicitly provided in the Context below
-- NEVER make up conversations, memories, or facts that aren't in the Context
-- NEVER say "I recall" or "I remember" unless the information is actually in the Context
-- If you don't have specific information about something, say so honestly
-- Do not invent past conversations or interactions
- - Do not propose managing calendar, fitness, or nutrition unless the user asks explicitly; when in doubt, ask for permission with one short question
-
-Personality & Voice:
-- Speak like a knowledgeable friend who truly cares
-- Be warm but not overly familiar
-- Show genuine interest and enthusiasm about their progress
-- Reference their preferences, goals, and past conversations naturally
-- Use their name occasionally but not excessively
-- Demonstrate empathy by acknowledging their feelings and challenges
-- Celebrate achievements with genuine excitement
-- Offer encouragement during difficult times
-
-Personal Assistant Mode (Notepad):
-- Behave like a human personal assistant with a notepad, quietly capturing facts and preferences as notes. Do not announce note-taking.
-- Use known facts without re-asking. If something is missing and necessary, ask at most one short clarifying question.
-- Propose next steps concisely (one sentence). For any action that changes data or creates artifacts, ask one short confirmation first.
-- If the user says “yes”, proceed. If the user ignores or says “no”, drop the action gracefully.
-- Keep responses succinct and natural; avoid templates or checklists unless the user requests structure.
-
-Output format:
-- Keep replies short and readable (2-5 sentences unless the user asks for detail)
-- Use bullets only when helpful
-- Avoid repeating yourself or restating the user's message
-- Be concrete and actionable when making suggestions
-
-Conversational Style:
-- Connect new topics to what you know about them
-- Ask thoughtful follow-up questions that show you're listening
-- Celebrate their wins and offer support during challenges
-- Make relevant suggestions based on their interests and goals
-- Remember context from earlier in the conversation
-- Use emotional intelligence to read between the lines
-- Adapt your tone to match their energy and mood
-- Be proactive in offering help when you sense they need it
-
-Memory Integration:
-- Seamlessly reference their preferences, habits, and goals from the Context
-- Connect current topics to their past experiences (only if in Context)
-- Show progression awareness based on actual stored information
-- Reference their schedule, preferences, and relationships naturally (only if in Context)
-- Use memories to provide personalized encouragement and advice
-- If asked about something not in Context, say "I don't have that information saved yet"
-
-Temporal Intelligence:
-- Pay attention to time references in their memories (morning, weekend, seasonal)
-- Consider timing when making suggestions (e.g., morning activities for early risers)
-- Use temporal patterns to provide more relevant advice
-- Acknowledge seasonal preferences and patterns
-
-Emotional Intelligence:
-- Read emotional context from their messages and memories
-- Adapt your tone based on their emotional state
-- Offer support when they seem stressed or overwhelmed
-- Match their energy level (excited, calm, etc.)
-- Use emotional insights to provide more empathetic responses
-
-Proactive Assistance:
-- Use the proactive suggestions provided in Context
-- Anticipate needs based on their patterns and preferences
-- Offer relevant suggestions before they ask
-- Connect different aspects of their life naturally
-- Help them see connections between their goals and current situation
+Core Guidelines:
+- Only reference information that is explicitly provided in the Context below
+- Be honest about what you don't know
+- Be warm, helpful, and conversational
+- Keep responses concise and actionable
+- Reference memories naturally: "I remember you mentioned..." or "Based on your preferences..."
 """
 
         if profile_memory:
-            highlights = self._extract_profile_highlights(profile_memory, max_bullets=4)
+            highlights = self._extract_profile_highlights(profile_memory, max_bullets=3)
             if highlights:
-                base_prompt += "\n\nKey things about " + user_name + ":\n" + "\n".join(highlights)
-            else:
-                # Fallback: use raw profile text (truncated)
-                truncated = profile_memory[:400] + "..." if len(profile_memory) > 400 else profile_memory
-                base_prompt += f"\n\nBackground: {truncated}"
+                base_prompt += f"\n\nKey things about {user_name}:\n" + "\n".join(highlights)
         else:
-            base_prompt += f"\n\nNote: Learn about {user_name}'s preferences, goals, and background to provide personalized assistance."
-
-        # Response personalization based on user energy and mood
-        base_prompt += f"""
-
-Response Personalization:
-- Adapt your energy level to match the user's current state
-- If they seem excited or motivated, match their enthusiasm
-- If they seem tired or overwhelmed, be more gentle and supportive
-- Use conversation flow analysis to determine appropriate tone
-- Reference their emotional journey and celebrate progress
-- Provide encouragement that feels genuine and specific to their situation
-
-Natural Conversation Flow:
-- Use smooth topic transitions that feel organic
-- Reference earlier parts of the conversation naturally
-- Build on their responses with thoughtful follow-ups
-- Show you're actively listening by connecting ideas
-- Ask questions that demonstrate understanding of their context
-"""
-
-        # Response guidelines for human-like interaction
-        base_prompt += f"""
-
-Response Guidelines:
-- Always acknowledge what {user_name} shared and respond thoughtfully
-- If unclear, ask one specific clarifying question
-- Keep responses conversational (2-4 sentences unless more detail requested)
-- Show you remember and care about their journey
-- Make connections to their interests, goals, or past conversations
-- Be proactive with relevant suggestions when appropriate
-- Never give empty or generic responses
-"""
+            base_prompt += f"\n\nNote: Learn about {user_name}'s preferences and background to provide personalized assistance."
 
         # Cache the result
         self._sys_prompt_cache[user_id] = {"ts": now, "val": base_prompt}
@@ -903,7 +804,9 @@ Response Guidelines:
         enhanced_md = {}
         try:
             # Add emotional context
-            enhanced_md.update(emotional_analyzer.enhance_memory_with_emotion(content, emotional_context))
+            enhanced_md.update(
+                emotional_analyzer.enhance_memory_with_emotion(content, emotional_context)
+            )
 
             # Add categories and tags
             categories = self._extract_memory_categories(content, content_type)
@@ -917,7 +820,9 @@ Response Guidelines:
                 enhanced_md["temporal_context"] = temporal_context
 
             # Add emotional patterns
-            emotional_patterns = self._analyze_emotional_patterns(content, emotional_context, conversation_history)
+            emotional_patterns = self._analyze_emotional_patterns(
+                content, emotional_context, conversation_history
+            )
             if emotional_patterns:
                 enhanced_md["emotional_patterns"] = emotional_patterns
 
@@ -925,7 +830,9 @@ Response Guidelines:
             related_memories = self._find_related_memories(db, user_id, content, categories)
             if related_memories:
                 enhanced_md["related_memories"] = related_memories
-                enhanced_md["memory_relationships"] = self._build_memory_relationships(related_memories)
+                enhanced_md["memory_relationships"] = self._build_memory_relationships(
+                    related_memories
+                )
 
             # Add usage contexts
             usage_contexts = self._determine_usage_contexts(content, content_type, categories)
@@ -952,7 +859,9 @@ Response Guidelines:
             logger.warning(f"Memory enhancement failed: {e}")
         return enhanced_md
 
-    def _extract_temporal_context(self, content: str, conversation_history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    def _extract_temporal_context(
+        self, content: str, conversation_history: Optional[List[Dict]] = None
+    ) -> Dict[str, Any]:
         """
         Extract temporal context from memory content and conversation history.
         """
@@ -960,12 +869,12 @@ Response Guidelines:
             "time_references": [],
             "frequency": "one_time",
             "seasonal": False,
-            "time_sensitive": False
+            "time_sensitive": False,
         }
-        
+
         try:
             content_lower = content.lower()
-            
+
             # Extract time references
             time_patterns = {
                 "morning": ["morning", "am", "early", "dawn", "sunrise"],
@@ -973,16 +882,33 @@ Response Guidelines:
                 "evening": ["evening", "night", "pm", "late", "sunset"],
                 "weekend": ["weekend", "saturday", "sunday", "fri", "sat", "sun"],
                 "weekday": ["weekday", "monday", "tuesday", "wednesday", "thursday", "friday"],
-                "seasonal": ["summer", "winter", "spring", "fall", "autumn", "christmas", "holiday"],
-                "frequency": ["always", "never", "sometimes", "often", "rarely", "daily", "weekly", "monthly"]
+                "seasonal": [
+                    "summer",
+                    "winter",
+                    "spring",
+                    "fall",
+                    "autumn",
+                    "christmas",
+                    "holiday",
+                ],
+                "frequency": [
+                    "always",
+                    "never",
+                    "sometimes",
+                    "often",
+                    "rarely",
+                    "daily",
+                    "weekly",
+                    "monthly",
+                ],
             }
-            
+
             for time_category, patterns in time_patterns.items():
                 for pattern in patterns:
                     if pattern in content_lower:
                         temporal_context["time_references"].append(time_category)
                         break
-            
+
             # Determine frequency
             if any(word in content_lower for word in ["always", "daily", "every day", "routine"]):
                 temporal_context["frequency"] = "continuous"
@@ -990,22 +916,30 @@ Response Guidelines:
                 temporal_context["frequency"] = "recurring"
             elif any(word in content_lower for word in ["never", "once", "one time"]):
                 temporal_context["frequency"] = "one_time"
-            
+
             # Check if seasonal
-            if any(word in content_lower for word in ["summer", "winter", "spring", "fall", "christmas", "holiday"]):
+            if any(
+                word in content_lower
+                for word in ["summer", "winter", "spring", "fall", "christmas", "holiday"]
+            ):
                 temporal_context["seasonal"] = True
-            
+
             # Check if time sensitive
-            if any(word in content_lower for word in ["deadline", "due", "urgent", "asap", "now", "today"]):
+            if any(
+                word in content_lower
+                for word in ["deadline", "due", "urgent", "asap", "now", "today"]
+            ):
                 temporal_context["time_sensitive"] = True
-            
+
             # Add conversation timing context
             if conversation_history:
-                temporal_context["conversation_timing"] = self._analyze_conversation_timing(conversation_history)
-            
+                temporal_context["conversation_timing"] = self._analyze_conversation_timing(
+                    conversation_history
+                )
+
         except Exception as e:
             logger.warning(f"Temporal context extraction failed: {e}")
-        
+
         return temporal_context
 
     def _analyze_conversation_timing(self, conversation_history: List[Dict]) -> Dict[str, Any]:
@@ -1015,15 +949,15 @@ Response Guidelines:
         timing_analysis = {
             "time_of_day": "unknown",
             "day_of_week": "unknown",
-            "urgency_level": "normal"
+            "urgency_level": "normal",
         }
-        
+
         try:
             # This would ideally use actual timestamps from conversation history
             # For now, we'll analyze content for timing indicators
             all_content = " ".join([msg.get("content", "") for msg in conversation_history])
             content_lower = all_content.lower()
-            
+
             # Time of day indicators
             if any(word in content_lower for word in ["morning", "early", "am"]):
                 timing_analysis["time_of_day"] = "morning"
@@ -1031,25 +965,36 @@ Response Guidelines:
                 timing_analysis["time_of_day"] = "afternoon"
             elif any(word in content_lower for word in ["evening", "night", "late", "pm"]):
                 timing_analysis["time_of_day"] = "evening"
-            
+
             # Day of week indicators
-            if any(word in content_lower for word in ["monday", "tuesday", "wednesday", "thursday", "friday"]):
+            if any(
+                word in content_lower
+                for word in ["monday", "tuesday", "wednesday", "thursday", "friday"]
+            ):
                 timing_analysis["day_of_week"] = "weekday"
             elif any(word in content_lower for word in ["saturday", "sunday", "weekend"]):
                 timing_analysis["day_of_week"] = "weekend"
-            
+
             # Urgency indicators
-            if any(word in content_lower for word in ["urgent", "asap", "now", "immediately", "deadline"]):
+            if any(
+                word in content_lower
+                for word in ["urgent", "asap", "now", "immediately", "deadline"]
+            ):
                 timing_analysis["urgency_level"] = "high"
             elif any(word in content_lower for word in ["soon", "later", "when you can"]):
                 timing_analysis["urgency_level"] = "medium"
-            
+
         except Exception as e:
             logger.warning(f"Conversation timing analysis failed: {e}")
-        
+
         return timing_analysis
 
-    def _analyze_emotional_patterns(self, content: str, emotional_context: Dict[str, Any], conversation_history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    def _analyze_emotional_patterns(
+        self,
+        content: str,
+        emotional_context: Dict[str, Any],
+        conversation_history: Optional[List[Dict]] = None,
+    ) -> Dict[str, Any]:
         """
         Analyze emotional patterns and trends in memory content.
         """
@@ -1058,45 +1003,45 @@ Response Guidelines:
             "energy_level": "medium",
             "mood_trend": "stable",
             "emotional_triggers": [],
-            "coping_patterns": []
+            "coping_patterns": [],
         }
-        
+
         try:
             # Analyze current emotional state
             current_emotion = emotional_context.get("emotional_state", "neutral")
             emotional_patterns["emotional_state"] = current_emotion
-            
+
             # Determine energy level
             content_lower = content.lower()
             high_energy_words = ["excited", "energetic", "motivated", "passionate", "enthusiastic"]
             low_energy_words = ["tired", "exhausted", "drained", "overwhelmed", "stressed"]
-            
+
             if any(word in content_lower for word in high_energy_words):
                 emotional_patterns["energy_level"] = "high"
             elif any(word in content_lower for word in low_energy_words):
                 emotional_patterns["energy_level"] = "low"
-            
+
             # Identify emotional triggers
             trigger_patterns = {
                 "stress": ["stress", "overwhelmed", "anxious", "worried", "pressure"],
                 "excitement": ["excited", "thrilled", "can't wait", "looking forward"],
                 "frustration": ["frustrated", "annoyed", "upset", "disappointed"],
                 "joy": ["happy", "joy", "pleased", "delighted", "grateful"],
-                "motivation": ["motivated", "inspired", "determined", "focused"]
+                "motivation": ["motivated", "inspired", "determined", "focused"],
             }
-            
+
             for trigger, patterns in trigger_patterns.items():
                 if any(pattern in content_lower for pattern in patterns):
                     emotional_patterns["emotional_triggers"].append(trigger)
-            
+
             # Analyze conversation history for mood trends
             if conversation_history:
                 mood_trend = self._analyze_mood_trend(conversation_history)
                 emotional_patterns["mood_trend"] = mood_trend
-            
+
         except Exception as e:
             logger.warning(f"Emotional pattern analysis failed: {e}")
-        
+
         return emotional_patterns
 
     def _analyze_mood_trend(self, conversation_history: List[Dict]) -> str:
@@ -1108,28 +1053,30 @@ Response Guidelines:
             positive_words = ["happy", "excited", "great", "awesome", "love", "enjoy", "pleased"]
             negative_words = ["sad", "angry", "frustrated", "disappointed", "worried", "stressed"]
             neutral_words = ["okay", "fine", "alright", "normal", "usual"]
-            
+
             positive_count = 0
             negative_count = 0
             neutral_count = 0
-            
+
             for msg in conversation_history:
                 content = msg.get("content", "").lower()
                 positive_count += sum(1 for word in positive_words if word in content)
                 negative_count += sum(1 for word in negative_words if word in content)
                 neutral_count += sum(1 for word in neutral_words if word in content)
-            
+
             if positive_count > negative_count and positive_count > neutral_count:
                 return "improving"
             elif negative_count > positive_count and negative_count > neutral_count:
                 return "declining"
             else:
                 return "stable"
-                
+
         except Exception:
             return "stable"
 
-    def _assess_goal_relevance(self, content: str, categories: List[str], user_id: str, db: Session) -> Dict[str, Any]:
+    def _assess_goal_relevance(
+        self, content: str, categories: List[str], user_id: str, db: Session
+    ) -> Dict[str, Any]:
         """
         Assess how relevant a memory is to the user's current goals.
         """
@@ -1138,43 +1085,56 @@ Response Guidelines:
             "health_goals": 0.0,
             "career_goals": 0.0,
             "personal_goals": 0.0,
-            "overall_relevance": 0.0
+            "overall_relevance": 0.0,
         }
-        
+
         try:
             content_lower = content.lower()
-            
+
             # Fitness goal relevance
             fitness_keywords = ["exercise", "workout", "gym", "run", "active", "fit", "healthy"]
             fitness_score = sum(0.2 for word in fitness_keywords if word in content_lower)
             goal_relevance["fitness_goals"] = min(1.0, fitness_score)
-            
+
             # Health goal relevance
             health_keywords = ["nutrition", "diet", "sleep", "wellness", "mental health", "stress"]
             health_score = sum(0.2 for word in health_keywords if word in content_lower)
             goal_relevance["health_goals"] = min(1.0, health_score)
-            
+
             # Career goal relevance
-            career_keywords = ["work", "project", "career", "job", "professional", "skill", "learning"]
+            career_keywords = [
+                "work",
+                "project",
+                "career",
+                "job",
+                "professional",
+                "skill",
+                "learning",
+            ]
             career_score = sum(0.2 for word in career_keywords if word in content_lower)
             goal_relevance["career_goals"] = min(1.0, career_score)
-            
+
             # Personal goal relevance
             personal_keywords = ["hobby", "interest", "passion", "relationship", "family", "travel"]
             personal_score = sum(0.2 for word in personal_keywords if word in content_lower)
             goal_relevance["personal_goals"] = min(1.0, personal_score)
-            
+
             # Overall relevance (average of all goal types)
-            goal_relevance["overall_relevance"] = sum([
-                goal_relevance["fitness_goals"],
-                goal_relevance["health_goals"], 
-                goal_relevance["career_goals"],
-                goal_relevance["personal_goals"]
-            ]) / 4.0
-            
+            goal_relevance["overall_relevance"] = (
+                sum(
+                    [
+                        goal_relevance["fitness_goals"],
+                        goal_relevance["health_goals"],
+                        goal_relevance["career_goals"],
+                        goal_relevance["personal_goals"],
+                    ]
+                )
+                / 4.0
+            )
+
         except Exception as e:
             logger.warning(f"Goal relevance assessment failed: {e}")
-        
+
         return goal_relevance
 
     def _extract_memory_categories(self, content: str, content_type: str) -> List[str]:
@@ -1183,35 +1143,35 @@ Response Guidelines:
         """
         categories = []
         content_lower = content.lower()
-        
+
         # Basic category mapping based on content
         if any(word in content_lower for word in ["like", "love", "enjoy", "prefer"]):
             categories.append("preference")
-        
+
         if any(word in content_lower for word in ["boat", "car", "travel", "vacation"]):
             categories.append("transportation")
             categories.append("hobbies")
-        
+
         if any(word in content_lower for word in ["morning", "schedule", "routine", "5-8"]):
             categories.append("daily_patterns")
             categories.append("schedule")
-        
+
         if any(word in content_lower for word in ["fitness", "exercise", "workout", "active"]):
             categories.append("health")
             categories.append("fitness")
-        
+
         if any(word in content_lower for word in ["food", "eat", "nutrition", "diet"]):
             categories.append("nutrition")
             categories.append("food_preferences")
-        
+
         if any(word in content_lower for word in ["work", "project", "career", "job"]):
             categories.append("work")
             categories.append("career")
-        
+
         # Add content type as category
         if content_type:
             categories.append(content_type)
-        
+
         # Remove duplicates while preserving order
         seen = set()
         unique_categories = []
@@ -1219,10 +1179,12 @@ Response Guidelines:
             if cat not in seen:
                 seen.add(cat)
                 unique_categories.append(cat)
-        
+
         return unique_categories
 
-    def _find_related_memories(self, db: Session, user_id: str, content: str, categories: List[str]) -> List[Dict[str, Any]]:
+    def _find_related_memories(
+        self, db: Session, user_id: str, content: str, categories: List[str]
+    ) -> List[Dict[str, Any]]:
         """
         Find memories that are related to the current content based on categories and content similarity.
         """
@@ -1230,19 +1192,23 @@ Response Guidelines:
         try:
             if not categories:
                 return related
-            
+
             # Search for memories with similar categories
             for category in categories[:3]:  # Limit to top 3 categories
-                memories = memory.get_user_memories_by_category(db, user_id=user_id, category=category, limit=5)
+                memories = memory.get_user_memories_by_category(
+                    db, user_id=user_id, category=category, limit=5
+                )
                 for mem in memories:
                     if mem.content != content:  # Don't include self
-                        related.append({
-                            "faiss_id": mem.faiss_id,
-                            "content": mem.content,
-                            "category": category,
-                            "relevance": self._calculate_memory_relevance(content, mem.content)
-                        })
-            
+                        related.append(
+                            {
+                                "faiss_id": mem.faiss_id,
+                                "content": mem.content,
+                                "category": category,
+                                "relevance": self._calculate_memory_relevance(content, mem.content),
+                            }
+                        )
+
             # Sort by relevance and remove duplicates
             related.sort(key=lambda x: x["relevance"], reverse=True)
             seen_contents = set()
@@ -1253,9 +1219,9 @@ Response Guidelines:
                     unique_related.append(rel)
                     if len(unique_related) >= 5:  # Limit to top 5 related memories
                         break
-            
+
             return unique_related
-            
+
         except Exception as e:
             logger.warning(f"Failed to find related memories: {e}")
             return []
@@ -1268,18 +1234,18 @@ Response Guidelines:
             # Simple word overlap scoring
             words1 = set(content1.lower().split())
             words2 = set(content2.lower().split())
-            
+
             if not words1 or not words2:
                 return 0.0
-            
+
             intersection = len(words1 & words2)
             union = len(words1 | words2)
-            
+
             if union == 0:
                 return 0.0
-            
+
             return intersection / union
-            
+
         except Exception:
             return 0.0
 
@@ -1287,40 +1253,38 @@ Response Guidelines:
         """
         Build relationship structure between related memories.
         """
-        relationships = {
-            "count": len(related_memories),
-            "categories": {},
-            "strength": "weak"
-        }
-        
+        relationships = {"count": len(related_memories), "categories": {}, "strength": "weak"}
+
         try:
             if not related_memories:
                 return relationships
-            
+
             # Count categories
             for rel in related_memories:
                 category = rel.get("category", "unknown")
                 if category not in relationships["categories"]:
                     relationships["categories"][category] = 0
                 relationships["categories"][category] += 1
-            
+
             # Determine relationship strength
             if len(related_memories) >= 3:
                 relationships["strength"] = "strong"
             elif len(related_memories) >= 1:
                 relationships["strength"] = "moderate"
-            
+
             return relationships
-            
+
         except Exception:
             return relationships
 
-    def _determine_usage_contexts(self, content: str, content_type: str, categories: List[str]) -> List[str]:
+    def _determine_usage_contexts(
+        self, content: str, content_type: str, categories: List[str]
+    ) -> List[str]:
         """
         Determine in what contexts this memory would be most useful.
         """
         contexts = []
-        
+
         try:
             # Add content type contexts
             if content_type == "preference":
@@ -1329,7 +1293,7 @@ Response Guidelines:
                 contexts.extend(["conversation", "planning", "problem_solving"])
             elif content_type == "profile":
                 contexts.extend(["personalization", "conversation", "planning"])
-            
+
             # Add category-specific contexts
             if "transportation" in categories:
                 contexts.extend(["travel_planning", "weekend_activities", "hobby_discussions"])
@@ -1339,10 +1303,10 @@ Response Guidelines:
                 contexts.extend(["planning", "routine_optimization", "productivity"])
             if "food_preferences" in categories:
                 contexts.extend(["meal_planning", "restaurant_recommendations", "social_events"])
-            
+
             # Remove duplicates
             return list(set(contexts))
-            
+
         except Exception:
             return ["conversation"]  # Default fallback
 
@@ -1465,12 +1429,14 @@ Response Guidelines:
             logger.warning(f"Failed to reinforce memory {faiss_id}: {e}")
             return False
 
-    def _get_temporal_intelligence_insights(self, categorized_memories: Dict[str, List]) -> List[str]:
+    def _get_temporal_intelligence_insights(
+        self, categorized_memories: Dict[str, List]
+    ) -> List[str]:
         """
         Generate insights about temporal intelligence based on memory content.
         """
         insights = []
-        
+
         try:
             # Look for patterns in time references
             time_references = set()
@@ -1478,6 +1444,7 @@ Response Guidelines:
                 for item in mem:
                     if item.memory_metadata:
                         import json as _json
+
                         try:
                             if isinstance(item.memory_metadata, dict):
                                 md = dict(item.memory_metadata)
@@ -1490,10 +1457,17 @@ Response Guidelines:
                             if isinstance(tr, list):
                                 for t in tr:
                                     time_references.add(str(t))
-            for time_category in ["morning", "afternoon", "evening", "weekend", "weekday", "seasonal"]:
+            for time_category in [
+                "morning",
+                "afternoon",
+                "evening",
+                "weekend",
+                "weekday",
+                "seasonal",
+            ]:
                 if time_category in time_references:
                     insights.append(f"- You have a strong memory for {time_category} activities")
-            
+
             # Check for seasonal trends
             if "summer" in time_references and "winter" in time_references:
                 insights.append("- You have memories spanning both summer and winter")
@@ -1501,34 +1475,38 @@ Response Guidelines:
                 insights.append("- You have memories predominantly from the summer season")
             elif "winter" in time_references:
                 insights.append("- You have memories predominantly from the winter season")
-            
+
             # Check for frequency patterns
             if "continuous" in time_references and "recurring" in time_references:
-                insights.append("- You have memories that span both continuous and recurring patterns")
+                insights.append(
+                    "- You have memories that span both continuous and recurring patterns"
+                )
             elif "continuous" in time_references:
                 insights.append("- You have memories that span continuous patterns")
             elif "recurring" in time_references:
                 insights.append("- You have memories that span recurring patterns")
-            
+
             # Check for time sensitivity
             if "time_sensitive" in time_references:
                 insights.append("- You have memories that are time-sensitive")
-            
+
             # Check for conversational timing
             if "conversation_timing" in time_references:
                 insights.append("- You have memories that are timed to the conversation")
-            
+
         except Exception as e:
             logger.warning(f"Failed to generate temporal intelligence insights: {e}")
-        
+
         return insights
 
-    def _get_emotional_intelligence_insights(self, categorized_memories: Dict[str, List]) -> List[str]:
+    def _get_emotional_intelligence_insights(
+        self, categorized_memories: Dict[str, List]
+    ) -> List[str]:
         """
         Generate insights about emotional intelligence based on memory content.
         """
         insights = []
-        
+
         try:
             # Look for emotional states and trends
             emotional_states = set()
@@ -1539,6 +1517,7 @@ Response Guidelines:
                 for item in mem:
                     if item.memory_metadata:
                         import json as _json
+
                         try:
                             if isinstance(item.memory_metadata, dict):
                                 md = dict(item.memory_metadata)
@@ -1555,7 +1534,7 @@ Response Guidelines:
                             emotional_triggers.update(md["emotional_triggers"])
                         if "coping_patterns" in md:
                             coping_patterns.update(md["coping_patterns"])
-            
+
             # Generate insights based on emotional states and trends
             for state in emotional_states:
                 insights.append(f"- You have a strong memory for {state} emotions")
@@ -1565,7 +1544,7 @@ Response Guidelines:
                 insights.append(f"- You have a strong memory for {trigger} emotional triggers")
             for pattern in coping_patterns:
                 insights.append(f"- You have a strong memory for {pattern} coping patterns")
-            
+
             # Check for emotional consistency
             if len(emotional_states) > 1:
                 insights.append("- Your memories show a range of emotional states")
@@ -1575,28 +1554,31 @@ Response Guidelines:
                 insights.append("- Your memories show a range of emotional triggers")
             if len(coping_patterns) > 1:
                 insights.append("- Your memories show a range of coping patterns")
-            
+
             # Check for emotional context
             if "emotional_context" in categorized_memories:
                 insights.append("- Your memories are emotionally context-aware")
-            
+
         except Exception as e:
             logger.warning(f"Failed to generate emotional intelligence insights: {e}")
-        
+
         return insights
 
-    def _generate_proactive_suggestions(self, categorized_memories: Dict[str, List], current_message: str, user_id: str, db: Session) -> List[str]:
+    def _generate_proactive_suggestions(
+        self, categorized_memories: Dict[str, List], current_message: str, user_id: str, db: Session
+    ) -> List[str]:
         """
         Generate proactive suggestions based on current context and memory content.
         """
         suggestions = []
-        
+
         try:
             # Look for relevant memories in each category
             for category, memories in categorized_memories.items():
                 for mem in memories:
                     if mem.memory_metadata:
                         import json as _json
+
                         try:
                             if isinstance(mem.memory_metadata, dict):
                                 md = dict(mem.memory_metadata)
@@ -1609,11 +1591,13 @@ Response Guidelines:
                             if isinstance(related, list):
                                 for r in related:
                                     if isinstance(r, dict) and "content" in r:
-                                        suggestions.append(f"- Consider mentioning {r['content']} in your response")
-            
+                                        suggestions.append(
+                                            f"- Consider mentioning {r['content']} in your response"
+                                        )
+
             # Add general suggestions based on current message
             suggestions.append(f"- Consider mentioning {current_message} in your response")
-            
+
             # Add proactive advice based on emotional context
             emotional_context = emotional_analyzer.analyze_emotional_context(current_message, [])
             if emotional_context:
@@ -1623,20 +1607,22 @@ Response Guidelines:
                     suggestions.append("- Be empathetic and supportive in your response")
                 elif emotional_context["emotional_state"] == "neutral":
                     suggestions.append("- Be neutral and informative in your response")
-            
+
             # Add advice based on user's preferences and goals
             profile_memory = self.get_user_profile_memory(db, user_id)
             if profile_memory:
                 highlights = self._extract_profile_highlights(profile_memory, max_bullets=3)
                 if highlights:
-                    suggestions.append(f"- Consider mentioning {', '.join(highlights)} in your response")
-            
+                    suggestions.append(
+                        f"- Consider mentioning {', '.join(highlights)} in your response"
+                    )
+
             # Add advice based on current topic
             suggestions.append(f"- Consider mentioning {current_message} in your response")
-            
+
         except Exception as e:
             logger.warning(f"Failed to generate proactive suggestions: {e}")
-        
+
         return suggestions
 
 

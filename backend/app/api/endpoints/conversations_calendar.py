@@ -4,24 +4,21 @@ Handles calendar commands, natural language processing, and LLM integration.
 """
 
 import logging
-from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
 from dateutil import parser as dateparser
 from sqlalchemy.orm import Session
-from datetime import datetime, timezone, timedelta
+from datetime import timezone, timedelta
 
-from app import crud
-from app.api import deps
 from app.models.user import User
 from app.crud.calendar import calendar as crud_calendar
 from app.schemas.calendar import CalendarEventCreate
 from app.services.calendar_parser import parse_block, parse_line, ParsedEvent
 from app.services.calendar_intent_extractor import extract_calendar_intent
-from app.schemas.calendar_intent import CalendarIntent
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
 
 def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
     """
@@ -31,19 +28,24 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
     try:
         if not text.startswith("/calendar"):
             return None
-            
+
         # Extract the command part after /calendar
         command_text = text[10:].strip()  # Remove "/calendar" (and optional space) prefix
-        
+
         if not command_text:
             return "What would you like me to do with your calendar? I can add events, show your schedule, or help you plan."
-        
+
         # Simple explicit delete-by-id: "/calendar delete <uuid>"
         if command_text.lower().startswith("delete "):
             # Robust UUID extraction allows punctuation/extra text
             import re as _re
+
             rest = command_text.split(" ", 1)[1].strip()
-            m = _re.search(r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}", rest, flags=_re.IGNORECASE)
+            m = _re.search(
+                r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+                rest,
+                flags=_re.IGNORECASE,
+            )
             event_id = (m.group(0) if m else rest).strip().strip(".,;!()[]{}")
             try:
                 ok = crud_calendar.delete_for_user(db, user_id=str(user.id), event_id=event_id)
@@ -62,8 +64,8 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                 return "Your calendar is clear! No upcoming events scheduled."
             response = "📅 **Your Upcoming Schedule:**\n\n"
             for event in events:
-                when = getattr(event, 'start', None)
-                when_s = when.strftime('%B %d at %I:%M %p') if when else ''
+                when = getattr(event, "start", None)
+                when_s = when.strftime("%B %d at %I:%M %p") if when else ""
                 response += f"• **{event.title}** - {when_s}\n\n"
             return response
 
@@ -76,10 +78,11 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
             lower = command_text.lower()
             for v in _verbs:
                 if lower.startswith(v):
-                    cmd_for_parse = command_text[len(v):].lstrip()
+                    cmd_for_parse = command_text[len(v) :].lstrip()
                     break
             # Special-case: "<title> on YYYY-MM-DD from HH:MM to HH:MM" (used by scripts/api_demo.py)
             import re as _re
+
             m = _re.match(
                 r"^(?P<title>.+?)\s+on\s+(?P<date>\d{4}-\d{2}-\d{2})\s+from\s+(?P<start>\d{1,2}:\d{2})\s+to\s+(?P<end>\d{1,2}:\d{2})$",
                 cmd_for_parse,
@@ -100,8 +103,14 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                         end=end,
                         all_day=False,
                     )
-                    db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
-                    when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
+                    db_event = crud_calendar.create_for_user(
+                        db=db, user_id=str(user.id), obj_in=calendar_event
+                    )
+                    when = (
+                        db_event.start.strftime("%B %d, %Y at %I:%M %p")
+                        if hasattr(db_event, "start")
+                        else ""
+                    )
                     return (
                         f"Added: **{db_event.title}**\n\n"
                         f"📅 Date: {when}\n"
@@ -133,7 +142,9 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                     )
                 except Exception:
                     pass
-                db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
+                db_event = crud_calendar.create_for_user(
+                    db=db, user_id=str(user.id), obj_in=calendar_event
+                )
                 try:
                     logger.info(
                         "calendar.created (slash) user=%s id=%s title=%s start=%s end=%s",
@@ -146,7 +157,11 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                 except Exception:
                     pass
                 # Ensure the response contains the literal 'Added:' substring for e2e assertions
-                when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
+                when = (
+                    db_event.start.strftime("%B %d, %Y at %I:%M %p")
+                    if hasattr(db_event, "start")
+                    else ""
+                )
                 return (
                     f"Added: **{db_event.title}**\n\n"
                     f"📅 Date: {when}\n"
@@ -168,16 +183,19 @@ def _handle_calendar_command(db: Session, user: User, text: str) -> str | None:
                     ok = False
                 return "Deleted." if ok else "I couldn't find that event id."
             return "Please specify which event id to delete, e.g., '/calendar delete <event_id>'."
-        
+
         # If none matched, prompt user
-        return "I understand you want to work with your calendar, but I'm not sure what specific action you need. Try:\n" \
-               "• '/calendar add meeting tomorrow at 3pm'\n" \
-               "• '/calendar show my schedule'\n" \
-               "• '/calendar add lunch with Sarah on Friday at noon'"
-                   
+        return (
+            "I understand you want to work with your calendar, but I'm not sure what specific action you need. Try:\n"
+            "• '/calendar add meeting tomorrow at 3pm'\n"
+            "• '/calendar show my schedule'\n"
+            "• '/calendar add lunch with Sarah on Friday at noon'"
+        )
+
     except Exception as e:
         logger.error(f"Error handling calendar command: {e}")
         return "Sorry, I encountered an error while processing your calendar request. Please try again or use the calendar app directly."
+
 
 def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
     """
@@ -193,6 +211,7 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
 
         # Continuity heuristic: handle "remind me ... after that" EARLY (before strict gating)
         import re as _re
+
         tlower = (text or "").lower()
         if ("remind me" in tlower) and ("after that" in tlower):
             try:
@@ -217,21 +236,37 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                         f"Do you want me to add it now?"
                     )
             # If no event/time available, fall through to existing flows
-        
+
         # Tight gating: Only treat as calendar if scheduling intent + time OR event + time
         sched_verbs = {"add", "schedule", "book", "set", "create", "remind"}
         event_nouns = {"appointment", "meeting", "event", "reminder", "call", "lunch", "dinner"}
-        date_terms = {"today", "tomorrow", "next", "this", "tonight", "morning", "evening", "afternoon", "weekend"}
+        date_terms = {
+            "today",
+            "tomorrow",
+            "next",
+            "this",
+            "tonight",
+            "morning",
+            "evening",
+            "afternoon",
+            "weekend",
+        }
         has_sched_verb = any(f" {v} " in f" {tlower} " for v in sched_verbs)
         has_event_noun = any(f" {n} " in f" {tlower} " for n in event_nouns)
         has_time_regex = bool(_re.search(r"\b(\d{1,2})(?::\d{2})?\s*(am|pm)\b", tlower))
-        has_date_word = any(w in tlower for w in date_terms) or (" on " in f" {tlower} ") or (" at " in f" {tlower} ")
+        has_date_word = (
+            any(w in tlower for w in date_terms)
+            or (" on " in f" {tlower} ")
+            or (" at " in f" {tlower} ")
+        )
         has_time_or_date = has_time_regex or has_date_word
 
-        gated_calendar = (has_sched_verb and (has_event_noun or has_time_or_date)) or (has_event_noun and has_time_or_date)
+        gated_calendar = (has_sched_verb and (has_event_noun or has_time_or_date)) or (
+            has_event_noun and has_time_or_date
+        )
         if not gated_calendar:
             return None
-        
+
         # First, try to directly parse a creatable event without any LLM calls.
         # This ensures tests with mocked LLMs do not block NL calendar handling.
         intent = None
@@ -276,11 +311,16 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                 try:
                     dt, leftover = dateparser.parse(text, fuzzy_with_tokens=True)
                     # leftover contains non-date tokens; join to form title and strip common verbs
-                    title_tokens = [tok.strip() for tok in leftover if isinstance(tok, str) and tok.strip()]
+                    title_tokens = [
+                        tok.strip() for tok in leftover if isinstance(tok, str) and tok.strip()
+                    ]
                     title_raw = " ".join(title_tokens).strip()
                     # Remove leading verbs like 'schedule', 'add', 'book', 'create'
                     import re as _re
-                    title_clean = _re.sub(r"^(?i)(schedule|add|book|create)\s+", "", title_raw).strip()
+
+                    title_clean = _re.sub(
+                        r"^(?i)(schedule|add|book|create)\s+", "", title_raw
+                    ).strip()
                     # If still empty, derive from original text by stripping verbs and time phrases
                     if not title_clean:
                         tmp = _re.sub(r"^(?i)(schedule|add|book|create)\s+", "", text).strip()
@@ -306,8 +346,11 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     dur_minutes = 60
                     try:
                         import re as _re
+
                         lo = (text or "").lower()
-                        m_dur = _re.search(r"\b(\d+)\s*-?\s*hour\b", lo) or _re.search(r"\b(\d+)\s*hours\b", lo)
+                        m_dur = _re.search(r"\b(\d+)\s*-?\s*hour\b", lo) or _re.search(
+                            r"\b(\d+)\s*hours\b", lo
+                        )
                         if m_dur:
                             dur_minutes = int(m_dur.group(1)) * 60
                         else:
@@ -321,20 +364,26 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     # Build wide window ±12h around requested time to fetch potentially overlapping events
                     window_start = start_dt - timedelta(hours=12)
                     window_end = start_dt + timedelta(hours=12)
+
                     # Normalize to naive UTC for querying
                     def _naive_utc(x):
                         try:
-                            if getattr(x, 'tzinfo', None) is not None:
+                            if getattr(x, "tzinfo", None) is not None:
                                 return x.astimezone(timezone.utc).replace(tzinfo=None)
                             return x
                         except Exception:
                             return x
-                    events = crud_calendar.get_user_events(
-                        db,
-                        user_id=str(user.id),
-                        start=_naive_utc(window_start),
-                        end=_naive_utc(window_end),
-                    ) or []
+
+                    events = (
+                        crud_calendar.get_user_events(
+                            db,
+                            user_id=str(user.id),
+                            start=_naive_utc(window_start),
+                            end=_naive_utc(window_end),
+                        )
+                        or []
+                    )
+
                     # Overlap predicate
                     def _get(obj, k):
                         try:
@@ -344,36 +393,42 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                                 return obj.get(k) if isinstance(obj, dict) else None
                             except Exception:
                                 return None
+
                     def _to_naive_utc(x):
                         if x is None:
                             return None
                         try:
-                            if getattr(x, 'tzinfo', None) is not None:
+                            if getattr(x, "tzinfo", None) is not None:
                                 return x.astimezone(timezone.utc).replace(tzinfo=None)
                             return x
                         except Exception:
                             return None
+
                     ms = _to_naive_utc(start_dt)
                     me = _to_naive_utc(end_dt) or ms
+
                     def _overlaps(ev):
                         try:
-                            es = _to_naive_utc(_get(ev, 'start'))
-                            ee = _to_naive_utc(_get(ev, 'end')) or es
+                            es = _to_naive_utc(_get(ev, "start"))
+                            ee = _to_naive_utc(_get(ev, "end")) or es
                             if es is None or ee is None or ms is None or me is None:
                                 return False
                             return not (me <= es or ms >= ee)
                         except Exception:
                             return False
+
                     overlaps = [ev for ev in events if _overlaps(ev)]
                     if overlaps:
                         titles = []
                         for ev in overlaps:
-                            t = _get(ev, 'title')
-                            titles.append(t if t else 'event')
+                            t = _get(ev, "title")
+                            titles.append(t if t else "event")
                         when_str = (
                             start_dt.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
-                            if getattr(start_dt, 'tzinfo', None) is None else
-                            start_dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+                            if getattr(start_dt, "tzinfo", None) is None
+                            else start_dt.astimezone(timezone.utc)
+                            .isoformat()
+                            .replace("+00:00", "Z")
                         )
                         return (
                             f"There seems to be a conflict at {when_str} with: {', '.join(titles)}. "
@@ -399,7 +454,9 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     )
                 except Exception:
                     pass
-                db_event = crud_calendar.create_for_user(db=db, user_id=str(user.id), obj_in=calendar_event)
+                db_event = crud_calendar.create_for_user(
+                    db=db, user_id=str(user.id), obj_in=calendar_event
+                )
                 try:
                     logger.info(
                         "calendar.created (nl) user=%s id=%s title=%s start=%s end=%s",
@@ -411,7 +468,11 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     )
                 except Exception:
                     pass
-                when = (db_event.start.strftime('%B %d, %Y at %I:%M %p') if hasattr(db_event, 'start') else '')
+                when = (
+                    db_event.start.strftime("%B %d, %Y at %I:%M %p")
+                    if hasattr(db_event, "start")
+                    else ""
+                )
                 return (
                     f"Added: **{db_event.title}**\n\n"
                     f"📅 Date: {when}\n"
@@ -419,16 +480,18 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     f"🆔 {getattr(db_event, 'id', '')}"
                 )
             # Not enough info—try deterministic heuristics for list/delete before any LLM.
-            lo = text_lower
+            lo = text.lower()
             # Heuristic: list upcoming events
-            if ("list" in lo or "show" in lo or "what's on" in lo or "whats on" in lo) and ("calendar" in lo or "events" in lo or "schedule" in lo):
+            if ("list" in lo or "show" in lo or "what's on" in lo or "whats on" in lo) and (
+                "calendar" in lo or "events" in lo or "schedule" in lo
+            ):
                 events = crud_calendar.get_user_events(db=db, user_id=str(user.id))[:10]
                 if not events:
                     return "Your calendar looks clear! No upcoming events scheduled."
                 response = "📅 **Here's what's coming up:**\n\n"
                 for event in events:
-                    when = getattr(event, 'start', None)
-                    when_s = when.strftime('%B %d at %I:%M %p') if when else ''
+                    when = getattr(event, "start", None)
+                    when_s = when.strftime("%B %d at %I:%M %p") if when else ""
                     response += f"• **{event.title}** - {when_s}\n\n"
                 return response
             # Heuristic: delete by id mentioned after the word 'delete'
@@ -442,7 +505,9 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                     event_id = parts[idx + 1]
                     ok = False
                     try:
-                        ok = crud_calendar.delete_for_user(db, user_id=str(user.id), event_id=event_id)
+                        ok = crud_calendar.delete_for_user(
+                            db, user_id=str(user.id), event_id=event_id
+                        )
                     except Exception:
                         ok = False
                     return "Deleted." if ok else "I couldn't find that event id."
@@ -466,8 +531,8 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                 return "Your calendar looks clear! No upcoming events scheduled."
             response = "📅 **Here's what's coming up:**\n\n"
             for event in events:
-                when = getattr(event, 'start', None)
-                when_s = when.strftime('%B %d at %I:%M %p') if when else ''
+                when = getattr(event, "start", None)
+                when_s = when.strftime("%B %d at %I:%M %p") if when else ""
                 response += f"• **{event.title}** - {when_s}\n\n"
             return response
 
@@ -488,11 +553,12 @@ def _handle_calendar_nl(db: Session, user: User, text: str) -> str | None:
                 return "Deleted." if ok else "I couldn't find that event id."
 
         return None
-            
+
     except Exception as e:
         # Avoid noisy errors in logs; return None so upstream can handle normally
         logger.warning(f"Calendar NL handling issue: {e}")
         return None
+
 
 def _handle_calendar_llm(db: Session, user: User, text: str) -> str | None:
     """
@@ -503,7 +569,7 @@ def _handle_calendar_llm(db: Session, user: User, text: str) -> str | None:
         # This would integrate with the LLM to handle complex calendar requests
         # For now, return None to let the main LLM handle it
         return None
-        
+
     except Exception as e:
         logger.error(f"Error in calendar LLM handling: {e}")
         return None

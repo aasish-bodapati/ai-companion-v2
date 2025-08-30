@@ -30,7 +30,7 @@ def _create_memory(client: TestClient, content: str, *, core: bool | None = None
 
 
 def _list_memories(client: TestClient, **params) -> list[dict]:
-    r = client.get("/api/v1/users/me/memories", params=params)
+    r = client.get("/api/v1/memories/users/me/memories", params=params)
     assert r.status_code == 200, r.text
     return r.json()
 
@@ -48,8 +48,8 @@ def test_create_and_list_memories_basic(client: TestClient):
 
 def test_list_filter_core_and_limit(client: TestClient):
     # Seed: two non-core, one core
-    a = _create_memory(client, "A1", core=False)
-    b = _create_memory(client, "B1", core=False)
+    _create_memory(client, "A1", core=False)
+    _create_memory(client, "B1", core=False)
     c = _create_memory(client, "C1", core=True)
 
     # Filter core=true returns only C1
@@ -72,7 +72,7 @@ def test_patch_toggle_core_and_relevance(client: TestClient):
 
     # Promote to core and set relevance
     r = client.patch(
-        f"/api/v1/memories/{node['id']}",
+        f"/api/v1/memories/memories/{node['id']}",
         json={"core": True, "relevance_score": 0.9},
     )
     assert r.status_code == 200, r.text
@@ -93,7 +93,7 @@ def test_patch_toggle_core_and_relevance(client: TestClient):
 
     # Demote back
     r2 = client.patch(
-        f"/api/v1/memories/{node['id']}",
+        f"/api/v1/memories/memories/{node['id']}",
         json={"core": False},
     )
     assert r2.status_code == 200, r2.text
@@ -116,7 +116,7 @@ def test_delete_memory_and_verify_removed(client: TestClient):
     node = _create_memory(client, "Delete me", core=False)
 
     # Delete
-    delr = client.delete(f"/api/v1/memories/{node['id']}")
+    delr = client.delete(f"/api/v1/memories/memories/{node['id']}")
     assert delr.status_code in (200, 204), delr.text
 
     # Verify not present in list
@@ -126,14 +126,14 @@ def test_delete_memory_and_verify_removed(client: TestClient):
 
 def test_auth_required_for_memory_endpoints(unauth_client: TestClient):
     # Without auth, requests should be unauthorized
-    r1 = unauth_client.get("/api/v1/users/me/memories")
+    r1 = unauth_client.get("/api/v1/memories/users/me/memories")
     assert r1.status_code in (401, 403)
 
     r2 = unauth_client.post("/api/v1/memories", json={"content": "x"})
     assert r2.status_code in (401, 403)
 
     # Even if we guess an id, PATCH/DELETE should be unauthorized
-    r3 = unauth_client.patch("/api/v1/memories/some-id", json={"core": True})
+    r3 = unauth_client.patch("/api/v1/memories/memories/some-id", json={"core": True})
     assert r3.status_code in (401, 403)
-    r4 = unauth_client.delete("/api/v1/memories/some-id")
+    r4 = unauth_client.delete("/api/v1/memories/memories/some-id")
     assert r4.status_code in (401, 403)

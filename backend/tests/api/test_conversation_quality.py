@@ -1,4 +1,3 @@
-import math
 import re
 from typing import List, Tuple
 
@@ -10,9 +9,11 @@ from fastapi.testclient import TestClient
 def _enable_memory(monkeypatch):
     # Keep memory on for realistic responses; keep embeddings fast
     from app.core.config import settings
+
     try:
         from app.memory import embeddings as _emb
         from app.memory import faiss_store as _faiss
+
         monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
         monkeypatch.setattr(settings, "MEMORY_IMPORTANCE_MIN", 0.0, raising=False)
         monkeypatch.setattr(_emb, "embed_texts", lambda texts: [[0.1] * 8 for _ in texts])
@@ -32,7 +33,9 @@ def _create_conversation(client: TestClient, title: str = "Conversation Quality"
 
 
 def _ask(client: TestClient, conv_id: str, content: str) -> str:
-    r = client.post(f"/api/v1/conversations/{conv_id}/reply", json={"role": "user", "content": content})
+    r = client.post(
+        f"/api/v1/conversations/{conv_id}/reply", json={"role": "user", "content": content}
+    )
     assert r.status_code == 200, r.text
     return r.json()["message"]["content"]
 
@@ -74,8 +77,15 @@ def _score_response(text: str) -> Tuple[float, dict]:
 
     # warmth: friendly phrasing indicators (heuristic)
     warm_tokens = [
-        "happy to", "glad to", "can help", "let me know", "sounds good",
-        "here's", "i suggest", "you could", "let's",
+        "happy to",
+        "glad to",
+        "can help",
+        "let me know",
+        "sounds good",
+        "here's",
+        "i suggest",
+        "you could",
+        "let's",
     ]
     warmth_hits = sum(1 for w in warm_tokens if w in t.lower())
     warmth = 10.0 if warmth_hits >= 2 else (8.0 if warmth_hits == 1 else 6.5)
@@ -91,11 +101,7 @@ def _score_response(text: str) -> Tuple[float, dict]:
     }
     # weighted average (slightly favor readability + actionability)
     score = (
-        0.20 * brevity +
-        0.20 * questions +
-        0.25 * markdown +
-        0.25 * actionability +
-        0.10 * warmth
+        0.20 * brevity + 0.20 * questions + 0.25 * markdown + 0.25 * actionability + 0.10 * warmth
     )
     return round(score, 2), details
 
@@ -132,7 +138,7 @@ def test_conversation_quality_scoring(client: TestClient):
     # Print a compact report (visible in -q failure messages)
     print("Conversation Quality Scores:")
     for i, (s, d) in enumerate(zip(per_scores, breakdowns)):
-        print(f"  Turn {i+1}: {s} — {d}")
+        print(f"  Turn {i + 1}: {s} — {d}")
     print(f"Overall: {overall}")
 
     # Expect a reasonably human-like score

@@ -27,17 +27,13 @@ def test_increase_rank_boost_by_faiss_id_noop_when_not_owner(monkeypatch):
     from app.crud import memory as mem_mod
 
     monkeypatch.setattr(mem_mod, "get_memory_by_faiss_id", lambda db, faiss_id: node)
-    ok = memory_service.increase_rank_boost_by_faiss_id(
-        None, user_id="u1", faiss_id="fid"
-    )
+    ok = memory_service.increase_rank_boost_by_faiss_id(None, user_id="u1", faiss_id="fid")
     assert ok is False
 
 
 def test_increase_rank_boost_by_faiss_id_updates(monkeypatch):
     # Happy path
-    node = SimpleNamespace(
-        user_id="u1", memory_metadata="{}", content="x"
-    )
+    node = SimpleNamespace(user_id="u1", memory_metadata="{}", content="x")
     calls = {"update_md": 0, "update_rel": 0}
     from app.crud import memory as mem_mod
 
@@ -49,11 +45,13 @@ def test_increase_rank_boost_by_faiss_id_updates(monkeypatch):
         assert "rank_boost" in metadata
 
     monkeypatch.setattr(mem_mod, "update_content_and_metadata", _upd)
-    monkeypatch.setattr(mem_mod, "update_relevance_score", lambda db, faiss_id, score: calls.__setitem__("update_rel", calls["update_rel"] + 1))
-
-    ok = memory_service.increase_rank_boost_by_faiss_id(
-        None, user_id="u1", faiss_id="fid"
+    monkeypatch.setattr(
+        mem_mod,
+        "update_relevance_score",
+        lambda db, faiss_id, score: calls.__setitem__("update_rel", calls["update_rel"] + 1),
     )
+
+    ok = memory_service.increase_rank_boost_by_faiss_id(None, user_id="u1", faiss_id="fid")
     assert ok is True
     assert calls["update_md"] == 1
     # relevance score bump is optional; ensure no exception path

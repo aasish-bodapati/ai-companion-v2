@@ -35,7 +35,7 @@
 ### **Continuous Improvement Loop**
 
 #### **Major Fixes**
-- **LLM Configuration**: Fixed Gemini API integration
+- **LLM Configuration**: Fixed OpenRouter API integration
 - **Memory System**: Enhanced auto-capture detection
 - **System Prompts**: Improved instruction following
 - **Error Handling**: Better fallback mechanisms

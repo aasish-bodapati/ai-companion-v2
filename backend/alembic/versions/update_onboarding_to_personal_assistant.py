@@ -34,12 +34,18 @@ def upgrade() -> None:
 
     # Add new personal assistant focused columns
     op.add_column("onboarding_profiles", sa.Column("daily_schedule", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("schedule_preferences", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("schedule_preferences", sa.Text(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("fitness_goals", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("nutrition_goals", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("dietary_preferences", sa.Text(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("communication_style", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("additional_preferences", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("communication_style", sa.String(), nullable=True)
+    )
+    op.add_column(
+        "onboarding_profiles", sa.Column("additional_preferences", sa.Text(), nullable=True)
+    )
 
 
 def downgrade() -> None:
@@ -60,8 +66,12 @@ def downgrade() -> None:
     op.add_column("onboarding_profiles", sa.Column("learning_goals", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("current_challenges", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("current_tools", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("information_preference", sa.String(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("information_preference", sa.String(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("motivation", sa.Text(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("communication_preference", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("communication_preference", sa.Text(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("goal_timeline", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("success_definition", sa.Text(), nullable=True))

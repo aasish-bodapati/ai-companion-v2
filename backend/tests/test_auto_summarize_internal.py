@@ -19,7 +19,7 @@ def test_auto_summarize_creates_memory(client):
         assert rr.status_code in (200, 201)
 
     # Call auto-summarize
-    rr = client.post(f"/api/v1/conversations/{cid}/auto-summarize", json={})
+    rr = client.post(f"/api/v1/memories/conversations/{cid}/auto-summarize", json={})
     assert rr.status_code in (200, 201), rr.text
     node = rr.json()
 

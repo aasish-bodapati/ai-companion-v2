@@ -19,7 +19,9 @@ def _enable_memory(monkeypatch):
 
 
 def _create_conversation(client: TestClient, title: str = "t") -> str:
-    r = client.post("/api/v1/conversations/", json={"title": title, "personalization_enabled": True})
+    r = client.post(
+        "/api/v1/conversations/", json={"title": title, "personalization_enabled": True}
+    )
     assert r.status_code in (200, 201), r.text
     return r.json()["id"]
 

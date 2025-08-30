@@ -26,7 +26,7 @@ htmlcov/
 
 # Env/config
 .env
-.env.*
+.env*
 *.local
 *.backup
 
@@ -45,16 +45,17 @@ playwright-report/
 .test-results/
 
 # Reports/coverage
-
 coverage/
 coverage-*.json
+evaluation_reports/
+memory_monitoring_deployment_report.json
 
 # Build artifacts
 build/
 dist/
 .next/
 *.lock
-package-lock.json
+!frontend/package-lock.json
 pnpm-lock.yaml
 yarn.lock
 
@@ -81,3 +82,5 @@ data/**/*.meta.json
 # Snapshots (keep tests' golden snapshots tracked; do not ignore those)
 # If you have any temporary snapshot updates, place them under .snapshots-local/
 .snapshots-local/
+
+.vercel

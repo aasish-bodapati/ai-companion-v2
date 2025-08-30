@@ -30,7 +30,9 @@ class WorkoutPlan(Base):
     status = Column(String(20), nullable=False, default="active", index=True)  # active|archived
     source = Column(String(30), nullable=True)  # chat|upload|manual
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class NutritionPlan(Base):
@@ -44,7 +46,9 @@ class NutritionPlan(Base):
     status = Column(String(20), nullable=False, default="active", index=True)  # active|archived
     source = Column(String(30), nullable=True)  # chat|upload|manual
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class Routine(Base):
@@ -58,7 +62,9 @@ class Routine(Base):
     goal_id = Column(String(36), nullable=True, index=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
 
 
 class WorkoutLog(Base):

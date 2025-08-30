@@ -2,7 +2,10 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.models.onboarding import OnboardingProfile
-from app.schemas.onboarding import OnboardingProfileCreate, OnboardingProfileUpdate, OnboardingProfile as OnboardingProfileSchema
+from app.schemas.onboarding import (
+    OnboardingProfileCreate,
+    OnboardingProfile as OnboardingProfileSchema,
+)
 
 
 def _to_out(model: OnboardingProfile) -> OnboardingProfileSchema:
@@ -30,7 +33,9 @@ def get_by_user_id(db: Session, user_id: str) -> Optional[OnboardingProfile]:
     return db.query(OnboardingProfile).filter(OnboardingProfile.user_id == user_id).first()
 
 
-def upsert_for_user(db: Session, user_id: str, data: OnboardingProfileCreate) -> OnboardingProfileSchema:
+def upsert_for_user(
+    db: Session, user_id: str, data: OnboardingProfileCreate
+) -> OnboardingProfileSchema:
     model = get_by_user_id(db, user_id)
     if not model:
         model = OnboardingProfile(user_id=user_id)

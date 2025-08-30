@@ -38,7 +38,9 @@ def update_reminder(
     reminder_id: str,
     body: ReminderUpdate,
 ):
-    updated = crud_reminders.update_for_user(db, user_id=current_user.id, reminder_id=reminder_id, obj_in=body)
+    updated = crud_reminders.update_for_user(
+        db, user_id=current_user.id, reminder_id=reminder_id, obj_in=body
+    )
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reminder not found")
     return updated

@@ -108,14 +108,17 @@ def search(user_id: str, query_vec: List[float], top_k: int) -> List[Tuple[str, 
 
     q = np.array([query_vec], dtype="float32")
     k = min(top_k, max(1, index.ntotal))
-    
+
     # Check dimension compatibility before search
     if q.shape[1] != index.d:
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.error(f"Dimension mismatch: query vector has {q.shape[1]} dimensions, index has {index.d} dimensions")
+        logger.error(
+            f"Dimension mismatch: query vector has {q.shape[1]} dimensions, index has {index.d} dimensions"
+        )
         return []
-    
+
     D, indices = index.search(q, k)
     result: List[Tuple[str, float]] = []
     for idx, score in zip(indices[0], D[0]):
@@ -235,5 +238,7 @@ class FAISSVectorStore:
     def add_vectors(self, user_id: str, ids: List[str], vectors: List[List[float]]) -> None:
         add(user_id, ids, vectors)
 
-    def search_vectors(self, user_id: str, query_vec: List[float], top_k: int) -> List[Tuple[str, float]]:
+    def search_vectors(
+        self, user_id: str, query_vec: List[float], top_k: int
+    ) -> List[Tuple[str, float]]:
         return search(user_id, query_vec, top_k)

@@ -1,5 +1,3 @@
-import json
-
 from app.models.onboarding import OnboardingProfile
 
 

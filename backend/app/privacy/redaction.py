@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import Any, Dict, Tuple
 import re
-import json
 
 from app.core.config import settings
 
@@ -14,11 +13,27 @@ _ssn_re = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 _iban_like_re = re.compile(r"\b[A-Z]{2}[0-9A-Z]{11,30}\b")
 
 _REPLACEMENTS = {
-    "email": (lambda: bool(getattr(settings, "PRIVACY_REDACT_EMAIL", True)), _email_re, "[REDACTED_EMAIL]"),
-    "phone": (lambda: bool(getattr(settings, "PRIVACY_REDACT_PHONE", True)), _phone_re, "[REDACTED_PHONE]"),
-    "credit_card": (lambda: bool(getattr(settings, "PRIVACY_REDACT_CREDIT_CARD", True)), _cc_re, "[REDACTED_CARD]"),
+    "email": (
+        lambda: bool(getattr(settings, "PRIVACY_REDACT_EMAIL", True)),
+        _email_re,
+        "[REDACTED_EMAIL]",
+    ),
+    "phone": (
+        lambda: bool(getattr(settings, "PRIVACY_REDACT_PHONE", True)),
+        _phone_re,
+        "[REDACTED_PHONE]",
+    ),
+    "credit_card": (
+        lambda: bool(getattr(settings, "PRIVACY_REDACT_CREDIT_CARD", True)),
+        _cc_re,
+        "[REDACTED_CARD]",
+    ),
     "ssn": (lambda: bool(getattr(settings, "PRIVACY_REDACT_SSN", True)), _ssn_re, "[REDACTED_SSN]"),
-    "iban": (lambda: bool(getattr(settings, "PRIVACY_REDACT_IBAN", True)), _iban_like_re, "[REDACTED_IBAN]"),
+    "iban": (
+        lambda: bool(getattr(settings, "PRIVACY_REDACT_IBAN", True)),
+        _iban_like_re,
+        "[REDACTED_IBAN]",
+    ),
 }
 
 

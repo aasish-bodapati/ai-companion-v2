@@ -9,7 +9,9 @@ class CalendarEvent(Base):
     __tablename__ = "calendar_events"
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     title = Column(String, nullable=False)
     description = Column(String, nullable=True)

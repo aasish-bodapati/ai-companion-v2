@@ -13,6 +13,7 @@ Example:
         instance=f"/api/conversations/{conversation_id}/messages"
     )
 """
+
 from typing import Any, Dict, Optional
 
 from fastapi.responses import JSONResponse
@@ -58,4 +59,6 @@ def problem_json(
             if k not in {"type", "title", "status", "detail", "instance"}:
                 payload[k] = v
 
-    return JSONResponse(content=payload, status_code=status, headers=headers, media_type="application/problem+json")
+    return JSONResponse(
+        content=payload, status_code=status, headers=headers, media_type="application/problem+json"
+    )

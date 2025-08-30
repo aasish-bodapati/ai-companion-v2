@@ -69,9 +69,7 @@ class ActionsRegistry:
                 params_schema={
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
-                    "properties": {
-                        "week_start": {"type": "string", "format": "date"}
-                    },
+                    "properties": {"week_start": {"type": "string", "format": "date"}},
                     "additionalProperties": False,
                 },
                 result_schema={"type": "object"},
@@ -90,12 +88,9 @@ class ActionsRegistry:
                     "properties": {
                         "plan_id": {"type": "string"},
                         "plan_title": {"type": "string"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
-                    "anyOf": [
-                        {"required": ["plan_id"]},
-                        {"required": ["plan_title"]}
-                    ],
+                    "anyOf": [{"required": ["plan_id"]}, {"required": ["plan_title"]}],
                     "additionalProperties": False,
                 },
                 result_schema={
@@ -103,7 +98,7 @@ class ActionsRegistry:
                     "properties": {
                         "status": {"type": "string"},
                         "current_plan_id": {"type": "string"},
-                        "undo_token": {"type": "string"}
+                        "undo_token": {"type": "string"},
                     },
                     "required": ["status", "current_plan_id", "undo_token"],
                     "additionalProperties": False,
@@ -122,12 +117,9 @@ class ActionsRegistry:
                     "properties": {
                         "plan_id": {"type": "string"},
                         "plan_title": {"type": "string"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
-                    "anyOf": [
-                        {"required": ["plan_id"]},
-                        {"required": ["plan_title"]}
-                    ],
+                    "anyOf": [{"required": ["plan_id"]}, {"required": ["plan_title"]}],
                     "additionalProperties": False,
                 },
                 result_schema={
@@ -135,7 +127,7 @@ class ActionsRegistry:
                     "properties": {
                         "status": {"type": "string"},
                         "archived_plan_id": {"type": "string"},
-                        "undo_token": {"type": "string"}
+                        "undo_token": {"type": "string"},
                     },
                     "required": ["status", "archived_plan_id", "undo_token"],
                     "additionalProperties": False,
@@ -165,17 +157,17 @@ class ActionsRegistry:
                                     "weight_lbs": {"type": "number"},
                                     "duration_min": {"type": "number"},
                                     "distance_km": {"type": "number"},
-                                    "notes": {"type": "string"}
+                                    "notes": {"type": "string"},
                                 },
                                 "required": ["name"],
-                                "additionalProperties": False
-                            }
+                                "additionalProperties": False,
+                            },
                         },
                         "workout_name": {"type": "string"},
                         "when": {"type": "string", "format": "date-time"},
                         "duration_min": {"type": "number"},
                         "notes": {"type": "string"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
                     "required": ["exercises"],
                     "additionalProperties": False,
@@ -188,7 +180,7 @@ class ActionsRegistry:
                         "exercises_logged": {"type": "integer"},
                         "pr_achieved": {"type": "boolean"},
                         "pr_details": {"type": "string"},
-                        "undo_token": {"type": "string"}
+                        "undo_token": {"type": "string"},
                     },
                     "required": ["workout_id", "status", "exercises_logged"],
                     "additionalProperties": False,
@@ -206,12 +198,22 @@ class ActionsRegistry:
                     "type": "object",
                     "properties": {
                         "name": {"type": "string"},
-                        "category": {"type": "string", "enum": ["strength", "cardio", "weight_loss", "muscle_gain", "endurance", "flexibility"]},
+                        "category": {
+                            "type": "string",
+                            "enum": [
+                                "strength",
+                                "cardio",
+                                "weight_loss",
+                                "muscle_gain",
+                                "endurance",
+                                "flexibility",
+                            ],
+                        },
                         "target_date": {"type": "string", "format": "date"},
                         "target_value": {"type": "number"},
                         "target_unit": {"type": "string"},
                         "notes": {"type": "string"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
                     "required": ["name"],
                     "additionalProperties": False,
@@ -221,7 +223,7 @@ class ActionsRegistry:
                     "properties": {
                         "goal_id": {"type": "string"},
                         "status": {"type": "string"},
-                        "undo_token": {"type": "string"}
+                        "undo_token": {"type": "string"},
                     },
                     "required": ["goal_id", "status"],
                     "additionalProperties": False,
@@ -239,11 +241,11 @@ class ActionsRegistry:
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
                     "properties": {
-                        "meal_type": {"type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"]},
-                        "foods": {
-                            "type": "array",
-                            "items": {"type": "string"}
+                        "meal_type": {
+                            "type": "string",
+                            "enum": ["breakfast", "lunch", "dinner", "snack"],
                         },
+                        "foods": {"type": "array", "items": {"type": "string"}},
                         "description": {"type": "string"},
                         "calories": {"type": "number"},
                         "protein_g": {"type": "number"},
@@ -251,12 +253,9 @@ class ActionsRegistry:
                         "fat_g": {"type": "number"},
                         "when": {"type": "string", "format": "date-time"},
                         "notes": {"type": "string"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
-                    "anyOf": [
-                        {"required": ["foods"]},
-                        {"required": ["description"]}
-                    ],
+                    "anyOf": [{"required": ["foods"]}, {"required": ["description"]}],
                     "additionalProperties": False,
                 },
                 result_schema={
@@ -265,7 +264,7 @@ class ActionsRegistry:
                         "meal_id": {"type": "string"},
                         "status": {"type": "string"},
                         "estimated_calories": {"type": "number"},
-                        "undo_token": {"type": "string"}
+                        "undo_token": {"type": "string"},
                     },
                     "required": ["meal_id", "status"],
                     "additionalProperties": False,
@@ -286,12 +285,9 @@ class ActionsRegistry:
                         "amount_ml": {"type": "number"},
                         "amount_cups": {"type": "number"},
                         "when": {"type": "string", "format": "date-time"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
-                    "anyOf": [
-                        {"required": ["amount_ml"]},
-                        {"required": ["amount_cups"]}
-                    ],
+                    "anyOf": [{"required": ["amount_ml"]}, {"required": ["amount_cups"]}],
                     "additionalProperties": False,
                 },
                 result_schema={
@@ -300,7 +296,7 @@ class ActionsRegistry:
                         "log_id": {"type": "string"},
                         "amount_ml": {"type": "number"},
                         "daily_total_ml": {"type": "number"},
-                        "goal_progress": {"type": "number"}
+                        "goal_progress": {"type": "number"},
                     },
                     "required": ["log_id", "amount_ml"],
                     "additionalProperties": False,
@@ -323,7 +319,7 @@ class ActionsRegistry:
                         "notes": {"type": "string"},
                         "tags": {"type": "array", "items": {"type": "string"}},
                         "when": {"type": "string", "format": "date-time"},
-                        "idempotency_key": {"type": "string"}
+                        "idempotency_key": {"type": "string"},
                     },
                     "required": ["mood_score"],
                     "additionalProperties": False,
@@ -333,7 +329,7 @@ class ActionsRegistry:
                     "properties": {
                         "checkin_id": {"type": "string"},
                         "status": {"type": "string"},
-                        "trend": {"type": "string"}
+                        "trend": {"type": "string"},
                     },
                     "required": ["checkin_id", "status"],
                     "additionalProperties": False,
@@ -355,7 +351,7 @@ class ActionsRegistry:
                         "start": {"type": "string", "format": "date-time"},
                         "end": {"type": "string", "format": "date-time"},
                         "all_day": {"type": "boolean"},
-                        "description": {"type": "string"}
+                        "description": {"type": "string"},
                     },
                     "required": ["title", "start"],
                     "additionalProperties": False,
@@ -377,9 +373,7 @@ class ActionsRegistry:
                 params_schema={
                     "$schema": "https://json-schema.org/draft/2020-12/schema",
                     "type": "object",
-                    "properties": {
-                        "event_id": {"type": "string"}
-                    },
+                    "properties": {"event_id": {"type": "string"}},
                     "required": ["event_id"],
                     "additionalProperties": False,
                 },

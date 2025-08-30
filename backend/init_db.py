@@ -14,6 +14,7 @@ try:
     from app.db.base_class import Base
     from app.db.session import engine, SessionLocal
     from app.models.user import User
+
     # Ensure all core models are imported so Base.metadata is aware of their tables
     # This guarantees create_all() creates the tables during local SQLite init
     from app.models.task import Task  # noqa: F401

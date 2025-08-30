@@ -6,11 +6,10 @@ from app.api.endpoints import (
     public,
     users,
     onboarding,
-    conversations_simple,
     conversations_main,
-    conversation,
     memory,
     memory_visualization,
+    memory_monitoring,
     deduplication,
     calendar,
     notes,
@@ -23,6 +22,8 @@ from app.api.endpoints import (
     vision,
     utils,
     web_search,
+    nudges,
+    debug,
 )
 from app.core.config import settings
 
@@ -39,16 +40,23 @@ api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(onboarding.router, prefix="/users/me/onboarding", tags=["onboarding"])
 
 # Conversations suite (include CRUD first, then messages to let messages override conflicts)
-api_router.include_router(conversations_main.router, prefix="/conversations", tags=["conversations"])
+api_router.include_router(
+    conversations_main.router, prefix="/conversations", tags=["conversations"]
+)
 if getattr(settings, "STREAMING_ENABLED", False):
     # Import lazily to avoid import errors when streaming module is removed
     from app.api.endpoints import conversations_streaming as _conversations_streaming  # type: ignore
-    api_router.include_router(_conversations_streaming.router, prefix="/conversations", tags=["conversations"])
+
+    api_router.include_router(
+        _conversations_streaming.router, prefix="/conversations", tags=["conversations"]
+    )
 
 # Memory and related (standardized under /memory) and legacy alias /memories for tests
 api_router.include_router(memory.router, prefix="/memory", tags=["memory"])
 api_router.include_router(memory.router, prefix="/memories", tags=["memory"])
-api_router.include_router(memory_visualization.router, prefix="/memory-visualization", tags=["memory"])
+api_router.include_router(
+    memory_visualization.router, prefix="/memory-visualization", tags=["memory"]
+)
 api_router.include_router(deduplication.router, prefix="/deduplication", tags=["deduplication"])
 
 # Additional feature areas
@@ -63,6 +71,8 @@ api_router.include_router(uploads.router, tags=["uploads"])
 api_router.include_router(vision.router, tags=["vision"])
 api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
 api_router.include_router(web_search.router, prefix="/web-search", tags=["web-search"])
+api_router.include_router(nudges.router, tags=["nudges"])
+api_router.include_router(debug.router, tags=["debug"])
 
-
-
+# Memory monitoring and evaluation
+api_router.include_router(memory_monitoring.router, prefix="/memory-monitoring", tags=["memory-monitoring"])

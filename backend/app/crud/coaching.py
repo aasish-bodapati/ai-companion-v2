@@ -13,10 +13,17 @@ from app.models.coaching import MoodLog as MoodLogModel
 from app.models.coaching import JournalEntry as JournalEntryModel
 from app.models.coaching import WorkoutPlan as WorkoutPlanModel, NutritionPlan as NutritionPlanModel
 from app.schemas.coaching import (
-    GoalCreate, GoalUpdate,
-    RoutineCreate, RoutineUpdate,
-    WorkoutLogCreate, MealLogCreate, HydrationLogCreate, MoodLogCreate, JournalEntryCreate,
-    WorkoutPlanCreate, NutritionPlanCreate,
+    GoalCreate,
+    GoalUpdate,
+    RoutineCreate,
+    RoutineUpdate,
+    WorkoutLogCreate,
+    MealLogCreate,
+    HydrationLogCreate,
+    MoodLogCreate,
+    JournalEntryCreate,
+    WorkoutPlanCreate,
+    NutritionPlanCreate,
 )
 
 
@@ -36,7 +43,14 @@ class CRUDGoal(CRUDBase[GoalModel, GoalCreate, GoalUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def list(self, db: Session, *, user_id: str, category: Optional[str] = None, status: Optional[str] = None) -> List[GoalModel]:
+    def list(
+        self,
+        db: Session,
+        *,
+        user_id: str,
+        category: Optional[str] = None,
+        status: Optional[str] = None,
+    ) -> List[GoalModel]:
         q = db.query(GoalModel).filter(GoalModel.user_id == user_id)
         if category:
             q = q.filter(GoalModel.category == category)
@@ -63,7 +77,9 @@ class CRUDRoutine(CRUDBase[RoutineModel, RoutineCreate, RoutineUpdate]):
         db.refresh(db_obj)
         return db_obj
 
-    def list(self, db: Session, *, user_id: str, category: Optional[str] = None) -> List[RoutineModel]:
+    def list(
+        self, db: Session, *, user_id: str, category: Optional[str] = None
+    ) -> List[RoutineModel]:
         q = db.query(RoutineModel).filter(RoutineModel.user_id == user_id)
         if category:
             q = q.filter(RoutineModel.category == category)
@@ -74,13 +90,18 @@ routine = CRUDRoutine(RoutineModel)
 
 
 class CRUDWorkoutLog(CRUDBase[WorkoutLogModel, WorkoutLogCreate, WorkoutLogCreate]):
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: WorkoutLogCreate) -> WorkoutLogModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: WorkoutLogCreate
+    ) -> WorkoutLogModel:
         db_obj = WorkoutLogModel(user_id=user_id, **obj_in.model_dump())
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    def list(self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100) -> List[WorkoutLogModel]:
+
+    def list(
+        self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100
+    ) -> List[WorkoutLogModel]:
         q = db.query(WorkoutLogModel).filter(WorkoutLogModel.user_id == user_id)
         if from_dt is not None:
             q = q.filter(WorkoutLogModel.when >= from_dt)
@@ -92,13 +113,18 @@ class CRUDWorkoutLog(CRUDBase[WorkoutLogModel, WorkoutLogCreate, WorkoutLogCreat
 class CRUDMealLog(CRUDBase[MealLogModel, MealLogCreate, MealLogCreate]):
     def create_for_user(self, db: Session, *, user_id: str, obj_in: MealLogCreate) -> MealLogModel:
         payload = obj_in.model_dump()
-        payload["items"] = json.dumps(payload["items"]) if payload.get("items") is not None else json.dumps([])
+        payload["items"] = (
+            json.dumps(payload["items"]) if payload.get("items") is not None else json.dumps([])
+        )
         db_obj = MealLogModel(user_id=user_id, **payload)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    def list(self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100) -> List[MealLogModel]:
+
+    def list(
+        self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100
+    ) -> List[MealLogModel]:
         q = db.query(MealLogModel).filter(MealLogModel.user_id == user_id)
         if from_dt is not None:
             q = q.filter(MealLogModel.when >= from_dt)
@@ -108,13 +134,18 @@ class CRUDMealLog(CRUDBase[MealLogModel, MealLogCreate, MealLogCreate]):
 
 
 class CRUDHydrationLog(CRUDBase[HydrationLogModel, HydrationLogCreate, HydrationLogCreate]):
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: HydrationLogCreate) -> HydrationLogModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: HydrationLogCreate
+    ) -> HydrationLogModel:
         db_obj = HydrationLogModel(user_id=user_id, **obj_in.model_dump())
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    def list(self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100) -> List[HydrationLogModel]:
+
+    def list(
+        self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100
+    ) -> List[HydrationLogModel]:
         q = db.query(HydrationLogModel).filter(HydrationLogModel.user_id == user_id)
         if from_dt is not None:
             q = q.filter(HydrationLogModel.when >= from_dt)
@@ -133,7 +164,10 @@ class CRUDMoodLog(CRUDBase[MoodLogModel, MoodLogCreate, MoodLogCreate]):
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    def list(self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100) -> List[MoodLogModel]:
+
+    def list(
+        self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100
+    ) -> List[MoodLogModel]:
         q = db.query(MoodLogModel).filter(MoodLogModel.user_id == user_id)
         if from_dt is not None:
             q = q.filter(MoodLogModel.when >= from_dt)
@@ -143,7 +177,9 @@ class CRUDMoodLog(CRUDBase[MoodLogModel, MoodLogCreate, MoodLogCreate]):
 
 
 class CRUDJournalEntry(CRUDBase[JournalEntryModel, JournalEntryCreate, JournalEntryCreate]):
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: JournalEntryCreate) -> JournalEntryModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: JournalEntryCreate
+    ) -> JournalEntryModel:
         payload = obj_in.model_dump()
         if payload.get("tags") is not None:
             payload["tags"] = json.dumps(payload["tags"])
@@ -152,7 +188,10 @@ class CRUDJournalEntry(CRUDBase[JournalEntryModel, JournalEntryCreate, JournalEn
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    def list(self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100) -> List[JournalEntryModel]:
+
+    def list(
+        self, db: Session, *, user_id: str, from_dt=None, to_dt=None, limit: int = 100
+    ) -> List[JournalEntryModel]:
         q = db.query(JournalEntryModel).filter(JournalEntryModel.user_id == user_id)
         if from_dt is not None:
             q = q.filter(JournalEntryModel.when >= from_dt)
@@ -170,7 +209,9 @@ journal_entry = CRUDJournalEntry(JournalEntryModel)
 
 
 class CRUDWorkoutPlan(CRUDBase[WorkoutPlanModel, WorkoutPlanCreate, WorkoutPlanCreate]):
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: WorkoutPlanCreate) -> WorkoutPlanModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: WorkoutPlanCreate
+    ) -> WorkoutPlanModel:
         payload = obj_in.model_dump()
         if payload.get("structured") is not None:
             payload["structured"] = json.dumps(payload["structured"])  # store as JSON string
@@ -180,7 +221,9 @@ class CRUDWorkoutPlan(CRUDBase[WorkoutPlanModel, WorkoutPlanCreate, WorkoutPlanC
         db.refresh(db_obj)
         return db_obj
 
-    def list(self, db: Session, *, user_id: str, status: Optional[str] = None) -> list[WorkoutPlanModel]:
+    def list(
+        self, db: Session, *, user_id: str, status: Optional[str] = None
+    ) -> list[WorkoutPlanModel]:
         q = db.query(WorkoutPlanModel).filter(WorkoutPlanModel.user_id == user_id)
         if status:
             q = q.filter(WorkoutPlanModel.status == status)
@@ -200,9 +243,11 @@ class CRUDWorkoutPlan(CRUDBase[WorkoutPlanModel, WorkoutPlanCreate, WorkoutPlanC
             and_(WorkoutPlanModel.user_id == user_id, WorkoutPlanModel.status == "active")
         ).update({WorkoutPlanModel.status: "archived"})
         # set new active
-        db_obj = db.query(WorkoutPlanModel).filter(
-            and_(WorkoutPlanModel.id == plan_id, WorkoutPlanModel.user_id == user_id)
-        ).first()
+        db_obj = (
+            db.query(WorkoutPlanModel)
+            .filter(and_(WorkoutPlanModel.id == plan_id, WorkoutPlanModel.user_id == user_id))
+            .first()
+        )
         if not db_obj:
             db.commit()
             return None
@@ -214,7 +259,9 @@ class CRUDWorkoutPlan(CRUDBase[WorkoutPlanModel, WorkoutPlanCreate, WorkoutPlanC
 
 
 class CRUDNutritionPlan(CRUDBase[NutritionPlanModel, NutritionPlanCreate, NutritionPlanCreate]):
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: NutritionPlanCreate) -> NutritionPlanModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: NutritionPlanCreate
+    ) -> NutritionPlanModel:
         payload = obj_in.model_dump()
         if payload.get("structured") is not None:
             payload["structured"] = json.dumps(payload["structured"])  # store as JSON string
@@ -224,7 +271,9 @@ class CRUDNutritionPlan(CRUDBase[NutritionPlanModel, NutritionPlanCreate, Nutrit
         db.refresh(db_obj)
         return db_obj
 
-    def list(self, db: Session, *, user_id: str, status: Optional[str] = None) -> list[NutritionPlanModel]:
+    def list(
+        self, db: Session, *, user_id: str, status: Optional[str] = None
+    ) -> list[NutritionPlanModel]:
         q = db.query(NutritionPlanModel).filter(NutritionPlanModel.user_id == user_id)
         if status:
             q = q.filter(NutritionPlanModel.status == status)
@@ -233,20 +282,26 @@ class CRUDNutritionPlan(CRUDBase[NutritionPlanModel, NutritionPlanCreate, Nutrit
     def get_current(self, db: Session, *, user_id: str) -> Optional[NutritionPlanModel]:
         return (
             db.query(NutritionPlanModel)
-            .filter(and_(NutritionPlanModel.user_id == user_id, NutritionPlanModel.status == "active"))
+            .filter(
+                and_(NutritionPlanModel.user_id == user_id, NutritionPlanModel.status == "active")
+            )
             .order_by(NutritionPlanModel.created_at.desc())
             .first()
         )
 
-    def set_active(self, db: Session, *, user_id: str, plan_id: str) -> Optional[NutritionPlanModel]:
+    def set_active(
+        self, db: Session, *, user_id: str, plan_id: str
+    ) -> Optional[NutritionPlanModel]:
         # archive previous
         db.query(NutritionPlanModel).filter(
             and_(NutritionPlanModel.user_id == user_id, NutritionPlanModel.status == "active")
         ).update({NutritionPlanModel.status: "archived"})
         # set new active
-        db_obj = db.query(NutritionPlanModel).filter(
-            and_(NutritionPlanModel.id == plan_id, NutritionPlanModel.user_id == user_id)
-        ).first()
+        db_obj = (
+            db.query(NutritionPlanModel)
+            .filter(and_(NutritionPlanModel.id == plan_id, NutritionPlanModel.user_id == user_id))
+            .first()
+        )
         if not db_obj:
             db.commit()
             return None

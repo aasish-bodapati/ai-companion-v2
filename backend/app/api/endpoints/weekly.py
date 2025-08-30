@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -38,7 +37,7 @@ def _in_window(ts: Optional[datetime], start: datetime, end: datetime) -> bool:
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=timezone.utc)
     ts = ts.astimezone(timezone.utc)
-    return (start <= ts <= end)
+    return start <= ts <= end
 
 
 def _safe_int(v: Any, default: int = 0) -> int:
@@ -113,12 +112,15 @@ def get_weekly_digest(
                 summaries.append(f"{title}:\n{s}")
         except Exception:
             continue
-    summary_text = "\n\n".join(summaries) if summaries else "(No recent conversation activity in this period)"
+    summary_text = (
+        "\n\n".join(summaries) if summaries else "(No recent conversation activity in this period)"
+    )
 
     # 3) Build highlights from user memories
     user_mems = crud.memory.get_user_memories(
         db, user_id=str(current_user.id), content_type=None, limit=100
     )
+
     # Score = weighted combination: recency + reinforced_count + rank_boost
     def _score(node) -> float:
         md = _extract_metadata(node)
@@ -186,7 +188,8 @@ def get_weekly_digest(
             "reinforced": reinforced_count,
         },
         "provenance": {
-            "model": getattr(memory_service, "MODEL", None) or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
+            "model": getattr(memory_service, "MODEL", None)
+            or "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free",
             "source": "weekly_digest",
             "user_id": str(current_user.id),
         },

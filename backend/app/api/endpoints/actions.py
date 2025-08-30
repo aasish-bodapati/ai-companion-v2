@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.api import deps
 from app.models.user import User
 from app.actions.registry import registry, ExecuteActionRequest
-from app.core.config import settings
 from app.actions.router import router as action_router
 
 router = APIRouter(prefix="/actions", tags=["actions"])
@@ -44,13 +43,19 @@ async def execute_action(
         # For now, implement basic scope checking - can be extended with role-based access
         required_scopes = set(desc.scopes)
         # All authenticated users have basic scopes for MVP
-        user_scopes = {'fitness:write', 'nutrition:write', 'journal:write', 'goals:write', 'calendar:write'}
-        
+        user_scopes = {
+            "fitness:write",
+            "nutrition:write",
+            "journal:write",
+            "goals:write",
+            "calendar:write",
+        }
+
         if not required_scopes.issubset(user_scopes):
             missing_scopes = required_scopes - user_scopes
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail=f"Insufficient permissions. Missing scopes: {', '.join(missing_scopes)}"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Missing scopes: {', '.join(missing_scopes)}",
             )
 
     # Construct internal request with authenticated user context
@@ -64,7 +69,7 @@ async def execute_action(
     res = action_router.execute(req)
     if not res.ok:
         # Map standardized codes to HTTP status while still returning shape
-        code = (res.code or "internal_error")
+        code = res.code or "internal_error"
         status_map = {
             "not_found": status.HTTP_404_NOT_FOUND,
             "validation_error": status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -73,12 +78,15 @@ async def execute_action(
         }
         http_status = status_map.get(code, status.HTTP_400_BAD_REQUEST)
         # Return consistent body with appropriate HTTP code
-        raise HTTPException(status_code=http_status, detail={
-            "ok": False,
-            "action": res.action,
-            "error": res.error or "Action failed",
-            "code": code,
-        })
+        raise HTTPException(
+            status_code=http_status,
+            detail={
+                "ok": False,
+                "action": res.action,
+                "error": res.error or "Action failed",
+                "code": code,
+            },
+        )
 
     return {"ok": True, "action": res.action, "result": res.result}
 
@@ -94,16 +102,19 @@ async def undo_action(
     """
     undo_token = (payload or {}).get("undo_token")
     if not isinstance(undo_token, str) or not undo_token:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail={
-            "ok": False,
-            "action": "undo",
-            "error": "undo_token is required",
-            "code": "validation_error",
-        })
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "ok": False,
+                "action": "undo",
+                "error": "undo_token is required",
+                "code": "validation_error",
+            },
+        )
 
     res = action_router.undo(undo_token)
     if not res.ok:
-        code = (res.code or "internal_error")
+        code = res.code or "internal_error"
         status_map = {
             "not_found": status.HTTP_404_NOT_FOUND,
             "validation_error": status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -111,10 +122,13 @@ async def undo_action(
             "internal_error": status.HTTP_500_INTERNAL_SERVER_ERROR,
         }
         http_status = status_map.get(code, status.HTTP_400_BAD_REQUEST)
-        raise HTTPException(status_code=http_status, detail={
-            "ok": False,
-            "action": res.action,
-            "error": res.error or "Undo failed",
-            "code": code,
-        })
+        raise HTTPException(
+            status_code=http_status,
+            detail={
+                "ok": False,
+                "action": res.action,
+                "error": res.error or "Undo failed",
+                "code": code,
+            },
+        )
     return {"ok": True, "action": res.action, "result": res.result}

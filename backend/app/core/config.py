@@ -1,4 +1,5 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, List, Optional, Union
+import os
 
 from pydantic import AnyHttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -69,19 +70,27 @@ class Settings(BaseSettings):
     RATE_LIMIT_SEND_PER_WINDOW: int = 60
     RATE_LIMIT_REPLY_PER_WINDOW: int = 60
 
-    # LLM Provider Configuration
-    LLM_PROVIDER: str = "openrouter"  # Options: openrouter, gemini, openai, anthropic, stub
-    
-    # Generic LLM Configuration (works with any provider)
+    # LLM Configuration - Simplified for better debugging
+    LLM_PROVIDER: str = "stub"  # Options: openrouter, openai, anthropic, stub
     LLM_API_KEY: str = ""
     LLM_BASE_URL: str = "https://openrouter.ai/api/v1"
-    
-    # Model Configuration (Generic names that work with any provider)
-    LLM_MODEL_DEFAULT: str = "mistralai/mistral-7b-instruct"
-    LLM_MODEL_FAST: str = "mistralai/mistral-7b-instruct"
-    LLM_MODEL_VISION: str = "meta-llama/llama-3.2-11b-vision-instruct:free"
-    LLM_MODEL_SUMMARY: str = "mistralai/mistral-7b-instruct"
-    
+
+    # Model Configuration - Use consistent naming
+    LLM_MODEL_DEFAULT: str = "stub-model"
+    LLM_MODEL_FAST: str = "stub-model"
+    LLM_MODEL_VISION: str = "stub-model"
+    LLM_MODEL_SUMMARY: str = "stub-model"
+
+    # LLM Settings - Simplified
+    LLM_MAX_TOKENS: int = 2048
+    LLM_TEMPERATURE: float = 0.7
+    LLM_TOP_P: float = 0.9
+    LLM_FREQUENCY_PENALTY: float = 0.0
+    LLM_PRESENCE_PENALTY: float = 0.0
+
+    # Development Mode - Clear flag for debugging
+    LLM_DEV_MODE: bool = False  # Set to False for production
+
     # OpenRouter Fallback Models
     OPENROUTER_MODEL_DEFAULT: str = "mistralai/mistral-7b-instruct"
     OPENROUTER_MODEL_FAST: str = "mistralai/mistral-7b-instruct"
@@ -211,16 +220,16 @@ class Settings(BaseSettings):
     # Two-pass self-critique and refinement (STaR-like) for higher quality replies
     CRITIQUE_REFINE_ENABLED: bool = False
     # Streaming (SSE) endpoints toggle. When False, streaming routes are not mounted.
-    STREAMING_ENABLED: bool = False
+    STREAMING_ENABLED: bool = True
     # Dual write: persist chat-captured notes/tasks/reminders to SQL tables and memory
     DUAL_WRITE_ENABLED: bool = True
-    
+
     # Direct command execution: enable immediate action execution from natural language
     DIRECT_EXECUTION_ENABLED: bool = True
-    
+
     # Disable agentic features per user preference
     AGENT_PLAN_PROGRESS_ENABLED: bool = False
-    
+
     # Automatic memory system settings - Enhanced for better performance
     AUTO_MEMORY_ENABLED: bool = True
     AUTO_IMPORTANCE_THRESHOLD: float = 0.15  # Lowered from 0.2 for even more aggressive capture
@@ -261,29 +270,35 @@ class Settings(BaseSettings):
     COOKIE_SECURE: bool = True
     COOKIE_SAMESITE: str = "lax"  # options: 'lax' | 'strict' | 'none'
 
-    # Load env from backend/.env irrespective of current working directory
-    _ENV_PATH = str(Path(__file__).resolve().parents[2] / ".env")
     model_config = SettingsConfigDict(
-        env_file=_ENV_PATH,
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
 
 
-settings = Settings()
+# Load env from backend/.env or .env.test for tests
+_ENV_PATH = str(Path(__file__).resolve().parents[2] / ".env")
+_ENV_TEST_PATH = str(Path(__file__).resolve().parents[2] / ".env.test")
+
+# Use test env if it exists and we're in test mode
+env_file = _ENV_TEST_PATH if Path(_ENV_TEST_PATH).exists() and os.getenv("TESTING") else _ENV_PATH
+
+settings = Settings(_env_file=env_file)
 
 # Log whether LLM key is present (do not log the key itself)
 _logger = logging.getLogger(__name__)
 
 # Check if we're using local Llama (localhost:11434) or DeepSeek
-is_local_llama = (
-    getattr(settings, "LLM_BASE_URL", "").strip() == "http://localhost:11434/v1" or
-    "localhost:11434" in getattr(settings, "LLM_BASE_URL", "")
+is_local_llama = getattr(
+    settings, "LLM_BASE_URL", ""
+).strip() == "http://localhost:11434/v1" or "localhost:11434" in getattr(
+    settings, "LLM_BASE_URL", ""
 )
 
-is_deepseek = (
-    getattr(settings, "LLM_BASE_URL", "").strip() == "https://api.deepseek.com/v1" or
-    "api.deepseek.com" in getattr(settings, "LLM_BASE_URL", "")
+is_deepseek = getattr(
+    settings, "LLM_BASE_URL", ""
+).strip() == "https://api.deepseek.com/v1" or "api.deepseek.com" in getattr(
+    settings, "LLM_BASE_URL", ""
 )
 
 if getattr(settings, "LLM_API_KEY", "").strip():

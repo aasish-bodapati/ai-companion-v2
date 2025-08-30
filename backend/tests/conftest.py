@@ -14,6 +14,18 @@ from app.main import app
 from app.db.session import SessionLocal
 
 
+@pytest.hookimpl(tryfirst=True)
+def pytest_collection_modifyitems(config, items):
+    """Conditionally skip slow/LLM-timing dependent tests when FREE_TIER is enabled."""
+    free_tier = os.getenv("FREE_TIER", "").lower() in {"1", "true", "yes"}
+    if not free_tier:
+        return
+    skip_marker = pytest.mark.skip(reason="Skipped on FREE_TIER: timing/latency-sensitive")
+    for item in items:
+        # Respect tests explicitly marked as slow
+        if "slow" in item.keywords:
+            item.add_marker(skip_marker)
+
 @pytest.fixture(scope="session", autouse=True)
 def _apply_migrations():
     """Ensure DB schema is up-to-date before running tests."""
@@ -102,3 +114,15 @@ def unauth_client():
         pass
     with TestClient(app) as c:
         yield c
+
+
+@pytest.fixture()
+def test_user():
+    """Get the test user."""
+    return _ensure_test_user()
+
+
+@pytest.fixture()
+def auth_headers():
+    """Get authentication headers for testing."""
+    return {"Authorization": "Bearer test-token"}

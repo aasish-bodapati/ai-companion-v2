@@ -2,7 +2,6 @@ import pytest
 
 from app.memory.service import memory_service
 from app.api.endpoints import conversations_utils as conv_mod
-from app.api.endpoints.conversations_utils import _normalize_user_text, _maybe_capture_preference
 
 
 @pytest.mark.parametrize(
@@ -51,10 +50,20 @@ def test_grade_importance_can_use_llm_when_available(monkeypatch):
 
     # Patch class and instance to be safe against prior instance-level monkeypatches
     monkeypatch.setattr(MemoryService, "_classify_with_llm", _fake_cls, raising=False)
-    monkeypatch.setattr(memory_service, "_classify_with_llm", lambda _text: _fake_cls(memory_service, _text), raising=False)
+    monkeypatch.setattr(
+        memory_service,
+        "_classify_with_llm",
+        lambda _text: _fake_cls(memory_service, _text),
+        raising=False,
+    )
     # Also stub low-level LLM call to avoid network if original path is entered
     import app.core.llm as _llm
-    monkeypatch.setattr(_llm, "generate_with_openrouter", lambda *a, **k: "{\n  \"importance\": 0.95, \n  \"sensitivity\": 0.0, \n  \"reason\": \"hi\"\n}")
+
+    monkeypatch.setattr(
+        _llm,
+        "generate_with_openrouter",
+        lambda *a, **k: '{\n  "importance": 0.95, \n  "sensitivity": 0.0, \n  "reason": "hi"\n}',
+    )
 
     from app.core.config import settings
 
@@ -77,6 +86,7 @@ def test_grade_importance_can_use_llm_when_available(monkeypatch):
 def test_normalize_user_text(raw, expected):
     out = conv_mod._normalize_user_text(raw)
     assert out == expected
+
 
 def test_maybe_capture_preference_returns_flags(monkeypatch):
     # Prevent persistence path

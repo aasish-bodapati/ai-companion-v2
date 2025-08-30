@@ -2,12 +2,42 @@ from fastapi.testclient import TestClient
 
 
 def _create_conversation_via_api(client: TestClient, title: str = "Test") -> str:
-    r = client.post("/api/v1/conversations/", json={"title": title, "personalization_enabled": True})
+    r = client.post(
+        "/api/v1/conversations/", json={"title": title, "personalization_enabled": True}
+    )
     assert r.status_code in (200, 201), r.text
     return r.json()["id"]
 
 
-def test_idempotency_send_message_returns_same_message_id(client: TestClient):
+def test_idempotency_send_message_returns_same_message_id(monkeypatch, client: TestClient):
+    # Mock Redis for idempotency
+    class FakeRedis:
+        def __init__(self):
+            self._data = {}
+
+        async def hgetall(self, key):
+            return self._data.get(key, {})
+
+        async def hset(self, key, mapping):
+            if key not in self._data:
+                self._data[key] = {}
+            self._data[key].update(mapping)
+            return True
+
+        async def expire(self, key, ttl):
+            return True
+
+    fake_instance = FakeRedis()
+
+    async def fake_get_redis():
+        return fake_instance
+
+    from app.core import redis_client
+    monkeypatch.setattr(redis_client, "get_redis", fake_get_redis, raising=False)
+    
+    # Also mock the global Redis variable
+    monkeypatch.setattr(redis_client, "_redis", fake_instance, raising=False)
+
     conv_id = _create_conversation_via_api(client)
 
     headers = {"Idempotency-Key": "abc123"}
@@ -17,11 +47,15 @@ def test_idempotency_send_message_returns_same_message_id(client: TestClient):
     assert r1.status_code == 200
     msg1 = r1.json()
     assert msg1.get("id") is not None
+    print(f"First message ID: {msg1.get('id')}")
+    print(f"Redis data after first request: {fake_instance._data}")
 
     # Second send with same key should return same message
     r2 = client.post(f"/api/v1/conversations/{conv_id}/messages", json=payload, headers=headers)
     assert r2.status_code == 200
     msg2 = r2.json()
+    print(f"Second message ID: {msg2.get('id')}")
+    print(f"Redis data after second request: {fake_instance._data}")
     assert msg2.get("id") == msg1.get("id")
 
 
@@ -32,6 +66,7 @@ def test_rate_limit_redis_sliding_window_429(monkeypatch, client: TestClient):
     monkeypatch.setattr(settings, "RATE_LIMIT_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "RATE_LIMIT_SEND_PER_WINDOW", 3, raising=False)
     monkeypatch.setattr(settings, "RATE_LIMIT_WINDOW_SECONDS", 60, raising=False)
+    monkeypatch.setattr(settings, "REDIS_URL", "redis://fake", raising=False)
 
     class FakePipe:
         def __init__(self, parent):
@@ -66,7 +101,9 @@ def test_rate_limit_redis_sliding_window_429(monkeypatch, client: TestClient):
             for op in self.ops:
                 if op[0] == "zremrangebyscore":
                     key, start, end = op[1], op[2], op[3]
-                    self.parent._zset[key] = [t for t in self.parent._zset.get(key, []) if not (start <= t <= end)]
+                    self.parent._zset[key] = [
+                        t for t in self.parent._zset.get(key, []) if not (start <= t <= end)
+                    ]
                 elif op[0] == "zadd":
                     key, ts = op[1], op[2]
                     self.parent._zset.setdefault(key, []).append(int(ts))
@@ -98,7 +135,9 @@ def test_rate_limit_redis_sliding_window_429(monkeypatch, client: TestClient):
         return fake_instance
 
     from app.core import redis_client
+
     monkeypatch.setattr(redis_client, "get_redis", fake_get_redis, raising=False)
+    monkeypatch.setattr(redis_client, "_redis", fake_instance, raising=False)
 
     # Prepare conversation via API
     conv_id = _create_conversation_via_api(client, title="Test RL")

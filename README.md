@@ -63,11 +63,11 @@ A next-generation AI personal assistant that learns from your conversations, rem
 
 ## 📖 Documentation
 
-- **[Deployment Guide](docs/BETA_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-- **[Beta Readiness](docs/BETA_READINESS_CHECKLIST.md)** - Pre-launch checklist
-- **[Architecture](docs/Tech_Notes_Architecture.md)** - Technical architecture overview
-- **[Product Overview](docs/Product_One_Pager.md)** - Product vision and features
-- **[Roadmap](docs/Roadmap.md)** - Future development plans
+- **[Deployment Guide](docs/guides/BETA_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[Beta Readiness](docs/guides/BETA_READINESS_CHECKLIST.md)** - Pre-launch checklist
+- **[Architecture](docs/guides/Tech_Notes_Architecture.md)** - Technical architecture overview
+- **[Product Overview](docs/guides/Product_One_Pager.md)** - Product vision and features
+- **[Roadmap](docs/guides/Roadmap.md)** - Future development plans
 
 ## 🏗️ Architecture
 
@@ -128,7 +128,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ## 📦 Deployment
 
-See [Deployment Guide](docs/BETA_DEPLOYMENT_GUIDE.md) for detailed production deployment instructions.
+See [Deployment Guide](docs/guides/BETA_DEPLOYMENT_GUIDE.md) for detailed production deployment instructions.
 
 ## 🎯 Beta Status
 

@@ -15,7 +15,9 @@ class ParsedEvent:
     all_day: bool = False
 
 
-_ISO_RANGE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<start>\d{1,2}:\d{2})\s*-\s*(?P<end>\d{1,2}:\d{2})\s+(?P<title>.+)$")
+_ISO_RANGE = re.compile(
+    r"^(?P<date>\d{4}-\d{2}-\d{2})\s+(?P<start>\d{1,2}:\d{2})\s*-\s*(?P<end>\d{1,2}:\d{2})\s+(?P<title>.+)$"
+)
 
 
 def parse_line(line: str, now: Optional[datetime] = None) -> Optional[ParsedEvent]:
@@ -53,7 +55,9 @@ def parse_line(line: str, now: Optional[datetime] = None) -> Optional[ParsedEven
                 word_boundary = r"(?i)\b{}\b"
                 if re.search(word_boundary.format("tomorrow"), dt_prefix_norm):
                     dt_prefix_norm = re.sub(
-                        word_boundary.format("tomorrow"), (now + timedelta(days=1)).strftime("%Y-%m-%d"), dt_prefix_norm
+                        word_boundary.format("tomorrow"),
+                        (now + timedelta(days=1)).strftime("%Y-%m-%d"),
+                        dt_prefix_norm,
                     )
                 if re.search(word_boundary.format("today"), dt_prefix_norm):
                     dt_prefix_norm = re.sub(
@@ -62,7 +66,11 @@ def parse_line(line: str, now: Optional[datetime] = None) -> Optional[ParsedEven
 
                 dt = dateparser.parse(dt_prefix_norm, default=now)
                 # If we detected a range like '3 to 4pm', synthesize end
-                rng = re.search(r"(?P<s>\d{1,2}(:\d{2})?)\s*to\s*(?P<e>\d{1,2}(:\d{2})?\s*(am|pm)?)", dt_prefix_norm, re.IGNORECASE)
+                rng = re.search(
+                    r"(?P<s>\d{1,2}(:\d{2})?)\s*to\s*(?P<e>\d{1,2}(:\d{2})?\s*(am|pm)?)",
+                    dt_prefix_norm,
+                    re.IGNORECASE,
+                )
                 end: Optional[datetime] = None
                 if rng:
                     try:

@@ -1,4 +1,3 @@
-import random
 from typing import Dict, List
 
 import pytest
@@ -16,6 +15,7 @@ from fastapi.testclient import TestClient
 def _enable_auto_memory(monkeypatch):
     # Force-enable auto memory and consolidation for deterministic capture in tests
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_CONSOLIDATION_ENABLED", True, raising=False)
@@ -32,7 +32,9 @@ def _create_conversation(client: TestClient, title: str) -> str:
 
 
 def _add_user_message(client: TestClient, conv_id: str, content: str) -> Dict:
-    r = client.post(f"/api/v1/conversations/{conv_id}/messages", json={"role": "user", "content": content})
+    r = client.post(
+        f"/api/v1/conversations/{conv_id}/messages", json={"role": "user", "content": content}
+    )
     assert r.status_code in (200, 201), r.text
     return r.json()
 
@@ -248,7 +250,9 @@ def test_flowing_conversation_memory_capture(client: TestClient):
     user_msgs = [m for m in all_msgs if m.get("role") == "user"]
     assistant_msgs = [m for m in all_msgs if m.get("role") == "assistant"]
     assert len(user_msgs) == len(msgs)
-    assert len(assistant_msgs) >= len(msgs) // 5, "Expected periodic assistant replies to be persisted"
+    assert len(assistant_msgs) >= len(msgs) // 5, (
+        "Expected periodic assistant replies to be persisted"
+    )
 
     # Fetch memories (deduped)
     mems = _list_memories(client, 2000)
@@ -259,7 +263,9 @@ def test_flowing_conversation_memory_capture(client: TestClient):
     # Spot-check that key facts/preferences are present (normalized subset)
     content_norm = [_norm(m.get("content", "")) for m in mems]
     expected_bits = [
-        "my name is alice".replace("my name is ", "hi, i'm ").split("notused")[0],  # we will check intro variants below
+        "my name is alice".replace("my name is ", "hi, i'm ").split("notused")[
+            0
+        ],  # we will check intro variants below
         "i live in san francisco.",
         "my timezone is pst.",
         "i am allergic to peanuts.",
@@ -272,7 +278,9 @@ def test_flowing_conversation_memory_capture(client: TestClient):
     # The intro could be saved as message ("hi, i'm alice.")
     assert any("hi, i'm alice" in c or "my full name is alice smith" in c for c in content_norm)
     for eb in expected_bits[1:]:
-        assert any(eb.rstrip('.') in c for c in content_norm), f"Missing expected memory matching: {eb}"
+        assert any(eb.rstrip(".") in c for c in content_norm), (
+            f"Missing expected memory matching: {eb}"
+        )
 
     # Ensure deduplication keeps only one for repeated/related preferences (jazz/hiking may appear once via extractor)
     norm_counts = {}
@@ -313,4 +321,4 @@ def test_flowing_conversation_memory_capture_small(client: TestClient):
         "i prefer spicy food.",
     ]
     for eb in checks:
-        assert any(eb.rstrip('.') in c for c in content_norm)
+        assert any(eb.rstrip(".") in c for c in content_norm)

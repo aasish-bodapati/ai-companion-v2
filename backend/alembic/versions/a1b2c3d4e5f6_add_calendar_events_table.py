@@ -5,6 +5,7 @@ Revises: 8b92a2e8a3e5
 Create Date: 2025-08-12 18:25:00.000000
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -19,13 +20,23 @@ def upgrade() -> None:
     op.create_table(
         "calendar_events",
         sa.Column("id", sa.String(length=36), primary_key=True, nullable=False),
-        sa.Column("user_id", sa.String(length=36), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.String(length=36),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("title", sa.String(), nullable=False),
         sa.Column("description", sa.String(), nullable=True),
         sa.Column("start", sa.DateTime(timezone=True), nullable=False),
         sa.Column("end", sa.DateTime(timezone=True), nullable=True),
         sa.Column("all_day", sa.Boolean(), server_default=sa.text("false"), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("CURRENT_TIMESTAMP"),
+        ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),

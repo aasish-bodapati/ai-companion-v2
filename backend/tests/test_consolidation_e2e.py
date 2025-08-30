@@ -59,6 +59,7 @@ def test_consolidation_noop_same_content(monkeypatch, db_session, test_user):
     user_id = str(test_user.id)
     # Ensure clean state for this user
     from app.crud.memory import memory as crud_mem
+
     crud_mem.delete_user_memories(db_session, user_id)
 
     content = "email: user@example.com"
@@ -112,6 +113,7 @@ def test_consolidation_updates_on_change(monkeypatch, db_session, test_user):
     user_id = str(test_user.id)
     # Ensure clean state for this user
     from app.crud.memory import memory as crud_mem
+
     crud_mem.delete_user_memories(db_session, user_id)
 
     content_v1 = "email: user@example.com"

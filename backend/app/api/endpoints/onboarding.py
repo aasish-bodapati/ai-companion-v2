@@ -5,7 +5,6 @@ import logging
 
 from app import crud, models
 from app.api import deps
-from app.core.config import settings
 from app.schemas.onboarding import OnboardingProfile, OnboardingProfileCreate
 
 logger = logging.getLogger(__name__)
@@ -29,12 +28,13 @@ def get_my_onboarding(
             )
         return profile
     except Exception as e:
-        # If there's an error (likely due to old profile structure), 
+        # If there's an error (likely due to old profile structure),
         # return a basic incomplete profile to allow login to continue
         logger.warning(f"Error retrieving onboarding profile for user {current_user.id}: {e}")
-        
+
         # Create a basic incomplete profile
         from app.schemas.onboarding import OnboardingProfileCreate
+
         basic_profile = OnboardingProfileCreate(
             daily_schedule="",
             schedule_preferences="",
@@ -42,15 +42,12 @@ def get_my_onboarding(
             nutrition_goals="",
             dietary_preferences="",
             communication_style="",
-            additional_preferences=""
+            additional_preferences="",
         )
-        
+
         # Return a minimal profile that won't break the frontend
         return OnboardingProfile(
-            id="temp",
-            user_id=current_user.id,
-            completed=False,
-            **basic_profile.model_dump()
+            id="temp", user_id=current_user.id, completed=False, **basic_profile.model_dump()
         )
 
 
@@ -93,16 +90,16 @@ def migrate_my_onboarding(
     """
     # Get current profile
     profile = crud.onboarding.get_by_user_id(db, user_id=current_user.id)
-    
+
     if not profile:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Onboarding profile not found",
         )
-    
+
     # Mark as incomplete so user can re-complete
     profile.completed = False
     db.commit()
     db.refresh(profile)
-    
+
     return profile

@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ai_companion
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        INSTALL_EXTRAS: "false"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_companion
+      - REDIS_URL=redis://redis:6379
+      - SECRET_KEY=change-me-in-prod
+      - LLM_PROVIDER=openrouter
+      # - LLM_API_KEY= # supply via host env or secrets manager
+      - STREAMING_ENABLED=true
+      # Include your Vercel URL and API domain
+      - BACKEND_CORS_ORIGINS=["https://yourapp.vercel.app", "https://api.yourdomain.com"]
+      - MEMORY_ENABLED=false
+      - MEMORY_PROVIDER=none
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys,urllib.request;\nresp=urllib.request.urlopen('http://localhost:8000/api/v1/utils/health', timeout=10);\nsys.exit(0 if resp.status==200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.2'
+          memory: 256M
+
+  nginx:
+    image: nginx:1.27-alpine
+    profiles: ["production"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

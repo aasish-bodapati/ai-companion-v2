@@ -4,8 +4,15 @@ from .conversation import conversation, message
 from .user import user
 from .memory import memory
 from .coaching import (
-    goal, routine, workout_log, meal_log, hydration_log, mood_log, journal_entry,
-    workout_plan, nutrition_plan,
+    goal,
+    routine,
+    workout_log,
+    meal_log,
+    hydration_log,
+    mood_log,
+    journal_entry,
+    workout_plan,
+    nutrition_plan,
 )
 
 __all__ = [

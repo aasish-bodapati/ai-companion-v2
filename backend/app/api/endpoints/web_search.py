@@ -67,8 +67,7 @@ async def search_web(
     """
     try:
         results = await web_search_service.search_web(
-            query=request.query,
-            max_results=request.max_results
+            query=request.query, max_results=request.max_results
         )
         return results
     except Exception as e:
@@ -103,8 +102,7 @@ async def get_news(
     """
     try:
         news = await web_search_service.get_news_headlines(
-            topic=request.topic,
-            max_results=request.max_results
+            topic=request.topic, max_results=request.max_results
         )
         return news
     except Exception as e:
@@ -127,4 +125,3 @@ async def get_stock_price(
             raise HTTPException(status_code=404, detail="Stock information not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Stock lookup failed: {str(e)}")
-

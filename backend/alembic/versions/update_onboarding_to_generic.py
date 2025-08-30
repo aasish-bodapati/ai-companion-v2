@@ -42,9 +42,13 @@ def upgrade() -> None:
     op.add_column("onboarding_profiles", sa.Column("learning_goals", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("current_challenges", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("current_tools", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("information_preference", sa.String(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("information_preference", sa.String(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("motivation", sa.Text(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("communication_preference", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("communication_preference", sa.Text(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("goal_timeline", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("success_definition", sa.Text(), nullable=True))
 
@@ -75,7 +79,9 @@ def downgrade() -> None:
     op.add_column("onboarding_profiles", sa.Column("help_preference", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("primary_device", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("tech_comfort", sa.String(), nullable=True))
-    op.add_column("onboarding_profiles", sa.Column("technical_constraints", sa.Text(), nullable=True))
+    op.add_column(
+        "onboarding_profiles", sa.Column("technical_constraints", sa.Text(), nullable=True)
+    )
     op.add_column("onboarding_profiles", sa.Column("weekly_goals", sa.Text(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("timeline", sa.String(), nullable=True))
     op.add_column("onboarding_profiles", sa.Column("daily_time", sa.String(), nullable=True))

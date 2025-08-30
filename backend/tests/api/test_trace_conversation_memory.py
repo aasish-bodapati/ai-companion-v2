@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 @pytest.fixture(autouse=True)
 def _enable_memory_features(monkeypatch):
     from app.core.config import settings
+
     monkeypatch.setattr(settings, "MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_MEMORY_ENABLED", True, raising=False)
     monkeypatch.setattr(settings, "AUTO_CONSOLIDATION_ENABLED", True, raising=False)
@@ -115,7 +116,7 @@ def test_trace_conversation_memory(client: TestClient):
             reply_mode = "reply/stream"
 
         # 3) Collect new messages and memories
-        msgs = _list_messages(client, conv_id)
+        _list_messages(client, conv_id)
         mems = _list_memories(client, 200)
         cur_ids = _memory_ids(mems)
         new_ids = list(cur_ids - prev_ids)
@@ -126,15 +127,21 @@ def test_trace_conversation_memory(client: TestClient):
         print("User:", _short(text))
         print("Assistant (", reply_mode, "):", _short(reply_content))
         print("New memories:")
-        print(json.dumps([
-            {
-                "id": m.get("id"),
-                "type": m.get("content_type"),
-                "content": _short(m.get("content", ""), 160),
-                "importance_score": m.get("importance_score"),
-                "metadata": m.get("memory_metadata"),
-            } for m in new_mems
-        ], indent=2))
+        print(
+            json.dumps(
+                [
+                    {
+                        "id": m.get("id"),
+                        "type": m.get("content_type"),
+                        "content": _short(m.get("content", ""), 160),
+                        "importance_score": m.get("importance_score"),
+                        "metadata": m.get("memory_metadata"),
+                    }
+                    for m in new_mems
+                ],
+                indent=2,
+            )
+        )
 
         # Prepare for next iteration
         prev_ids = cur_ids

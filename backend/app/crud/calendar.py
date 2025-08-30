@@ -15,7 +15,12 @@ class CRUDCalendar:
         self.model = CalendarEventModel
 
     def get_user_events(
-        self, db: Session, *, user_id: str, start: Optional[datetime] = None, end: Optional[datetime] = None
+        self,
+        db: Session,
+        *,
+        user_id: str,
+        start: Optional[datetime] = None,
+        end: Optional[datetime] = None,
     ) -> List[CalendarEventModel]:
         try:
             # Normalize user_id to string to avoid UUID vs str mismatches
@@ -31,7 +36,9 @@ class CRUDCalendar:
             # Likely table missing (migrations not run)
             raise
 
-    def create_for_user(self, db: Session, *, user_id: str, obj_in: CalendarEventCreate) -> CalendarEventModel:
+    def create_for_user(
+        self, db: Session, *, user_id: str, obj_in: CalendarEventCreate
+    ) -> CalendarEventModel:
         def _to_aware_utc(dt: Optional[datetime]) -> Optional[datetime]:
             """Return a timezone-aware UTC datetime for storage in timezone=True columns.
 
@@ -58,7 +65,11 @@ class CRUDCalendar:
         self, db: Session, *, user_id: str, event_id: str, obj_in: CalendarEventUpdate
     ) -> Optional[CalendarEventModel]:
         uid = str(user_id) if user_id is not None else None
-        db_obj = db.query(self.model).filter(self.model.id == event_id, self.model.user_id == uid).first()
+        db_obj = (
+            db.query(self.model)
+            .filter(self.model.id == event_id, self.model.user_id == uid)
+            .first()
+        )
         if not db_obj:
             return None
         data = obj_in.model_dump(exclude_unset=True)
