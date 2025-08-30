@@ -37,8 +37,8 @@ RUN adduser -D -s /bin/sh appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
-EXPOSE 8000
+# Expose port (Railway will set the actual port via $PORT)
+EXPOSE $PORT
 
 # Health check (simplified)
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
