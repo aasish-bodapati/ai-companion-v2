@@ -113,19 +113,35 @@ class Settings(BaseSettings):
     @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
     @classmethod
     def assemble_db_connection(cls, v: Optional[str], info) -> Any:
+        # Debug logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔍 Database config - explicit value: {v}")
+        logger.info(f"🔍 Database config - info.data DATABASE_URL: {info.data.get('DATABASE_URL')}")
+        logger.info(f"🔍 Database config - os.environ DATABASE_URL: {os.environ.get('DATABASE_URL')}")
+        
         # 1) If provided explicitly and non-empty, use as-is
         if isinstance(v, str) and v.strip():
+            logger.info(f"✅ Using explicit SQLALCHEMY_DATABASE_URI: {v.strip()}")
             return v.strip()
 
-        # 2) Prefer DATABASE_URL if set and non-empty
+        # 2) Prefer DATABASE_URL if set and non-empty (Railway sets this)
         db_url = info.data.get("DATABASE_URL")
         if isinstance(db_url, str) and db_url.strip():
+            logger.info(f"✅ Using info.data DATABASE_URL: {db_url.strip()}")
             return db_url.strip()
+        
+        # 3) Also check os.environ directly for DATABASE_URL (Railway fallback)
+        env_db_url = os.environ.get("DATABASE_URL")
+        if env_db_url and env_db_url.strip():
+            logger.info(f"✅ Using os.environ DATABASE_URL: {env_db_url.strip()}")
+            return env_db_url.strip()
 
-        # 3) Default to SQLite file for local development
+        # 4) Default to SQLite file for local development only
         project_root = Path(__file__).resolve().parents[2]
         sqlite_path = (project_root / "data" / "minimal.db").as_posix()
-        return f"sqlite:///{sqlite_path}"
+        sqlite_url = f"sqlite:///{sqlite_path}"
+        logger.warning(f"⚠️  No DATABASE_URL found, falling back to SQLite: {sqlite_url}")
+        return sqlite_url
 
     # JWT
     ALGORITHM: str = "HS256"
