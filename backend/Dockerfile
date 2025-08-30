@@ -1,4 +1,4 @@
-# Ultra-lightweight Dockerfile for free tier deployment
+# Ultra-lightweight Dockerfile for free tier deployment - OPTIMIZED FOR FREE TIER
 FROM python:3.11-alpine
 
 # Set environment variables
