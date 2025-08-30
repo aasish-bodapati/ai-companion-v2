@@ -32,6 +32,7 @@ __tests__/
 jest.config.ts
 jest.setup.ts
 tsconfig.jest.json
+jest.setup.ts
 
 # Build artifacts (will be built fresh)
 .next/
