@@ -69,3 +69,4 @@ class ImprovementInsight(BaseModel):
     implementation_complexity: str = Field(..., description="Implementation complexity")
 
 
+

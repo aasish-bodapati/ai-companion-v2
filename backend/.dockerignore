@@ -1,50 +1,80 @@
-# Byte-compiled / optimized / DLL files
+# Exclude unnecessary files from Docker build context
+# This will significantly reduce image size
+
+# Development files
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
-*.so
-
-# Virtual environments
-.venv/
+*.pyd
+.Python
+env/
 venv/
-ENV/
+.env
+.env.local
+.env.development
 
-# Test & tooling caches
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-coverage*
-htmlcov/
+# Testing
+tests/
+test_*.py
+*_test.py
+pytest.ini
 .coverage
+htmlcov/
+.pytest_cache/
 
-# Editors/OS
-.DS_Store
+# Documentation
+docs/
+*.md
+README*
+
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
 
 # Git
 .git/
 .gitignore
 
-# Local data
-/data/
-!data/.gitkeep
-*.db
-
 # Logs
-logs/
 *.log
+logs/
 
-# Secrets (mounted or provided via env, not baked)
-.env
-.env.*
-.secrets.baseline
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
 
-# Node leftovers (if any)
-node_modules/
+# Large data files
+data/
+uploads/
+*.db
+*.sqlite
+*.sqlite3
 
-# Alembic cache
-alembic/*cache*
+# ML models (if not needed in production)
+models/
+*.pkl
+*.h5
+*.onnx
 
-# Tests (not needed in runtime image)
-tests/
+# Cache
+.cache/
+cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Docker files (except the one we're using)
+Dockerfile
+Dockerfile.ec2
+docker-compose*.yml

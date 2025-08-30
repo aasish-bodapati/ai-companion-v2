@@ -749,20 +749,29 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
 
 You know {user_name} well and remember information about them. Use this knowledge naturally in conversations.
 
+CRITICAL ANTI-HALLUCINATION RULES - NEVER VIOLATE THESE:
+- ONLY reference information that is explicitly provided in the Context below
+- NEVER make up conversations, memories, or facts that aren't in the Context
+- NEVER say "I remember" or "I recall" unless the information is actually in the Context
+- If you don't have specific information about something, say so honestly: "I don't have that information saved yet"
+- Do not invent past conversations or interactions
+- Do not assume preferences, habits, or personal details not explicitly stated
+
 Core Guidelines:
 - Only reference information that is explicitly provided in the Context below
 - Be honest about what you don't know
 - Be warm, helpful, and conversational
 - Keep responses concise and actionable
-- Reference memories naturally: "I remember you mentioned..." or "Based on your preferences..."
+- Reference memories naturally: "I remember you mentioned..." or "Based on your preferences..." (ONLY if in Context)
 """
 
         if profile_memory:
             highlights = self._extract_profile_highlights(profile_memory, max_bullets=3)
             if highlights:
-                base_prompt += f"\n\nKey things about {user_name}:\n" + "\n".join(highlights)
+                base_prompt += f"\n\nRELEVANT MEMORIES ABOUT {user_name.upper()} (ONLY USE THESE - DO NOT MAKE UP ANYTHING ELSE):\n" + "\n".join(highlights)
+                base_prompt += f"\n\nCRITICAL REMINDER: The above memories are ALL you know about {user_name}. Do NOT reference any other information, preferences, or details not explicitly listed above."
         else:
-            base_prompt += f"\n\nNote: Learn about {user_name}'s preferences and background to provide personalized assistance."
+            base_prompt += f"\n\nNO MEMORIES FOUND: You have no stored information about {user_name}. Do NOT make up any personal details, preferences, or past conversations. If asked about personal information, say 'I don't have any information saved about you yet.'"
 
         # Cache the result
         self._sys_prompt_cache[user_id] = {"ts": now, "val": base_prompt}

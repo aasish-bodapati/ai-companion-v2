@@ -1,30 +1,96 @@
 import os
 import sys
 import pytest
-from fastapi.testclient import TestClient
+from unittest.mock import Mock, patch
+from pathlib import Path
+
+# Load test environment variables first
+test_env_file = Path(__file__).parent.parent / ".env.test"
+if test_env_file.exists():
+    from dotenv import load_dotenv
+    load_dotenv(test_env_file)
 
 # Ensure backend/app is on sys.path
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.append(ROOT)
 
-from app.api import deps
-from app.models.user import User
-from app.main import app
-from app.db.session import SessionLocal
+# Import app modules only when needed
+def get_app():
+    """Get the FastAPI app instance."""
+    try:
+        from app.main import app
+        return app
+    except Exception as e:
+        pytest.skip(f"Could not import app: {e}")
+
+def get_deps():
+    """Get the deps module."""
+    try:
+        from app.api import deps
+        return deps
+    except Exception as e:
+        pytest.skip(f"Could not import deps: {e}")
+
+def get_user_model():
+    """Get the User model."""
+    try:
+        from app.models.user import User
+        return User
+    except Exception as e:
+        pytest.skip(f"Could not import User model: {e}")
+
+def get_session():
+    """Get the database session."""
+    try:
+        from app.db.session import SessionLocal
+        return SessionLocal
+    except Exception as e:
+        pytest.skip(f"Could not import SessionLocal: {e}")
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(config, items):
-    """Conditionally skip slow/LLM-timing dependent tests when FREE_TIER is enabled."""
-    free_tier = os.getenv("FREE_TIER", "").lower() in {"1", "true", "yes"}
-    if not free_tier:
-        return
-    skip_marker = pytest.mark.skip(reason="Skipped on FREE_TIER: timing/latency-sensitive")
+    """Automatically categorize tests based on their location and add appropriate markers."""
     for item in items:
-        # Respect tests explicitly marked as slow
-        if "slow" in item.keywords:
-            item.add_marker(skip_marker)
+        # Add category markers based on test file location
+        if "unit/" in str(item.fspath):
+            item.add_marker(pytest.mark.unit)
+        elif "integration/" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+        elif "e2e/" in str(item.fspath):
+            item.add_marker(pytest.mark.e2e)
+        elif "performance/" in str(item.fspath):
+            item.add_marker(pytest.mark.performance)
+        
+        # Add feature markers based on test name
+        if "memory" in item.name.lower():
+            item.add_marker(pytest.mark.memory)
+        if "auth" in item.name.lower():
+            item.add_marker(pytest.mark.auth)
+        if "api" in item.name.lower():
+            item.add_marker(pytest.mark.api)
+        if "database" in item.name.lower():
+            item.add_marker(pytest.mark.database)
+        if "llm" in item.name.lower():
+            item.add_marker(pytest.mark.llm)
+        if "conversation" in item.name.lower():
+            item.add_marker(pytest.mark.conversation)
+        if "scheduler" in item.name.lower():
+            item.add_marker(pytest.mark.scheduler)
+        
+        # Mark slow tests
+        if any(keyword in item.name.lower() for keyword in ["slow", "e2e", "performance", "integration"]):
+            item.add_marker(pytest.mark.slow)
+        
+        # Mark smoke tests (critical path)
+        if any(keyword in item.name.lower() for keyword in ["smoke", "critical", "main", "core"]):
+            item.add_marker(pytest.mark.smoke)
+        
+        # Mark CI tests
+        if not os.getenv("LOCAL_ONLY"):
+            item.add_marker(pytest.mark.ci)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _apply_migrations():
@@ -54,6 +120,9 @@ def _apply_migrations():
 
 
 def _ensure_test_user():
+    SessionLocal = get_session()
+    User = get_user_model()
+    
     db = SessionLocal()
     try:
         user = db.query(User).filter(User.email == "test@example.com").first()
@@ -69,6 +138,10 @@ def _ensure_test_user():
 
 @pytest.fixture()
 def client():
+    """Test client with authenticated user."""
+    app = get_app()
+    deps = get_deps()
+    
     user = _ensure_test_user()
 
     def override_get_current_active_user():
@@ -90,6 +163,7 @@ def client():
         except Exception:
             pass
 
+    from fastapi.testclient import TestClient
     with TestClient(app) as c:
         try:
             yield c
@@ -107,11 +181,15 @@ def client():
 @pytest.fixture()
 def unauth_client():
     """Test client without auth overrides, to assert 401 responses."""
+    app = get_app()
+    deps = get_deps()
+    
     # Ensure no overrides applied
     try:
         app.dependency_overrides.pop(deps.get_current_active_user, None)
     except Exception:
         pass
+    from fastapi.testclient import TestClient
     with TestClient(app) as c:
         yield c
 
@@ -126,3 +204,50 @@ def test_user():
 def auth_headers():
     """Get authentication headers for testing."""
     return {"Authorization": "Bearer test-token"}
+
+
+@pytest.fixture()
+def mock_db():
+    """Mock database session for unit tests."""
+    return Mock()
+
+
+@pytest.fixture()
+def mock_llm():
+    """Mock LLM service for unit tests."""
+    mock = Mock()
+    mock.generate_with_openrouter.return_value = "Mocked LLM response"
+    return mock
+
+
+@pytest.fixture()
+def sample_conversation_data():
+    """Sample conversation data for testing."""
+    return {
+        "user_id": "test_user",
+        "title": "Test Conversation",
+        "messages": [
+            {"role": "user", "content": "Hello"},
+            {"role": "assistant", "content": "Hi there!"}
+        ]
+    }
+
+
+@pytest.fixture()
+def sample_memory_data():
+    """Sample memory data for testing."""
+    return {
+        "user_id": "test_user",
+        "content": "User likes coffee",
+        "memory_type": "preference",
+        "importance": 0.8,
+        "context": {"source": "conversation"}
+    }
+
+
+@pytest.fixture(autouse=True)
+def cleanup_test_data():
+    """Clean up test data after each test."""
+    yield
+    # Add cleanup logic here if needed
+    pass

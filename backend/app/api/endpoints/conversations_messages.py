@@ -746,7 +746,10 @@ async def reply_to_conversation(
                     # Add basic memory context
                     if user_memories:
                         memory_context = "\n".join([f"- {m['content']}" for m in user_memories[:3]])
-                        enhanced_prompt += f"\n\nKey information about the user:\n{memory_context}"
+                        enhanced_prompt += f"\n\nRELEVANT MEMORIES ABOUT THE USER (ONLY USE THESE - DO NOT MAKE UP ANYTHING ELSE):\n{memory_context}"
+                        enhanced_prompt += "\n\nCRITICAL REMINDER: The above memories are ALL you know about this user. Do NOT reference any other information, preferences, or details not explicitly listed above."
+                    else:
+                        enhanced_prompt += "\n\nNO MEMORIES FOUND: You have no stored information about this user. Do NOT make up any personal details, preferences, or past conversations."
             else:
                 # Use enhanced system prompt when personalization is disabled
                 from app.core.prompts import MEMORY_FIRST_PROMPT

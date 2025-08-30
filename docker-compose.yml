@@ -51,7 +51,7 @@ services:
       - MEMORY_ENABLED=false
       - MEMORY_PROVIDER=none
     ports:
-      - "8000:8000"
+      - "0.0.0.0:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,7 +74,7 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
       - NODE_ENV=production
     ports:
-      - "3000:3000"
+      - "0.0.0.0:3000:3000"
     depends_on:
       backend:
         condition: service_healthy

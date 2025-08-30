@@ -1,4 +1,5 @@
-from typing import List, Optional, Literal, TypedDict
+from typing import List, Optional, Literal
+from typing_extensions import TypedDict
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

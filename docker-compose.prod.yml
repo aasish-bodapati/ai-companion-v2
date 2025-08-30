@@ -1,85 +1,160 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: ai_companion
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+  # Backend API (Production Optimized)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
       args:
-        INSTALL_EXTRAS: "false"
+        INSTALL_EXTRAS: "true"  # Enable memory and advanced features
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/ai_companion
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=change-me-in-prod
-      - LLM_PROVIDER=openrouter
-      # - LLM_API_KEY= # supply via host env or secrets manager
+      # Database (RDS)
+      - DATABASE_URL=${DATABASE_URL}
+      
+      # Redis (ElastiCache)
+      - REDIS_URL=${REDIS_URL}
+      
+      # JWT and Security
+      - SECRET_KEY=${SECRET_KEY}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      
+      # LLM Configuration
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_API_KEY=${LLM_API_KEY}
+      - LLM_BASE_URL=${LLM_BASE_URL}
+      - LLM_MODEL_DEFAULT=${LLM_MODEL_DEFAULT}
+      - LLM_MODEL_FAST=${LLM_MODEL_FAST}
+      - LLM_MODEL_VISION=${LLM_MODEL_VISION}
+      - LLM_MODEL_SUMMARY=${LLM_MODEL_SUMMARY}
+      
+      # CORS (Production)
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+      
+      # Memory System (Production)
+      - MEMORY_ENABLED=${MEMORY_ENABLED}
+      - MEMORY_PROVIDER=${MEMORY_PROVIDER}
+      - EMBEDDING_MODEL_NAME=${EMBEDDING_MODEL_NAME}
+      - FAISS_DATA_DIR=${FAISS_DATA_DIR}
+      - RETRIEVAL_TOP_K=${RETRIEVAL_TOP_K}
+      - RETRIEVAL_RECENT_MESSAGES=${RETRIEVAL_RECENT_MESSAGES}
+      
+      # Feature Flags (Production)
+      - MEMORY_DECAY_ENABLED=${MEMORY_DECAY_ENABLED}
+      - PERSONALITY_REFLECTION_ENABLED=${PERSONALITY_REFLECTION_ENABLED}
+      - GOAL_TRACKING_ENABLED=${GOAL_TRACKING_ENABLED}
+      - AUTO_MEMORY_ENABLED=${AUTO_MEMORY_ENABLED}
+      - ACTIONS_SUGGESTIONS_ENABLED=${ACTIONS_SUGGESTIONS_ENABLED}
+      - DIRECT_EXECUTION_ENABLED=${DIRECT_EXECUTION_ENABLED}
+      
+      # Rate Limiting (Production)
+      - RATE_LIMIT_ENABLED=${RATE_LIMIT_ENABLED}
+      - RATE_LIMIT_WINDOW_SECONDS=${RATE_LIMIT_WINDOW_SECONDS}
+      - RATE_LIMIT_SEND_PER_WINDOW=${RATE_LIMIT_SEND_PER_WINDOW}
+      - RATE_LIMIT_REPLY_PER_WINDOW=${RATE_LIMIT_REPLY_PER_WINDOW}
+      
+      # Performance
       - STREAMING_ENABLED=true
-      # Include your Vercel URL and API domain
-      - BACKEND_CORS_ORIGINS=["https://yourapp.vercel.app", "https://api.yourdomain.com"]
-      - MEMORY_ENABLED=false
-      - MEMORY_PROVIDER=none
+      - WORKERS_PER_CORE=1
+      - MAX_WORKERS=4
+      
+      # Monitoring
+      - OTEL_ENABLED=${OTEL_ENABLED}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME}
+      - OTEL_ENVIRONMENT=${OTEL_ENVIRONMENT}
+      
+      # Production Settings
+      - COOKIE_SECURE=true
+      - COOKIE_SAMESITE=strict
+      - LOG_LEVEL=INFO
+      
     ports:
       - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    volumes:
+      # Persistent storage for FAISS data
+      - faiss_data:${FAISS_DATA_DIR}
+      # Logs
+      - ./logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import sys,urllib.request;\nresp=urllib.request.urlopen('http://localhost:8000/api/v1/utils/health', timeout=10);\nsys.exit(0 if resp.status==200 else 1)"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
     deploy:
       resources:
         limits:
+          memory: 800M
           cpus: '0.5'
-          memory: 512M
         reservations:
-          cpus: '0.2'
-          memory: 256M
+          memory: 512M
+          cpus: '0.25'
+    profiles:
+      - production
 
+  # Nginx Reverse Proxy (Production)
   nginx:
-    image: nginx:1.27-alpine
-    profiles: ["production"]
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+    image: nginx:alpine
     ports:
       - "80:80"
       - "443:443"
+    volumes:
+      - ./infra/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/ssl:/etc/nginx/ssl:ro
+      - ./logs/nginx:/var/log/nginx
     depends_on:
-      backend:
-        condition: service_started
+      - backend
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - production
+
+  # Monitoring Stack (Optional)
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infra/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./infra/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
 
 volumes:
-  postgres_data:
-  redis_data:
+  faiss_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

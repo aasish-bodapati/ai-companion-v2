@@ -93,12 +93,26 @@ async def reply_to_conversation_simple(
                 hasattr(conversation, "personalization_enabled")
                 and conversation.personalization_enabled
             ):
-                # Simple memory context - just add basic user info
-                system_prompt += (
-                    "\n\nYou remember information about the user from previous conversations."
-                )
+                # Enhanced memory context with anti-hallucination protection
+                try:
+                    from app.memory import memory_service
+                    
+                    # Get actual user memories
+                    memory_results = memory_service.search_memories(
+                        db, query="", user_id=str(current_user.id), limit=3
+                    )
+                    if memory_results:
+                        memory_context = "\n".join([f"- {result.content}" for result in memory_results])
+                        system_prompt += f"\n\nRELEVANT MEMORIES ABOUT THE USER (ONLY USE THESE - DO NOT MAKE UP ANYTHING ELSE):\n{memory_context}"
+                        system_prompt += "\n\nCRITICAL REMINDER: The above memories are ALL you know about this user. Do NOT reference any other information, preferences, or details not explicitly listed above."
+                    else:
+                        system_prompt += "\n\nNO MEMORIES FOUND: You have no stored information about this user. Do NOT make up any personal details, preferences, or past conversations."
+                except Exception:
+                    system_prompt += "\n\nMEMORY SERVICE UNAVAILABLE: You have no access to user memories. Do NOT make up any personal details, preferences, or past conversations."
+            else:
+                system_prompt += "\n\nPERSONALIZATION DISABLED: You have no access to user memories. Do NOT make up any personal details, preferences, or past conversations."
         except Exception:
-            pass
+            system_prompt += "\n\nMEMORY ACCESS ERROR: You have no access to user memories. Do NOT make up any personal details, preferences, or past conversations."
 
         # Generate response
         try:
