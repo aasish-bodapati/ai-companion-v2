@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FullCalendar styles (loaded globally via CDN to avoid package export issues) */
+@import url('https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.15/main.min.css');
+@import url('https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.15/main.min.css');
+@import url('https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.15/main.min.css');
+
+:root {
+  --background: #f5f7ff; /* soft indigo tint */
+  --foreground: #0f172a; /* slate-900 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f0f10;
+    --foreground: #e5e7eb; /* gray-200 */
+  }
+}
+
+body {
+  /* Let Tailwind classes control page background; keep text color only */
+  color: var(--foreground);
+}
+
+/* FullCalendar dark mode overrides using CSS variables (v6 supports these) */
+.dark .fc {
+  /* Base colors */
+  --fc-page-bg-color: #0a0a0b; /* near zinc-950 */
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.03); /* subtle zebra */
+  --fc-border-color: #27272a; /* zinc-800 */
+  --fc-text-color: #e5e7eb; /* gray-200 */
+
+  /* Today/now indicators */
+  --fc-today-bg-color: rgba(59, 130, 246, 0.08); /* blue-500/8 */
+  --fc-now-indicator-color: #f87171; /* red-400 */
+
+  /* Events */
+  --fc-event-bg-color: #2563eb; /* blue-600 */
+  --fc-event-border-color: #1d4ed8; /* blue-700 */
+  --fc-event-text-color: #e5e7eb; /* gray-200 */
+}
+
+/* Header/toolbars and misc text tweaks in dark */
+.dark .fc .fc-toolbar-title { color: #e5e7eb; }
+.dark .fc .fc-button { background: #18181b; border-color: #27272a; color: #e5e7eb; }
+.dark .fc .fc-button-primary:not(:disabled).fc-button-active,
+.dark .fc .fc-button-primary:not(:disabled):active { background: #1f2937; border-color: #374151; }
+.dark .fc .fc-col-header-cell-cushion,
+.dark .fc .fc-daygrid-day-number,
+.dark .fc .fc-list-day-cushion { color: #d1d5db; }
+
+/* List view backgrounds */
+.dark .fc .fc-list,
+.dark .fc .fc-list-sticky .fc-list-day { background: #0a0a0b; }
