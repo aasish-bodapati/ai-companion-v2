@@ -76,54 +76,9 @@ async def lifespan(app: FastAPI):
         elif isinstance(db_url, str) and db_url.startswith("postgresql://"):
             logger.info("Detected PostgreSQL DB; running Alembic migrations...")
             try:
-                # Debug: Check if alembic is available
-                import sys
-                logger.info(f"Python path: {sys.path}")
-                
-                # Check what's actually in the system packages directory
+                from alembic.config import Config
+                from alembic import command
                 import os
-                system_packages = "/usr/local/lib/python3.11/site-packages"
-                if os.path.exists(system_packages):
-                    logger.info(f"System packages directory exists: {system_packages}")
-                    try:
-                        packages = os.listdir(system_packages)
-                        alembic_packages = [pkg for pkg in packages if 'alembic' in pkg.lower()]
-                        logger.info(f"All packages in system directory: {packages[:10]}...")  # First 10
-                        logger.info(f"Alembic-related packages: {alembic_packages}")
-                    except Exception as e:
-                        logger.error(f"Error listing system packages: {e}")
-                else:
-                    logger.error(f"System packages directory does not exist: {system_packages}")
-                
-                # Check available packages in sys.modules
-                logger.info(f"Available packages: {[pkg for pkg in sys.modules.keys() if 'alembic' in pkg]}")
-                
-                # Try to import alembic
-                logger.info("Attempting to import alembic...")
-                
-                # First, try to import the alembic package itself
-                try:
-                    import alembic
-                    logger.info(f"✅ Successfully imported alembic package: {alembic}")
-                    logger.info(f"✅ Alembic package location: {alembic.__file__}")
-                except Exception as e:
-                    logger.error(f"❌ Failed to import alembic package: {e}")
-                    raise
-                
-                # Then try to import specific modules
-                try:
-                    from alembic.config import Config
-                    logger.info("✅ Successfully imported alembic.config.Config")
-                except Exception as e:
-                    logger.error(f"❌ Failed to import alembic.config.Config: {e}")
-                    raise
-                    
-                try:
-                    from alembic import command
-                    logger.info("✅ Successfully imported alembic.command")
-                except Exception as e:
-                    logger.error(f"❌ Failed to import alembic.command: {e}")
-                    raise
                 
                 # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
                 alembic_ini_path = os.path.join("/app", "alembic.ini")
@@ -141,7 +96,6 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"alembic.ini not found at {alembic_ini_path}, skipping migrations")
             except Exception as migration_error:
                 logger.error(f"Failed to run migrations: {migration_error}")
-                logger.error(f"Migration error type: {type(migration_error).__name__}")
                 # Don't fail startup on migration errors
     except Exception as e:
         logger.warning("SQLite auto-init skipped/failed: %s", e)
