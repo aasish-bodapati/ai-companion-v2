@@ -38,7 +38,8 @@ RUN adduser -D -s /bin/sh appuser
 
 # Copy only essential application code
 COPY --chown=appuser:appuser app/ ./app/
-# Removed alembic.ini and alembic/ to prevent import conflicts with system package
+# Copy alembic.ini for migration configuration (but exclude alembic/ directory to prevent import conflicts)
+COPY --chown=appuser:appuser alembic.ini ./
 
 # Switch to non-root user
 USER appuser
