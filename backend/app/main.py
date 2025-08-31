@@ -1,7 +1,33 @@
-import logging
 import sys
-import uuid
+import os
+
+# Force Python path to prevent corruption - this must be the FIRST thing we do
+if '/usr/local/bin' in sys.path:
+    sys.path.remove('/usr/local/bin')
+    print(f"🔧 Removed /usr/local/bin from Python path")
+
+# Ensure correct path order
+correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
+if sys.path != correct_path:
+    print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
+    sys.path = correct_path
+
+print(f"🔧 Final Python path: {sys.path}")
+
+# Now import the rest of the application
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
+import logging
+import time
+from app.core.config import settings
+from app.api.api_v1.api import api_router
+from app.core.tracing import init_tracing
+from app.scheduler import start_scheduler, stop_scheduler
+
+import uuid
 from time import perf_counter
 from http import HTTPStatus
 from fastapi import FastAPI, HTTPException, Request
