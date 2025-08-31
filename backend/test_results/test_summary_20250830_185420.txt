@@ -1,9 +1,0 @@
-Test Results Summary - 20250830_185420
-==================================================
-Success: True
-Execution Time: 15.82s
-Passed: 0
-Failed: 0
-Skipped: 0
-Errors: 0
-Total: 0

@@ -44,7 +44,7 @@ A next-generation AI personal assistant that learns from your conversations, rem
    ```bash
    cd backend
    pip install -r requirements.txt
-   cp env_template.txt .env
+   cp .env.example .env
    # Edit .env with your configuration
    python init_db.py
    uvicorn app.main:app --reload
@@ -60,14 +60,6 @@ A next-generation AI personal assistant that learns from your conversations, rem
 4. **Access the Application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
-
-## 📖 Documentation
-
-- **[Deployment Guide](docs/guides/BETA_DEPLOYMENT_GUIDE.md)** - Production deployment instructions
-- **[Beta Readiness](docs/guides/BETA_READINESS_CHECKLIST.md)** - Pre-launch checklist
-- **[Architecture](docs/guides/Tech_Notes_Architecture.md)** - Technical architecture overview
-- **[Product Overview](docs/guides/Product_One_Pager.md)** - Product vision and features
-- **[Roadmap](docs/guides/Roadmap.md)** - Future development plans
 
 ## 🏗️ Architecture
 
@@ -104,12 +96,6 @@ cd frontend
 npm run test:e2e
 ```
 
-### Comprehensive E2E Tests
-```bash
-cd frontend
-npx playwright test tests/e2e-comprehensive.spec.ts
-```
-
 ## 🔧 Configuration
 
 ### Environment Variables
@@ -126,19 +112,30 @@ OPENROUTER_API_KEY=your-openrouter-key
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-## 📦 Deployment
+## 📁 Project Structure
 
-See [Deployment Guide](docs/guides/BETA_DEPLOYMENT_GUIDE.md) for detailed production deployment instructions.
-
-## 🎯 Beta Status
-
-**✅ BETA READY** - The application has achieved 99.99% test coverage and is ready for production use.
-
-- **15/15 Core E2E Tests Passing** (100% success rate)
-- **55+ Comprehensive Test Scenarios** created and validated
-- **Cross-browser compatibility** verified
-- **Performance optimized** (< 3s page loads, < 2s API responses)
-- **Security hardened** (XSS/SQL injection protection)
+```
+ai-companion-v2/
+├── backend/                 # FastAPI backend
+│   ├── app/                # Main application
+│   │   ├── api/           # API endpoints
+│   │   ├── core/          # Core functionality
+│   │   ├── models/        # Database models
+│   │   ├── schemas/       # Pydantic schemas
+│   │   ├── services/      # Business logic
+│   │   └── db/            # Database configuration
+│   ├── tests/             # Test suite
+│   ├── alembic/           # Database migrations
+│   └── requirements.txt   # Python dependencies
+├── frontend/               # Next.js frontend
+│   ├── src/               # Source code
+│   │   ├── app/          # App Router pages
+│   │   ├── components/   # React components
+│   │   ├── services/     # API services
+│   │   └── utils/        # Utility functions
+│   └── package.json      # Node.js dependencies
+└── docs/                  # Documentation
+```
 
 ## 🤝 Contributing
 

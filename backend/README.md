@@ -1,118 +1,206 @@
-# AI Companion - Backend (Canonical)
+# AI Companion Backend
 
-This is the canonical FastAPI backend for the AI Companion application.
+FastAPI-based backend for the AI Companion application, providing intelligent conversation management, memory storage, and AI-powered insights.
 
-> The legacy single-file app `backend/main.py` is deprecated and will be removed. Use `backend/app/main.py`.
+## 🏗️ Architecture
 
-## Features
+### Core Components
+- **FastAPI Application**: Modern, fast web framework with automatic API documentation
+- **SQLAlchemy ORM**: Database abstraction layer with migration support
+- **Alembic**: Database migration management
+- **Pydantic**: Data validation and serialization
+- **JWT Authentication**: Secure user session management
 
-- JWT-based authentication
-- User profile and management (admin-only creation)
-- Conversations and messages APIs
-- OpenAPI docs at `/api/v1/openapi.json` and Swagger UI at `/docs`
+### Directory Structure
+```
+backend/
+├── app/                    # Main application package
+│   ├── api/              # API endpoints and routing
+│   │   ├── endpoints/    # Individual API endpoint modules
+│   │   └── api_v1/      # API version 1 router
+│   ├── core/             # Core functionality and configuration
+│   │   ├── config.py     # Application settings
+│   │   ├── security.py   # Authentication and security
+│   │   └── llm.py       # AI/LLM integration
+│   ├── models/           # Database models (SQLAlchemy)
+│   ├── schemas/          # Pydantic schemas for validation
+│   ├── services/         # Business logic and external services
+│   ├── crud/             # Database CRUD operations
+│   ├── db/               # Database configuration and sessions
+│   ├── memory/           # Memory management and storage
+│   └── middleware/       # Custom middleware components
+├── tests/                 # Test suite
+├── alembic/               # Database migrations
+├── requirements.txt       # Python dependencies
+└── .env.example          # Environment variables template
+```
 
-## Getting Started
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Python 3.10+
-- pip (Python package manager)
+- Python 3.11+
+- PostgreSQL or SQLite
+- Virtual environment (recommended)
 
 ### Installation
 
-1. Create a virtual environment:
+1. **Create and activate virtual environment**
    ```bash
-   python -m venv venv
-   # Windows
-   .\\venv\\Scripts\\activate
-   # macOS/Linux
-   source venv/bin/activate
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
-2. Install dependencies:
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-### Running the Application
+3. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
 
+4. **Initialize database**
+   ```bash
+   python init_db.py
+   ```
+
+5. **Run migrations (if using PostgreSQL)**
+   ```bash
+   alembic upgrade head
+   ```
+
+6. **Start the server**
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Create a `.env` file based on `.env.example`:
+
+```env
+# Database
+DATABASE_URL=sqlite:///./minimal.db
+# or for PostgreSQL: postgresql://user:password@localhost/dbname
+
+# Security
+SECRET_KEY=your-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# AI Services
+OPENROUTER_API_KEY=your-openrouter-api-key
+TOGETHER_API_KEY=your-together-api-key
+
+# CORS
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+
+# Optional: Redis for caching
+REDIS_URL=redis://localhost:6379
+```
+
+## 🧪 Testing
+
+### Run all tests
 ```bash
-uvicorn app.main:app --reload --app-dir backend
+pytest
 ```
 
-The API will be available at `http://localhost:8000`.
-
-## Database (Postgres via Docker)
-
-- Start DB and apply migrations:
-
-```powershell
-# from repo root
-./scripts/db.ps1 up
-```
-
-- Reset DB (drop volumes), re-create, migrate, and seed:
-
-```powershell
-./scripts/db.ps1 reset
-```
-
-- Create a migration from model changes:
-
-```powershell
-./scripts/db.ps1 revision -Message "add_new_field"
-./scripts/db.ps1 migrate
-```
-
-Configuration is read from `backend/app/core/config.py` and environment variables. For local dev, Postgres defaults:
-
-- `POSTGRES_USER=postgres`
-- `POSTGRES_PASSWORD=postgres`
-- `POSTGRES_DB=ai_companion`
-- Host: `localhost`, Port: `5432`
-
-You can also set `DATABASE_URL` to override.
-
-## Canonical API Endpoints
-
-All endpoints are prefixed with `/api/v1`.
-
-- Auth (form-encoded):
-  - `POST /api/v1/login/access-token`
-    - Body (x-www-form-urlencoded): `username`, `password`
-    - Returns: `{ access_token, token_type }`
-- Current user:
-  - `GET /api/v1/users/me` with `Authorization: Bearer <token>`
-- Conversations and messages:
-  - See `docs/ground_truth/api_endpoints.md` for the full list and parameters.
-
-Note: There is no public registration endpoint. User creation is admin-only.
-
-## Testing
-
-- Unit tests use FastAPI `TestClient` and override the DB to SQLite in-memory or file.
-- Do not connect to external services for unit tests.
-
-Run tests:
-
+### Run with coverage
 ```bash
-# unittest
-python -m unittest discover -s backend -p "test_*.py" -v
-
-# or pytest
-pytest backend -q
+pytest --cov=app tests/
 ```
 
-## Project Structure
+### Run specific test file
+```bash
+pytest tests/test_memory.py
+```
 
-- `app/main.py` - FastAPI application with routers under `/api/v1`
-- `app/api/` - API routers and versioned API setup
-- `app/schemas/`, `app/models/`, `app/crud/` - Pydantic schemas, SQLAlchemy models, data access layer
-- `alembic/` - Database migrations (for Postgres environments)
-- `requirements.txt` - Python dependencies
+## 📊 API Documentation
 
-## Documentation
+Once the server is running, you can access:
 
-See `docs/ground_truth/api_endpoints.md` for the canonical API documentation.
+- **Interactive API docs**: http://localhost:8000/docs
+- **ReDoc documentation**: http://localhost:8000/redoc
+- **OpenAPI schema**: http://localhost:8000/openapi.json
 
-This project is proprietary and confidential.
+## 🔍 Key Features
+
+### Memory Management
+- **FAISS Vector Store**: Efficient similarity search for memories
+- **Automatic Extraction**: AI-powered personal information capture
+- **Context Awareness**: Intelligent conversation history management
+
+### AI Integration
+- **Multi-Provider Support**: OpenRouter API for multiple LLM options
+- **Streaming Responses**: Real-time AI conversation streaming
+- **Memory-Augmented**: Context-aware responses using stored memories
+
+### Security
+- **JWT Authentication**: Secure user session management
+- **Rate Limiting**: API abuse prevention
+- **Input Validation**: Comprehensive data validation with Pydantic
+
+## 🚀 Development
+
+### Code Quality
+- **Ruff**: Fast Python linter and formatter
+- **Type Hints**: Full type annotation support
+- **Pydantic**: Runtime data validation
+
+### Database Migrations
+```bash
+# Create new migration
+alembic revision --autogenerate -m "Description of changes"
+
+# Apply migrations
+alembic upgrade head
+
+# Rollback migration
+alembic downgrade -1
+```
+
+### Adding New Endpoints
+
+1. Create endpoint module in `app/api/endpoints/`
+2. Define Pydantic schemas in `app/schemas/`
+3. Add CRUD operations in `app/crud/`
+4. Include in API router in `app/api/api_v1/api.py`
+
+## 📝 Logging
+
+The application uses structured logging with configurable levels:
+
+```python
+import logging
+logger = logging.getLogger(__name__)
+logger.info("Application started")
+logger.error("Error occurred", exc_info=True)
+```
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+1. **Database Connection**: Ensure DATABASE_URL is correct
+2. **Missing Dependencies**: Run `pip install -r requirements.txt`
+3. **Migration Errors**: Check Alembic configuration and run `alembic upgrade head`
+4. **CORS Issues**: Verify BACKEND_CORS_ORIGINS includes your frontend URL
+
+### Debug Mode
+
+Enable debug logging by setting:
+```env
+LOG_LEVEL=DEBUG
+```
+
+## 📚 Additional Resources
+
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org/)
+- [Alembic Documentation](https://alembic.sqlalchemy.org/)
+- [Pydantic Documentation](https://docs.pydantic.dev/)
