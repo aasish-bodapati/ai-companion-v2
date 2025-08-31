@@ -1,7 +1,8 @@
-# Exclude unnecessary files from Docker build context
-# This will significantly reduce image size
+# Exclude local alembic directory to prevent import conflicts with system package
+alembic/
+alembic.ini
 
-# Development files
+# Exclude other unnecessary files
 __pycache__/
 *.pyc
 *.pyo
@@ -10,71 +11,7 @@ __pycache__/
 env/
 venv/
 .env
-.env.local
-.env.development
-
-# Testing
-tests/
-test_*.py
-*_test.py
-pytest.ini
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Documentation
-docs/
-*.md
-README*
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Git
+*.log
 .git/
 .gitignore
-
-# Logs
-*.log
-logs/
-
-# Temporary files
-*.tmp
-*.temp
-temp/
-tmp/
-
-# Large data files
-data/
-uploads/
-*.db
-*.sqlite
-*.sqlite3
-
-# ML models (if not needed in production)
-models/
-*.pkl
-*.h5
-*.onnx
-
-# Cache
-.cache/
-cache/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Docker files (except the one we're using)
-Dockerfile
-Dockerfile.ec2
-docker-compose*.yml
+README.md
