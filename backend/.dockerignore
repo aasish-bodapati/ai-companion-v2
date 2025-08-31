@@ -1,6 +1,5 @@
 # Exclude local alembic directory to prevent import conflicts with system package
 alembic/
-alembic.ini
 
 # Exclude other unnecessary files
 __pycache__/
