@@ -51,5 +51,5 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD python -c "import sys; sys.exit(0)"
 
-# Run the application with explicit port handling
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+# Run the application with explicit port handling and forced Python path
+CMD PYTHONPATH=/app:/usr/local/lib/python3.11/site-packages python -c "import sys; print('CMD Python path:', sys.path)" && PYTHONPATH=/app:/usr/local/lib/python3.11/site-packages uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
