@@ -61,12 +61,25 @@ async def lifespan(app: FastAPI):
         elif isinstance(db_url, str) and db_url.startswith("postgresql://"):
             logger.info("Detected PostgreSQL DB; running Alembic migrations...")
             try:
+                # Debug: Check if alembic is available
+                import sys
+                logger.info(f"Python path: {sys.path}")
+                logger.info(f"Available packages: {[pkg for pkg in sys.modules.keys() if 'alembic' in pkg]}")
+                
+                # Try to import alembic
+                logger.info("Attempting to import alembic...")
                 from alembic.config import Config
+                logger.info("Successfully imported alembic.config.Config")
                 from alembic import command
+                logger.info("Successfully imported alembic.command")
+                
                 import os
                 
                 # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
                 alembic_ini_path = os.path.join("/app", "alembic.ini")
+                logger.info(f"Looking for alembic.ini at: {alembic_ini_path}")
+                logger.info(f"File exists: {os.path.exists(alembic_ini_path)}")
+                
                 if os.path.exists(alembic_ini_path):
                     cfg = Config(alembic_ini_path)
                     # Set the database URL from settings
@@ -78,6 +91,7 @@ async def lifespan(app: FastAPI):
                     logger.warning(f"alembic.ini not found at {alembic_ini_path}, skipping migrations")
             except Exception as migration_error:
                 logger.error(f"Failed to run migrations: {migration_error}")
+                logger.error(f"Migration error type: {type(migration_error).__name__}")
                 # Don't fail startup on migration errors
     except Exception as e:
         logger.warning("SQLite auto-init skipped/failed: %s", e)
