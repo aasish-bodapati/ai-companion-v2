@@ -25,11 +25,14 @@ COPY requirements.free-tier.txt ./
 # Create non-root user first
 RUN adduser -D -s /bin/sh appuser
 
-# Install Python dependencies as appuser to ensure accessibility
+# Install Python dependencies as appuser but force system installation
 USER appuser
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.free-tier.txt \
+    && pip install --no-cache-dir --user -r requirements.free-tier.txt \
     && rm -rf ~/.cache/pip
+
+# Add user's local bin to PATH
+ENV PATH="/home/appuser/.local/bin:$PATH"
 
 # Copy only essential application code
 COPY --chown=appuser:appuser app/ ./app/
