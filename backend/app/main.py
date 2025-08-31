@@ -1,5 +1,20 @@
 import logging
 import sys
+import os
+
+# Force Python path to prevent corruption - this must be the FIRST thing we do
+if '/usr/local/bin' in sys.path:
+    sys.path.remove('/usr/local/bin')
+    print(f"🔧 Removed /usr/local/bin from Python path")
+
+# Ensure correct path order
+correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
+if sys.path != correct_path:
+    print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
+    sys.path = correct_path
+
+print(f"🔧 Final Python path: {sys.path}")
+
 import uuid
 from contextlib import asynccontextmanager
 from time import perf_counter
