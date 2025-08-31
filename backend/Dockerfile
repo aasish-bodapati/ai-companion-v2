@@ -22,22 +22,21 @@ RUN apk add --no-cache \
 # Copy only essential requirements
 COPY requirements.free-tier.txt ./
 
-# Create non-root user first
-RUN adduser -D -s /bin/sh appuser
-
-# Install Python dependencies as appuser but force system installation
-USER appuser
+# Install Python dependencies system-wide (accessible to all users)
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir --user -r requirements.free-tier.txt \
+    && pip install --no-cache-dir -r requirements.free-tier.txt \
     && rm -rf ~/.cache/pip
 
-# Add user's local bin to PATH
-ENV PATH="/home/appuser/.local/bin:$PATH"
+# Create non-root user after installing packages
+RUN adduser -D -s /bin/sh appuser
 
 # Copy only essential application code
 COPY --chown=appuser:appuser app/ ./app/
 COPY --chown=appuser:appuser alembic.ini ./
 COPY --chown=appuser:appuser alembic/ ./alembic/
+
+# Switch to non-root user
+USER appuser
 
 # Expose port (Railway will set the actual port via $PORT)
 EXPOSE $PORT
