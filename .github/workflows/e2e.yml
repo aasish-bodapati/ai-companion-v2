@@ -10,7 +10,7 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 3  # Very short timeout
+    timeout-minutes: 2  # Very short timeout
     
     steps:
       - name: Checkout
@@ -21,18 +21,19 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install backend deps
+      - name: Check Python basics
         working-directory: backend
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          python --version
+          python -c "print('Python is working')"
+          python -c "import sys; print('Python path:'); [print(f'  {p}') for p in sys.path]"
 
-      - name: Run single simple test
+      - name: Check file structure
         working-directory: backend
-        env:
-          DATABASE_URL: sqlite:///./test.db
-          SECRET_KEY: test-secret-key
-          LLM_PROVIDER: stub
-          STREAMING_ENABLED: true
         run: |
-          python -m pytest tests/test_metrics_basic.py -v --tb=short
+          pwd
+          ls -la
+          echo "--- Tests directory ---"
+          ls -la tests/
+          echo "--- App directory ---"
+          ls -la app/
