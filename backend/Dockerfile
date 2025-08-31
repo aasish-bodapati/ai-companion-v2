@@ -27,6 +27,12 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.free-tier.txt \
     && rm -rf ~/.cache/pip
 
+# Debug: Check where packages were installed
+RUN python -c "import sys; print('Python executable:', sys.executable); print('Python version:', sys.version); print('Python path:', sys.path)" \
+    && python -c "import site; print('Site packages:', site.getsitepackages())" \
+    && python -c "import alembic; print('Alembic location:', alembic.__file__)" \
+    && ls -la /usr/local/lib/python3.11/site-packages/ | grep alembic
+
 # Create non-root user after installing packages
 RUN adduser -D -s /bin/sh appuser
 
