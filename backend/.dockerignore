@@ -1,5 +1,6 @@
-# Exclude local alembic directory to prevent import conflicts with system package
-alembic/
+# Exclude Python files that cause import conflicts with system package
+alembic/*.py
+alembic/*/__init__.py
 
 # Exclude other unnecessary files
 __pycache__/
