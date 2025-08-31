@@ -89,9 +89,43 @@ async def lifespan(app: FastAPI):
                     cfg = Config(alembic_ini_path)
                     # Set the database URL from settings
                     cfg.set_main_option("sqlalchemy.url", db_url)
-                    # Run migrations
-                    command.upgrade(cfg, "head")
-                    logger.info("PostgreSQL migrations completed successfully.")
+                    
+                    # Debug: Check current migration status
+                    logger.info("Checking current migration status...")
+                    try:
+                        from alembic import command
+                        from alembic.script import ScriptDirectory
+                        
+                        # Get script directory
+                        script_dir = ScriptDirectory.from_config(cfg)
+                        logger.info(f"Script directory: {script_dir.dir}")
+                        
+                        # List all available revisions
+                        revisions = list(script_dir.walk_revisions())
+                        logger.info(f"Available revisions: {[rev.revision for rev in revisions]}")
+                        
+                        # Check current database revision
+                        from alembic.runtime.migration import MigrationContext
+                        from sqlalchemy import create_engine
+                        
+                        engine = create_engine(db_url)
+                        with engine.connect() as conn:
+                            context = MigrationContext.configure(conn)
+                            current_rev = context.get_current_revision()
+                            logger.info(f"Current database revision: {current_rev}")
+                        
+                    except Exception as e:
+                        logger.warning(f"Could not check migration status: {e}")
+                    
+                    # Run migrations with detailed logging
+                    logger.info("Starting migration execution...")
+                    try:
+                        command.upgrade(cfg, "head")
+                        logger.info("✅ PostgreSQL migrations completed successfully.")
+                    except Exception as e:
+                        logger.error(f"❌ Migration execution failed: {e}")
+                        logger.error(f"Migration error type: {type(e).__name__}")
+                        raise
                 else:
                     logger.warning(f"alembic.ini not found at {alembic_ini_path}, skipping migrations")
             except Exception as migration_error:
