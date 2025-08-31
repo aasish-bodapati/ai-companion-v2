@@ -1,33 +1,7 @@
-import sys
-import os
-
-# Force Python path to prevent corruption - this must be the FIRST thing we do
-if '/usr/local/bin' in sys.path:
-    sys.path.remove('/usr/local/bin')
-    print(f"🔧 Removed /usr/local/bin from Python path")
-
-# Ensure correct path order
-correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
-if sys.path != correct_path:
-    print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
-    sys.path = correct_path
-
-print(f"🔧 Final Python path: {sys.path}")
-
-# Now import the rest of the application
-from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 import logging
-import time
-from app.core.config import settings
-from app.api.api_v1.api import api_router
-from app.core.tracing import init_tracing
-from app.scheduler import start_scheduler, stop_scheduler
-
+import sys
 import uuid
+from contextlib import asynccontextmanager
 from time import perf_counter
 from http import HTTPStatus
 from fastapi import FastAPI, HTTPException, Request
@@ -111,10 +85,30 @@ async def lifespan(app: FastAPI):
                 
                 # Try to import alembic
                 logger.info("Attempting to import alembic...")
-                from alembic.config import Config
-                logger.info("Successfully imported alembic.config.Config")
-                from alembic import command
-                logger.info("Successfully imported alembic.command")
+                
+                # First, try to import the alembic package itself
+                try:
+                    import alembic
+                    logger.info(f"✅ Successfully imported alembic package: {alembic}")
+                    logger.info(f"✅ Alembic package location: {alembic.__file__}")
+                except Exception as e:
+                    logger.error(f"❌ Failed to import alembic package: {e}")
+                    raise
+                
+                # Then try to import specific modules
+                try:
+                    from alembic.config import Config
+                    logger.info("✅ Successfully imported alembic.config.Config")
+                except Exception as e:
+                    logger.error(f"❌ Failed to import alembic.config.Config: {e}")
+                    raise
+                    
+                try:
+                    from alembic import command
+                    logger.info("✅ Successfully imported alembic.command")
+                except Exception as e:
+                    logger.error(f"❌ Failed to import alembic.command: {e}")
+                    raise
                 
                 # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
                 alembic_ini_path = os.path.join("/app", "alembic.ini")
