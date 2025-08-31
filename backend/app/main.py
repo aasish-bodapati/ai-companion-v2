@@ -65,8 +65,8 @@ async def lifespan(app: FastAPI):
                 from alembic import command
                 import os
                 
-                # Get the alembic.ini path
-                alembic_ini_path = os.path.join(os.path.dirname(__file__), "..", "..", "alembic.ini")
+                # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
+                alembic_ini_path = os.path.join("/app", "alembic.ini")
                 if os.path.exists(alembic_ini_path):
                     cfg = Config(alembic_ini_path)
                     # Set the database URL from settings
@@ -75,14 +75,12 @@ async def lifespan(app: FastAPI):
                     command.upgrade(cfg, "head")
                     logger.info("PostgreSQL migrations completed successfully.")
                 else:
-                    logger.warning("alembic.ini not found, skipping migrations")
+                    logger.warning(f"alembic.ini not found at {alembic_ini_path}, skipping migrations")
             except Exception as migration_error:
                 logger.error(f"Failed to run migrations: {migration_error}")
                 # Don't fail startup on migration errors
-        else:
-            logger.info(f"Database URL format not recognized: {db_url}")
     except Exception as e:
-        logger.warning("Database initialization failed: %s", e)
+        logger.warning("SQLite auto-init skipped/failed: %s", e)
 
     # Startup: log registered routes after inclusion
     yield
