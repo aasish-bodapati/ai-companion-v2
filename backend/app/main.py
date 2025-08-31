@@ -64,6 +64,23 @@ async def lifespan(app: FastAPI):
                 # Debug: Check if alembic is available
                 import sys
                 logger.info(f"Python path: {sys.path}")
+                
+                # Check what's actually in the system packages directory
+                import os
+                system_packages = "/usr/local/lib/python3.11/site-packages"
+                if os.path.exists(system_packages):
+                    logger.info(f"System packages directory exists: {system_packages}")
+                    try:
+                        packages = os.listdir(system_packages)
+                        alembic_packages = [pkg for pkg in packages if 'alembic' in pkg.lower()]
+                        logger.info(f"All packages in system directory: {packages[:10]}...")  # First 10
+                        logger.info(f"Alembic-related packages: {alembic_packages}")
+                    except Exception as e:
+                        logger.error(f"Error listing system packages: {e}")
+                else:
+                    logger.error(f"System packages directory does not exist: {system_packages}")
+                
+                # Check available packages in sys.modules
                 logger.info(f"Available packages: {[pkg for pkg in sys.modules.keys() if 'alembic' in pkg]}")
                 
                 # Try to import alembic
@@ -72,8 +89,6 @@ async def lifespan(app: FastAPI):
                 logger.info("Successfully imported alembic.config.Config")
                 from alembic import command
                 logger.info("Successfully imported alembic.command")
-                
-                import os
                 
                 # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
                 alembic_ini_path = os.path.join("/app", "alembic.ini")
