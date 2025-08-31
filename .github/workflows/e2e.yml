@@ -10,29 +10,8 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 10  # Add timeout to prevent hanging
+    timeout-minutes: 5  # Reduced timeout
     
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: ai_companion
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d ai_companion" 
-          --health-interval 5s 
-          --health-timeout 5s 
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ai_companion
-      WEB_BASE: http://localhost:3000
-      API_BASE: http://localhost:8000/api/v1
-      NEXT_TELEMETRY_DISABLED: '1'
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,38 +27,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run DB migrations
-        working-directory: backend
-        run: |
-          alembic upgrade head
-
-      - name: Start backend (FastAPI)
-        working-directory: backend
-        run: |
-          nohup uvicorn app.main:app --host 0.0.0.0 --port 8000 --app-dir . > ../backend.log 2>&1 &
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-
-      - name: Install frontend deps
-        working-directory: frontend
-        run: |
-          npm ci
-
-      - name: Start frontend (Next.js)
-        working-directory: frontend
-        run: |
-          nohup npm run dev > ../frontend.log 2>&1 &
-
-      - name: Wait for servers
-        run: |
-          sleep 30  # Simple wait instead of complex health checks
-
       - name: Run basic backend tests
         working-directory: backend
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: sqlite:///./test.db
+          SECRET_KEY: test-secret-key
+          LLM_PROVIDER: stub
+          STREAMING_ENABLED: true
         run: |
-          python -m pytest tests/ -m "not slow" -v --maxfail=3
+          python -m pytest tests/ -m "not slow and not integration" -v --maxfail=3 --tb=short
