@@ -1,7 +1,7 @@
 """enhance_memory_schema_manual
 
 Revision ID: enhance_memory_schema_manual
-Revises: cba03c5b762d
+Revises: 487eac5fa7c9
 Create Date: 2025-08-30 16:50:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'enhance_memory_schema_manual'
-down_revision = 'cba03c5b762d'
+down_revision = '487eac5fa7c9'
 branch_labels = None
 depends_on = None
 
