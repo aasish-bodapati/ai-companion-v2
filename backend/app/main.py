@@ -141,6 +141,19 @@ if settings.BACKEND_CORS_ORIGINS:
             logger.info(
                 "Origins entries and types: %s", [(o, type(o).__name__) for o in origins_value]
             )
+            
+            # Process origins for CORS middleware
+            processed_origins = [str(origin).rstrip("/") for origin in origins_value]
+            logger.info(f"Processed CORS origins: {processed_origins}")
+            
+            # Check if Vercel origin is included
+            vercel_origin = "https://ai-companion-v2.vercel.app"
+            if vercel_origin in processed_origins:
+                logger.info(f"✅ Vercel origin '{vercel_origin}' found in CORS origins")
+            else:
+                logger.warning(f"❌ Vercel origin '{vercel_origin}' NOT found in CORS origins")
+                logger.warning(f"Available origins: {processed_origins}")
+                
     except Exception as e:
         logger.warning("Failed to log BACKEND_CORS_ORIGINS: %s", e)
 
