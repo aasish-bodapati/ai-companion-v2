@@ -40,18 +40,4 @@ jobs:
         ls -la tests/
         echo "--- App directory ---"
         ls -la app/
-    
-    - name: Check basic imports
-      working-directory: ./backend
-      run: |
-        python -c "import pytest; print('✅ pytest imported successfully')"
-        python -c "import fastapi; print('✅ fastapi imported successfully')"
-        python -c "import sqlalchemy; print('✅ sqlalchemy imported successfully')"
-    
-    - name: Try to import app
-      working-directory: ./backend
-      run: |
-        python -c "import app; print('✅ app package imported successfully')"
-        python -c "from app import main; print('✅ app.main imported successfully')"
-        python -c "from app.main import app; print('✅ app.main.app imported successfully')"
 
