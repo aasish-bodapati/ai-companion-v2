@@ -42,7 +42,7 @@ export default function LoginForm() {
           const returnUrl = searchParams.get('returnUrl');
           
           // Redirect to companion by default, or to the returnUrl if it exists
-          const targetUrl = returnUrl || '/companion';
+          const targetUrl = returnUrl || '/chat';
           router.push(targetUrl);
           
           // Force a full page reload to ensure all auth state is properly loaded

@@ -24,12 +24,10 @@ from app.memory.embeddings import get_embedding
 logger = logging.getLogger(__name__)
 
 
-class IntentType(Enum):
-    """User message intent classification"""
-    ACTION = "action"           # Logging meals, workouts, etc.
-    INTROSPECTION = "introspection"  # Journaling, reflection, feelings
-    DISCUSSION = "discussion"   # General chat, advice, companionship
-    MIXED = "mixed"             # Multiple intents in one message
+class InteractionMode(Enum):
+    """User interaction mode - explicit choice rather than intent detection"""
+    ACTION = "action"           # Structured logging + tracking
+    CONVERSATION = "conversation"  # Open dialogue, guidance, emotional support
 
 
 class MemoryOrchestrator:
@@ -39,21 +37,41 @@ class MemoryOrchestrator:
     """
     
     def __init__(self):
-        # Intent detection patterns
+        # Intent detection patterns - Improved with more specific patterns
         self.action_patterns = [
-            r'\b(?:ate|eat|drank|drank|workout|exercised|slept|took|logged|tracked|completed|finished)\b',
-            r'\b(?:breakfast|lunch|dinner|snack|meal|food|drink|water|coffee|tea)\b',
-            r'\b(?:workout|exercise|gym|run|walk|swim|bike|lift|cardio|strength)\b',
-            r'\b(?:sleep|nap|rest|bed|wake|up|down)\b',
-            r'\b(?:medication|medicine|pill|dose|took|prescribed)\b',
-            r'\b(?:mood|feeling|emotion|happy|sad|stressed|anxious|excited)\b'
+            # Strong action verbs
+            r'\b(?:log|add|track|record|save|mark|set|update|create|start|end|submit|upload|book)\b',
+            # Action + object combinations
+            r'\b(?:log my|add my|track my|record my|save my|mark my|set my|update my|create my)\b',
+            # Specific action patterns
+            r'\b(?:ate|eat|drank|workout|exercised|slept|took|logged|tracked|completed|finished)\b',
+            # Action objects
+            r'\b(?:meal|workout|sleep|mood|journal|water|task|reminder|profile|goal|timer|session|form|file|appointment)\b',
+            # Additional action patterns
+            r'\b(?:record my|track my|save my|mark my)\b',
+            # Specific action phrases
+            r'\b(?:record mood|track mood|log mood)\b'
         ]
         
-        self.introspection_patterns = [
-            r'\b(?:feel|feeling|think|thought|reflect|reflection|wonder|question|struggle|challenge)\b',
-            r'\b(?:lonely|sad|happy|excited|worried|anxious|stressed|overwhelmed|grateful|thankful)\b',
-            r'\b(?:dream|hope|wish|want|need|desire|goal|aspiration|fear|concern)\b',
-            r'\b(?:relationship|family|friend|work|career|life|future|past|present)\b'
+        self.conversation_patterns = [
+            # Emotional reflection patterns
+            r'\b(?:why do i feel|i feel|i\'m feeling|feeling|emotion)\b',
+            # Self-questioning patterns
+            r'\b(?:what\'s wrong|why am i|how do i|am i|i wonder|i\'m not sure)\b',
+            # Emotional state patterns
+            r'\b(?:down|restless|tired|confused|lost|worried|overwhelmed|conflicted|stressed)\b',
+            # Reflection patterns
+            r'\b(?:reflect|reflection|think about|question|doubt|struggle|challenge|need to understand)\b',
+            # Progress and motivation patterns
+            r'\b(?:progress|motivation|consistency|burnout|maintain|improve|better)\b',
+            # Information request patterns
+            r'\b(?:tell me about|what is|how does|what are|can you explain|help me understand)\b',
+            # Opinion and advice patterns
+            r'\b(?:what\'s your opinion|what do you think|advice|suggestion|recommendation)\b',
+            # Knowledge seeking patterns
+            r'\b(?:benefits of|alternatives to|difference between|examples of|science behind)\b',
+            # Learning patterns
+            r'\b(?:how to|get started|typically|usually|generally|commonly)\b'
         ]
         
         # Caring keywords for memory relevance
@@ -63,68 +81,139 @@ class MemoryOrchestrator:
             "work", "family", "friends", "hobby", "goal", "dream", "fear", "strength"
         ]
         
-        # Intent keywords for classification
-        self.intent_keywords = {
-            IntentType.ACTION: ["ate", "eat", "drank", "workout", "exercised", "slept", "took", "logged"],
-            IntentType.INTROSPECTION: ["feel", "feeling", "think", "thought", "reflect", "wonder", "struggle"],
-            IntentType.DISCUSSION: ["what", "how", "why", "when", "where", "tell", "explain", "help"]
-        }
+        # Keywords for action mode processing
+        self.action_keywords = ["log", "add", "track", "record", "save", "mark", "set", "update", "create", "start", "end", "submit", "upload", "book"]
     
-    def detect_intent(self, user_message: str) -> IntentType:
+    def process_action_mode(self, user_message: str) -> Dict[str, Any]:
         """
-        Detect user intent using pattern matching and keyword analysis.
+        Process user message in ACTION mode - structured logging and tracking.
         
         Args:
-            user_message: User's input message
+            user_message: User's input message for action mode
             
         Returns:
-            IntentType classification
+            Dict containing structured response and logging confirmation
         """
         try:
             message_lower = user_message.lower()
             
-            # Check for action patterns first
-            action_score = 0
-            for pattern in self.action_patterns:
-                if re.search(pattern, message_lower):
-                    action_score += 1
+            # Extract action details from user message
+            action_details = self._extract_action_details(message_lower)
             
-            # Check for introspection patterns
-            introspection_score = 0
-            for pattern in self.introspection_patterns:
-                if re.search(pattern, message_lower):
-                    introspection_score += 1
+            # Generate structured confirmation response
+            response = self._generate_action_confirmation(action_details)
             
-            # Determine intent based on scores
-            if action_score > 0 and introspection_score > 0:
-                return IntentType.MIXED
-            elif action_score > 0:
-                return IntentType.ACTION
-            elif introspection_score > 0:
-                return IntentType.INTROSPECTION
-            else:
-                return IntentType.DISCUSSION
-                
+            return {
+                "mode": "action",
+                "response": response,
+                "action_details": action_details,
+                "success": True
+            }
+            
         except Exception as e:
-            logger.error(f"Error detecting intent: {e}")
-            return IntentType.DISCUSSION
+            logger.error(f"Error processing action mode: {e}")
+            return {
+                "mode": "action",
+                "response": "❌ Sorry, I couldn't process that action. Please try again.",
+                "error": str(e),
+                "success": False
+            }
     
-    def extract_intent_keywords(self, user_message: str, intent: IntentType) -> List[str]:
-        """Extract keywords that contributed to intent classification"""
+    def process_conversation_mode(self, user_message: str) -> Dict[str, Any]:
+        """
+        Process user message in CONVERSATION mode - open dialogue and support.
+        
+        Args:
+            user_message: User's input message for conversation mode
+            
+        Returns:
+            Dict containing conversational response
+        """
         try:
-            message_lower = user_message.lower()
-            keywords = []
-            
-            if intent in self.intent_keywords:
-                for keyword in self.intent_keywords[intent]:
-                    if keyword in message_lower:
-                        keywords.append(keyword)
-            
-            return keywords[:5]  # Return top 5 keywords
+            # For conversation mode, we'll let the holistic service handle the response
+            # This maintains the rich context and cross-connection analysis
+            return {
+                "mode": "conversation",
+                "response": None,  # Will be filled by holistic service
+                "success": True
+            }
             
         except Exception as e:
-            logger.error(f"Error extracting intent keywords: {e}")
-            return []
+            logger.error(f"Error processing conversation mode: {e}")
+            return {
+                "mode": "conversation",
+                "response": "❌ Sorry, I'm having trouble with our conversation. Please try again.",
+                "error": str(e),
+                "success": False
+            }
+    
+    def _extract_action_details(self, message_lower: str) -> Dict[str, Any]:
+        """Extract structured action details from user message"""
+        action_details = {
+            "action_type": "unknown",
+            "items": [],
+            "notes": "",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Detect action type (order matters - check specific types first)
+        if any(word in message_lower for word in ["water", "hydration", "glasses"]):
+            action_details["action_type"] = "hydration"
+        elif any(word in message_lower for word in ["mood", "feeling", "feel"]):
+            action_details["action_type"] = "mood"
+            # Extract mood indicators
+            if any(word in message_lower for word in ["happy", "good", "great"]):
+                action_details["mood"] = "positive"
+            elif any(word in message_lower for word in ["sad", "bad", "tired"]):
+                action_details["mood"] = "negative"
+        elif any(word in message_lower for word in ["meal", "food", "ate", "eat", "drank"]):
+            action_details["action_type"] = "meal"
+            # Extract food items
+            food_keywords = ["chicken", "rice", "salad", "pizza", "burger", "smoothie", "protein"]
+            action_details["items"] = [word for word in food_keywords if word in message_lower]
+        elif any(word in message_lower for word in ["workout", "exercise", "gym", "run", "walk"]):
+            action_details["action_type"] = "workout"
+            # Extract workout details
+            if "strength" in message_lower:
+                action_details["intensity"] = "strength"
+            elif "cardio" in message_lower:
+                action_details["intensity"] = "cardio"
+        elif any(word in message_lower for word in ["journal", "entry", "reflection"]):
+            action_details["action_type"] = "journal"
+        
+        # Extract notes (everything after common action words)
+        action_words = ["log", "add", "track", "record", "save", "mark"]
+        for word in action_words:
+            if word in message_lower:
+                parts = message_lower.split(word)
+                if len(parts) > 1:
+                    action_details["notes"] = parts[1].strip()
+                    break
+        
+        return action_details
+    
+    def _generate_action_confirmation(self, action_details: Dict[str, Any]) -> str:
+        """Generate structured confirmation response for actions"""
+        action_type = action_details["action_type"]
+        
+        if action_type == "meal":
+            items = action_details.get("items", [])
+            if items:
+                return f"✅ Meal logged: {' + '.join(items)}"
+            else:
+                return "✅ Meal logged successfully"
+        elif action_type == "workout":
+            intensity = action_details.get("intensity", "general")
+            return f"✅ Workout logged: {intensity} training"
+        elif action_type == "mood":
+            mood = action_details.get("mood", "neutral")
+            return f"✅ Mood logged: {mood}"
+        elif action_type == "hydration":
+            return "✅ Hydration logged successfully"
+        elif action_type == "journal":
+            return "✅ Journal entry saved"
+        else:
+            return "✅ Action logged successfully"
     
     def fetch_holistic_context(
         self,

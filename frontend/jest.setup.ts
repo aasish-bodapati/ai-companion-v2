@@ -65,7 +65,11 @@ global.IntersectionObserver = class IntersectionObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-};
+  root: Element | null = null;
+  rootMargin: string = '';
+  thresholds: ReadonlyArray<number> = [];
+  takeRecords() { return []; }
+} as any;
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -84,7 +88,9 @@ const localStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-};
+  length: 0,
+  key: jest.fn(),
+} as any;
 global.localStorage = localStorageMock;
 
 // Mock sessionStorage
@@ -93,7 +99,9 @@ const sessionStorageMock = {
   setItem: jest.fn(),
   removeItem: jest.fn(),
   clear: jest.fn(),
-};
+  length: 0,
+  key: jest.fn(),
+} as any;
 global.sessionStorage = sessionStorageMock;
 
 // Mock console methods in tests to reduce noise
@@ -133,9 +141,10 @@ const mockDate = new Date('2024-01-15T10:00:00Z');
 global.Date = class extends Date {
   constructor(...args: any[]) {
     if (args.length === 0) {
-      return mockDate;
+      super();
+    } else {
+      super(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
     }
-    return new (Date as any)(...args);
   }
 } as any;
 
@@ -144,7 +153,6 @@ const mockRandom = jest.fn(() => 0.5);
 global.Math.random = mockRandom;
 
 // Setup test environment variables
-process.env.NODE_ENV = 'test';
 process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000';
 
 // Mock environment variables

@@ -40,6 +40,12 @@ export default function NavBar() {
                 <NavLink href="/calendar" pathname={pathname}>
                   Calendar
                 </NavLink>
+                <NavLink href="/fitness" pathname={pathname}>
+                  Fitness
+                </NavLink>
+                <NavLink href="/nutrition" pathname={pathname}>
+                  Nutrition
+                </NavLink>
                 <NavLink href="/ops/metrics" pathname={pathname}>
                   Insights
                 </NavLink>
@@ -150,6 +156,12 @@ export default function NavBar() {
                 </MobileNavLink>
                 <MobileNavLink href="/calendar" pathname={pathname}>
                   Calendar
+                </MobileNavLink>
+                <MobileNavLink href="/fitness" pathname={pathname}>
+                  Fitness
+                </MobileNavLink>
+                <MobileNavLink href="/nutrition" pathname={pathname}>
+                  Nutrition
                 </MobileNavLink>
                 <MobileNavLink href="/ops/metrics" pathname={pathname}>
                   Insights

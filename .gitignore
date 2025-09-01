@@ -136,3 +136,104 @@ test-results/
 # Local development
 .vercel/
 .windsurf/
+
+# AI Companion v2 specific files
+# Database files
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# FAISS vector store files
+data/faiss/
+*.index
+*.meta.json
+
+# Test and evaluation files
+test_*.py
+debug_*.py
+*_test.py
+*_evaluation.py
+*_evaluation_report.json
+rich_circle_evaluation.json
+evaluate_*.py
+check_*.py
+simple_test.py
+
+# Evaluation reports
+user_perspective_evaluation_report.json
+user_evaluation_report.json
+
+# Development and debugging
+.coveragerc
+.secrets.baseline
+.flake8
+ruff.toml
+pytest.ini
+
+# Temporary and cache files
+.cache/
+*.cache
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Logs and debugging
+*.log
+logs/
+debug/
+debug_*.py
+
+# Environment and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+*.env
+secrets/
+.secrets/
+
+# Additional patterns
+# Alembic migration files (keep versions but ignore cache)
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+# Test results and coverage
+test-results/
+tests/api/_trace_logs/
+
+# Frontend specific
+.next/
+next-env.d.ts
+tsconfig.tsbuildinfo
+
+# Package lock files (optional - some teams prefer to commit these)
+# package-lock.json
+# yarn.lock

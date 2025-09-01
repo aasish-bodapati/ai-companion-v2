@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-import { useConversations, useCreateConversation, useUpdateConversation, useDeleteConversation } from '../api';
+import { useConversations, useCreateConversation, useUpdateConversation, useDeleteConversation } from '..';
 
 export function ConversationSidebar() {
   const router = useRouter();
@@ -78,7 +78,7 @@ export function ConversationSidebar() {
       activeId = rest.split('/')[0];
     }
     if (activeId && selectedIds.has(activeId)) {
-      router.push('/companion');
+              router.push('/chat');
     }
     // Optimistically remove from cache for instant UI feedback
     try {
@@ -211,7 +211,7 @@ export function ConversationSidebar() {
                         if (confirm('Delete this conversation?')) {
                           // If currently viewing this conversation, navigate away first to avoid 404 flash
                           if (isActive) {
-                            router.push('/companion');
+                            router.push('/chat');
                           }
                           deleteConversation({ id: conversation.id });
                         }

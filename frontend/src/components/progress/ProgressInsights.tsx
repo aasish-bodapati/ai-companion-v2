@@ -69,6 +69,7 @@ export default function ProgressInsights({ className = '' }: ProgressInsightsPro
       case 'on-track': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30';
       case 'behind': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30';
       case 'ahead': return 'text-purple-600 bg-purple-100 dark:bg-purple-900/30';
+      case 'not-tracked': return 'text-gray-500 bg-gray-100 dark:bg-gray-800/50';
       default: return 'text-gray-600 bg-gray-100 dark:bg-gray-800/50';
     }
   };
@@ -79,6 +80,7 @@ export default function ProgressInsights({ className = '' }: ProgressInsightsPro
       case 'on-track': return '🎯 On Track';
       case 'behind': return '⚠️ Behind';
       case 'ahead': return '🚀 Ahead';
+      case 'not-tracked': return '📊 Not Tracked';
       default: return '❓ Unknown';
     }
   };

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 import logging
 import json
 
-from app.memory.orchestrator import memory_orchestrator, IntentType
+from app.memory.orchestrator import memory_orchestrator, InteractionMode
 from app.memory.service import MemoryService
 from app.models.memory import MemoryNode, MemoryType
 from app.models.conversation import Conversation, Message
@@ -53,9 +53,6 @@ class HolisticMemoryService(MemoryService):
             Dict containing unified holistic context
         """
         try:
-            # Detect user intent
-            intent = self.orchestrator.detect_intent(user_message)
-            
             # Fetch holistic context from orchestrator
             holistic_context = self.orchestrator.fetch_holistic_context(
                 db=db,
@@ -64,13 +61,6 @@ class HolisticMemoryService(MemoryService):
                 conversation_id=conversation_id,
                 time_window_hours=time_window_hours
             )
-            
-            # Add intent classification to context
-            holistic_context["intent"] = {
-                "type": intent.value,
-                "confidence": self._calculate_intent_confidence(user_message, intent),
-                "keywords": self._extract_intent_keywords(user_message, intent)
-            }
             
             # Enhance context with existing memory service data
             enhanced_context = self._enhance_with_existing_memories(
@@ -83,10 +73,90 @@ class HolisticMemoryService(MemoryService):
             logger.error(f"Error getting holistic context: {e}")
             return {
                 "error": str(e),
-                "intent": {"type": "unknown", "confidence": 0.0},
                 "data_sources": {},
                 "holistic_summary": {"user_state": "Unknown"}
             }
+    
+    def process_two_mode_interaction(
+        self,
+        db: Session,
+        user_id: str,
+        user_message: str,
+        mode: InteractionMode,
+        conversation_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Process user interaction using the two-mode system.
+        
+        Args:
+            db: Database session
+            user_id: User identifier
+            user_message: Current user message
+            mode: Explicit interaction mode (ACTION or CONVERSATION)
+            conversation_id: Current conversation ID
+            
+        Returns:
+            Dict containing response and context based on mode
+        """
+        try:
+            if mode == InteractionMode.ACTION:
+                # Process in action mode - structured logging
+                action_result = self.orchestrator.process_action_mode(user_message)
+                
+                # Store the action in memory
+                if action_result["success"]:
+                    self._store_action_memory(db, user_id, user_message, action_result["action_details"])
+                
+                return {
+                    "mode": "action",
+                    "response": action_result["response"],
+                    "action_details": action_result.get("action_details"),
+                    "context_used": {"mode": "action", "action_type": action_result.get("action_details", {}).get("action_type")}
+                }
+                
+            elif mode == InteractionMode.CONVERSATION:
+                # Process in conversation mode - rich AI response
+                return self.generate_holistic_response(
+                    db=db,
+                    user_id=user_id,
+                    user_message=user_message,
+                    conversation_id=conversation_id
+                )
+            
+            else:
+                return {
+                    "error": "Invalid interaction mode",
+                    "mode": "unknown"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error processing two-mode interaction: {e}")
+            return {
+                "error": str(e),
+                "mode": mode.value if mode else "unknown"
+            }
+    
+    def _store_action_memory(self, db: Session, user_id: str, user_message: str, action_details: Dict[str, Any]):
+        """Store action in memory for future context"""
+        try:
+            # Create a memory node for the action
+            memory_content = f"User logged: {action_details.get('action_type', 'action')} - {user_message}"
+            
+            memory_node = MemoryNode(
+                user_id=user_id,
+                content=memory_content,
+                content_type=MemoryType.ACTION.value,
+                category="action_logging",
+                subcategory=action_details.get("action_type", "unknown"),
+                memory_metadata=json.dumps(action_details),
+                timestamp=datetime.now()
+            )
+            
+            db.add(memory_node)
+            db.commit()
+            
+        except Exception as e:
+            logger.error(f"Error storing action memory: {e}")
     
     def generate_holistic_response(
         self,
@@ -132,6 +202,7 @@ class HolisticMemoryService(MemoryService):
             )
             
             return {
+                "mode": "conversation",
                 "response": ai_response,
                 "context_used": context,
                 "intent": context.get("intent", {}),
@@ -141,6 +212,7 @@ class HolisticMemoryService(MemoryService):
         except Exception as e:
             logger.error(f"Error generating holistic response: {e}")
             return {
+                "mode": "conversation",
                 "error": str(e),
                 "response": "I'm having trouble accessing your memory context right now. Let me help you with a fresh conversation.",
                 "context_used": {},
@@ -197,39 +269,28 @@ class HolisticMemoryService(MemoryService):
                 "total_entries": 0
             }
     
-    def _calculate_intent_confidence(self, user_message: str, intent: IntentType) -> float:
-        """Calculate confidence score for intent classification"""
+    def _calculate_mode_confidence(self, user_message: str, mode: InteractionMode) -> float:
+        """Calculate confidence score for mode classification"""
         try:
-            # Use the orchestrator's keyword extraction method
-            keywords = self.orchestrator.extract_intent_keywords(user_message, intent)
+            # Simple keyword-based confidence calculation
+            message_lower = user_message.lower()
+            confidence = 0.0
             
-            if not keywords:
-                return 0.5
+            if mode == InteractionMode.ACTION:
+                action_keywords = ["log", "add", "track", "record", "save", "mark", "set", "update", "create"]
+                matches = sum(1 for keyword in action_keywords if keyword in message_lower)
+                confidence = min(1.0, matches / 2.0)  # Normalize to 0-1
+                
+            elif mode == InteractionMode.CONVERSATION:
+                conversation_keywords = ["feel", "feeling", "why", "question", "doubt", "reflect", "wonder", "tell me", "explain", "what is", "how does", "opinion", "advice", "help"]
+                matches = sum(1 for keyword in conversation_keywords if keyword in message_lower)
+                confidence = min(1.0, matches / 2.0)
             
-            # Count keyword matches
-            matches = len(keywords)
-            
-            # Calculate confidence based on matches and message length
-            base_confidence = min(1.0, matches / 3.0)  # Max confidence with 3+ matches
-            
-            # Boost confidence for longer messages (more context)
-            length_boost = min(0.2, len(user_message) / 100.0)
-            
-            return min(1.0, base_confidence + length_boost)
+            return confidence
             
         except Exception as e:
-            logger.error(f"Error calculating intent confidence: {e}")
+            logger.error(f"Error calculating mode confidence: {e}")
             return 0.5
-    
-    def _extract_intent_keywords(self, user_message: str, intent: IntentType) -> List[str]:
-        """Extract keywords that contributed to intent classification"""
-        try:
-            # Use the orchestrator's keyword extraction method
-            return self.orchestrator.extract_intent_keywords(user_message, intent)
-            
-        except Exception as e:
-            logger.error(f"Error extracting intent keywords: {e}")
-            return []
     
     def _enhance_with_existing_memories(
         self,

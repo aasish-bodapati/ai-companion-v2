@@ -121,7 +121,7 @@ export async function countAssistantIndicators(page: Page) {
 // New utility to handle the companion page redirect flow
 export async function navigateToChat(page: Page, baseURL: string) {
   // Navigate to companion page which will redirect to chat
-  await page.goto(`${baseURL}/companion`);
+  await page.goto(`${baseURL}/chat`);
   
   // Wait for redirect to chat page
   await page.waitForURL(/.*\/chat\/[^\/]+/, { timeout: 30000 });

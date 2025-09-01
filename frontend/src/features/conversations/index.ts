@@ -7,6 +7,9 @@ export * from './types';
 // Utilities
 export * from './utils';
 
+// API utilities
+export * from './api/deduplication';
+
 // Conversation hooks
 export * from './hooks/useConversations';
 

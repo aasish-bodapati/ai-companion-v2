@@ -15,8 +15,7 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const isAuthPage = ['/login', '/register'].includes(pathname);
-  const isOnboarding = pathname === '/onboarding';
-  const isAppPage = !isAuthPage && !isOnboarding;
+  const isAppPage = !isAuthPage;
   // Create a single QueryClient per app lifetime
   const [queryClient] = useState(() => new QueryClient());
 

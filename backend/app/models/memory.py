@@ -16,6 +16,9 @@ class MemoryType(Enum):
     MESSAGE = "message"
     ONBOARDING = "onboarding"
     
+    # Action types for two-mode UI
+    ACTION = "action"
+    
     # New semantic types
     GOAL = "goal"
     HABIT = "habit"
@@ -57,7 +60,7 @@ class MemoryNode(Base):
 
     # Core fields
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    faiss_id = Column(String(36), unique=True, nullable=False, index=True)
+    faiss_id = Column(String(36), unique=True, nullable=True, index=True)  # Made nullable for now
     content = Column(Text, nullable=False)
     
     # Enhanced categorization

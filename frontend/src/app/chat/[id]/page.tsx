@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { useCreateConversation, useConversation, useUpdateConversation } from '@/features/conversations/api';
+import { useCreateConversation, useConversation, useUpdateConversation } from '@/features/conversations';
 import { ConversationSidebar } from '@/features/conversations/components/ConversationSidebar';
 import { EnhancedChatInterface } from '@/components/chat/EnhancedChatInterface';
 import { NudgeInbox } from '@/features/nudges/components/NudgeInbox';

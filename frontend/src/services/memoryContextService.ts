@@ -397,6 +397,37 @@ class MemoryContextService {
     };
   }
 
+  /**
+   * Check if user has completed onboarding
+   */
+  public async hasCompletedOnboarding(): Promise<boolean> {
+    try {
+      await api.get('/users/me/onboarding');
+      return true;
+    } catch (error: any) {
+      if (error.status === 404) {
+        return false;
+      }
+      // For other errors, assume onboarding is incomplete
+      return false;
+    }
+  }
+
+  /**
+   * Get onboarding completion status
+   */
+  public async getOnboardingStatus(): Promise<{ completed: boolean; hasProfile: boolean }> {
+    try {
+      const response = await api.get('/users/me/onboarding');
+      return { completed: true, hasProfile: true };
+    } catch (error: any) {
+      if (error.status === 404) {
+        return { completed: false, hasProfile: false };
+      }
+      return { completed: false, hasProfile: false };
+    }
+  }
+
   // Clear cache when user data changes
   clearCache(): void {
     this.cache.clear();

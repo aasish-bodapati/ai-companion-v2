@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+            
+            try {
+                // Test basic connectivity
+                const response = await fetch('http://localhost:8000/api/v1/public/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<p>✅ Health check: ${JSON.stringify(data)}</p>`;
+                
+                // Test onboarding endpoint (will fail without auth, but should get 401, not 404)
+                try {
+                    const onboardingResponse = await fetch('http://localhost:8000/api/v1/users/me/onboarding');
+                    resultDiv.innerHTML += `<p>🔒 Onboarding endpoint: ${onboardingResponse.status} ${onboardingResponse.statusText}</p>`;
+                } catch (e) {
+                    resultDiv.innerHTML += `<p>❌ Onboarding endpoint error: ${e.message}</p>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p>❌ Connection failed: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

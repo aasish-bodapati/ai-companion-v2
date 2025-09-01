@@ -17,7 +17,7 @@ export const test = base.extend<{
     await completeOnboarding(request, token);
 
     const page = await context.newPage();
-    await page.goto('/companion');
+    await page.goto('/chat');
     
     // Wait for redirect to chat page
     await page.waitForURL(/.*\/chat\/[^\/]+/, { timeout: 30000 });

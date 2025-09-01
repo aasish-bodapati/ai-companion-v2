@@ -41,7 +41,7 @@ export interface GoalProgress {
   target: number;
   unit: string;
   percentage: number;
-  status: 'on-track' | 'behind' | 'ahead' | 'completed';
+  status: 'on-track' | 'behind' | 'ahead' | 'completed' | 'not-tracked';
   trend: 'improving' | 'declining' | 'stable';
 }
 
@@ -74,12 +74,11 @@ class ProgressTrackingService {
     if (cached) return cached;
 
     try {
-      const [hydration, mood, journal, workouts, meals] = await Promise.all([
+      // Only fetch available tracker endpoints (workouts and meals have been removed)
+      const [hydration, mood, journal] = await Promise.all([
         api.get('/trackers/hydration', { from_: startDate, to: endDate, limit: 1000 }),
         api.get('/trackers/mood', { from_: startDate, to: endDate, limit: 1000 }),
-        api.get('/trackers/journal', { from_: startDate, to: endDate, limit: 1000 }),
-        api.get('/trackers/workouts', { from_: startDate, to: endDate, limit: 1000 }),
-        api.get('/trackers/meals', { from_: startDate, to: endDate, limit: 1000 })
+        api.get('/trackers/journal', { from_: startDate, to: endDate, limit: 1000 })
       ]);
 
       // Group data by date
@@ -128,23 +127,8 @@ class ProgressTrackingService {
         }
       });
 
-      workouts.data?.forEach((entry: any) => {
-        const date = entry.when?.split('T')[0] || entry.created_at?.split('T')[0];
-        if (date && progressByDate.has(date)) {
-          const progress = progressByDate.get(date)!;
-          progress.workouts += 1;
-        }
-      });
-
-      meals.data?.forEach((entry: any) => {
-        const date = entry.when?.split('T')[0] || entry.created_at?.split('T')[0];
-        if (date && progressByDate.has(date)) {
-          const progress = progressByDate.get(date)!;
-          progress.meals += 1;
-          progress.protein += entry.protein || 0;
-          progress.calories += entry.calories || 0;
-        }
-      });
+      // Note: Workouts and meals tracking have been removed from the backend
+      // These fields remain at 0 as initialized above
 
       const progressData = Array.from(progressByDate.values());
       this.setCache(cacheKey, progressData);
@@ -210,7 +194,7 @@ class ProgressTrackingService {
     }
   }
 
-  // Get goal progress for different categories
+  // Get current goal progress
   async getGoalProgress(): Promise<GoalProgress[]> {
     try {
       const memoryData = await memoryContextService.getMemoryContext();
@@ -224,32 +208,34 @@ class ProgressTrackingService {
         sleep: 0
       };
 
+      // Note: Protein and calories tracking have been removed from the backend
+      // These goals are now informational only
       const goals: GoalProgress[] = [
         {
           category: 'Protein',
-          current: todayProgress.protein,
+          current: 0, // Set to 0 since meals tracking is removed
           target: memoryData.goals.protein.target,
           unit: 'g',
-          percentage: Math.round((todayProgress.protein / memoryData.goals.protein.target) * 100),
-          status: this.getGoalStatus(todayProgress.protein, memoryData.goals.protein.target),
+          percentage: 0, // Set to 0 since tracking is removed
+          status: 'not-tracked' as any, // Custom status for removed features
           trend: 'stable'
         },
         {
           category: 'Calories',
-          current: todayProgress.calories,
+          current: 0, // Set to 0 since meals tracking is removed
           target: memoryData.goals.calories.target,
           unit: 'cal',
-          percentage: Math.round((todayProgress.calories / memoryData.goals.calories.target) * 100),
-          status: this.getGoalStatus(todayProgress.calories, memoryData.goals.calories.target),
+          percentage: 0, // Set to 0 since tracking is removed
+          status: 'not-tracked' as any, // Custom status for removed features
           trend: 'stable'
         },
         {
           category: 'Workouts',
-          current: todayProgress.workouts,
+          current: 0, // Set to 0 since workouts tracking is removed
           target: 1,
           unit: 'workout',
-          percentage: Math.round((todayProgress.workouts / 1) * 100),
-          status: this.getGoalStatus(todayProgress.workouts, 1),
+          percentage: 0, // Set to 0 since tracking is removed
+          status: 'not-tracked' as any, // Custom status for removed features
           trend: 'stable'
         }
       ];
@@ -405,6 +391,34 @@ class ProgressTrackingService {
   // Refresh specific cache key
   refreshCache(key: string): void {
     this.cache.delete(key);
+  }
+
+  // Get memory context for AI interactions
+  async getMemoryContext(): Promise<MemoryContextData> {
+    try {
+      return await memoryContextService.getMemoryContext();
+    } catch (error) {
+      console.error('Failed to get memory context:', error);
+      return {
+        routines: [],
+        goals: {
+          protein: { target: 0, current: 0, unit: 'g' },
+          calories: { target: 0, current: 0, unit: 'cal' },
+          workout: { target: '', current: '', unit: '' },
+          sleep: { target: '', current: '', unit: '' }
+        },
+        insights: [],
+        recentMemories: [],
+        userProfile: {
+          wakeUpTime: '',
+          bedtime: '',
+          workoutTime: '',
+          dailySchedule: '',
+          fitnessGoals: '',
+          nutritionGoals: ''
+        }
+      };
+    }
   }
 }
 

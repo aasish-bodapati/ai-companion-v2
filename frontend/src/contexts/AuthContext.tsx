@@ -4,7 +4,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import api from '@/lib/api';
 import logger from '@/utils/logger';
 import { useRouter } from 'next/navigation';
-import { fetchMyOnboarding } from '@/features/onboarding/api';
+
 import { toast } from 'sonner';
 
 interface User {
@@ -23,6 +23,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isLoading: boolean;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,13 +32,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
   const router = useRouter();
 
   // Check for existing session on initial load
   useEffect(() => {
+    console.log('🔍 Auth: useEffect running - checking for existing session');
     const initializeAuth = async () => {
       try {
         const storedToken = localStorage.getItem('token');
+        console.log('🔍 Auth: Checking stored token:', storedToken ? 'Present' : 'Missing');
         logger.debug('Auth: Checking stored token:', storedToken ? 'Present' : 'Missing');
         
         if (storedToken) {
@@ -50,20 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(userData);
           setToken(storedToken);
 
-          // Check onboarding status and redirect if not completed
-          try {
-            const ob = await fetchMyOnboarding();
-            if (ob && ob.completed === false) {
-              // Avoid redirect loop if already on onboarding
-              if (window.location.pathname !== '/onboarding') {
-                router.push('/onboarding');
-              }
-            }
-          } catch (e) {
-            // Non-blocking: onboarding may not exist yet or have compatibility issues
-            // Don't redirect to onboarding - let user access the app normally
-            logger.warn('Onboarding check failed, continuing without redirect', e);
-          }
+
         } else {
           logger.debug('Auth: No stored token found');
         }
@@ -127,16 +118,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(tokenResponse.access_token);
         toast.success('Signed in successfully');
         
-        // After login, check onboarding and route accordingly
-        try {
-          const ob = await fetchMyOnboarding();
-          if (ob && ob.completed === false) {
-            router.push('/onboarding');
-          }
-        } catch (e) {
-          // If onboarding not found, go to onboarding to start
-          router.push('/onboarding');
-        }
+                  // After login, route to today page
+        router.replace('/today');
         
         // Return success status - let the component handle redirection
         return true;
@@ -177,11 +160,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const payload = { email, password, full_name: fullName } as any;
     await api.post('/register', payload);
     toast.success('Account created successfully');
-    // Try auto-login to streamline onboarding
+    // Try auto-login
     try {
       const ok = await login(email, password);
       if (ok) {
-        // login() will route to onboarding if not completed
+        // login() will route to today page
         return;
       }
     } catch (_) {
@@ -194,6 +177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     setUser(null);
     setToken(null);
+
     localStorage.removeItem('token');
     router.push('/login');
   };
@@ -208,6 +192,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         logout,
         isAuthenticated: !!user,
         isLoading,
+
       }}
     >
       {children}

@@ -1,7 +1,10 @@
-"use client";
+import OnboardingContent from './OnboardingContent';
 
-import OnboardingWizard from '@/features/onboarding/OnboardingWizard';
+export const metadata = {
+  title: 'Complete Onboarding - AI Companion',
+  description: 'Complete your onboarding to personalize your AI Companion experience',
+};
 
 export default function OnboardingPage() {
-  return <OnboardingWizard mode="onboarding" />;
+  return <OnboardingContent />;
 }
