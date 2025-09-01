@@ -273,6 +273,44 @@ class ActionsRegistry:
                 scopes=["nutrition:write"],
             )
         )
+        # Add nutrition.log_meal action
+        self.register(
+            ActionDescriptor(
+                name="nutrition.log_meal",
+                title="Log meal with food items",
+                params_schema={
+                    "$schema": "https://json-schema.org/draft/2020-12/schema",
+                    "type": "object",
+                    "properties": {
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "List of food items consumed"
+                        },
+                        "when": {"type": "string", "format": "date-time"},
+                        "est_protein_g": {"type": "integer", "minimum": 0, "maximum": 300},
+                        "est_kcal": {"type": "integer", "minimum": 0, "maximum": 4000},
+                        "notes": {"type": "string"},
+                        "idempotency_key": {"type": "string"},
+                    },
+                    "required": ["items"],
+                    "additionalProperties": False,
+                },
+                result_schema={
+                    "type": "object",
+                    "properties": {
+                        "meal_id": {"type": "string"},
+                        "status": {"type": "string"},
+                        "items_logged": {"type": "integer"},
+                        "undo_token": {"type": "string"},
+                    },
+                    "required": ["meal_id", "status", "items_logged"],
+                    "additionalProperties": False,
+                },
+                risk="low",
+                scopes=["nutrition:write"],
+            )
+        )
         # Additional direct execution actions
         self.register(
             ActionDescriptor(
@@ -338,55 +376,7 @@ class ActionsRegistry:
                 scopes=["mood:write"],
             )
         )
-        # Calendar actions
-        self.register(
-            ActionDescriptor(
-                name="calendar.add_event",
-                title="Add calendar event",
-                params_schema={
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "type": "object",
-                    "properties": {
-                        "title": {"type": "string"},
-                        "start": {"type": "string", "format": "date-time"},
-                        "end": {"type": "string", "format": "date-time"},
-                        "all_day": {"type": "boolean"},
-                        "description": {"type": "string"},
-                    },
-                    "required": ["title", "start"],
-                    "additionalProperties": False,
-                },
-                result_schema={
-                    "type": "object",
-                    "properties": {"event_id": {"type": "string"}},
-                    "required": ["event_id"],
-                    "additionalProperties": False,
-                },
-                risk="low",
-                scopes=["calendar:write"],
-            )
-        )
-        self.register(
-            ActionDescriptor(
-                name="calendar.delete_event",
-                title="Delete calendar event",
-                params_schema={
-                    "$schema": "https://json-schema.org/draft/2020-12/schema",
-                    "type": "object",
-                    "properties": {"event_id": {"type": "string"}},
-                    "required": ["event_id"],
-                    "additionalProperties": False,
-                },
-                result_schema={
-                    "type": "object",
-                    "properties": {"deleted": {"type": "boolean"}},
-                    "required": ["deleted"],
-                    "additionalProperties": False,
-                },
-                risk="low",
-                scopes=["calendar:write"],
-            )
-        )
+
 
     def register(self, desc: ActionDescriptor) -> None:
         self._catalog[desc.name] = desc

@@ -87,17 +87,7 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
     if m_todo:
         task_text = m_todo.group(1).strip()
         due_at: datetime | None = None
-        # best-effort time parse using calendar parser
-        try:
-            from app.services.calendar_parser import parse_line
 
-            pe = parse_line(task_text)
-            if pe and getattr(pe, "start", None):
-                due_at = pe.start
-                # If parser separated title from time, prefer that title
-                task_text = pe.title or task_text
-        except Exception as _e:
-            logger.debug(f"Task time parse skipped: {_e}")
         ctx = {
             "content_type": "task",
             "source": "chat:task",
@@ -172,17 +162,7 @@ def handle_notes_tasks_reminders(db: Session, user: User, text: str) -> str | No
                     trigger = now + timedelta(minutes=amt)
         except Exception:
             pass
-        # Fallback to date parser
-        if trigger is None:
-            try:
-                from app.services.calendar_parser import parse_line
 
-                pe = parse_line(rem_text)
-                if pe and getattr(pe, "start", None):
-                    trigger = pe.start
-                    rem_text = pe.title or rem_text
-            except Exception as _e:
-                logger.debug(f"Reminder time parse skipped: {_e}")
         ctx = {
             "content_type": "reminder",
             "source": "chat:reminder",

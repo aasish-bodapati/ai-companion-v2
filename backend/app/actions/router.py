@@ -9,9 +9,8 @@ from app.services.intent_parser import intent_parser
 from app.memory.service import MemoryService
 from app.services.auto_memory import auto_memory_service
 from app.api.deps import get_db
-from app.schemas.calendar import CalendarEventCreate
-from app.crud.calendar import calendar as crud_calendar
-from app.models.calendar import CalendarEvent as CalendarEventModel
+
+from app.actions.executors import action_executors
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +49,7 @@ class ActionRouter:
         self._handlers["nutrition.log_meal"] = self._handle_nutrition_log_meal
         self._handlers["hydration.log_water"] = self._handle_hydration_log_water
         self._handlers["mood.log_checkin"] = self._handle_mood_log_checkin
-        # Calendar handlers
-        self._handlers["calendar.add_event"] = self._handle_calendar_add_event
-        self._handlers["calendar.delete_event"] = self._handle_calendar_delete_event
+
 
     def register(
         self, action: str, handler: Callable[[ExecuteActionRequest], Dict[str, Any]]
@@ -74,7 +71,6 @@ class ActionRouter:
             # Confirm-before-write guard: if invoked from chat (conversation_id present),
             # require explicit confirmation for domain write actions.
             guarded_scopes = {
-                "calendar:write",
                 "fitness:write",
                 "nutrition:write",
                 "hydration:write",
@@ -333,96 +329,6 @@ class ActionRouter:
             trend = "concerning"
 
         return {"checkin_id": checkin_id, "status": "logged", "trend": trend}
-
-    # ---- Calendar handlers ----
-    def _handle_calendar_add_event(self, req: ExecuteActionRequest) -> Dict[str, Any]:
-        params = req.params or {}
-        title = params.get("title")
-        start = params.get("start")
-        if not title or not start:
-            raise ValueError("title and start are required")
-        obj = CalendarEventCreate(
-            title=title,
-            start=start,
-            end=params.get("end"),
-            all_day=bool(params.get("all_day") or False),
-            description=params.get("description"),
-        )
-        try:
-            db = next(get_db())
-            created = crud_calendar.create_for_user(db, user_id=req.user_id, obj_in=obj)
-        finally:
-            try:
-                db.close()  # type: ignore[reportGeneralTypeIssues]
-            except Exception:
-                pass
-        event_id = created.id
-        undo_token = str(uuid.uuid4())
-
-        # Register undo to delete the created event
-        def _undo_delete_created() -> Dict[str, Any]:
-            try:
-                dbu = next(get_db())
-                crud_calendar.delete_for_user(dbu, user_id=req.user_id, event_id=event_id)
-                return {"status": "deleted", "event_id": event_id}
-            finally:
-                try:
-                    dbu.close()  # type: ignore
-                except Exception:
-                    pass
-
-        self._undo_registry[undo_token] = _undo_delete_created
-        return {"event_id": event_id, "undo_token": undo_token}
-
-    def _handle_calendar_delete_event(self, req: ExecuteActionRequest) -> Dict[str, Any]:
-        params = req.params or {}
-        event_id = params.get("event_id")
-        if not event_id:
-            raise ValueError("event_id is required")
-        # Snapshot event for undo
-        snap: Dict[str, Any] | None = None
-        try:
-            db = next(get_db())
-            row: CalendarEventModel | None = (
-                db.query(CalendarEventModel)
-                .filter(
-                    CalendarEventModel.id == event_id, CalendarEventModel.user_id == req.user_id
-                )
-                .first()
-            )
-            if not row:
-                # Nothing to delete
-                return {"deleted": False}
-            snap = {
-                "title": row.title,
-                "start": row.start,
-                "end": row.end,
-                "all_day": row.all_day,
-                "description": row.description,
-            }
-            crud_calendar.delete_for_user(db, user_id=req.user_id, event_id=event_id)
-        finally:
-            try:
-                db.close()  # type: ignore
-            except Exception:
-                pass
-        undo_token = str(uuid.uuid4())
-
-        # Register undo to recreate the deleted event
-        def _undo_recreate_deleted() -> Dict[str, Any]:
-            try:
-                dbu = next(get_db())
-                obj = CalendarEventCreate(**snap)  # type: ignore[arg-type]
-                recreated = crud_calendar.create_for_user(dbu, user_id=req.user_id, obj_in=obj)
-                return {"status": "restored", "event_id": recreated.id}
-            finally:
-                try:
-                    dbu.close()  # type: ignore
-                except Exception:
-                    pass
-
-        self._undo_registry[undo_token] = _undo_recreate_deleted
-        return {"deleted": True, "undo_token": undo_token}
 
     # ---- Undo API ----
     def undo(self, undo_token: str) -> ActionResult:

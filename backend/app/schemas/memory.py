@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from pydantic import BaseModel, ConfigDict, field_validator, Field
 from datetime import datetime, date
 from enum import Enum
@@ -60,9 +60,9 @@ class MemoryNodeBase(BaseModel):
     expiration_date: Optional[date] = None
     
     # Enhanced scoring
-    relevance_score: float = 1.0
-    importance_score: int = Field(0, ge=0, le=100)
-    confidence_score: float = Field(0.8, ge=0.0, le=1.0)
+    relevance_score: Optional[float] = Field(1.0, ge=0.0, le=1.0)
+    importance_score: Optional[int] = Field(0, ge=0, le=100)
+    confidence_score: Optional[float] = Field(0.8, ge=0.0, le=1.0)
     emotional_valence: Optional[float] = Field(None, ge=-1.0, le=1.0)
     
     # Relationship modeling
@@ -70,7 +70,7 @@ class MemoryNodeBase(BaseModel):
     related_memory_ids: Optional[List[str]] = None
     
     # Enhanced metadata
-    memory_metadata: Optional[MemoryMetadata] = None
+    memory_metadata: Optional[Any] = None
     tags: Optional[List[str]] = None
     entities: Optional[List[str]] = None
     
@@ -78,8 +78,8 @@ class MemoryNodeBase(BaseModel):
     created_via: Optional[str] = None
     
     # Privacy and sensitivity
-    privacy_level: PrivacyLevel = PrivacyLevel.NORMAL
-    is_core: bool = False
+    privacy_level: Optional[PrivacyLevel] = Field(PrivacyLevel.NORMAL)
+    is_core: Optional[bool] = Field(False)
 
 
 class MemoryNodeCreate(MemoryNodeBase):
@@ -114,7 +114,7 @@ class MemoryNodeResponse(MemoryNodeBase):
 
     id: str
     timestamp: datetime
-    access_count: int = 0
+    access_count: Optional[int] = Field(0)
     last_accessed: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

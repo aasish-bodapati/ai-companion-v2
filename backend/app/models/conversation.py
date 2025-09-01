@@ -12,29 +12,19 @@ from app.db.base_class import Base
 
 
 class GUID(BLOB):
-    """Platform-independent GUID type.
-    Uses SQLite's BLOB, Postgresql's UUID, and others natively.
-    """
+    """Platform-independent GUID type for SQLite MVP."""
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == "postgresql":
-            from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-
-            return dialect.type_descriptor(PG_UUID())
-        else:
-            return dialect.type_descriptor(BLOB())
+        return dialect.type_descriptor(BLOB())
 
     def process_bind_param(self, value, dialect):
         if value is None:
             return None
-        elif dialect.name == "postgresql":
-            return str(value)
-        else:
-            if not isinstance(value, uuid.UUID):
-                value = uuid.UUID(value) if value else None
-            if value is not None:
-                return value.bytes
-            return None
+        if not isinstance(value, uuid.UUID):
+            value = uuid.UUID(value) if value else None
+        if value is not None:
+            return value.bytes
+        return None
 
     def process_result_value(self, value, dialect):
         if value is None:

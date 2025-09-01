@@ -481,7 +481,7 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
         user_id: str,
         content_types: Optional[List[str]] = None,
         limit: int = 8,
-        min_relevance: float = 0.5,
+        min_relevance: float = 0.1,
         debug: bool = False,
     ) -> List[MemorySearchResult]:
         """Delegate to RetrievalMixin.search_memories (extracted)."""
@@ -743,9 +743,10 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                 user_name = name_match.group(1).strip()
 
         from app.core.prompts import SIMPLIFIED_SYSTEM_PROMPT
+        from app.core.action_prompts import get_action_aware_prompt
 
         base_prompt = f"""
-{SIMPLIFIED_SYSTEM_PROMPT}
+{get_action_aware_prompt(SIMPLIFIED_SYSTEM_PROMPT)}
 
 You know {user_name} well and remember information about them. Use this knowledge naturally in conversations.
 

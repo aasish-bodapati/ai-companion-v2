@@ -170,10 +170,23 @@ class StorageMixin:
             except Exception:
                 has_structured_kv = False
 
-            # Importance gating when not explicit
+            # Importance gating; allow explicit override via metadata["remember"]
             importance_source = "heuristic"
             final_importance = 0.0
-            if not remember_explicit:
+            if remember_explicit:
+                # Treat as explicitly important; prefer provided importance_score if valid
+                try:
+                    exp = float(md.get("importance_score", 1.0))
+                except Exception:
+                    exp = 1.0
+                # Normalize to 0..1 range if caller provided 0..100
+                if exp > 1.0:
+                    exp = max(0.0, min(1.0, exp / 100.0))
+                final_importance = max(0.0, min(1.0, exp))
+                importance_source = "explicit"
+                md["importance_source"] = importance_source
+                md["importance_score"] = float(final_importance)
+            else:
                 importance_min = float(getattr(settings, "MEMORY_IMPORTANCE_MIN", 0.7))
                 est_importance = self._estimate_importance(norm)
                 cls = self._classify_with_llm(norm)
@@ -285,8 +298,11 @@ class StorageMixin:
 
             # Compute embedding once if needed
             try:
+                print(f"🔍 DEBUG: Generating embedding for: {norm[:50]}...")
                 embedding = embeddings.embed_texts([norm])
+                print(f"🔍 DEBUG: Embedding generated successfully: {len(embedding)} vectors, {len(embedding[0]) if embedding else 0} dimensions")
             except Exception as e:
+                print(f"🔍 DEBUG: Embedding failed: {e}")
                 logger.warning(f"Embedding failed; proceeding DB-only. Error: {e}")
                 embedding = None
 
@@ -328,11 +344,16 @@ class StorageMixin:
 
             # Create DB record with a generated faiss_id (required by schema)
             faiss_id = str(uuid.uuid4())
-            # Map importance (0..1) to integer (0..100) if available
+            # Map importance to integer 0..100; accept either 0..1 or 0..100 inputs
             importance_int = 0
             try:
                 if "importance_score" in md:
-                    importance_int = max(0, min(100, int(float(md["importance_score"]) * 100)))
+                    raw_imp = float(md["importance_score"])  # could be 0..1 or 0..100
+                    if raw_imp <= 1.0:
+                        importance_int = int(raw_imp * 100)
+                    else:
+                        importance_int = int(raw_imp)
+                    importance_int = max(0, min(100, importance_int))
             except Exception:
                 importance_int = 0
 
@@ -352,10 +373,15 @@ class StorageMixin:
             # Insert into vector store (non-fatal)
             if embedding is not None:
                 try:
+                    print(f"🔍 DEBUG: Adding to vector store: user={user_id}, id={faiss_id}")
                     vector_store = get_vector_store()
                     vector_store.add(user_id, [faiss_id], [embedding[0]])
+                    print(f"🔍 DEBUG: Vector store add successful")
                 except Exception as _fe:
+                    print(f"🔍 DEBUG: Vector add failed for user={user_id}, id={faiss_id}: {_fe}")
                     logger.warning(f"Vector add failed for user={user_id}, id={faiss_id}: {_fe}")
+            else:
+                print(f"🔍 DEBUG: No embedding available for vector storage")
 
             # Baseline relevance score
             try:

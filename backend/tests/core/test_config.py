@@ -109,20 +109,20 @@ class TestSettings:
         config = Settings()
         
         # Test with explicit URI
-        explicit_uri = "postgresql://user:pass@localhost/db"
+        explicit_uri = "sqlite:///test.db"
         result = config.assemble_db_connection(explicit_uri, MagicMock(data={}))
         
-        assert result == "postgresql://user:pass@localhost/db"
+        assert result == "sqlite:///test.db"
 
     def test_database_connection_database_url(self):
         """Test database connection with DATABASE_URL."""
         config = Settings()
         
         # Test with DATABASE_URL
-        mock_info = MagicMock(data={"DATABASE_URL": "postgresql://user:pass@localhost/db"})
+        mock_info = MagicMock(data={"DATABASE_URL": "sqlite:///test.db"})
         result = config.assemble_db_connection(None, mock_info)
         
-        assert result == "postgresql://user:pass@localhost/db"
+        assert result == "sqlite:///test.db"
 
     def test_database_connection_default_sqlite(self):
         """Test database connection with default SQLite."""
@@ -341,8 +341,6 @@ class TestConfigValidation:
         # Test various database URL formats
         urls = [
             "sqlite:///test.db",
-            "postgresql://user:pass@localhost/db",
-            "mysql://user:pass@localhost/db",
             "sqlite:///:memory:"
         ]
         

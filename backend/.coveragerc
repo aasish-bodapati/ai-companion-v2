@@ -3,7 +3,7 @@ omit =
     app/core/llm.py
     app/api/endpoints/uploads.py
     app/api/endpoints/vision.py
-    app/services/calendar_parser.py
+
     app/api/endpoints/conversations.py
 
 [report]

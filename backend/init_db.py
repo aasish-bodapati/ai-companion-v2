@@ -20,7 +20,7 @@ try:
     from app.models.task import Task  # noqa: F401
     from app.models.note import Note  # noqa: F401
     from app.models.reminder import Reminder  # noqa: F401
-    from app.models.calendar import CalendarEvent  # noqa: F401
+
     from app.core.security import get_password_hash
     from app.core.config import settings
 

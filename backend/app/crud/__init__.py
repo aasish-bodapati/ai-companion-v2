@@ -3,6 +3,7 @@ from .base import CRUDBase
 from .conversation import conversation, message
 from .user import user
 from .memory import memory
+from .onboarding import onboarding_profile
 from .coaching import (
     goal,
     routine,
@@ -21,6 +22,7 @@ __all__ = [
     "message",
     "user",
     "memory",
+    "onboarding_profile",
     "goal",
     "routine",
     "workout_log",

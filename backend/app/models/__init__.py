@@ -7,7 +7,7 @@ from app.models.memory_audit import MemoryAudit
 from app.models.coaching import Goal as CoachingGoal, Routine as CoachingRoutine
 from app.models.coaching import WorkoutLog, MealLog, HydrationLog, MoodLog, JournalEntry
 from app.models.coaching import WorkoutPlan, NutritionPlan
-from app.models.calendar import CalendarEvent
+
 from app.models.note import Note
 from app.models.task import Task
 from app.models.reminder import Reminder
@@ -21,7 +21,7 @@ __all__ = [
     "OnboardingProfile",
     "MemoryNode",
     "MemoryAudit",
-    "CalendarEvent",
+
     "Note",
     "Task",
     "Reminder",

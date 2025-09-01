@@ -48,14 +48,34 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str = "AI Companion API"
 
-    # Database
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str = "test"
-    POSTGRES_DB: str = "ai_companion"
-    # For local dev, use PostgreSQL
+    # Database - SQLite for MVP
     SQLALCHEMY_DATABASE_URI: Optional[str] = None
-    DATABASE_URL: Optional[str] = None  # Will use PostgreSQL default
+    DATABASE_URL: Optional[str] = None
+
+    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: Optional[str], info) -> Any:
+        # Debug logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔍 Database config - explicit value: {v}")
+        
+        # 1) If provided explicitly and non-empty, use as-is
+        if isinstance(v, str) and v.strip():
+            logger.info(f"✅ Using explicit SQLALCHEMY_DATABASE_URI: {v.strip()}")
+            return v.strip()
+
+        # 2) Check for DATABASE_URL environment variable
+        db_url = info.data.get("DATABASE_URL") or os.environ.get("DATABASE_URL")
+        if isinstance(db_url, str) and db_url.strip():
+            logger.info(f"✅ Using DATABASE_URL: {db_url.strip()}")
+            return db_url.strip()
+
+        # 3) Default to SQLite for local development
+        project_root = Path(__file__).resolve().parents[2]
+        sqlite_path = (project_root / "data" / "minimal.db").as_posix()
+        sqlite_url = f"sqlite:///{sqlite_path}"
+        logger.info(f"✅ Using default SQLite: {sqlite_url}")
+        return sqlite_url
 
     # JWT Settings
     ALGORITHM: str = "HS256"  # Algorithm for JWT token generation
@@ -109,39 +129,6 @@ class Settings(BaseSettings):
     # Test User Credentials
     TEST_USERNAME: str = "test@example.com"
     TEST_PASSWORD: str = "testpassword123"
-
-    @field_validator("SQLALCHEMY_DATABASE_URI", mode="before")
-    @classmethod
-    def assemble_db_connection(cls, v: Optional[str], info) -> Any:
-        # Debug logging
-        logger = logging.getLogger(__name__)
-        logger.info(f"🔍 Database config - explicit value: {v}")
-        logger.info(f"🔍 Database config - info.data DATABASE_URL: {info.data.get('DATABASE_URL')}")
-        logger.info(f"🔍 Database config - os.environ DATABASE_URL: {os.environ.get('DATABASE_URL')}")
-        
-        # 1) If provided explicitly and non-empty, use as-is
-        if isinstance(v, str) and v.strip():
-            logger.info(f"✅ Using explicit SQLALCHEMY_DATABASE_URI: {v.strip()}")
-            return v.strip()
-
-        # 2) Prefer DATABASE_URL if set and non-empty (Railway sets this)
-        db_url = info.data.get("DATABASE_URL")
-        if isinstance(db_url, str) and db_url.strip():
-            logger.info(f"✅ Using info.data DATABASE_URL: {db_url.strip()}")
-            return db_url.strip()
-        
-        # 3) Also check os.environ directly for DATABASE_URL (Railway fallback)
-        env_db_url = os.environ.get("DATABASE_URL")
-        if env_db_url and env_db_url.strip():
-            logger.info(f"✅ Using os.environ DATABASE_URL: {env_db_url.strip()}")
-            return env_db_url.strip()
-
-        # 4) Default to SQLite file for local development only
-        project_root = Path(__file__).resolve().parents[2]
-        sqlite_path = (project_root / "data" / "minimal.db").as_posix()
-        sqlite_url = f"sqlite:///{sqlite_path}"
-        logger.warning(f"⚠️  No DATABASE_URL found, falling back to SQLite: {sqlite_url}")
-        return sqlite_url
 
     # JWT
     ALGORITHM: str = "HS256"

@@ -34,9 +34,10 @@ class User(Base):
     onboarding_profile = relationship(
         "OnboardingProfile",
         back_populates="user",
-        uselist=False,
         cascade="all, delete-orphan",
+        uselist=False,
     )
+
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}'>"

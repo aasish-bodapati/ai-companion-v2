@@ -92,7 +92,7 @@ class RetrievalMixin:
         user_id: str,
         content_types: Optional[List[str]] = None,
         limit: int = 8,
-        min_relevance: float = 0.5,
+        min_relevance: float = 0.1,
         debug: bool = False,
         conversation_id: Optional[str] = None,
     ) -> List[MemorySearchResult]:

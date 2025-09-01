@@ -1,43 +1,37 @@
-from datetime import datetime
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Column, String, Text, Boolean, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
-import uuid
-
 from app.db.base_class import Base
+import uuid
+from datetime import datetime
 
 
 class OnboardingProfile(Base):
     __tablename__ = "onboarding_profiles"
 
-    id = Column(
-        String(36),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4()),
-        index=True,
-    )
-    user_id = Column(
-        String(36),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        unique=True,
-        index=True,
-        nullable=False,
-    )
-
-    # Step 1 – Daily Schedule
-    daily_schedule = Column(String, nullable=True)
-    schedule_preferences = Column(Text, nullable=True)
-
-    # Step 2 – Fitness & Nutrition Goals
-    fitness_goals = Column(String, nullable=True)
-    nutrition_goals = Column(String, nullable=True)
-    dietary_preferences = Column(Text, nullable=True)
-
-    # Step 3 – Communication Style
-    communication_style = Column(String, nullable=True)
-    additional_preferences = Column(Text, nullable=True)
-
-    completed = Column(Boolean, default=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    
+    # New onboarding flow fields
+    user_prompt = Column(Text(), nullable=True)  # Raw user input
+    processed_summary = Column(Text(), nullable=True)  # LLM-processed summary
+    memory_chunks = Column(JSON, nullable=True)  # Structured memory chunks
+    structured_data = Column(JSON, nullable=True)  # Extracted structured data
+    
+    # Personal assistant focused fields (current schema based on migrations)
+    daily_schedule = Column(String(), nullable=True)
+    schedule_preferences = Column(Text(), nullable=True)
+    fitness_goals = Column(String(), nullable=True)
+    nutrition_goals = Column(String(), nullable=True)
+    dietary_preferences = Column(Text(), nullable=True)
+    communication_style = Column(String(), nullable=True)
+    additional_preferences = Column(Text(), nullable=True)
+    
+    # Common fields
+    completed = Column(Boolean(), nullable=True)
+    updated_at = Column(DateTime(), nullable=True, default=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="onboarding_profile")
+
+    def __repr__(self):
+        return f"<OnboardingProfile(id={self.id}, user_id={self.user_id})>"

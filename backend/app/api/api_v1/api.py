@@ -5,13 +5,11 @@ from app.api.endpoints import (
     logout,
     public,
     users,
-    onboarding,
     conversations_main,
     memory,
     memory_visualization,
     memory_monitoring,
     deduplication,
-    calendar,
     notes,
     tasks,
     reminders,
@@ -33,15 +31,17 @@ api_router.include_router(public.router, tags=["public"])  # e.g., health/info
 api_router.include_router(login.router, tags=["login"])
 api_router.include_router(logout.router, tags=["logout"])
 
-# Core users and onboarding
+# Core users
 api_router.include_router(users.router, prefix="/users", tags=["users"])
-# Mount onboarding underneath /users/me/onboarding so endpoints become:
-# GET/PUT /api/v1/users/me/onboarding, POST /api/v1/users/me/onboarding/complete, etc.
-api_router.include_router(onboarding.router, prefix="/users/me/onboarding", tags=["onboarding"])
 
 # Conversations suite (include CRUD first, then messages to let messages override conflicts)
 api_router.include_router(
     conversations_main.router, prefix="/conversations", tags=["conversations"]
+)
+# Include conversations_messages after conversations_main to override the reply endpoint with auto-memory capture
+from app.api.endpoints import conversations_messages
+api_router.include_router(
+    conversations_messages.router, prefix="/conversations", tags=["conversations"]
 )
 if getattr(settings, "STREAMING_ENABLED", False):
     # Import lazily to avoid import errors when streaming module is removed
@@ -59,8 +59,19 @@ api_router.include_router(
 )
 api_router.include_router(deduplication.router, prefix="/deduplication", tags=["deduplication"])
 
+# Holistic Memory System - Rich Circle Vision
+try:
+    from app.api.v1.holistic_memory import router as holistic_memory_router
+    api_router.include_router(
+        holistic_memory_router, 
+        prefix="/holistic-memory", 
+        tags=["holistic-memory"]
+    )
+    print("✅ Holistic Memory System integrated into API router")
+except ImportError as e:
+    print(f"⚠️ Holistic Memory System not available: {e}")
+
 # Additional feature areas
-api_router.include_router(calendar.router, tags=["calendar"])
 api_router.include_router(notes.router, tags=["notes"])
 api_router.include_router(tasks.router, tags=["tasks"])
 api_router.include_router(reminders.router, tags=["reminders"])

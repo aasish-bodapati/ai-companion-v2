@@ -29,7 +29,15 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
         if isinstance(obj_in, LegacyMemoryCreate):
             faiss_id = str(uuid.uuid4())
             importance = int(round(max(0.0, min(1.0, float(obj_in.importance_score))) * 100))
-            metadata = json.dumps(obj_in.memory_metadata) if obj_in.memory_metadata else None
+            
+            # Convert metadata dict to MemoryMetadata object if provided
+            from app.schemas.memory import MemoryMetadata
+            memory_metadata = None
+            if obj_in.memory_metadata:
+                try:
+                    memory_metadata = MemoryMetadata(**obj_in.memory_metadata)
+                except Exception:
+                    memory_metadata = None
 
             node_in = MemoryNodeCreate(
                 faiss_id=faiss_id,
@@ -39,7 +47,7 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
                 conversation_id=obj_in.conversation_id,
                 relevance_score=1.0,
                 importance_score=importance,
-                memory_metadata=metadata,
+                memory_metadata=memory_metadata,
             )
             return super().create(db, obj_in=node_in)
         # Already a MemoryNodeCreate
@@ -58,15 +66,31 @@ class CRUDMemory(CRUDBase[MemoryNode, MemoryNodeCreate, MemoryNodeUpdate]):
         importance_score: Optional[int] = None,
     ) -> MemoryNode:
         """Create a new memory node."""
+        
+        # Store metadata as JSON string to match database model
+        metadata_json = None
+        if metadata:
+            try:
+                metadata_json = json.dumps(metadata)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to serialize metadata: {e}")
+                metadata_json = None
+        
+        # Create memory data with minimal required fields
         memory_data = MemoryNodeCreate(
             faiss_id=faiss_id,
             content=content,
             content_type=content_type,
             user_id=user_id,
             conversation_id=conversation_id,
-            memory_metadata=json.dumps(metadata) if metadata else None,
             importance_score=(importance_score if importance_score is not None else 0),
         )
+        
+        # Set the JSON metadata directly if we have it
+        if metadata_json:
+            memory_data.memory_metadata = metadata_json
         return super().create(db, obj_in=memory_data)
 
     def get_memory_by_faiss_id(self, db: Session, faiss_id: str) -> Optional[MemoryNode]:

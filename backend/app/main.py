@@ -2,18 +2,22 @@ import logging
 import sys
 import os
 
-# Force Python path to prevent corruption - this must be the FIRST thing we do
-if '/usr/local/bin' in sys.path:
-    sys.path.remove('/usr/local/bin')
-    print(f"🔧 Removed /usr/local/bin from Python path")
+# Only fix Python path in Docker container environment
+if os.environ.get('DOCKER_CONTAINER') == 'true':
+    # Force Python path to prevent corruption - this must be the FIRST thing we do
+    if '/usr/local/bin' in sys.path:
+        sys.path.remove('/usr/local/bin')
+        print(f"🔧 Removed /usr/local/bin from Python path")
 
-# Ensure correct path order
-correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
-if sys.path != correct_path:
-    print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
-    sys.path = correct_path
+    # Ensure correct path order for Docker
+    correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
+    if sys.path != correct_path:
+        print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
+        sys.path = correct_path
 
-print(f"🔧 Final Python path: {sys.path}")
+    print(f"🔧 Final Python path: {sys.path}")
+else:
+    print(f"🔧 Running in local environment, keeping Python path intact")
 
 import uuid
 from contextlib import asynccontextmanager
@@ -67,70 +71,14 @@ async def lifespan(app: FastAPI):
         from app.core.config import settings as _settings
 
         db_url = getattr(_settings, "SQLALCHEMY_DATABASE_URI", "") or ""
-        if isinstance(db_url, str) and db_url.startswith("sqlite:///"):
+        if isinstance(db_url, str) and db_url.startswith("sqlite://"):
             logger.info("Detected SQLite DB; running init_db.init_db() for local dev...")
             from init_db import init_db as _init_db
 
             _init_db()
             logger.info("Local SQLite init complete.")
-        elif isinstance(db_url, str) and db_url.startswith("postgresql://"):
-            logger.info("Detected PostgreSQL DB; running Alembic migrations...")
-            try:
-                from alembic.config import Config
-                from alembic import command
-                import os
-                
-                # Get the alembic.ini path - in Docker container it's at /app/alembic.ini
-                alembic_ini_path = os.path.join("/app", "alembic.ini")
-                logger.info(f"Looking for alembic.ini at: {alembic_ini_path}")
-                logger.info(f"File exists: {os.path.exists(alembic_ini_path)}")
-                
-                if os.path.exists(alembic_ini_path):
-                    cfg = Config(alembic_ini_path)
-                    # Set the database URL from settings
-                    cfg.set_main_option("sqlalchemy.url", db_url)
-                    
-                    # Debug: Check current migration status
-                    logger.info("Checking current migration status...")
-                    try:
-                        from alembic import command
-                        from alembic.script import ScriptDirectory
-                        
-                        # Get script directory
-                        script_dir = ScriptDirectory.from_config(cfg)
-                        logger.info(f"Script directory: {script_dir.dir}")
-                        
-                        # List all available revisions
-                        revisions = list(script_dir.walk_revisions())
-                        logger.info(f"Available revisions: {[rev.revision for rev in revisions]}")
-                        
-                        # Check current database revision
-                        from alembic.runtime.migration import MigrationContext
-                        from sqlalchemy import create_engine
-                        
-                        engine = create_engine(db_url)
-                        with engine.connect() as conn:
-                            context = MigrationContext.configure(conn)
-                            current_rev = context.get_current_revision()
-                            logger.info(f"Current database revision: {current_rev}")
-                        
-                    except Exception as e:
-                        logger.warning(f"Could not check migration status: {e}")
-                    
-                    # Run migrations with detailed logging
-                    logger.info("Starting migration execution...")
-                    try:
-                        command.upgrade(cfg, "head")
-                        logger.info("✅ PostgreSQL migrations completed successfully.")
-                    except Exception as e:
-                        logger.error(f"❌ Migration execution failed: {e}")
-                        logger.error(f"Migration error type: {type(e).__name__}")
-                        raise
-                else:
-                    logger.warning(f"alembic.ini not found at {alembic_ini_path}, skipping migrations")
-            except Exception as migration_error:
-                logger.error(f"Failed to run migrations: {migration_error}")
-                # Don't fail startup on migration errors
+        else:
+            logger.info("Using external database; skipping local init.")
     except Exception as e:
         logger.warning("SQLite auto-init skipped/failed: %s", e)
 
