@@ -17,7 +17,6 @@ export default function ProfileQuickEditModal({ open, onClose, onSaved }: Props)
   const [error, setError] = useState<string | null>(null);
 
   // Form state (subset of onboarding fields)
-  const [name, setName] = useState('');
   const [nickname, setNickname] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [location, setLocation] = useState('');
@@ -38,14 +37,15 @@ export default function ProfileQuickEditModal({ open, onClose, onSaved }: Props)
       try {
         const profile = await fetchMyOnboarding();
         if (!mounted) return;
-        setName(profile.identity?.name ?? '');
-        setNickname(profile.identity?.nickname ?? '');
-        setPronouns(profile.identity?.pronouns ?? '');
-        setLocation(profile.identity?.location ?? '');
-        setTopics((profile.interests?.topics ?? []).join(', '));
-        setResponseStyle(profile.communication?.responseStyle ?? '');
-        setPrimaryReason(profile.goals?.primaryReason ?? '');
-        setMemoryPolicy(profile.boundaries?.memoryPolicy ?? '');
+        if (profile) {
+          setNickname(profile.identity?.nickname ?? '');
+          setPronouns(profile.identity?.pronouns ?? '');
+          setLocation(profile.identity?.location ?? '');
+          setTopics((profile.interests?.topics ?? []).join(', '));
+          setResponseStyle(profile.communication?.responseStyle ?? '');
+          setPrimaryReason(profile.goals?.primaryReason ?? '');
+          setMemoryPolicy(profile.boundaries?.memoryPolicy ?? '');
+        }
       } catch (e) {
         if (mounted) setError('Failed to load current profile');
       } finally {
@@ -68,7 +68,6 @@ export default function ProfileQuickEditModal({ open, onClose, onSaved }: Props)
     try {
       const payload: OnboardingProfileIn = {
         identity: {
-          name: name || undefined,
           nickname: nickname || undefined,
           pronouns: pronouns || undefined,
           location: location || undefined,
@@ -122,15 +121,6 @@ export default function ProfileQuickEditModal({ open, onClose, onSaved }: Props)
                   <div className="text-sm text-gray-500">Loading...</div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                      <input
-                        className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Your name"
-                      />
-                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nickname</label>
                       <input

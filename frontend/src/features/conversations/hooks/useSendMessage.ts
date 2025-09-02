@@ -43,21 +43,38 @@ export const useSendMessage = (conversationId: string) => {
       const { content, role = 'user', idempotencyKey, requestId, onChunk, onDone, onError } = vars;
       
       try {
-        // First create the user message
-        const messageData = await api.post<Message>(`/conversations/${conversationId}/messages`, {
-          content,
-          role,
-        }, { 
-          timeoutMs: 45000,
-          idempotencyKey,
-          requestId
-        });
+        let response;
+        
+        if (conversationId === 'new') {
+          // For new conversations, use the combined endpoint
+          console.log('[Reply] Initiating POST /conversations/new/messages-and-reply');
+          response = await api.post(`/conversations/new/messages-and-reply`, {
+            content,
+            role,
+          }, {
+            timeoutMs: 60000, // Longer timeout for complete response
+            idempotencyKey,
+            requestId
+          });
+        } else {
+          // For existing conversations, use the separate endpoints
+          // First create the user message
+          const messageData = await api.post<Message>(`/conversations/${conversationId}/messages`, {
+            content,
+            role,
+          }, { 
+            timeoutMs: 45000,
+            idempotencyKey,
+            requestId
+          });
 
-        // Then use the backend complete reply endpoint via API client
-        console.log('[Reply] Initiating POST /conversations/:id/reply');
-        const response = await api.post(`/conversations/${conversationId}/reply`, {}, {
-          timeoutMs: 60000, // Longer timeout for complete response
-        });
+          // Then use the backend complete reply endpoint via API client
+          console.log('[Reply] Initiating POST /conversations/:id/reply');
+          response = await api.post(`/conversations/${conversationId}/reply`, {}, {
+            timeoutMs: 60000, // Longer timeout for complete response
+          });
+        }
+        
         console.log('[Reply] Response received:', response);
 
         // Send the complete response as a single chunk

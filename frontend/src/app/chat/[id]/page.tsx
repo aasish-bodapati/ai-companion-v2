@@ -4,7 +4,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useCreateConversation, useConversation, useUpdateConversation } from '@/features/conversations';
 import { ConversationSidebar } from '@/features/conversations/components/ConversationSidebar';
-import { EnhancedChatInterface } from '@/components/chat/EnhancedChatInterface';
+import { TwoModeChatInterface } from '@/components/chat/TwoModeChatInterface';
 import { NudgeInbox } from '@/features/nudges/components/NudgeInbox';
 import { getMemoryDigest, enforceLifecycle, type MemoryDigestOut } from '@/features/memory/api';
 import ChatHeader from '@/components/chat/ChatHeader';
@@ -120,7 +120,7 @@ export default function ChatPage() {
 
         {/* Main Chat Interface */}
         <div className="flex-1 min-h-0">
-          {conversationId && <EnhancedChatInterface conversationId={conversationId} />}
+          {conversationId && <TwoModeChatInterface conversationId={conversationId} />}
         </div>
 
         {/* Nudge Inbox */}

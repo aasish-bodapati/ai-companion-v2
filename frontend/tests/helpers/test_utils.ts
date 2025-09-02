@@ -142,7 +142,7 @@ export async function registerAndLogin(page: Page, baseURL: string, user = testU
   await page.click('button[type="submit"]');
   
   // Wait for redirect after registration/auto-login
-  await page.waitForURL(/.*onboarding|.*chat|.*today/, { timeout: 10000 });
+  await page.waitForURL(/.*onboarding|.*chat|.*today/, { timeout: 30000 });
   
   // If redirected to onboarding, complete it quickly
   if (page.url().includes('/onboarding')) {

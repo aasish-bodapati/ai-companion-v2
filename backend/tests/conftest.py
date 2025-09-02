@@ -1,253 +1,266 @@
+"""Pytest configuration and shared fixtures for AI Companion MVP tests."""
+
+import asyncio
 import os
-import sys
+import tempfile
+from typing import AsyncGenerator, Generator
 import pytest
-from unittest.mock import Mock, patch
-from pathlib import Path
+import pytest_asyncio
+from fastapi.testclient import TestClient
+from httpx import AsyncClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-# Load test environment variables first
-test_env_file = Path(__file__).parent.parent / ".env.test"
-if test_env_file.exists():
-    from dotenv import load_dotenv
-    load_dotenv(test_env_file)
-
-# Ensure backend/app is on sys.path
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT not in sys.path:
-    sys.path.append(ROOT)
-
-# Import app modules only when needed
-def get_app():
-    """Get the FastAPI app instance."""
-    try:
-        from app.main import app
-        return app
-    except Exception as e:
-        pytest.skip(f"Could not import app: {e}")
-
-def get_deps():
-    """Get the deps module."""
-    try:
-        from app.api import deps
-        return deps
-    except Exception as e:
-        pytest.skip(f"Could not import deps: {e}")
-
-def get_user_model():
-    """Get the User model."""
-    try:
-        from app.models.user import User
-        return User
-    except Exception as e:
-        pytest.skip(f"Could not import User model: {e}")
-
-def get_session():
-    """Get the database session."""
-    try:
-        from app.db.session import SessionLocal
-        return SessionLocal
-    except Exception as e:
-        pytest.skip(f"Could not import SessionLocal: {e}")
+from app.main import app
+from app.db.base_class import Base
+from app.db.session import get_db
+from app.core.config import settings
+from app.models.user import User
+from app.models.conversation import Conversation
+from app.models.memory import MemoryNode
+from app.models.note import Note
+from app.models.task import Task
+from app.models.reminder import Reminder
+from app.crud.user import user as user_crud
+from app.core.security import get_password_hash
 
 
-@pytest.hookimpl(tryfirst=True)
-def pytest_collection_modifyitems(config, items):
-    """Automatically categorize tests based on their location and add appropriate markers."""
-    for item in items:
-        # Add category markers based on test file location
-        if "unit/" in str(item.fspath):
-            item.add_marker(pytest.mark.unit)
-        elif "integration/" in str(item.fspath):
-            item.add_marker(pytest.mark.integration)
-        elif "e2e/" in str(item.fspath):
-            item.add_marker(pytest.mark.e2e)
-        elif "performance/" in str(item.fspath):
-            item.add_marker(pytest.mark.performance)
-        
-        # Add feature markers based on test name
-        if "memory" in item.name.lower():
-            item.add_marker(pytest.mark.memory)
-        if "auth" in item.name.lower():
-            item.add_marker(pytest.mark.auth)
-        if "api" in item.name.lower():
-            item.add_marker(pytest.mark.api)
-        if "database" in item.name.lower():
-            item.add_marker(pytest.mark.database)
-        if "llm" in item.name.lower():
-            item.add_marker(pytest.mark.llm)
-        if "conversation" in item.name.lower():
-            item.add_marker(pytest.mark.conversation)
-        if "scheduler" in item.name.lower():
-            item.add_marker(pytest.mark.scheduler)
-        
-        # Mark slow tests
-        if any(keyword in item.name.lower() for keyword in ["slow", "e2e", "performance", "integration"]):
-            item.add_marker(pytest.mark.slow)
-        
-        # Mark smoke tests (critical path)
-        if any(keyword in item.name.lower() for keyword in ["smoke", "critical", "main", "core"]):
-            item.add_marker(pytest.mark.smoke)
-        
-        # Mark CI tests
-        if not os.getenv("LOCAL_ONLY"):
-            item.add_marker(pytest.mark.ci)
+# Test database setup
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _apply_migrations():
-    """Ensure DB schema is up-to-date before running tests."""
-    try:
-        from alembic.config import Config
-        from alembic import command
-
-        ini_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "alembic.ini"))
-        if os.path.exists(ini_path):
-            cfg = Config(ini_path)
-            # Ensure URL is taken from settings if not set in ini
-            try:
-                from app.core.config import settings as _settings
-
-                db_url = getattr(_settings, "SQLALCHEMY_DATABASE_URI", None) or getattr(
-                    _settings, "DATABASE_URL", None
-                )
-                if db_url:
-                    cfg.set_main_option("sqlalchemy.url", db_url)
-            except Exception:
-                pass
-            command.upgrade(cfg, "head")
-    except Exception:
-        # Do not fail tests if migrations cannot run; tests may still pass for in-memory cases
-        pass
+@pytest.fixture(scope="session")
+def event_loop() -> Generator:
+    """Create an instance of the default event loop for the test session."""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
 
 
-def _ensure_test_user():
-    SessionLocal = get_session()
-    User = get_user_model()
+@pytest.fixture(scope="function")
+def db_session() -> Generator:
+    """Create a fresh database session for each test."""
+    # Create tables
+    Base.metadata.create_all(bind=engine)
     
-    db = SessionLocal()
+    # Create session
+    session = TestingSessionLocal()
     try:
-        user = db.query(User).filter(User.email == "test@example.com").first()
-        if not user:
-            user = User(email="test@example.com", hashed_password="x", full_name="Test User")
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        return user
+        yield session
     finally:
-        db.close()
+        session.close()
+        # Drop tables after test
+        Base.metadata.drop_all(bind=engine)
 
 
-@pytest.fixture()
-def client():
-    """Test client with authenticated user."""
-    app = get_app()
-    deps = get_deps()
-    
-    user = _ensure_test_user()
-
-    def override_get_current_active_user():
-        return user
-
-    app.dependency_overrides[deps.get_current_active_user] = override_get_current_active_user
-
-    # Stub OpenRouter API to avoid network during tests unless explicitly opting into real LLM
-    orig = None
-    use_real_llm = os.getenv("USE_REAL_LLM", "").lower() in {"1", "true", "yes"}
-    if not use_real_llm:
+@pytest.fixture(scope="function")
+def client(db_session) -> Generator:
+    """Create a test client with database dependency override."""
+    def override_get_db():
         try:
-            from app.core import llm as _llm
-
-            if not hasattr(_llm, "_orig_generate"):
-                _llm._orig_generate = _llm.generate_with_openrouter  # type: ignore[attr-defined]
-            orig = _llm.generate_with_openrouter
-            _llm.generate_with_openrouter = lambda model, system_prompt, messages: "TEST_REPLY"
-        except Exception:
+            yield db_session
+        finally:
             pass
 
-    from fastapi.testclient import TestClient
-    with TestClient(app) as c:
-        try:
-            yield c
-        finally:
-            # Restore original if we mocked
-            try:
-                if not use_real_llm and orig is not None:
-                    from app.core import llm as _llm
-
-                    _llm.generate_with_openrouter = orig
-            except Exception:
-                pass
-
-
-@pytest.fixture()
-def unauth_client():
-    """Test client without auth overrides, to assert 401 responses."""
-    app = get_app()
-    deps = get_deps()
+    app.dependency_overrides[get_db] = override_get_db
     
-    # Ensure no overrides applied
-    try:
-        app.dependency_overrides.pop(deps.get_current_active_user, None)
-    except Exception:
-        pass
-    from fastapi.testclient import TestClient
-    with TestClient(app) as c:
-        yield c
+    # Use context manager for proper cleanup
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture()
-def test_user():
-    """Get the test user."""
-    return _ensure_test_user()
+@pytest.fixture(scope="function")
+async def async_client(db_session) -> AsyncGenerator:
+    """Create an async test client with database dependency override."""
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+    
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+    
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture()
-def auth_headers():
-    """Get authentication headers for testing."""
-    return {"Authorization": "Bearer test-token"}
-
-
-@pytest.fixture()
-def mock_db():
-    """Mock database session for unit tests."""
-    return Mock()
-
-
-@pytest.fixture()
-def mock_llm():
-    """Mock LLM service for unit tests."""
-    mock = Mock()
-    mock.generate_with_openrouter.return_value = "Mocked LLM response"
-    return mock
-
-
-@pytest.fixture()
-def sample_conversation_data():
-    """Sample conversation data for testing."""
-    return {
-        "user_id": "test_user",
-        "title": "Test Conversation",
-        "messages": [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"}
-        ]
+@pytest.fixture(scope="function")
+def test_user(db_session) -> User:
+    """Create a test user."""
+    user_data = {
+        "email": "test@example.com",
+        "hashed_password": get_password_hash("testpassword123"),
+        "full_name": "Test User",
+        "is_active": True,
+        "is_superuser": False,
     }
+    user = User(**user_data)
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
-@pytest.fixture()
-def sample_memory_data():
-    """Sample memory data for testing."""
-    return {
-        "user_id": "test_user",
-        "content": "User likes coffee",
-        "memory_type": "preference",
-        "importance": 0.8,
-        "context": {"source": "conversation"}
+@pytest.fixture(scope="function")
+def test_user_2(db_session) -> User:
+    """Create a second test user for isolation tests."""
+    user_data = {
+        "email": "test2@example.com",
+        "hashed_password": get_password_hash("testpassword2"),
+        "full_name": "Test User 2",
+        "is_active": True,
+        "is_superuser": False,
     }
+    user = User(**user_data)
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
 
 
-@pytest.fixture(autouse=True)
-def cleanup_test_data():
-    """Clean up test data after each test."""
-    yield
-    # Add cleanup logic here if needed
-    pass
+@pytest.fixture(scope="function")
+def auth_headers(client) -> dict:
+    """Get authentication headers for test user."""
+    import uuid
+    
+    # Register a fresh test user with unique email
+    unique_email = f"testuser-{uuid.uuid4().hex[:8]}@example.com"
+    client.post("/api/v1/register", json={
+        "email": unique_email,
+        "password": "testpassword123",
+        "full_name": "Test User"
+    })
+    
+    # Login to get a JWT
+    login_response = client.post(
+        "/api/v1/login/access-token",
+        data={"username": unique_email, "password": "testpassword123"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
+    assert login_response.status_code == 200
+    token = login_response.json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(scope="function")
+def test_conversation(db_session, test_user) -> Conversation:
+    """Create a test conversation."""
+    conversation = Conversation(
+        user_id=test_user.id,
+        title="Test Conversation",
+        incognito_mode=False,
+        personalization_enabled=True
+    )
+    db_session.add(conversation)
+    db_session.commit()
+    db_session.refresh(conversation)
+    return conversation
+
+
+@pytest.fixture(scope="function")
+def test_incognito_conversation(db_session, test_user) -> Conversation:
+    """Create a test incognito conversation."""
+    conversation = Conversation(
+        user_id=test_user.id,
+        title="Test Incognito Conversation",
+        incognito_mode=True,
+        personalization_enabled=False
+    )
+    db_session.add(conversation)
+    db_session.commit()
+    db_session.refresh(conversation)
+    return conversation
+
+
+@pytest.fixture(scope="function")
+def test_memory(db_session, test_user) -> MemoryNode:
+    """Create a test memory."""
+    memory = MemoryNode(
+        user_id=test_user.id,
+        content="I live in Seattle",
+        content_type="fact",
+        category="location",
+        importance_score=50,
+        relevance_score=0.9
+    )
+    db_session.add(memory)
+    db_session.commit()
+    db_session.refresh(memory)
+    return memory
+
+
+@pytest.fixture(scope="function")
+def test_note(db_session, test_user) -> Note:
+    """Create a test note."""
+    note = Note(
+        user_id=test_user.id,
+        title="Test Note",
+        content="This is a test note content"
+    )
+    db_session.add(note)
+    db_session.commit()
+    db_session.refresh(note)
+    return note
+
+
+@pytest.fixture(scope="function")
+def test_task(db_session, test_user) -> Task:
+    """Create a test task."""
+    task = Task(
+        user_id=test_user.id,
+        title="Test Task",
+        description="This is a test task",
+        status="pending"
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+    return task
+
+
+@pytest.fixture(scope="function")
+def test_reminder(db_session, test_user) -> Reminder:
+    """Create a test reminder."""
+    from datetime import datetime, timedelta
+    reminder = Reminder(
+        user_id=test_user.id,
+        title="Test Reminder",
+        description="This is a test reminder",
+        scheduled_time=datetime.utcnow() + timedelta(hours=1)
+    )
+    db_session.add(reminder)
+    db_session.commit()
+    db_session.refresh(reminder)
+    return reminder
+
+
+# Test data constants
+TEST_MESSAGES = [
+    "Hello, how are you?",
+    "My name is Alex",
+    "I live in Seattle",
+    "I work in AI",
+    "What's my name?",
+    "Where do I live?",
+    "What do I do for work?"
+]
+
+TEST_MEMORY_CONTENT = [
+    "I live in Seattle",
+    "My name is Alex",
+    "I work in AI",
+    "I like hiking on weekends",
+    "My life goal is to wake up at 6AM daily"
+]

@@ -3,7 +3,7 @@ Action Feedback System for AI Companion Chat
 Generates user-friendly confirmation messages for executed actions.
 """
 
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime
 
 
@@ -46,7 +46,7 @@ class ActionFeedbackGenerator:
         duration = result.get("duration_min")
         exercises = result.get("exercises", [])
         
-        feedback = f"💪 Workout logged successfully!"
+        feedback = "💪 Workout logged successfully!"
         
         if workout_name and workout_name != "workout":
             feedback += f" Name: {workout_name}"
@@ -70,7 +70,7 @@ class ActionFeedbackGenerator:
         calories = result.get("est_kcal")
         protein = result.get("est_protein_g")
         
-        feedback = f"🍽️ Meal logged successfully!"
+        feedback = "🍽️ Meal logged successfully!"
         
         if items:
             feedback += f" Items: {', '.join(items)}"
@@ -93,7 +93,7 @@ class ActionFeedbackGenerator:
         recurring = result.get("recurring")
         day = result.get("day")
         
-        feedback = f"📅 Calendar event created successfully!"
+        feedback = "📅 Calendar event created successfully!"
         
         if title:
             feedback += f" Event: {title}"
@@ -102,7 +102,7 @@ class ActionFeedbackGenerator:
             try:
                 start_time = datetime.fromisoformat(start.replace('Z', '+00:00'))
                 feedback += f" Time: {start_time.strftime('%B %d at %I:%M %p')}"
-            except:
+            except Exception:
                 pass
         
         if recurring:
@@ -121,7 +121,7 @@ class ActionFeedbackGenerator:
         name = result.get("name", "")
         category = result.get("category", "")
         
-        feedback = f"🎯 Goal created successfully!"
+        feedback = "🎯 Goal created successfully!"
         
         if name:
             feedback += f" Goal: {name}"
@@ -138,7 +138,7 @@ class ActionFeedbackGenerator:
         result = action_result.get("result", {})
         content = result.get("content", "")
         
-        feedback = f"📝 Journal entry saved successfully!"
+        feedback = "📝 Journal entry saved successfully!"
         
         if content and len(content) > 50:
             feedback += f" Entry: {content[:50]}..."

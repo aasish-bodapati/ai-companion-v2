@@ -44,11 +44,11 @@ export const useConversation = (id: string | null) => {
 export const useCreateConversation = () => {
   const queryClient = useQueryClient();
   
-  return useMutation<Conversation, Error, { title?: string }>({
-    mutationFn: async (vars: { title?: string }) => {
+  return useMutation<Conversation, Error, { title?: string; incognito_mode?: boolean }>({
+    mutationFn: async (vars: { title?: string; incognito_mode?: boolean }) => {
       console.log('Creating conversation with vars:', vars);
-      const { title } = vars;
-      const data = await api.post<Conversation>('/conversations/', { title });
+      const { title = "New Conversation", incognito_mode = false } = vars;
+      const data = await api.post<Conversation>('/conversations/', { title, incognito_mode });
       console.log('Conversation created successfully:', data);
       return data;
     },

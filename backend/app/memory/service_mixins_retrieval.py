@@ -1,21 +1,16 @@
 from __future__ import annotations
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Set
 import time
-import json
 import logging
-import uuid
-from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.crud.user import user as user_crud
 from app.crud.memory import memory
-from app.memory.vector_store.factory import get_vector_store
-import app.memory.embeddings as embeddings
+# Vector store factory removed for MVP - use direct FAISS
+from app.memory.faiss_store import faiss_store
 from app.schemas.memory import MemorySearchResult
-from app.memory.context_tracker import context_tracker
-from app.monitoring.memory_metrics import memory_monitor
 
 
 def _mmr_select(
@@ -191,7 +186,7 @@ class RetrievalMixin:
     def _get_faiss_store(self, user_id: str):
         """Get FAISS store for user."""
         try:
-            return get_vector_store()
+            return faiss_store
         except Exception as e:
             logger.error(f"Error getting FAISS store: {e}")
             return None

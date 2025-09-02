@@ -5,8 +5,6 @@ Revises: add_prompt_based_onboarding, 9cac6e7ed734
 Create Date: 2025-09-01 01:10:10.872563
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.

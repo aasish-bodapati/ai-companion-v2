@@ -242,3 +242,7 @@ class FAISSVectorStore:
         self, user_id: str, query_vec: List[float], top_k: int
     ) -> List[Tuple[str, float]]:
         return search(user_id, query_vec, top_k)
+
+
+# Create instance for MVP
+faiss_store = FAISSVectorStore()

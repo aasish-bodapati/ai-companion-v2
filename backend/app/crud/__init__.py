@@ -4,17 +4,7 @@ from .conversation import conversation, message
 from .user import user
 from .memory import memory
 from .onboarding import onboarding_profile
-from .coaching import (
-    goal,
-    routine,
-    workout_log,
-    meal_log,
-    hydration_log,
-    mood_log,
-    journal_entry,
-    workout_plan,
-    nutrition_plan,
-)
+# Coaching CRUD removed for MVP focus
 
 __all__ = [
     "CRUDBase",
@@ -23,13 +13,4 @@ __all__ = [
     "user",
     "memory",
     "onboarding_profile",
-    "goal",
-    "routine",
-    "workout_log",
-    "meal_log",
-    "hydration_log",
-    "mood_log",
-    "journal_entry",
-    "workout_plan",
-    "nutrition_plan",
 ]

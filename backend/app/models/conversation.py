@@ -64,6 +64,12 @@ class Conversation(Base):
         server_default=text("true"),
         default=True,
     )
+    incognito_mode = Column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+        default=False,
+    )
 
     # Relationships
     messages = relationship(

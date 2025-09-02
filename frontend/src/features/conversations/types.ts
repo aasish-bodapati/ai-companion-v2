@@ -4,6 +4,7 @@ export interface Conversation {
   id: string;
   title: string | null;
   personalization_enabled: boolean;
+  incognito_mode: boolean;
   created_at: string;
   updated_at: string;
   // client-derived: normalized local epoch ms

@@ -9,7 +9,7 @@ import time
 import logging
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from collections import defaultdict, deque
 import threading
 from contextlib import contextmanager

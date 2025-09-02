@@ -9,8 +9,8 @@ interface ChatInputProps {
   disabled: boolean;
   remember: boolean;
   setRemember: (value: boolean) => void;
-  inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLTextAreaElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   placeholder?: string;
 }
 

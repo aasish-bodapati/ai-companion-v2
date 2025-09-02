@@ -4,7 +4,7 @@ Provides comprehensive categorization and relationship modeling.
 """
 
 from enum import Enum
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 from dataclasses import dataclass
 
 

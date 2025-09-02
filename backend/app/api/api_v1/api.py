@@ -6,6 +6,7 @@ from app.api.endpoints import (
     public,
     users,
     conversations_main,
+    conversations_messages,
     memory,
     memory_visualization,
     memory_monitoring,
@@ -14,12 +15,8 @@ from app.api.endpoints import (
     tasks,
     reminders,
     weekly,
-    coaching,
-    actions,
     uploads,
-    vision,
     utils,
-    web_search,
     nudges,
     debug,
 )
@@ -39,7 +36,6 @@ api_router.include_router(
     conversations_main.router, prefix="/conversations", tags=["conversations"]
 )
 # Include conversations_messages after conversations_main to override the reply endpoint with auto-memory capture
-from app.api.endpoints import conversations_messages
 api_router.include_router(
     conversations_messages.router, prefix="/conversations", tags=["conversations"]
 )
@@ -59,29 +55,15 @@ api_router.include_router(
 )
 api_router.include_router(deduplication.router, prefix="/deduplication", tags=["deduplication"])
 
-# Holistic Memory System - Rich Circle Vision
-try:
-    from app.api.v1.holistic_memory import router as holistic_memory_router
-    api_router.include_router(
-        holistic_memory_router, 
-        prefix="/holistic-memory", 
-        tags=["holistic-memory"]
-    )
-    print("✅ Holistic Memory System integrated into API router")
-except ImportError as e:
-    print(f"⚠️ Holistic Memory System not available: {e}")
+# Holistic Memory System and Action System removed for MVP focus
 
 # Additional feature areas
 api_router.include_router(notes.router, tags=["notes"])
 api_router.include_router(tasks.router, tags=["tasks"])
 api_router.include_router(reminders.router, tags=["reminders"])
 api_router.include_router(weekly.router, tags=["weekly"])
-api_router.include_router(coaching.router, tags=["coaching"])
-api_router.include_router(actions.router, tags=["actions"])
 api_router.include_router(uploads.router, tags=["uploads"])
-api_router.include_router(vision.router, tags=["vision"])
 api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
-api_router.include_router(web_search.router, prefix="/web-search", tags=["web-search"])
 api_router.include_router(nudges.router, tags=["nudges"])
 api_router.include_router(debug.router, tags=["debug"])
 

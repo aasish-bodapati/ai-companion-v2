@@ -3,12 +3,9 @@ Simplified LLM module for AI Companion V2.
 Removes complex fallback layers for easier debugging.
 """
 
-import os
 import time
 import logging
-import time
 import httpx
-import json
 from typing import List, Dict, Optional, Any
 from functools import wraps
 

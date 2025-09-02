@@ -22,11 +22,17 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
   useEffect(() => {
     if (profile) {
       setFormData({
-        nickname: profile.nickname || '',
-        pronouns: profile.pronouns || '',
-        location: profile.location || '',
-        topics: profile.topics || '',
-        primaryReason: profile.primaryReason || '',
+        identity: {
+          nickname: profile.identity?.nickname || '',
+          pronouns: profile.identity?.pronouns || '',
+          location: profile.identity?.location || '',
+        },
+        interests: {
+          topics: profile.interests?.topics || [],
+        },
+        goals: {
+          primaryReason: profile.goals?.primaryReason || '',
+        },
         communication: {
           responseStyle: profile.communication?.responseStyle || undefined,
         },
@@ -68,14 +74,26 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
     }));
   };
 
-  const handleNestedChange = (parent: string, field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [parent]: {
-        ...prev[parent as keyof OnboardingProfileIn],
-        [field]: value,
-      },
-    }));
+  const handleNestedChange = (parent: string, field: string, value: string | string[]) => {
+    setFormData(prev => {
+      const currentParent = prev[parent as keyof OnboardingProfileIn];
+      if (currentParent && typeof currentParent === 'object') {
+        return {
+          ...prev,
+          [parent]: {
+            ...currentParent,
+            [field]: value,
+          },
+        };
+      } else {
+        return {
+          ...prev,
+          [parent]: {
+            [field]: value,
+          },
+        };
+      }
+    });
   };
 
   if (isLoading) {
@@ -106,8 +124,8 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
               </label>
               <input
                 type="text"
-                value={formData.nickname || ''}
-                onChange={(e) => handleInputChange('nickname', e.target.value)}
+                value={formData.identity?.nickname || ''}
+                onChange={(e) => handleNestedChange('identity', 'nickname', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="Optional"
               />
@@ -119,8 +137,8 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
               </label>
               <input
                 type="text"
-                value={formData.pronouns || ''}
-                onChange={(e) => handleInputChange('pronouns', e.target.value)}
+                value={formData.identity?.pronouns || ''}
+                onChange={(e) => handleNestedChange('identity', 'pronouns', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="e.g., she/her, he/him, they/them"
               />
@@ -132,8 +150,8 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
               </label>
               <input
                 type="text"
-                value={formData.location || ''}
-                onChange={(e) => handleInputChange('location', e.target.value)}
+                value={formData.identity?.location || ''}
+                onChange={(e) => handleNestedChange('identity', 'location', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="City, Country"
               />
@@ -145,8 +163,8 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
               </label>
               <input
                 type="text"
-                value={formData.topics || ''}
-                onChange={(e) => handleInputChange('topics', e.target.value)}
+                value={formData.interests?.topics?.join(', ') || ''}
+                onChange={(e) => handleNestedChange('interests', 'topics', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 placeholder="AI, startups, design"
               />

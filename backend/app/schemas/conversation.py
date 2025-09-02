@@ -43,6 +43,10 @@ class ConversationBase(BaseModel):
         True,
         description="Whether personalized memory/profile context is used for replies",
     )
+    incognito_mode: Optional[bool] = Field(
+        False,
+        description="Whether this conversation is in incognito mode (no memory storage or retrieval)",
+    )
 
 
 # Properties to receive via API on creation

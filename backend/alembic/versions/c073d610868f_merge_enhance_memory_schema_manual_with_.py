@@ -5,8 +5,6 @@ Revises: df12ab34cd56, enhance_memory_schema_manual
 Create Date: 2025-08-31 18:38:21.677899
 
 """
-from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.

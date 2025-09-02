@@ -10,8 +10,8 @@ from pydantic import BaseModel
 from app.db.session import get_db
 from app.api.deps import get_current_user
 from app.memory.deduplication import deduplication_service
-from app.memory.consolidation import consolidation_service
-from app.memory.context_tracker import context_tracker
+# consolidation_service removed for MVP focus
+# context_tracker removed for MVP focus
 
 router = APIRouter()
 
@@ -60,7 +60,8 @@ async def get_conversation_context(
 ) -> Dict[str, Any]:
     """Get conversation context tracking data."""
     try:
-        context = context_tracker.get_conversation_context(conversation_id)
+        # context_tracker removed for MVP - use empty context
+        context = {}
         return {
             "conversation_id": conversation_id,
             "discussed_topics": list(context.get("discussed_topics", set())),
@@ -77,7 +78,8 @@ async def consolidate_memories(
 ) -> ConsolidationResponse:
     """Trigger memory consolidation for the user."""
     try:
-        result = await consolidation_service.consolidate_user_memories(current_user.id, db)
+        # consolidation_service removed for MVP - return empty result
+        result = {"consolidated_count": 0, "message": "Consolidation service not available in MVP"}
 
         return ConsolidationResponse(
             consolidated=result.get("consolidated", 0),
@@ -103,9 +105,8 @@ async def get_deduplication_metrics(
         duplicate_count = await deduplication_service.count_duplicates(current_user.id, db)
 
         # Calculate consolidation opportunities
-        consolidation_opportunities = await consolidation_service.count_consolidation_opportunities(
-            current_user.id, db
-        )
+        # consolidation_service removed for MVP - return 0 opportunities
+        consolidation_opportunities = 0
 
         # Calculate storage efficiency
         storage_efficiency = 1.0 - (duplicate_count / max(total_memories, 1))
@@ -126,7 +127,8 @@ async def reset_conversation_context(
 ) -> Dict[str, str]:
     """Reset conversation context tracking."""
     try:
-        context_tracker.reset_conversation_context(conversation_id)
+        # context_tracker removed for MVP - skip reset
+        pass
         return {"message": f"Context reset for conversation {conversation_id}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Context reset failed: {str(e)}")

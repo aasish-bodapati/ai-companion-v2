@@ -7,7 +7,7 @@ import logging
 from fastapi import APIRouter
 
 # Import all conversation modules with routers
-from .conversations_crud import router as crud_router
+from .conversation import router as crud_router
 # Note: conversations_simple router removed - conversations_messages.py will handle reply endpoint
 
 logger = logging.getLogger(__name__)

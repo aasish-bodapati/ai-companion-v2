@@ -1,6 +1,7 @@
 from typing import List
 from uuid import UUID
 from datetime import datetime
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 from app import crud, models
 from app.api import deps
 from app.schemas.user import User, UserCreate, UserUpdate
-from app.schemas.onboarding import OnboardingProfile, OnboardingProfileCreate, OnboardingProfileUpdate
+from app.schemas.onboarding import OnboardingProfile, OnboardingProfileUpdate
 
 router = APIRouter()
 
@@ -154,8 +155,6 @@ def update_user(
     return user
 
 
-from pydantic import BaseModel
-
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str
@@ -178,7 +177,7 @@ def change_password(
         raise HTTPException(status_code=400, detail="Current password is incorrect")
     
     # Update password
-    user = crud.user.update(db, db_obj=current_user, obj_in={"password": password_data.new_password})
+    crud.user.update(db, db_obj=current_user, obj_in={"password": password_data.new_password})
     return {"message": "Password updated successfully"}
 
 

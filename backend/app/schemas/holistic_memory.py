@@ -6,7 +6,6 @@ Pydantic models for the holistic memory system API endpoints.
 
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
-from datetime import datetime
 
 
 class HolisticContextRequest(BaseModel):

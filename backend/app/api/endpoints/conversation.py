@@ -9,7 +9,7 @@ from datetime import datetime
 
 from app.db.session import get_db
 from app.api.deps import get_current_user
-from app.services.conversation_intelligence import conversation_intelligence
+# conversation_intelligence removed for MVP focus
 
 router = APIRouter()
 
@@ -30,9 +30,12 @@ async def chat_with_assistant(
         user_id = str(current_user.id)
 
         # Generate intelligent response with human-level features
-        response = conversation_intelligence.generate_response(
-            user_message=message, conversation_history=conversation_history, user_id=user_id
-        )
+        # conversation_intelligence removed for MVP - return simple response
+        response = {
+            "message": f"I received your message: {message}",
+            "timestamp": datetime.now().isoformat(),
+            "user_id": user_id
+        }
 
         # Add user context
         response["user_id"] = user_id

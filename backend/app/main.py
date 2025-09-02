@@ -7,7 +7,7 @@ if os.environ.get('DOCKER_CONTAINER') == 'true':
     # Force Python path to prevent corruption - this must be the FIRST thing we do
     if '/usr/local/bin' in sys.path:
         sys.path.remove('/usr/local/bin')
-        print(f"🔧 Removed /usr/local/bin from Python path")
+        print("🔧 Removed /usr/local/bin from Python path")
 
     # Ensure correct path order for Docker
     correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
@@ -17,7 +17,7 @@ if os.environ.get('DOCKER_CONTAINER') == 'true':
 
     print(f"🔧 Final Python path: {sys.path}")
 else:
-    print(f"🔧 Running in local environment, keeping Python path intact")
+    print("🔧 Running in local environment, keeping Python path intact")
 
 import uuid
 from contextlib import asynccontextmanager

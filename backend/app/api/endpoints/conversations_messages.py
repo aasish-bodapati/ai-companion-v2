@@ -1,22 +1,19 @@
 import logging
-import json
-import os
 import asyncio
 import random
 import time
 import re
 from uuid import UUID
-from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
 from fastapi.responses import StreamingResponse
-from app.api.problem import problem_json
 from sqlalchemy.orm import Session
 
-from typing import Optional, List
+from typing import List
 from app import crud
 from app.api import deps
+from app.db.session import get_db
 from app.models.user import User
-from app.schemas.conversation import MessageCreate, AssistantReply, Message
+from app.schemas.conversation import MessageCreate, AssistantReply, Message, ConversationCreate
 import inspect
 import app.core.llm as llm_mod
 from app.core.config import settings
@@ -25,15 +22,455 @@ from app.crud import conversation as crud_conversation
 from app.crud.conversation import message as crud_message
 from app.core.rate_limit import check_rate_limit
 from app.core.redis_client import get_redis
-
-# Import utility functions (minimal set)
-from .conversations_utils import (
-    _normalize_user_text,
-)
+from app.services.auto_memory import auto_memory_service
+from app.cache.simple import cache as _cache
 
 logger = logging.getLogger(__name__)
 
+# Simple utility functions that were previously in conversations_utils.py
+def _normalize_user_text(text: str) -> str:
+    """Normalize user text for processing"""
+    if not text:
+        return ""
+    # Simple normalization - lowercase and strip extra whitespace
+    return " ".join(text.strip().lower().split())
+
+def _maybe_capture_preference(db, current_user, conversation_id, text):
+    """Placeholder for preference capture - currently disabled"""
+    # This function was referenced but not implemented
+    # For now, return None to avoid breaking the flow
+    return None
+
+def _maybe_capture_facts(db, current_user, conversation_id, text):
+    """Placeholder for fact capture - currently disabled"""
+    # This function was referenced but not implemented
+    # For now, return None to avoid breaking the flow
+    return None
+
 router = APIRouter()
+
+###############################################
+# Conversation Management Endpoints            #
+###############################################
+
+@router.get("/")
+async def list_conversations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+    skip: int = 0,
+    limit: int = 100
+):
+    """List all conversations for the current user"""
+    try:
+        conversations = crud_conversation.get_multi_by_user(
+            db=db, user_id=str(current_user.id), skip=skip, limit=limit
+        )
+        return conversations
+    except Exception as e:
+        logger.error(f"Error listing conversations: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list conversations")
+
+@router.post("/")
+async def create_conversation(
+    conversation_data: ConversationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Create a new conversation"""
+    try:
+        conversation = crud_conversation.create_with_owner(
+            db=db, obj_in=conversation_data, owner_id=str(current_user.id)
+        )
+        return conversation
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create conversation")
+
+@router.post("/new")
+async def create_new_conversation(
+    title: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Create a new conversation (legacy endpoint)"""
+    try:
+        from app.schemas.conversation import ConversationCreate
+        conversation_data = ConversationCreate(title=title)
+        conversation = crud_conversation.create_with_owner(
+            db=db, obj_in=conversation_data, owner_id=str(current_user.id)
+        )
+        return conversation
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create conversation")
+
+@router.get("/new")
+async def get_new_conversation(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Get new conversation endpoint (returns empty messages for new conversation)"""
+    try:
+        # Return empty messages for a new conversation
+        return {"messages": []}
+    except Exception as e:
+        logger.error(f"Error getting new conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get new conversation")
+
+@router.get("/{conversation_id}/messages")
+async def get_conversation_messages(
+    conversation_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user),
+):
+    """
+    Get all messages for a specific conversation.
+    """
+    try:
+        # Validate conversation ownership
+        conversation = crud_conversation.get(db=db, id=conversation_id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        if not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
+            raise HTTPException(status_code=403, detail="Not enough permissions")
+
+        # Get messages for the conversation
+        messages = crud_message.get_multi_by_conversation(db=db, conversation_id=str(conversation_id))
+        
+        return messages
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting conversation messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversation messages")
+
+@router.get("/{conversation_id}")
+async def get_conversation(
+    conversation_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Get a single conversation by ID"""
+    try:
+        conversation = crud_conversation.get(db=db, id=conversation_id)
+        if conversation and not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
+            conversation = None
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get conversation")
+
+@router.put("/{conversation_id}")
+async def update_conversation(
+    conversation_id: UUID,
+    title: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Update a conversation"""
+    try:
+        conversation = crud_conversation.get(db=db, id=conversation_id)
+        if conversation and not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
+            conversation = None
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        conversation_data = {"title": title}
+        updated_conversation = crud_conversation.update(
+            db=db, db_obj=conversation, obj_in=conversation_data
+        )
+        return updated_conversation
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update conversation")
+
+@router.delete("/{conversation_id}")
+async def delete_conversation(
+    conversation_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Delete a conversation"""
+    try:
+        conversation = crud_conversation.get(db=db, id=conversation_id)
+        if conversation and not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
+            conversation = None
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        
+        crud_conversation.remove(db=db, id=conversation_id)
+        return {"message": "Conversation deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete conversation")
+
+@router.get("/new/messages")
+async def get_new_conversation_messages(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_user)
+):
+    """Get messages for a new conversation (returns empty list)"""
+    try:
+        return []
+    except Exception as e:
+        logger.error(f"Error getting new conversation messages: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get new conversation messages")
+
+@router.post("/new/messages", response_model=Message)
+async def send_message_to_new_conversation(
+    message_in: MessageCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Send a message to a new conversation. This will create a new conversation first,
+    then add the message to it.
+    """
+    try:
+        # Create a new conversation first
+        from app.schemas.conversation import ConversationCreate
+        conversation_data = ConversationCreate(title="New Conversation")
+        conversation = crud_conversation.create_with_owner(
+            db=db, obj_in=conversation_data, owner_id=str(current_user.id)
+        )
+
+        # Now send the message to the newly created conversation
+        user_message = crud_message.create_with_conversation(
+            db=db, obj_in=message_in, conversation_id=str(conversation.id)
+        )
+
+        return user_message
+    except Exception as e:
+        logger.error(f"Error sending message to new conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send message to new conversation")
+
+@router.post("/new/messages-and-reply", response_model=AssistantReply)
+async def send_message_and_reply_to_new_conversation(
+    message_in: MessageCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Send a message to a new conversation and get an AI reply in one call.
+    This creates a conversation, adds the user message, and generates a reply.
+    """
+    try:
+        # Create a new conversation first
+        from app.schemas.conversation import ConversationCreate
+        conversation_data = ConversationCreate(title="New Conversation")
+        conversation = crud_conversation.create_with_owner(
+            db=db, obj_in=conversation_data, owner_id=str(current_user.id)
+        )
+
+        # Add the user message to the conversation
+        user_message = crud_message.create_with_conversation(
+            db=db, obj_in=message_in, conversation_id=str(conversation.id)
+        )
+
+        # Build conversation history for LLM
+        conversation_history = [{"role": "user", "content": message_in.content}]
+
+        # SIMPLE MEMORY INTEGRATION (skip if incognito mode)
+        memory_context = ""
+        if not conversation.incognito_mode:
+            try:
+                # Get relevant memories about the user
+                memory_results = memory_service.search_memories(
+                    db=db, 
+                    query=message_in.content, 
+                    user_id=str(current_user.id), 
+                    limit=5
+                )
+                
+                if memory_results:
+                    memory_context = "\n\nRelevant information about you:\n"
+                    for memory in memory_results[:3]:  # Top 3 most relevant
+                        memory_context += f"- {memory.content}\n"
+                        
+            except Exception as e:
+                logger.debug(f"Memory retrieval failed (non-critical): {e}")
+                # Continue without memory context
+
+        # Build simple, effective system prompt
+        system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
+
+Key principles:
+- Be natural and conversational
+- Use the user's information when relevant
+- Keep responses concise but helpful
+- Don't make up information you don't have
+
+{memory_context}
+
+Respond to the user's message naturally and helpfully."""
+
+        # Generate AI response
+        try:
+            ai_response = await _call_llm_with_retries(
+                fn=llm_mod.generate_response,
+                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+                system_prompt=system_prompt,
+                messages=conversation_history,
+                max_tokens=400,  # Reasonable length
+            )
+            
+            # Ensure ai_response is a string
+            if hasattr(ai_response, "content"):
+                ai_response = ai_response.content
+            elif hasattr(ai_response, "message"):
+                ai_response = ai_response.message
+            elif not isinstance(ai_response, str):
+                ai_response = str(ai_response)
+                
+        except Exception as e:
+            logger.error(f"LLM call failed: {e}")
+            ai_response = "I apologize, but I'm having trouble generating a response right now. Please try again."
+
+        # Create assistant message in database
+        assistant_message = crud_message.create_with_conversation(
+            db=db,
+            obj_in=MessageCreate(
+                content=ai_response,
+                role="assistant"
+            ),
+            conversation_id=str(conversation.id)
+        )
+
+        # Return the response
+        return AssistantReply(
+            message=assistant_message,
+            conversation_id=str(conversation.id)
+        )
+        
+    except Exception as e:
+        logger.error(f"Error sending message and generating reply for new conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to send message and generate reply for new conversation")
+
+@router.post("/new/reply", response_model=AssistantReply)
+async def reply_to_new_conversation(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get a reply for a new conversation. This will create a new conversation first,
+    then generate a reply based on the last message.
+    """
+    try:
+        # Create a new conversation first
+        from app.schemas.conversation import ConversationCreate
+        conversation_data = ConversationCreate(title="New Conversation")
+        conversation = crud_conversation.create_with_owner(
+            db=db, obj_in=conversation_data, owner_id=str(current_user.id)
+        )
+
+        # Get the last message from the conversation
+        messages = crud_message.get_multi_by_conversation(db=db, conversation_id=str(conversation.id))
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages found in conversation")
+
+        # Find the last user message
+        last_user_message = None
+        for message in reversed(messages):
+            if message.role == "user":
+                last_user_message = message
+                break
+
+        if not last_user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+
+        # Build conversation history for LLM
+        conversation_history = []
+        for msg in messages:
+            conversation_history.append({"role": msg.role, "content": msg.content})
+
+        # SIMPLE MEMORY INTEGRATION - No complex engines (skip if incognito mode)
+        memory_context = ""
+        if not conversation.incognito_mode:
+            try:
+                # Get relevant memories about the user
+                memory_results = memory_service.search_memories(
+                    db=db, 
+                    query=last_user_message.content, 
+                    user_id=str(current_user.id), 
+                    limit=5
+                )
+                
+                if memory_results:
+                    memory_context = "\n\nRelevant information about you:\n"
+                    for memory in memory_results[:3]:  # Top 3 most relevant
+                        memory_context += f"- {memory.content}\n"
+                        
+            except Exception as e:
+                logger.debug(f"Memory retrieval failed (non-critical): {e}")
+                # Continue without memory context
+
+        # Build simple, effective system prompt
+        system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
+
+Key principles:
+- Be natural and conversational
+- Use the user's information when relevant
+- Keep responses concise but helpful
+- Don't make up information you don't have
+
+{memory_context}
+
+Respond to the user's message naturally and helpfully."""
+
+        # Generate AI response - ONE SIMPLE CALL
+        try:
+            ai_response = await _call_llm_with_retries(
+                fn=llm_mod.generate_response,
+                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+                system_prompt=system_prompt,
+                messages=conversation_history + [{"role": "user", "content": last_user_message.content}],
+                max_tokens=400,  # Reasonable length
+            )
+            
+            # Ensure ai_response is a string
+            if hasattr(ai_response, "content"):
+                ai_response = ai_response.content
+            elif hasattr(ai_response, "message"):
+                ai_response = ai_response.message
+            elif not isinstance(ai_response, str):
+                ai_response = str(ai_response)
+                
+        except Exception as e:
+            logger.error(f"LLM call failed: {e}")
+            ai_response = "I apologize, but I'm having trouble generating a response right now. Please try again."
+
+        # Create assistant message in database
+        assistant_message = crud_message.create_with_conversation(
+            db=db,
+            obj_in=MessageCreate(
+                content=ai_response,
+                role="assistant"
+            ),
+            conversation_id=str(conversation.id)
+        )
+
+        # Return the response
+        return AssistantReply(
+            message=assistant_message,
+            conversation_id=str(conversation.id)
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating reply for new conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate reply for new conversation")
 
 ###############################################
 # LLM Resilience Utilities (Retry + Breaker)  #
@@ -342,17 +779,18 @@ async def send_message(
                     )
                 except Exception:
                     pass
-            # Capture preferences if present (persisted via store_preference)
-            try:
-                _maybe_capture_preference(db, current_user, conversation_id, normalized_text)
-            except Exception as _e:
-                logger.debug(f"Preference capture skipped: {_e}")
+            # Capture preferences if present (persisted via store_preference) - skip if incognito
+            if not conversation.incognito_mode:
+                try:
+                    _maybe_capture_preference(db, current_user, conversation_id, normalized_text)
+                except Exception as _e:
+                    logger.debug(f"Preference capture skipped: {_e}")
 
-            # Capture facts if present (work, allergies, etc.)
-            try:
-                _maybe_capture_facts(db, current_user, conversation_id, normalized_text)
-            except Exception as _e:
-                logger.debug(f"Fact capture skipped: {_e}")
+                # Capture facts if present (work, allergies, etc.)
+                try:
+                    _maybe_capture_facts(db, current_user, conversation_id, normalized_text)
+                except Exception as _e:
+                    logger.debug(f"Fact capture skipped: {_e}")
 
             # Fast-capture notes as fact memories
             try:
@@ -370,8 +808,8 @@ async def send_message(
                             "conversation_id": str(conversation_id),
                         },
                     }
-                    # Only capture memory if personalization is enabled
-                    if conversation.personalization_enabled:
+                    # Only capture memory if personalization is enabled and not in incognito mode
+                    if conversation.personalization_enabled and not conversation.incognito_mode:
                         auto_memory_service.auto_capture_memory(
                             db,
                             user_id=str(current_user.id),
@@ -391,16 +829,14 @@ async def send_message(
                     # Extract command part and check for delete
                     cmd = txt[10:].strip()
                     if cmd.lower().startswith("delete "):
-                        import re as _re
-
-                        rest = cmd.split(" ", 1)[1].strip()
-                        m = _re.search(
-                            r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
-                            rest,
-                            flags=_re.IGNORECASE,
-                        )
-                        event_id = (m.group(0) if m else rest).strip().strip(".,;!()[]{}")
- 
+                        # rest = cmd.split(" ", 1)[1].strip()
+                        # m = _re.search(
+                        #     r"[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+                        #     rest,
+                        #     flags=_re.IGNORECASE,
+                        # )
+                        # event_id = (m.group(0) if m else rest).strip().strip(".,;!()[]{}")
+                        pass
             except Exception:
                 pass
 
@@ -495,25 +931,26 @@ async def reply_to_conversation(
         for msg in messages:
             conversation_history.append({"role": msg.role, "content": msg.content})
 
-        # SIMPLE MEMORY INTEGRATION - No complex engines
+        # SIMPLE MEMORY INTEGRATION - No complex engines (skip if incognito mode)
         memory_context = ""
-        try:
-            # Get relevant memories about the user
-            memory_results = memory_service.search_memories(
-                db=db, 
-                query=last_user_message.content, 
-                user_id=str(current_user.id), 
-                limit=5
-            )
-            
-            if memory_results:
-                memory_context = "\n\nRelevant information about you:\n"
-                for memory in memory_results[:3]:  # Top 3 most relevant
-                    memory_context += f"- {memory.content}\n"
-                    
-        except Exception as e:
-            logger.debug(f"Memory retrieval failed (non-critical): {e}")
-            # Continue without memory context
+        if not conversation.incognito_mode:
+            try:
+                # Get relevant memories about the user
+                memory_results = memory_service.search_memories(
+                    db=db, 
+                    query=last_user_message.content, 
+                    user_id=str(current_user.id), 
+                    limit=5
+                )
+                
+                if memory_results:
+                    memory_context = "\n\nRelevant information about you:\n"
+                    for memory in memory_results[:3]:  # Top 3 most relevant
+                        memory_context += f"- {memory.content}\n"
+                        
+            except Exception as e:
+                logger.debug(f"Memory retrieval failed (non-critical): {e}")
+                # Continue without memory context
 
         # Build simple, effective system prompt
         system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
@@ -530,7 +967,7 @@ Respond to the user's message naturally and helpfully."""
 
         # Generate AI response - ONE SIMPLE CALL
         try:
-            print(f"🔍 DEBUG: About to call LLM with:")
+            print("🔍 DEBUG: About to call LLM with:")
             print(f"   System prompt: {system_prompt[:100]}...")
             print(f"   Messages count: {len(conversation_history + [{'role': 'user', 'content': last_user_message.content}])}")
             print(f"   Model: {getattr(settings, 'LLM_MODEL_DEFAULT', 'stub-model')}")
@@ -567,7 +1004,7 @@ Respond to the user's message naturally and helpfully."""
             ai_response = "I apologize, but I encountered an error while processing your request. Please try again."
 
         # AUTO-MEMORY CAPTURE - Simple and effective
-        print(f"🔍 DEBUG: Starting auto-memory capture...")
+        print("🔍 DEBUG: Starting auto-memory capture...")
         try:
             # Only capture if the user shared new information
             if last_user_message.content and len(last_user_message.content.strip()) > 10:
@@ -698,9 +1135,9 @@ async def stream_reply_to_conversation(
     """
     try:
         # Check if conversation exists and user has access
-        conversation = crud_conversation.get_by_id_and_owner(
-            db=db, id=conversation_id, owner_id=current_user.id
-        )
+        conversation = crud_conversation.get(db=db, id=conversation_id)
+        if conversation and not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
+            conversation = None
         if not conversation:
             raise HTTPException(status_code=404, detail="Conversation not found")
 

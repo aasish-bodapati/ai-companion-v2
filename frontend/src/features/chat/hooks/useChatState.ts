@@ -23,9 +23,9 @@ export interface ChatState {
   setAnalyzeImages: (value: boolean) => void;
   
   // Refs
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
-  inputRef: React.RefObject<HTMLTextAreaElement | null>;
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
+  inputRef: React.RefObject<HTMLTextAreaElement>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   streamBufferRef: React.MutableRefObject<string>;
   liveAssistantRef: React.MutableRefObject<string>;
   liveAssistantRawRef: React.MutableRefObject<string>;

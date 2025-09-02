@@ -1,4 +1,4 @@
-  import { PlusIcon, TrashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+  import { PlusIcon, TrashIcon, CheckCircleIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -20,6 +20,8 @@ export function ConversationSidebar() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  
+
 
   const allIds = useMemo(() => (conversations || []).map((c) => c.id), [conversations]);
   const selectedCount = selectedIds.size;
@@ -41,7 +43,18 @@ export function ConversationSidebar() {
 
   const handleNewConversation = useCallback(() => {
     createConversation(
-      { title: undefined },
+      { title: undefined, incognito_mode: false },
+      {
+        onSuccess: (data) => {
+          router.push(`/chat/${data.id}`);
+        },
+      }
+    );
+  }, [createConversation, router]);
+
+  const handleNewIncognitoConversation = useCallback(() => {
+    createConversation(
+      { title: undefined, incognito_mode: true },
       {
         onSuccess: (data) => {
           router.push(`/chat/${data.id}`);
@@ -117,6 +130,14 @@ export function ConversationSidebar() {
             <PlusIcon className="h-4 w-4" />
             New Chat
           </button>
+          <button
+            onClick={handleNewIncognitoConversation}
+            disabled={isCreating || selectionMode || isDeleting}
+            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <EyeSlashIcon className="h-4 w-4" />
+            Incognito
+          </button>
         </div>
         <div className="flex items-center justify-between gap-2 text-xs">
           <button
@@ -188,8 +209,11 @@ export function ConversationSidebar() {
                         {conversation.title || 'Untitled conversation'}
                       </span>
                     ) : (
-                      <Link href={`/chat/${conversation.id}`} className="flex-1 truncate">
-                        {conversation.title || 'Untitled conversation'}
+                      <Link href={`/chat/${conversation.id}`} className="flex-1 truncate flex items-center gap-2">
+                        {conversation.incognito_mode && (
+                          <EyeSlashIcon className="h-3 w-3 text-orange-500 flex-shrink-0" title="Incognito Mode" />
+                        )}
+                        <span className="truncate">{conversation.title || 'Untitled conversation'}</span>
                       </Link>
                     )}
                     <button

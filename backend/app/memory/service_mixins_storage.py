@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.crud.memory import memory
-from app.memory.vector_store.factory import get_vector_store
+# Vector store factory removed for MVP - use direct FAISS
+from app.memory.faiss_store import faiss_store
 import app.memory.embeddings as embeddings
 from app.memory.deduplication import deduplication_service
 from app.db.session import SessionLocal
@@ -326,7 +327,7 @@ class StorageMixin:
                 # Only update the vector when the content actually changed
                 if changed and embedding is not None and existing.faiss_id:
                     try:
-                        vector_store = get_vector_store()
+                        vector_store = faiss_store
                         vector_store.update_vector(user_id, existing.faiss_id, embedding[0])
                     except Exception as _fe:
                         logger.warning(
@@ -374,14 +375,14 @@ class StorageMixin:
             if embedding is not None:
                 try:
                     print(f"🔍 DEBUG: Adding to vector store: user={user_id}, id={faiss_id}")
-                    vector_store = get_vector_store()
+                    vector_store = faiss_store
                     vector_store.add(user_id, [faiss_id], [embedding[0]])
-                    print(f"🔍 DEBUG: Vector store add successful")
+                    print("🔍 DEBUG: Vector store add successful")
                 except Exception as _fe:
                     print(f"🔍 DEBUG: Vector add failed for user={user_id}, id={faiss_id}: {_fe}")
                     logger.warning(f"Vector add failed for user={user_id}, id={faiss_id}: {_fe}")
             else:
-                print(f"🔍 DEBUG: No embedding available for vector storage")
+                print("🔍 DEBUG: No embedding available for vector storage")
 
             # Baseline relevance score
             try:

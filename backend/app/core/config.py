@@ -223,7 +223,7 @@ class Settings(BaseSettings):
     # Two-pass self-critique and refinement (STaR-like) for higher quality replies
     CRITIQUE_REFINE_ENABLED: bool = False
     # Streaming (SSE) endpoints toggle. When False, streaming routes are not mounted.
-    STREAMING_ENABLED: bool = True
+    STREAMING_ENABLED: bool = False
     # Dual write: persist chat-captured notes/tasks/reminders to SQL tables and memory
     DUAL_WRITE_ENABLED: bool = True
 

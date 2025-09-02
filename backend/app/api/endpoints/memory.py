@@ -3,6 +3,7 @@ from uuid import UUID, uuid4, UUID as _UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 import logging
+import re
 
 from app.api import deps
 from app.core.config import settings
@@ -12,14 +13,14 @@ from app.models.user import User
 from app.schemas.memory import MemoryNodeResponse, MemorySearchResult
 from app.schemas.memory_audit import MemoryAuditResponse
 from app.memory.service import memory_service
-from app.memory.context_tracker import context_tracker
+# context_tracker removed for MVP focus
 from app import crud
 from app.services.summarization import generate_conversation_summary
 from pydantic import BaseModel, Field
 from app.privacy.redaction import redact_text, redact_metadata
 from app.core.llm import SimpleLLMClient
 
-from app.services.enhanced_memory_service import EnhancedMemoryService
+# EnhancedMemoryService removed for MVP focus
 from datetime import datetime, timezone
 
 # Set up logger
@@ -39,23 +40,14 @@ class MemoryStatusResponse(BaseModel):
     stats: Dict[str, Any]
 
 
-class MemoryToggleRequest(BaseModel):
-    enabled: bool
-
-
 @router.get("/status", response_model=MemoryStatusResponse)
 def get_memory_status(
     db: Session = Depends(deps.get_db),
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Get memory system status and statistics."""
-    # Effective flag: global unless user override set
+    # Memory is always enabled for MVP - no user toggle
     enabled = bool(settings.MEMORY_ENABLED)
-    try:
-        if getattr(current_user, "memory_enabled", None) is not None:
-            enabled = bool(current_user.memory_enabled)
-    except Exception:
-        pass
 
     stats = {
         "totalMemories": 0,
@@ -82,45 +74,6 @@ def get_memory_status(
             pass
 
     return MemoryStatusResponse(enabled=enabled, stats=stats)
-
-
-@router.post("/toggle")
-def toggle_memory(
-    request: MemoryToggleRequest,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-):
-    """Toggle memory system for this user by setting a per-user override.
-
-    If global is disabled, user cannot enable it (returns global false).
-    If global is enabled, set user override to request.enabled and return effective value.
-    """
-    # If globally off, respect global off regardless of user toggle
-    if not bool(settings.MEMORY_ENABLED):
-        return {"enabled": False, "message": "Memory system globally disabled by admin"}
-
-    # Persist per-user override
-    try:
-        from app.crud.user import user as user_crud
-
-        updated = user_crud.update(
-            db, db_obj=current_user, obj_in={"memory_enabled": bool(request.enabled)}
-        )
-        db.refresh(updated)
-        effective = (
-            bool(updated.memory_enabled)
-            if updated.memory_enabled is not None
-            else bool(settings.MEMORY_ENABLED)
-        )
-        return {"enabled": effective}
-    except Exception:
-        # Fallback to current effective
-        eff = (
-            bool(current_user.memory_enabled)
-            if getattr(current_user, "memory_enabled", None) is not None
-            else bool(settings.MEMORY_ENABLED)
-        )
-        return {"enabled": eff}
 
 
 @router.get("/users/me/memories", response_model=List[MemoryNodeResponse])
@@ -156,8 +109,7 @@ def list_my_memories(
     # Deduplicate by normalized content (case-insensitive, whitespace-collapsed)
     # Keep the first occurrence (most recent due to DESC ordering)
     seen: set[str] = set()
-    deduped: List[MemoryNodeResponse] = []
-    import re
+    deduped: List[Any] = []
 
     boilerplate_patterns = [
         r"\bplease\s+remember\s+it\b",
@@ -193,7 +145,7 @@ def list_my_memories(
     items = deduped
     # Optional filter by memory_metadata.core without changing SQL shape
     if core is not None:
-        filtered: List[MemoryNodeResponse] = []
+        filtered: List[Any] = []
         import json
 
         for it in items:
@@ -815,10 +767,8 @@ def get_memory_context(
     context_items: List[MemoryContextItem] = []
     seen_norm: set[str] = set()
 
-    # Honor per-user memory flag
-    if not bool(settings.MEMORY_ENABLED) or (
-        getattr(current_user, "memory_enabled", None) is False
-    ):
+    # Honor global memory flag and incognito mode
+    if not bool(settings.MEMORY_ENABLED) or conversation.incognito_mode:
         return {"context": context_items}
 
     # Use last user message to shape context and detect self-referential prompt
@@ -927,7 +877,8 @@ def get_memory_context(
             type_counts: dict[str, int] = {k: 0 for k in type_caps.keys()}
 
             # Prevent repetition: fetch ids already used in this conversation
-            used_ids = set(context_tracker.get_used_memory_ids(str(conversation_id)))
+            # Context tracking removed for MVP - use empty set
+            used_ids = set()
 
             for r in results:
                 try:
@@ -1338,12 +1289,14 @@ def get_memory_context(
 
     # Track discussed content and used memory ids to reduce repetition next turn
     try:
-        context_tracker.track_discussed_content(
-            str(conversation_id),
-            last_user_input or "",
-            "conversation",
-            memory_ids=[str(x) for x in seen_faiss_ids],
-        )
+        # Context tracking removed for MVP - skip tracking
+        # context_tracker.track_discussed_content(
+        #     str(conversation_id),
+        #     last_user_input or "",
+        #     "conversation",
+        #     memory_ids=[str(x) for x in seen_faiss_ids],
+        # )
+        pass
     except Exception:
         pass
 
@@ -1832,7 +1785,7 @@ def delete_my_memory(
 
     # Soft delete by updating metadata
     import json
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     try:
         metadata = json.loads(existing.memory_metadata) if existing.memory_metadata else {}
@@ -1870,7 +1823,7 @@ def get_daily_learnings(
     current_user: User = Depends(deps.get_current_active_user),
 ):
     """Get daily learning summaries for the past N days."""
-    from datetime import datetime, timedelta, timezone
+    from datetime import datetime, timedelta
     import json
 
     # Calculate date range
@@ -1985,7 +1938,8 @@ async def process_onboarding_prompt(
     try:
         # Initialize services
         llm_service = SimpleLLMClient()
-        memory_service = EnhancedMemoryService()
+        # Use basic memory service for MVP
+        memory_service = memory_service
         
         # Step 1: Process prompt through LLM to extract structured information
         processing_prompt = f"""
@@ -2035,11 +1989,11 @@ async def process_onboarding_prompt(
         # Step 3: Create memory chunks for vector storage
         memory_chunks = [
             f"User onboarding summary: {llm_response}",
-            f"User communication preferences and style",
-            f"User daily routines and schedule patterns",
-            f"User weekly habits and activities",
-            f"User goals and objectives",
-            f"User constraints and special requirements"
+            "User communication preferences and style",
+            "User daily routines and schedule patterns",
+            "User weekly habits and activities",
+            "User goals and objectives",
+            "User constraints and special requirements"
         ]
         
         # Step 4: Store in memory system

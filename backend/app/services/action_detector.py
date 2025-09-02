@@ -5,9 +5,8 @@ Automatically detects when users want to perform actions and executes them seaml
 
 import re
 import logging
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
-from app.actions.registry import registry
 from app.actions.router import router as action_router
 from app.actions.registry import ExecuteActionRequest
 from app.api.deps import get_db
@@ -404,7 +403,7 @@ class ActionDetector:
     def extract_action_params(self, user_message: str, action_info: Dict[str, Any]) -> Dict[str, Any]:
         """Extract parameters for the detected action from user message."""
         params = {}
-        message_lower = user_message.lower()
+        # message_lower = user_message.lower()
         
         if action_info["action"] == "fitness.log_workout":
             # Extract workout details

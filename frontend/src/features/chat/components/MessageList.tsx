@@ -28,7 +28,7 @@ interface MessageListProps {
   memQuickSaveEnabled: boolean;
   memShowSavedInline: boolean;
   feedbackPending: Record<string, boolean>;
-  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
 }
 
 export function MessageList({
