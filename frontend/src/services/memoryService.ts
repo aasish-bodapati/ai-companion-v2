@@ -202,12 +202,12 @@ class MemoryService {
       if (timeRange) params.append('time_range', timeRange);
       if (category) params.append('category', category);
       
-      const response = await api.get<{
-        insights: MemoryInsight[];
-        patterns: any[];
-        recommendations: any[];
-      }>(`${this.baseUrl}/insights?${params}`);
-      return response;
+      // Simplified: Return empty data to reduce UI complexity
+      return {
+        insights: [],
+        patterns: [],
+        recommendations: []
+      };
     } catch (error) {
       console.error('Failed to get insights:', error);
       

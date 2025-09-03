@@ -62,7 +62,7 @@ async def process_briefing(
         """
         
         # Get structured summary from LLM
-        structured_summary = await llm_client.generate_response(
+        structured_summary = llm_client.generate_response(
             system_prompt="You are an AI assistant that analyzes user briefings and extracts structured information about their lifestyle, preferences, and goals.",
             messages=[{"role": "user", "content": processing_prompt}],
             max_tokens=500

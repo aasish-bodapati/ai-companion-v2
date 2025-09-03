@@ -1994,3 +1994,80 @@ async def process_onboarding_prompt(
             status_code=500, 
             detail=f"Failed to process onboarding prompt: {str(e)}"
         )
+
+
+class MemoryInsightResponse(BaseModel):
+    insights: List[dict]
+    patterns: List[dict]
+    recommendations: List[dict]
+
+@router.get("/insights", response_model=MemoryInsightResponse)
+async def get_memory_insights(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user = Depends(deps.get_current_active_user),
+    context: Optional[str] = None,
+    time_range: Optional[str] = None,
+    category: Optional[str] = None
+):
+    """
+    Get contextual insights from user memories.
+    
+    This endpoint provides insights, patterns, and recommendations based on user memories.
+    """
+    try:
+        user_id = str(current_user.id)
+        
+        # For now, return mock data since the full insights system isn't implemented
+        # In a full implementation, this would analyze user memories and generate insights
+        
+        mock_insights = [
+            {
+                "id": "1",
+                "type": "pattern",
+                "content": "You tend to work on coding projects in the morning",
+                "confidence": 0.8,
+                "related_memories": [],
+                "created_at": "2024-01-01T00:00:00Z"
+            },
+            {
+                "id": "2", 
+                "type": "preference",
+                "content": "You prefer outdoor activities on weekends",
+                "confidence": 0.9,
+                "related_memories": [],
+                "created_at": "2024-01-01T00:00:00Z"
+            }
+        ]
+        
+        mock_patterns = [
+            {
+                "id": "1",
+                "type": "temporal",
+                "description": "Morning productivity pattern",
+                "confidence": 0.7,
+                "frequency": "daily"
+            }
+        ]
+        
+        mock_recommendations = [
+            {
+                "id": "1",
+                "type": "suggestion",
+                "content": "Consider scheduling important tasks in the morning",
+                "priority": "medium",
+                "category": "productivity"
+            }
+        ]
+        
+        return MemoryInsightResponse(
+            insights=mock_insights,
+            patterns=mock_patterns,
+            recommendations=mock_recommendations
+        )
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get memory insights: {str(e)}"
+        )

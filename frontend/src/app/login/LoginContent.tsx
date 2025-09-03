@@ -30,7 +30,7 @@ export default function LoginContent() {
   return (
     <AuthLayout 
       title="Welcome Back"
-      subtitle="Sign in to access your AI Companion"
+      subtitle="Sign in to continue your personalized AI experience"
     >
       <LoginForm />
     </AuthLayout>

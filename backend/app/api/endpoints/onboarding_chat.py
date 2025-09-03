@@ -94,7 +94,7 @@ Respond to the user's message naturally and helpfully, using their onboarding in
             {"role": "user", "content": user_message}
         ]
         
-        ai_response = await llm_client.generate_response(
+        ai_response = llm_client.generate_response(
             system_prompt=system_prompt,
             messages=[{"role": "user", "content": user_message}],
             max_tokens=300

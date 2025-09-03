@@ -89,6 +89,27 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
             .all()
         )
 
+    def count_by_conversation(self, db: Session, *, conversation_id: str) -> int:
+        """
+        Count all messages for a specific conversation.
+
+        Args:
+            db: Database session
+            conversation_id: ID of the conversation (will be converted to string)
+
+        Returns:
+            Number of messages in the conversation
+        """
+        # Convert UUID to string if needed
+        if hasattr(conversation_id, "hex"):
+            conversation_id = str(conversation_id)
+
+        return (
+            db.query(func.count(self.model.id))
+            .filter(Message.conversation_id == conversation_id)
+            .scalar() or 0
+        )
+
     def create_with_owner(
         self,
         db: Session,

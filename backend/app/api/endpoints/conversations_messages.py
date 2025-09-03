@@ -15,11 +15,14 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.conversation import MessageCreate, AssistantReply, Message, ConversationCreate
 import app.core.llm as llm_mod
+from app.core.llm import SimpleLLMClient
 from app.core.config import settings
 from app.memory.service import memory_service
 from app.crud import conversation as crud_conversation
 from app.crud.conversation import message as crud_message
-from app.services.context_manager import ContextManager
+from app.services.context_manager import context_manager
+from app.services.smart_memory_filter import smart_memory_filter
+from app.services.memory_batcher import memory_batcher
 
 # Legacy services removed for Milestone 1 simplicity
 # These functions are referenced but not implemented
@@ -337,9 +340,9 @@ Respond to the user's message naturally and helpfully."""
 
         # Generate AI response
         try:
-            ai_response = await _call_llm_with_retries(
-                fn=llm_mod.generate_response,
-                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+            # Use direct LLM call since generate_response is synchronous
+            llm_client = SimpleLLMClient()
+            ai_response = llm_client.generate_response(
                 system_prompt=system_prompt,
                 messages=conversation_history,
                 max_tokens=400,  # Reasonable length
@@ -454,9 +457,9 @@ Respond to the user's message naturally and helpfully."""
 
         # Generate AI response - ONE SIMPLE CALL
         try:
-            ai_response = await _call_llm_with_retries(
-                fn=llm_mod.generate_response,
-                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+            # Use direct LLM call since generate_response is synchronous
+            llm_client = SimpleLLMClient()
+            ai_response = llm_client.generate_response(
                 system_prompt=system_prompt,
                 messages=conversation_history + [{"role": "user", "content": last_user_message.content}],
                 max_tokens=400,  # Reasonable length
@@ -959,12 +962,12 @@ async def reply_to_conversation(
         memory_context = ""
         if not conversation.incognito_mode:
             try:
-                # Get onboarding memories specifically
-                onboarding_memories = memory_service.search_memories(
+                # Get onboarding memories using simple database query
+                from app.crud import memory as memory_crud
+                onboarding_memories = memory_crud.get_user_memories(
                     db=db, 
-                    query=last_user_message.content, 
                     user_id=str(current_user.id), 
-                    content_types=["onboarding_briefing", "onboarding_summary"],
+                    content_type="onboarding_briefing", 
                     limit=3
                 )
                 
@@ -1002,9 +1005,9 @@ Respond to the user's message naturally and helpfully."""
             print(f"   Last user message: {last_user_message.content}")
             print(f"   Conversation ID: {conversation_id}")
             
-            ai_response = await _call_llm_with_retries(
-                fn=llm_mod.generate_response,
-                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+            # Use direct LLM call since generate_response is synchronous
+            llm_client = SimpleLLMClient()
+            ai_response = llm_client.generate_response(
                 system_prompt=system_prompt,
                 messages=conversation_history + [{"role": "user", "content": last_user_message.content}],
                 max_tokens=400,  # Reasonable length
@@ -1033,35 +1036,32 @@ Respond to the user's message naturally and helpfully."""
             print(f"🔍 DEBUG: LLM call failed with exception: {e}")
             ai_response = "I apologize, but I encountered an error while processing your request. Please try again."
 
-        # AUTO-MEMORY CAPTURE - Simple and effective
-        print("🔍 DEBUG: Starting auto-memory capture...")
+        # SMART MEMORY CAPTURE - Intelligent filtering and async batching
         try:
             # Only capture if the user shared new information
             if last_user_message.content and len(last_user_message.content.strip()) > 10:
-                # Simple memory extraction - no complex LLM calls
-                potential_memories = _extract_simple_memories(last_user_message.content)
+                # Smart memory extraction with filtering
+                potential_memories = _extract_smart_memories(last_user_message.content)
                 
-                print(f"🔍 DEBUG: Extracted {len(potential_memories)} potential memories")
-                for i, memory_text in enumerate(potential_memories):
-                    print(f"   {i+1}. {memory_text}")
+                logger.debug(f"Smart filtering extracted {len(potential_memories)} memories from message")
                 
+                # Add memories to batch for async processing
                 for memory_text in potential_memories:
                     if memory_text and len(memory_text.strip()) > 10:
                         try:
-                            print(f"🔍 DEBUG: Attempting to store memory: {memory_text[:50]}...")
-                            result = memory_service.store_memory(
-                                db=db,
+                            # Add to batch instead of storing immediately
+                            memory_batcher.add_memory(
                                 content=memory_text.strip(),
                                 content_type="fact",
                                 user_id=str(current_user.id),
                                 conversation_id=str(conversation_id),
-                                metadata={"auto_captured": True},
-                                conversation_history=conversation_history
+                                metadata={"auto_captured": True, "smart_filtered": True},
+                                conversation_history=conversation_history,
+                                store_callback=memory_service.store_memory
                             )
-                            print(f"🔍 DEBUG: Memory storage result: {result}")
+                            logger.debug(f"Added memory to batch: {memory_text[:50]}...")
                         except Exception as e:
-                            print(f"🔍 DEBUG: Failed to store memory: {e}")
-                            logger.debug(f"Failed to store memory: {e}")
+                            logger.debug(f"Failed to add memory to batch: {e}")
                             
         except Exception as e:
             print(f"🔍 DEBUG: Auto-memory capture failed: {e}")
@@ -1099,61 +1099,25 @@ Respond to the user's message naturally and helpfully."""
         raise HTTPException(status_code=500, detail="Failed to generate reply")
 
 
-def _extract_simple_memories(text: str) -> List[str]:
+def _extract_smart_memories(text: str) -> List[str]:
     """
-    Simple memory extraction without complex LLM calls.
-    Looks for patterns that indicate personal information.
+    Smart memory extraction using intelligent filtering.
+    Only captures high-quality, relevant personal information.
     """
-    memories = []
+    # Use the smart memory filter to analyze the message
+    analysis = smart_memory_filter.analyze_message(text)
     
-    # Simple patterns that suggest personal information
-    personal_patterns = [
-        r"my name is (\w+)",
-        r"i work (?:as|at) (.+?)(?:\.|$)",
-        r"i live (?:in|at) (.+?)(?:\.|$)",
-        r"i like (.+?)(?:\.|$)",
-        r"i love (.+?)(?:\.|$)",
-        r"i'm (\w+)",
-        r"i am (\w+)",
-        r"my favorite (.+?) is (.+?)(?:\.|$)",
-        r"i prefer (.+?)(?:\.|$)",
-        r"i want to (.+?)(?:\.|$)",
-        r"my goal is (.+?)(?:\.|$)",
-    ]
+    if not analysis.should_capture:
+        logger.debug(f"Message filtered out: {analysis.reason}")
+        return []
     
-    text_lower = text.lower()
-    
-    for pattern in personal_patterns:
-        matches = re.findall(pattern, text_lower)
-        for match in matches:
-            if isinstance(match, tuple):
-                # Handle patterns with multiple groups
-                memory_text = " ".join(match).strip()
-            else:
-                memory_text = match.strip()
-                
-            if memory_text and len(memory_text) > 3:
-                # Capitalize first letter and clean up
-                memory_text = memory_text[0].upper() + memory_text[1:]
-                memories.append(memory_text)
-    
-    # Also capture statements that start with "I" and contain personal info
-    sentences = re.split(r'[.!?]+', text)
-    for sentence in sentences:
-        sentence = sentence.strip()
-        if sentence.lower().startswith('i ') and len(sentence) > 10:
-            # Check if it contains personal information
-            personal_indicators = ['my', 'me', 'i am', "i'm", 'i like', 'i love', 'i work', 'i live']
-            if any(indicator in sentence.lower() for indicator in personal_indicators):
-                memories.append(sentence)
-    
-    # Remove duplicates and limit length
-    unique_memories = []
-    for memory in memories:
-        if memory not in unique_memories and len(memory) <= 200:
-            unique_memories.append(memory)
-    
-    return unique_memories[:5]  # Limit to 5 memories per message
+    # Extract the content to store
+    if analysis.extracted_content:
+        return [analysis.extracted_content]
+    elif analysis.confidence >= 0.7:
+        return [text]
+    else:
+        return []
 
 
 # Streaming endpoint removed for Milestone 1 simplicity
@@ -1196,10 +1160,7 @@ async def intelligent_reply_to_conversation(
         if not last_user_message:
             raise HTTPException(status_code=400, detail="No user message found")
 
-        # Initialize context manager
-        context_manager = ContextManager(memory_service)
-        
-        # Build intelligent context
+        # Build intelligent context using global context manager
         context = context_manager.build_context(
             db=db,
             conversation_id=conversation_id,
@@ -1237,9 +1198,9 @@ Key principles:
 
         # Generate AI response
         try:
-            ai_response = await _call_llm_with_retries(
-                fn=llm_mod.generate_response,
-                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+            # Use direct LLM call since generate_response is synchronous
+            llm_client = SimpleLLMClient()
+            ai_response = llm_client.generate_response(
                 system_prompt=system_prompt,
                 messages=conversation_history + [{"role": "user", "content": last_user_message.content}],
                 max_tokens=400,
@@ -1267,28 +1228,33 @@ Key principles:
             conversation_id=str(conversation_id)
         )
 
-        # Auto-memory capture (simplified)
+        # Smart memory capture with batching
         if not conversation.incognito_mode and last_user_message.content and len(last_user_message.content.strip()) > 10:
             try:
-                potential_memories = _extract_simple_memories(last_user_message.content)
+                potential_memories = _extract_smart_memories(last_user_message.content)
                 
                 for memory_text in potential_memories:
                     if memory_text and len(memory_text.strip()) > 10:
                         try:
-                            memory_service.store_memory(
-                                db=db,
+                            # Add to batch for async processing
+                            memory_batcher.add_memory(
                                 content=memory_text.strip(),
                                 content_type="fact",
                                 user_id=str(current_user.id),
                                 conversation_id=str(conversation_id),
-                                metadata={"auto_captured": True, "context_strategy": context.strategy_used.value},
-                                conversation_history=conversation_history
+                                metadata={
+                                    "auto_captured": True, 
+                                    "smart_filtered": True,
+                                    "context_strategy": context.strategy_used.value
+                                },
+                                conversation_history=conversation_history,
+                                store_callback=memory_service.store_memory
                             )
                         except Exception as e:
-                            logger.debug(f"Memory storage failed (non-critical): {e}")
+                            logger.debug(f"Memory batching failed (non-critical): {e}")
                             
             except Exception as e:
-                logger.debug(f"Auto-memory capture failed (non-critical): {e}")
+                logger.debug(f"Smart memory capture failed (non-critical): {e}")
 
         # Return the response with context metadata
         return AssistantReply(

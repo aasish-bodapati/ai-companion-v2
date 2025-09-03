@@ -38,7 +38,17 @@ export function useAttachmentHandlers(): AttachmentHandlers {
     return '📎';
   }, []);
 
-  const handleAttach = useCallback(async (file: File) => {
+  const startNextInQueue = useCallback(() => {
+    setUploadQueue((q) => {
+      if (q.length === 0) return q;
+      const [next, ...rest] = q;
+      // Kick off next upload
+      void handleAttach(next);
+      return rest;
+    });
+  }, []);
+
+  const handleAttach = useCallback(async (file: File): Promise<void> => {
     if (attaching) {
       // Queue this file for later
       setUploadQueue((q) => [...q, file]);
@@ -58,16 +68,6 @@ export function useAttachmentHandlers(): AttachmentHandlers {
       startNextInQueue();
     }
   }, [attaching, startNextInQueue]);
-
-  const startNextInQueue = useCallback(() => {
-    setUploadQueue((q) => {
-      if (q.length === 0) return q;
-      const [next, ...rest] = q;
-      // Kick off next upload
-      void handleAttach(next);
-      return rest;
-    });
-  }, [handleAttach]);
 
   return {
     attachments,

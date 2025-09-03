@@ -1,0 +1,11 @@
+{
+  "pending_batches": {},
+  "stats": {
+    "batches_processed": 0,
+    "items_processed": 0,
+    "duplicates_skipped": 0,
+    "last_cleanup": 1756878896.2832158,
+    "start_time": 1756878896.2832158
+  },
+  "timestamp": 1756878897.1440017
+}
