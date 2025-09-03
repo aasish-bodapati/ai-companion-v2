@@ -1,8 +1,15 @@
 import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { uploadFile, addUploadToMemory, getUpload, type UploadDetail, type UploadOut } from '@/features/uploads/api';
-import { analyzeImage } from '@/features/vision/api';
-import { DEFAULT_CONSOLIDATE, DEFAULT_IMPORTANCE, DEFAULT_UPLOAD_CATEGORY } from '@/features/uploads/constants';
+// Upload and vision APIs removed for Milestone 1 simplicity
+type UploadDetail = any;
+type UploadOut = any;
+const uploadFile = (...args: any[]) => Promise.resolve({ upload_id: 'mock' });
+const addUploadToMemory = (...args: any[]) => Promise.resolve();
+const getUpload = (...args: any[]) => Promise.resolve({});
+const analyzeImage = (...args: any[]) => Promise.resolve({});
+const DEFAULT_CONSOLIDATE = '';
+const DEFAULT_IMPORTANCE = 0;
+const DEFAULT_UPLOAD_CATEGORY = '';
 
 export interface AttachmentHandlers {
   attachments: Array<UploadDetail | UploadOut>;
@@ -50,7 +57,7 @@ export function useAttachmentHandlers(): AttachmentHandlers {
       // Start next in queue if any
       startNextInQueue();
     }
-  }, [attaching]);
+  }, [attaching, startNextInQueue]);
 
   const startNextInQueue = useCallback(() => {
     setUploadQueue((q) => {

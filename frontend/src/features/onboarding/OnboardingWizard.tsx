@@ -286,7 +286,7 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
                   Your Life Blueprint
                 </label>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
-                  The foundation of your AI companion's understanding
+                  The foundation of your AI companion&apos;s understanding
                 </p>
               </div>
             </div>
@@ -322,7 +322,7 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
                         <li>• When do you need support?</li>
                         <li>• How do you prefer feedback?</li>
                         <li>• What disrupts your routine?</li>
-                        <li>• What's your ideal outcome?</li>
+                        <li>• What&apos;s your ideal outcome?</li>
                       </ul>
                     </div>
                   </div>

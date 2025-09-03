@@ -1,57 +1,78 @@
 import { defineConfig, devices } from '@playwright/test';
 
+/**
+ * @see https://playwright.dev/docs/test-configuration
+ */
 export default defineConfig({
-  testDir: './tests',
-  testIgnore: [
-    // Ignore agentic plan tests (feature removed)
-    '**/plan_*.spec.ts',
-    /plan_.*\.spec\.ts$/,
-    // Ignore Jest test files
-    '**/unit/**',
-    '**/integration/**',
-    '**/*.test.ts',
-    '**/*.test.tsx',
-  ],
-  // Increase global timeout for development
-  timeout: 60000,
-  // Add retry logic for flaky tests
-  retries: process.env.CI ? 2 : 1,
+  testDir: './tests/e2e',
+  /* Run tests in files in parallel */
+  fullyParallel: true,
+  /* Fail the build on CI if you accidentally left test.only in the source code. */
+  forbidOnly: !!process.env.CI,
+  /* Retry on CI only */
+  retries: process.env.CI ? 2 : 0,
+  /* Opt out of parallel tests on CI. */
+  workers: process.env.CI ? 1 : undefined,
+  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
+  reporter: 'html',
+  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000', // Frontend is running on 3000
+    /* Base URL to use in actions like `await page.goto('/')`. */
+    baseURL: 'http://localhost:3000',
+
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+    
+    /* Take screenshot on failure */
     screenshot: 'only-on-failure',
+    
+    /* Record video on failure */
     video: 'retain-on-failure',
-    // Increase action timeout for slow operations
-    actionTimeout: 30000,
-    // Increase navigation timeout
-    navigationTimeout: 30000,
   },
-  // Auto-start only the Next.js dev server for e2e; backend is expected to be running externally (e.g., venv)
-  // Temporarily disabled for manual testing
-  // webServer: {
-  //   command: 'npm run dev',
-  //   url: process.env.BASE_URL || 'http://localhost:3001', // Updated to use port 3001
-  //   reuseExistingServer: true,
-  //   timeout: 120_000,
-  //   env: {
-  //     ...process.env,
-  //     // Ensure full UI for E2E
-  //     NEXT_PUBLIC_MINIMAL_CHAT: 'false',
-  //     // Disable agentic plan preview UI
-  //     NEXT_PUBLIC_FEATURE_PLAN_PREVIEW: 'false',
-  //     NEXT_PUBLIC_FEATURE_TIMELINE: 'true',
-  //     BASE_URL: process.env.BASE_URL || 'http://localhost:3001', // Updated to use port 3001
-  //     // Force IPv4 loopback for backend API calls made from Playwright helpers
-  //     API_BASE: process.env.API_BASE || 'http://127.0.0.1:8000/api/v1',
-  //   },
-  // },
+
+  /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+
+    /* Test against mobile viewports. */
+    {
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'Mobile Safari',
+      use: { ...devices['iPhone 12'] },
+    },
+
+    /* Test against branded browsers. */
+    // {
+    //   name: 'Microsoft Edge',
+    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
+    // },
+    // {
+    //   name: 'Google Chrome',
+    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+    // },
   ],
-  // Add global setup to ensure servers are ready
-  // Temporarily disabled for manual testing
-  // globalSetup: require.resolve('./tests/helpers/global-setup.ts'),
+
+  /* Run your local dev server before starting the tests */
+  webServer: {
+    command: 'npm run dev',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
 });

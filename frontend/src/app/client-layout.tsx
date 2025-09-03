@@ -1,7 +1,7 @@
 'use client';
 
-import { ThemeProvider } from '@/components/theme-provider';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from 'sonner';
 import NavBar from '@/components/layout/NavBar';
 import { usePathname } from 'next/navigation';
@@ -20,14 +20,9 @@ export default function ClientLayout({
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+    <ThemeProvider>
+      <AuthProvider>
+        <QueryClientProvider client={queryClient}>
           <div className="min-h-screen flex flex-col">
             {isAppPage && <NavBar />}
             <main className={isAppPage ? 'flex-1 py-0 px-0 w-full' : 'flex-1'}>
@@ -50,8 +45,8 @@ export default function ClientLayout({
               }}
             />
           </div>
-        </ThemeProvider>
-      </QueryClientProvider>
-    </AuthProvider>
+        </QueryClientProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

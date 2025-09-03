@@ -2,7 +2,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from app.crud.base import CRUDBase
-from app.core.metrics import record_audit_write
+# Metrics removed for Milestone 1 simplicity
 from app.models.memory_audit import MemoryAudit
 from app.schemas.memory_audit import MemoryAuditCreate
 
@@ -46,18 +46,8 @@ class CRUDMemoryAudit(CRUDBase[MemoryAudit, MemoryAuditCreate, MemoryAuditCreate
         )
         try:
             obj = super().create(db, obj_in=payload)
-            # Metrics: success
-            try:
-                record_audit_write(action=action, success=True)
-            except Exception:
-                pass
             return obj
         except Exception:
-            # Metrics: failure
-            try:
-                record_audit_write(action=action, success=False)
-            except Exception:
-                pass
             raise
 
     def list_by_faiss_id(

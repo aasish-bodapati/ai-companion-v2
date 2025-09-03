@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useConversations, useCreateConversation } from '@/features/conversations';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function ChatIndexPage() {
   const router = useRouter();
@@ -39,7 +40,8 @@ export default function ChatIndexPage() {
 
   // Show loading state
   return (
-    <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+    <ProtectedRoute>
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
       <div className="text-center bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-xl px-6 py-5 shadow-glow border border-indigo-100/60 dark:border-indigo-900/30">
         <div className="flex items-center justify-center gap-2 text-indigo-700 dark:text-indigo-300">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent"></div>
@@ -52,6 +54,7 @@ export default function ChatIndexPage() {
         </div>
       </div>
     </div>
+    </ProtectedRoute>
   );
 }
 

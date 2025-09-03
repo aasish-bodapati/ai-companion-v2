@@ -11,8 +11,7 @@ from app.core.llm import generate_response
 from app.crud.memory import memory
 from app.crud.onboarding import get_by_user_id
 from app.schemas.memory import MemorySearchResult
-from app.schemas.memory_extractor import ExtractedMemories
-from app.memory.service_mixins_lifecycle import LifecycleMixin
+# Complex memory features removed for Milestone 1
 from app.memory.service_mixins_retrieval import RetrievalMixin
 from app.memory.service_mixins_storage import StorageMixin
 
@@ -72,7 +71,7 @@ except Exception:
     emotional_analyzer = _FallbackEmotionalAnalyzer()  # type: ignore
 
 
-class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
+class MemoryService(RetrievalMixin, StorageMixin):
     """Service for integrating FAISS memory search with database operations."""
 
     def __init__(self):
@@ -381,12 +380,13 @@ class MemoryService(LifecycleMixin, RetrievalMixin, StorageMixin):
                     parsed = None
             if not isinstance(parsed, dict):
                 return None
-            # Validate via strict schema
+            # Validate via strict schema - simplified for Milestone 1
             try:
-                model = ExtractedMemories.model_validate(parsed)
+                # ExtractedMemories removed for Milestone 1 simplicity
+                # Return parsed data directly
+                return parsed.get('memories', []) if isinstance(parsed, dict) else None
             except Exception:
                 return None
-            return model.memories or None
         except Exception:
             return None
 

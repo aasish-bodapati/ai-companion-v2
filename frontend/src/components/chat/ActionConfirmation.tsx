@@ -1,15 +1,7 @@
 'use client';
 
 import React from 'react';
-import { 
-  CheckCircleIcon, 
-  FireIcon, 
-  HeartIcon, 
-  ClockIcon, 
-  BookOpenIcon, 
-  CloudIcon,
-  PlusIcon 
-} from '@heroicons/react/24/outline';
+// Icons removed for Milestone 1 simplicity
 import { ActionInput } from './ActionModeInput';
 
 interface ActionConfirmationProps {
@@ -19,12 +11,12 @@ interface ActionConfirmationProps {
 }
 
 const ACTION_ICONS = {
-  workout: FireIcon,
-  meal: HeartIcon,
-  mood: CloudIcon,
-  sleep: ClockIcon,
-  hydration: PlusIcon,
-  journal: BookOpenIcon,
+  workout: '🔥',
+  meal: '❤️',
+  mood: '☁️',
+  sleep: '⏰',
+  hydration: '💧',
+  journal: '📖',
 } as const;
 
 const ACTION_COLORS = {
@@ -49,14 +41,14 @@ export const ActionConfirmation: React.FC<ActionConfirmationProps> = ({
       <div className="flex items-start space-x-3">
         {/* Success Icon */}
         <div className="flex-shrink-0">
-          <CheckCircleIcon className="h-6 w-6 text-green-500" />
+          <span className="text-green-500 text-xl">✓</span>
         </div>
         
         {/* Action Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2 mb-2">
             <div className={`p-2 rounded-lg ${colorClasses}`}>
-              <Icon className="h-4 w-4" />
+              <span className="text-lg">{Icon}</span>
             </div>
             <h4 className="text-sm font-medium text-gray-900 dark:text-white">
               {action.type.charAt(0).toUpperCase() + action.type.slice(1)} Logged Successfully
@@ -69,7 +61,7 @@ export const ActionConfirmation: React.FC<ActionConfirmationProps> = ({
           
           {action.notes && (
             <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-              "{action.notes}"
+              &ldquo;{action.notes}&rdquo;
             </p>
           )}
           

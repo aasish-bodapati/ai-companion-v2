@@ -1,225 +1,217 @@
-# AI Companion MVP Test Suite
+# AI Companion Backend Test Suite
 
-This directory contains comprehensive tests for the AI Companion MVP, covering all critical functionality to ensure a production-ready system with memory-first architecture and incognito privacy features.
+This directory contains comprehensive tests for the AI Companion Backend, focusing on memory correctness as the #1 priority.
 
 ## Test Structure
 
-The test suite is organized into 8 main categories that align with the MVP requirements:
+### Core Test Files
 
-### 1. Conversations & Chat (`test_conversations.py`)
-- **Goal**: Ensure users can create/manage conversations, send/receive messages, and AI replies correctly
-- **Key Tests**:
-  - Conversation creation with proper defaults (incognito_mode=false)
-  - Incognito conversation creation
-  - Message sending and AI reply generation
-  - Message history retention
-  - Idempotency (duplicate message handling)
-  - Rate limiting
-- **Critical Scenarios**:
-  - Regular conversation: "My name is Alex" → later "What's my name?" → recalls Alex
-  - Incognito conversation: "My name is Alex" → later "What's my name?" → no recall
+1. **`test_memory_correctness.py`** - The most important test file
+   - Tests the specific scenarios from requirements
+   - Onboarding processing: "I wake up at 7 and run for 30 minutes" → DB has wake_up_time=7, habit run=30min
+   - Memory retrieval: "What time do I wake up?" → Response includes 7 AM
+   - Updating memories: "I wake up at 7" → "I wake up at 6 now" → DB updated to 6
+   - Null cases: "Hello!" → Nothing stored
 
-### 2. Memory System (`test_memory_system.py`)
-- **Goal**: Validate memory capture, retrieval, and lifecycle
-- **Key Tests**:
-  - Memory capture from user facts/preferences
-  - Memory retrieval in future responses
-  - Deduplication (preventing duplicate memories)
-  - Importance scoring (life goals vs trivial facts)
-  - Memory categorization (fact, preference, goal, etc.)
-  - Memory update/delete operations
-- **Critical Scenarios**:
-  - "I live in Seattle" → stored as fact
-  - Repeat same fact → no duplicate created
-  - "My life goal is to wake up at 6AM daily" → higher importance score
-  - Delete memory → confirm removal
+2. **`test_memory_crud.py`** - Memory CRUD operations
+   - Create, read, update, delete memory operations
+   - Metadata handling
+   - Soft/hard delete functionality
+   - User isolation
 
-### 3. Productivity Tools (`test_productivity_tools.py`)
-- **Goal**: CRUD operations for notes, tasks, and reminders
-- **Key Tests**:
-  - Notes: create, list, update, delete
-  - Tasks: create, list, update (status changes), delete
-  - Reminders: create, list, update, delete, schedule time
-  - User isolation (no data leaks between users)
-- **Critical Scenarios**:
-  - User A creates note → only visible to User A
-  - Reminder with timestamp → shows correct datetime
+3. **`test_memory_service.py`** - Memory service layer
+   - Memory storage and retrieval
+   - Importance scoring
+   - Memory consolidation
+   - Profile memory handling
 
-### 4. User Management (`test_auth_user_management.py`)
-- **Goal**: Secure authentication and profile management
-- **Key Tests**:
-  - User registration
-  - Login with JWT token generation
-  - Logout and token invalidation
-  - Profile updates
-  - Authentication enforcement on protected endpoints
-- **Critical Scenarios**:
-  - Call `/memory/users/me/memories` without JWT → 401 Unauthorized
+4. **`test_onboarding_processing.py`** - Onboarding functionality
+   - Profile creation and management
+   - Structured data storage
+   - Completion status tracking
 
-### 5. Onboarding Flow (`test_onboarding_flow.py`)
-- **Goal**: Initial user data processed into memories
-- **Key Tests**:
-  - Submit onboarding description processing
-  - Memory chunking and categorization
-  - Later retrieval of onboarding memories
-- **Critical Scenarios**:
-  - Submit "I hike weekends, I work in AI" → creates hiking and profession memories
-  - Later ask "What do I do on weekends?" → retrieves hiking memory
+5. **`test_api_endpoints.py`** - API integration tests
+   - `/onboarding/process-briefing` endpoint
+   - `/onboarding-chat/chat` endpoint
+   - `/onboarding-chat/test-memory` endpoint
+   - Memory management endpoints
 
-### 6. Incognito Mode (`test_incognito_mode.py`)
-- **Goal**: Memory-off conversations work like ChatGPT
-- **Key Tests**:
-  - Incognito conversation creation
-  - No memory capture in incognito mode
-  - No memory retrieval in incognito mode
-  - Normal memory functionality in regular conversations
-- **Critical Scenarios**:
-  - Regular conversation stores "I live in Seattle"
-  - Incognito conversation → AI does not mention Seattle
+### Test Configuration
 
-### 7. Monitoring & Analytics (`test_monitoring_analytics.py`)
-- **Goal**: Ensure system observability
-- **Key Tests**:
-  - Memory status endpoint with statistics
-  - System health endpoints
-  - Prometheus metrics endpoint
-  - Memory event logging
-  - Error logging and monitoring
-  - Performance metrics
-- **Critical Scenarios**:
-  - Memory status shows total count, deduplication stats
-  - System status returns 200 OK with health info
-  - Memory operations are logged
-
-### 8. Performance (`test_performance.py`)
-- **Goal**: Basic performance validation for MVP
-- **Key Tests**:
-  - Memory search latency (under 1 second)
-  - Conversation scalability (100+ messages)
-  - Concurrent operations
-  - Database connection pool handling
-  - Large dataset performance
-- **Critical Scenarios**:
-  - Memory search returns results under 1 second
-  - Conversations scale to ~100 messages without slowdown
+- **`conftest.py`** - Test fixtures and configuration
+- **`pytest.ini`** - Pytest configuration
+- **`run_tests.py`** - Test runner script
 
 ## Running Tests
 
-### Quick Start
+### Run All Tests
 ```bash
-# Run all tests
-python run_tests.py all
-
-# Run core tests (skip performance)
-python run_tests.py quick
-
-# Run with coverage report
-python run_tests.py coverage
+cd backend
+python run_tests.py
 ```
 
-### Individual Test Categories
+### Run Specific Test Suites
 ```bash
-# Run specific test categories
-python run_tests.py conversation    # Conversations & Chat
-python run_tests.py memory         # Memory System
-python run_tests.py productivity   # Productivity Tools
-python run_tests.py auth           # User Management
-python run_tests.py onboarding     # Onboarding Flow
-python run_tests.py incognito      # Incognito Mode
-python run_tests.py monitor        # Monitoring & Analytics
-python run_tests.py performance    # Performance Tests
+# Memory correctness tests (most important)
+python run_tests.py --memory
+
+# API endpoint tests
+python run_tests.py --api
+
+# CRUD operation tests
+python run_tests.py --crud
+
+# Memory service tests
+python run_tests.py --service
+
+# Onboarding processing tests
+python run_tests.py --onboarding
+
+# Unit tests only
+python run_tests.py --unit
+
+# Integration tests only
+python run_tests.py --integration
 ```
 
-### Direct pytest Commands
+### Run with Coverage
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific test file
-pytest tests/test_conversations.py -v
-
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
-
-# Run performance tests with output
-pytest tests/test_performance.py -v -s
+python -m pytest tests/ --cov=app --cov-report=html
 ```
 
-## Test Configuration
+## Test Categories
 
-### Fixtures (`conftest.py`)
-- `client`: AsyncClient for making HTTP requests
-- `auth_headers`: Authentication headers for protected endpoints
-- `db_session`: Database session for direct database operations
-- `test_user`: Test user for authentication tests
+### Unit Tests
+- Test individual functions and methods
+- Mock external dependencies
+- Fast execution
+- Focus on logic correctness
 
-### Dependencies
-All required testing dependencies are included in `requirements.txt`:
-- `pytest>=8.0.0` - Test framework
-- `pytest-cov>=4.1.0` - Coverage reporting
-- `pytest-asyncio>=0.23.0` - Async test support
-- `httpx>=0.25.1` - HTTP client for API testing
-- `starlette>=0.27.0` - ASGI framework support
+### Integration Tests
+- Test API endpoints
+- Test database interactions
+- Test service layer integration
+- More realistic scenarios
 
-## MVP Success Criteria
+### Memory Correctness Tests
+- **Priority #1**: Test memory storage and retrieval accuracy
+- Test fact extraction from onboarding
+- Test memory updates and consolidation
+- Test null case handling
 
-The MVP is considered production-ready when **ALL** tests pass:
+## Key Test Scenarios
 
-✅ **Core Functionality**
-- Users can chat normally and AI replies correctly
-- Regular conversations store and recall facts
-- Incognito conversations have no memory storage/retrieval
-- Notes, tasks, and reminders CRUD works per user
-- Onboarding creates initial memories
-- Authentication and security are enforced
+### 1. Onboarding Processing
+```python
+def test_onboarding_processing_wake_up_time():
+    # Input: "I wake up at 7 and run for 30 minutes."
+    # Assert: DB has fact wake_up_time=7, habit run=30min
+```
 
-✅ **System Health**
-- Monitoring shows memory/system statistics
-- Performance meets basic requirements
-- Error handling and logging work correctly
+### 2. Memory Retrieval
+```python
+def test_memory_retrieval_wake_up_time():
+    # Input: "What time do I wake up?"
+    # Assert: Response includes 7 AM
+```
 
-## Test Data and Isolation
+### 3. Updating Memories
+```python
+def test_updating_memories_wake_up_time_change():
+    # Input 1: "I wake up at 7."
+    # Input 2: "I wake up at 6 now."
+    # Assert: DB updated to 6
+```
 
-- Each test uses isolated test data
-- Tests clean up after themselves
-- User isolation is enforced (no data leaks between users)
-- Database transactions are properly managed
-- Mocking is used for external dependencies
+### 4. Null Cases
+```python
+def test_null_cases_greeting():
+    # Input: "Hello!"
+    # Assert: Nothing stored
+```
+
+## Test Data
+
+### Fixtures
+- `test_user` - Standard test user
+- `test_user_2` - Second test user for isolation tests
+- `test_memory` - Sample memory for testing
+- `test_onboarding_profile` - Sample onboarding profile
+- `auth_headers` - Authentication headers for API tests
+
+### Mock Data
+- `sample_briefing_text` - Sample onboarding text
+- `mock_llm_response` - Mock LLM responses
+- `memory_test_data` - Test data for memory operations
+
+## Coverage Requirements
+
+- **Minimum 80% code coverage**
+- **100% coverage for memory-related code**
+- **100% coverage for onboarding processing**
+- **100% coverage for API endpoints**
+
+## Test Database
+
+- Uses SQLite in-memory database for tests
+- Fresh database for each test
+- No external dependencies
+- Fast test execution
+
+## Mocking Strategy
+
+- **LLM calls**: Mocked to avoid external API calls
+- **Vector store**: Mocked to avoid FAISS dependencies
+- **Database**: Real SQLite for realistic testing
+- **External services**: All mocked
 
 ## Continuous Integration
 
-These tests are designed to run in CI/CD pipelines:
-- Fast execution (most tests complete in seconds)
-- Clear pass/fail criteria
-- Comprehensive coverage reporting
-- Performance benchmarks for regression detection
+Tests should be run:
+- On every commit
+- Before deployment
+- In CI/CD pipeline
+- With coverage reporting
 
-## Troubleshooting
+## Debugging Tests
 
-### Common Issues
-1. **Database connection errors**: Ensure test database is properly configured
-2. **Authentication failures**: Check that test user fixtures are working
-3. **Performance test failures**: May indicate system resource issues
-4. **Import errors**: Verify all dependencies are installed
-
-### Debug Mode
+### Run Single Test
 ```bash
-# Run tests with detailed output
-pytest tests/ -v -s --tb=long
-
-# Run single test with debugging
-pytest tests/test_conversations.py::TestConversationCreation::test_create_conversation -v -s
+python -m pytest tests/test_memory_correctness.py::TestMemoryCorrectness::test_onboarding_processing_wake_up_time -v
 ```
 
-## Contributing
+### Run with Debug Output
+```bash
+python -m pytest tests/ -v -s --tb=long
+```
 
-When adding new tests:
-1. Follow the existing test structure and naming conventions
-2. Add appropriate fixtures in `conftest.py`
-3. Include both positive and negative test cases
-4. Add performance considerations for new features
-5. Update this README with new test categories
+### Run with Coverage
+```bash
+python -m pytest tests/ --cov=app --cov-report=term-missing
+```
 
----
+## Test Maintenance
 
-**Note**: This test suite represents the minimum viable product (MVP) requirements. Additional tests may be needed as the system evolves beyond the MVP stage.
+- Update tests when adding new features
+- Ensure all new code has tests
+- Keep test data realistic
+- Maintain test performance
+- Document test scenarios
+
+## Performance Considerations
+
+- Tests should run in < 30 seconds total
+- Individual tests should run in < 1 second
+- Use mocking to avoid slow operations
+- Parallel test execution where possible
+
+## Best Practices
+
+1. **Test the behavior, not the implementation**
+2. **Use descriptive test names**
+3. **One assertion per test when possible**
+4. **Mock external dependencies**
+5. **Keep tests independent**
+6. **Use realistic test data**
+7. **Test edge cases and error conditions**
+8. **Maintain high test coverage**

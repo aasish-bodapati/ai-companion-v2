@@ -37,6 +37,16 @@ class User(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    goals = relationship(
+        "UserGoal",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    health_info = relationship(
+        "UserHealthInfo",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
 
     def __repr__(self):

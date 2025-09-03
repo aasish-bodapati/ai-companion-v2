@@ -1,1 +1,1 @@
-"""Test package for AI Companion MVP."""
+# Test package for AI Companion Backend

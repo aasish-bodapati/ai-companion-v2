@@ -4,10 +4,11 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useCreateConversation, useConversation, useUpdateConversation } from '@/features/conversations';
 import { ConversationSidebar } from '@/features/conversations/components/ConversationSidebar';
-import { TwoModeChatInterface } from '@/components/chat/TwoModeChatInterface';
-import { NudgeInbox } from '@/features/nudges/components/NudgeInbox';
+import { EnhancedChatInterface } from '@/components/chat/EnhancedChatInterface';
+// NudgeInbox removed for Milestone 1 simplicity
 import { getMemoryDigest, enforceLifecycle, type MemoryDigestOut } from '@/features/memory/api';
 import ChatHeader from '@/components/chat/ChatHeader';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function ChatPage() {
   const params = useParams();
@@ -73,7 +74,8 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-4rem)]">
+    <ProtectedRoute>
+      <div className="flex min-h-[calc(100vh-4rem)]">
       <ConversationSidebar />
       <div className="relative flex-1 min-h-0 backdrop-blur-md bg-white/70 dark:bg-gray-900/40">
         {/* Decorative overlay to even out bottom-left shade */}
@@ -120,14 +122,12 @@ export default function ChatPage() {
 
         {/* Main Chat Interface */}
         <div className="flex-1 min-h-0">
-          {conversationId && <TwoModeChatInterface conversationId={conversationId} />}
+          {conversationId && <EnhancedChatInterface conversationId={conversationId} />}
         </div>
 
-        {/* Nudge Inbox */}
-        {nudgesEnabled && conversationId && (
-          <NudgeInbox conversationId={conversationId} />
-        )}
+        {/* Nudge Inbox removed for Milestone 1 simplicity */}
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

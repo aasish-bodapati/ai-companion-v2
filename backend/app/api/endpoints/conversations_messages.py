@@ -1,11 +1,11 @@
 import logging
-import asyncio
-import random
 import time
+import random
+import asyncio
 import re
+import inspect
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Request, Body
-from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from typing import List
@@ -14,20 +14,41 @@ from app.api import deps
 from app.db.session import get_db
 from app.models.user import User
 from app.schemas.conversation import MessageCreate, AssistantReply, Message, ConversationCreate
-import inspect
 import app.core.llm as llm_mod
 from app.core.config import settings
 from app.memory.service import memory_service
 from app.crud import conversation as crud_conversation
 from app.crud.conversation import message as crud_message
-from app.core.rate_limit import check_rate_limit
-from app.core.redis_client import get_redis
-from app.services.auto_memory import auto_memory_service
-from app.cache.simple import cache as _cache
+
+# Legacy services removed for Milestone 1 simplicity
+# These functions are referenced but not implemented
+def get_redis():
+    return None
+
+def _cache():
+    class MockCache:
+        def get(self, key):
+            return None
+        def set(self, key, value, ttl_seconds=None):
+            pass
+    return MockCache()
+
+_cache = _cache()
+
+async def check_rate_limit(*args, **kwargs):
+    pass
+
+class MockAutoMemoryService:
+    def auto_capture_memory(self, *args, **kwargs):
+        pass
+    def capture_from_message(self, *args, **kwargs):
+        pass
+
+auto_memory_service = MockAutoMemoryService()
 
 logger = logging.getLogger(__name__)
 
-# Simple utility functions that were previously in conversations_utils.py
+# Utility functions for Milestone 1
 def _normalize_user_text(text: str) -> str:
     """Normalize user text for processing"""
     if not text:
@@ -37,14 +58,10 @@ def _normalize_user_text(text: str) -> str:
 
 def _maybe_capture_preference(db, current_user, conversation_id, text):
     """Placeholder for preference capture - currently disabled"""
-    # This function was referenced but not implemented
-    # For now, return None to avoid breaking the flow
     return None
 
 def _maybe_capture_facts(db, current_user, conversation_id, text):
     """Placeholder for fact capture - currently disabled"""
-    # This function was referenced but not implemented
-    # For now, return None to avoid breaking the flow
     return None
 
 router = APIRouter()
@@ -273,7 +290,7 @@ async def send_message_and_reply_to_new_conversation(
         )
 
         # Add the user message to the conversation
-        user_message = crud_message.create_with_conversation(
+        crud_message.create_with_conversation(
             db=db, obj_in=message_in, conversation_id=str(conversation.id)
         )
 
@@ -301,6 +318,8 @@ async def send_message_and_reply_to_new_conversation(
                 logger.debug(f"Memory retrieval failed (non-critical): {e}")
                 # Continue without memory context
 
+        # Legacy goals and health context removed for Milestone 1
+
         # Build simple, effective system prompt
         system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
 
@@ -309,6 +328,7 @@ Key principles:
 - Use the user's information when relevant
 - Keep responses concise but helpful
 - Don't make up information you don't have
+- When discussing health, fitness, or nutrition, reference the user's goals to provide tailored advice
 
 {memory_context}
 
@@ -415,6 +435,8 @@ async def reply_to_new_conversation(
                 logger.debug(f"Memory retrieval failed (non-critical): {e}")
                 # Continue without memory context
 
+        # Legacy goals and health context removed for Milestone 1
+
         # Build simple, effective system prompt
         system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
 
@@ -423,6 +445,7 @@ Key principles:
 - Use the user's information when relevant
 - Keep responses concise but helpful
 - Don't make up information you don't have
+- When discussing health, fitness, or nutrition, reference the user's goals to provide tailored advice
 
 {memory_context}
 
@@ -898,7 +921,7 @@ async def reply_to_conversation(
 ):
     """
     Get an AI reply to a conversation message.
-    SIMPLE, MEMORY-FOCUSED APPROACH - No complex processing engines.
+    MILESTONE 1: Living Onboarding + Memory Test - Focused on onboarding memory.
     """
     try:
         # Validate conversation ownership
@@ -931,26 +954,29 @@ async def reply_to_conversation(
         for msg in messages:
             conversation_history.append({"role": msg.role, "content": msg.content})
 
-        # SIMPLE MEMORY INTEGRATION - No complex engines (skip if incognito mode)
+        # FOCUSED ONBOARDING MEMORY INTEGRATION - Milestone 1: Living Onboarding + Memory Test
         memory_context = ""
         if not conversation.incognito_mode:
             try:
-                # Get relevant memories about the user
-                memory_results = memory_service.search_memories(
+                # Get onboarding memories specifically
+                onboarding_memories = memory_service.search_memories(
                     db=db, 
                     query=last_user_message.content, 
                     user_id=str(current_user.id), 
-                    limit=5
+                    content_types=["onboarding_briefing", "onboarding_summary"],
+                    limit=3
                 )
                 
-                if memory_results:
-                    memory_context = "\n\nRelevant information about you:\n"
-                    for memory in memory_results[:3]:  # Top 3 most relevant
+                if onboarding_memories:
+                    memory_context = "\n\nBased on what you told me about yourself:\n"
+                    for memory in onboarding_memories:
                         memory_context += f"- {memory.content}\n"
                         
             except Exception as e:
-                logger.debug(f"Memory retrieval failed (non-critical): {e}")
+                logger.debug(f"Onboarding memory retrieval failed (non-critical): {e}")
                 # Continue without memory context
+
+        # Legacy goals and health context removed for Milestone 1
 
         # Build simple, effective system prompt
         system_prompt = f"""You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
@@ -960,6 +986,7 @@ Key principles:
 - Use the user's information when relevant
 - Keep responses concise but helpful
 - Don't make up information you don't have
+- When discussing health, fitness, or nutrition, reference the user's goals to provide tailored advice
 
 {memory_context}
 
@@ -971,6 +998,8 @@ Respond to the user's message naturally and helpfully."""
             print(f"   System prompt: {system_prompt[:100]}...")
             print(f"   Messages count: {len(conversation_history + [{'role': 'user', 'content': last_user_message.content}])}")
             print(f"   Model: {getattr(settings, 'LLM_MODEL_DEFAULT', 'stub-model')}")
+            print(f"   Last user message: {last_user_message.content}")
+            print(f"   Conversation ID: {conversation_id}")
             
             ai_response = await _call_llm_with_retries(
                 fn=llm_mod.generate_response,
@@ -1052,6 +1081,8 @@ Respond to the user's message naturally and helpfully."""
             logger.error(f"Failed to save assistant message: {e}")
             raise HTTPException(status_code=500, detail="Failed to save reply")
 
+
+
         # Return the response
         return AssistantReply(
             id=assistant_message.id,
@@ -1124,81 +1155,4 @@ def _extract_simple_memories(text: str) -> List[str]:
     return unique_memories[:5]  # Limit to 5 memories per message
 
 
-@router.post("/{conversation_id}/reply/stream")
-async def stream_reply_to_conversation(
-    conversation_id: UUID,
-    db: Session = Depends(deps.get_db),
-    current_user: User = Depends(deps.get_current_active_user),
-) -> StreamingResponse:
-    """
-    Generate a streaming assistant reply to the conversation.
-    """
-    try:
-        # Check if conversation exists and user has access
-        conversation = crud_conversation.get(db=db, id=conversation_id)
-        if conversation and not crud_conversation.is_owner(db=db, db_obj=conversation, owner_id=str(current_user.id)):
-            conversation = None
-        if not conversation:
-            raise HTTPException(status_code=404, detail="Conversation not found")
-
-        # Get recent messages for context
-        messages = crud_message.get_by_conversation(
-            db=db, conversation_id=conversation_id, limit=20
-        )
-
-        # Convert to conversation history format
-        conversation_history = []
-        for msg in messages[-10:]:  # Use last 10 messages for context
-            conversation_history.append({"role": msg.role, "content": msg.content})
-
-        # Import streaming module
-        try:
-            from app.api.endpoints.streaming.llm_handler import stream_llm_response
-        except ImportError:
-            raise HTTPException(status_code=503, detail="Streaming not available")
-
-        # Get the latest user message
-        latest_message = messages[0] if messages else None
-        if not latest_message or latest_message.role != "user":
-            raise HTTPException(status_code=400, detail="No user message to reply to")
-
-        # Build system prompt with memory context
-        from app.core.prompts import MEMORY_FIRST_PROMPT
-
-        system_prompt = MEMORY_FIRST_PROMPT
-
-        # Add memory context if available
-        try:
-            from app.memory import memory_service
-
-            memory_results = memory_service.search_memories(
-                db, query=latest_message.content, user_id=str(current_user.id), limit=5
-            )
-            if memory_results:
-                memory_context = "\n".join([f"- {result.content}" for result in memory_results[:3]])
-                system_prompt += f"\n\nRelevant memories about the user:\n{memory_context}"
-        except Exception:
-            pass  # Continue without memory context if it fails
-
-        # Return streaming response
-        return StreamingResponse(
-            stream_llm_response(
-                conversation_id=conversation_id,
-                message_content=latest_message.content,
-                db=db,
-                current_user=current_user,
-                system_prompt=system_prompt,
-                conversation_history=conversation_history,
-            ),
-            media_type="text/plain",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-            },
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error in streaming reply to conversation: {e}")
-        raise HTTPException(status_code=500, detail="Failed to generate streaming reply")
+# Streaming endpoint removed for Milestone 1 simplicity

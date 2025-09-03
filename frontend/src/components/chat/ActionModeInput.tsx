@@ -1,14 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  FireIcon, 
-  HeartIcon, 
-  ClockIcon, 
-  BookOpenIcon, 
-  CloudIcon,
-  PlusIcon 
-} from '@heroicons/react/24/outline';
+// Icons removed for Milestone 1 simplicity
 
 export interface ActionInput {
   type: 'workout' | 'meal' | 'mood' | 'sleep' | 'hydration' | 'journal';
@@ -22,12 +15,12 @@ interface ActionModeInputProps {
 }
 
 const ACTION_TYPES = [
-  { type: 'workout', icon: FireIcon, label: 'Workout', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-900/20' },
-  { type: 'meal', icon: HeartIcon, label: 'Meal', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20' },
-  { type: 'mood', icon: CloudIcon, label: 'Mood', color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-900/20' },
-  { type: 'sleep', icon: ClockIcon, label: 'Sleep', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
-  { type: 'hydration', icon: PlusIcon, label: 'Hydration', color: 'text-cyan-600', bgColor: 'bg-cyan-50 dark:bg-cyan-900/20' },
-  { type: 'journal', icon: BookOpenIcon, label: 'Journal', color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-900/20' },
+  { type: 'workout', icon: '🔥', label: 'Workout', color: 'text-red-600', bgColor: 'bg-red-50 dark:bg-red-900/20' },
+  { type: 'meal', icon: '❤️', label: 'Meal', color: 'text-green-600', bgColor: 'bg-green-50 dark:bg-green-900/20' },
+  { type: 'mood', icon: '☁️', label: 'Mood', color: 'text-purple-600', bgColor: 'bg-purple-50 dark:bg-purple-900/20' },
+  { type: 'sleep', icon: '⏰', label: 'Sleep', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
+  { type: 'hydration', icon: '💧', label: 'Hydration', color: 'text-cyan-600', bgColor: 'bg-cyan-50 dark:bg-cyan-900/20' },
+  { type: 'journal', icon: '📖', label: 'Journal', color: 'text-orange-600', bgColor: 'bg-orange-50 dark:bg-orange-900/20' },
 ] as const;
 
 export const ActionModeInput: React.FC<ActionModeInputProps> = ({
@@ -78,7 +71,7 @@ export const ActionModeInput: React.FC<ActionModeInputProps> = ({
             } ${bgColor} ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
           >
             <div className="flex flex-col items-center space-y-2">
-              <Icon className={`h-6 w-6 ${color}`} />
+              <span className={`text-2xl ${color}`}>{Icon}</span>
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
             </div>
           </button>

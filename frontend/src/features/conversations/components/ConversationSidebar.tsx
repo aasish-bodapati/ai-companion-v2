@@ -1,4 +1,4 @@
-  import { PlusIcon, TrashIcon, CheckCircleIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+  // Icons removed for Milestone 1 simplicity
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -127,7 +127,7 @@ export function ConversationSidebar() {
             disabled={isCreating || selectionMode || isDeleting}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <PlusIcon className="h-4 w-4" />
+            <span>+</span>
             New Chat
           </button>
           <button
@@ -135,7 +135,7 @@ export function ConversationSidebar() {
             disabled={isCreating || selectionMode || isDeleting}
             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium text-white bg-orange-600 rounded-md hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <EyeSlashIcon className="h-4 w-4" />
+            <span>👁️</span>
             Incognito
           </button>
         </div>
@@ -171,7 +171,7 @@ export function ConversationSidebar() {
               className="inline-flex items-center gap-1 px-2 py-1 rounded border text-red-600 border-red-200 hover:bg-red-50 disabled:opacity-50"
               title={hasSelections ? (isDeleting ? 'Deleting…' : `Delete ${selectedCount} selected`) : 'Delete selected'}
             >
-              <TrashIcon className="h-4 w-4" />
+              <span>🗑️</span>
               {isDeleting ? 'Deleting…' : 'Delete'}
             </button>
           </div>
@@ -211,7 +211,7 @@ export function ConversationSidebar() {
                     ) : (
                       <Link href={`/chat/${conversation.id}`} className="flex-1 truncate flex items-center gap-2">
                         {conversation.incognito_mode && (
-                          <EyeSlashIcon className="h-3 w-3 text-orange-500 flex-shrink-0" title="Incognito Mode" />
+                          <span className="text-orange-500 flex-shrink-0" title="Incognito Mode">👁️</span>
                         )}
                         <span className="truncate">{conversation.title || 'Untitled conversation'}</span>
                       </Link>

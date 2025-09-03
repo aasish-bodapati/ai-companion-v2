@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { TwoModeSelector, InteractionMode } from './TwoModeSelector';
 // import { ActionModeInput, ActionInput } from './ActionModeInput'; // No longer needed
@@ -8,8 +8,7 @@ import { ConversationModeInput } from './ConversationModeInput';
 // import { ActionConfirmation } from './ActionConfirmation'; // No longer needed
 import { useMessages, Message, useConversation } from '@/features/conversations';
 import { useSendMessage } from '@/features/conversations/hooks/useSendMessage';
-import { Toast, useToast } from '@/components/Toast';
-import { EyeSlashIcon } from '@heroicons/react/24/outline';
+// Toast and icons removed for Milestone 1 simplicity
 
 interface LocalMessage {
   id: string;
@@ -41,11 +40,11 @@ export const TwoModeChatInterface: React.FC<TwoModeChatInterfaceProps> = ({
   const [streamingMessage, setStreamingMessage] = useState<string>('');
   // const [recentActions, setRecentActions] = useState<Array<ActionInput & { timestamp: string }>>([]); // No longer needed
   
-  const { toast, show } = useToast();
+  // Toast removed for Milestone 1 simplicity
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Combine query messages with local messages
-  const messages = [...queryMessages, ...localMessages];
+  const messages = useMemo(() => [...queryMessages, ...localMessages], [queryMessages, localMessages]);
 
   // Set mode to conversation for incognito chats
   useEffect(() => {
@@ -83,17 +82,19 @@ export const TwoModeChatInterface: React.FC<TwoModeChatInterfaceProps> = ({
         onDone: () => {
           setIsStreaming(false);
           setStreamingMessage('');
+          // Clear local messages since they're now in the API response
+          setLocalMessages([]);
         },
         onError: (error) => {
           console.error('Failed to send message:', error);
-          show('Failed to send message. Please try again.', 'error');
+          // Error handling simplified
           setIsStreaming(false);
           setStreamingMessage('');
         }
       });
     } catch (error) {
       console.error('Error sending message:', error);
-      show('Failed to send message. Please try again.', 'error');
+      // Error handling simplified
       setIsStreaming(false);
       setStreamingMessage('');
     }
@@ -123,17 +124,19 @@ export const TwoModeChatInterface: React.FC<TwoModeChatInterfaceProps> = ({
         onDone: () => {
           setIsStreaming(false);
           setStreamingMessage('');
+          // Clear local messages since they're now in the API response
+          setLocalMessages([]);
         },
         onError: (error) => {
           console.error('Failed to send message:', error);
-          show('Failed to send message. Please try again.', 'error');
+          // Error handling simplified
           setIsStreaming(false);
           setStreamingMessage('');
         }
       });
     } catch (error) {
       console.error('Error sending message:', error);
-      show('Failed to send message. Please try again.', 'error');
+      // Error handling simplified
       setIsStreaming(false);
       setStreamingMessage('');
     }
@@ -152,7 +155,7 @@ export const TwoModeChatInterface: React.FC<TwoModeChatInterfaceProps> = ({
       {conversation?.incognito_mode && (
         <div className="bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800 px-4 py-2">
           <div className="flex items-center space-x-2 text-orange-700 dark:text-orange-300">
-            <EyeSlashIcon className="h-4 w-4" />
+            <span>👁️</span>
             <span className="text-sm font-medium">Incognito Mode</span>
             <span className="text-xs text-orange-600 dark:text-orange-400">
               - No memory storage or retrieval
@@ -254,8 +257,7 @@ export const TwoModeChatInterface: React.FC<TwoModeChatInterfaceProps> = ({
         </div>
       </div>
 
-      {/* Toast Notifications */}
-      {toast && <Toast {...toast} />}
+      {/* Toast removed for Milestone 1 simplicity */}
     </div>
   );
 };

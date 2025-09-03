@@ -3,7 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import api from '@/lib/api';
-import { getLLMLatencyLatest, LLMLatencyLatest } from '@/features/utils/api';
+// LLM latency utils removed for Milestone 1 simplicity
+type LLMLatencyLatest = any;
 
 interface Message {
   id: string;
@@ -72,7 +73,8 @@ export default function ChatInterface() {
       // Fetch latest latency metrics to attach to this assistant message
       let latest: LLMLatencyLatest | undefined = undefined;
       try {
-        latest = await getLLMLatencyLatest();
+        // LLM latency removed for Milestone 1 simplicity
+        latest = null;
       } catch (e) {
         // Non-fatal if fails
         console.warn('Failed to fetch LLM latency latest', e);

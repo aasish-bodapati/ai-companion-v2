@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { memoryContextService, type MemoryContextData } from '@/services/memoryContextService';
+// memoryContextService removed for Milestone 1 simplicity
+type MemoryContextData = any;
 
 interface ChatHeaderProps {
   conversationId: string;
@@ -20,7 +21,8 @@ function MemoryContext({ conversationId }: { conversationId: string }) {
       try {
         setLoading(true);
         setError(null);
-        const data = await memoryContextService.getMemoryContext(conversationId);
+        // Memory context service removed for Milestone 1 simplicity
+        const data = null;
         setMemoryData(data);
       } catch (err) {
         console.error('Failed to fetch memory context:', err);
@@ -112,9 +114,9 @@ function MemoryContext({ conversationId }: { conversationId: string }) {
 
       {/* Today's Routine */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">Today's Routine</h3>
+        <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">Today&apos;s Routine</h3>
         <div className="space-y-2 max-h-32 overflow-y-auto">
-          {memoryData.routines.map((routine, index) => (
+          {memoryData.routines.map((routine: any, index: number) => (
             <div key={index} className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <span className="text-gray-500 dark:text-gray-400">{routine.time}</span>
@@ -132,7 +134,7 @@ function MemoryContext({ conversationId }: { conversationId: string }) {
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-800 p-4">
         <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3">💡 Recent Insights</h3>
         <div className="space-y-2">
-          {memoryData.insights.map((insight, index) => (
+          {memoryData.insights.map((insight: any, index: number) => (
             <div key={index} className="text-xs text-blue-700 dark:text-blue-300">
               • {insight}
             </div>
@@ -145,7 +147,7 @@ function MemoryContext({ conversationId }: { conversationId: string }) {
         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-3">🧠 Recent Memories</h3>
           <div className="space-y-2 max-h-24 overflow-y-auto">
-            {memoryData.recentMemories.slice(0, 3).map((memory, index) => (
+            {memoryData.recentMemories.slice(0, 3).map((memory: any, index: number) => (
               <div key={index} className="text-xs text-gray-600 dark:text-gray-400">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs text-gray-400">{memory.source}</span>

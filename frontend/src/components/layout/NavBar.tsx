@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 export default function NavBar() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -17,7 +17,7 @@ export default function NavBar() {
   }
 
   return (
-    <nav className="bg-white/70 dark:bg-gray-800/60 backdrop-blur-sm border-b border-gray-200/60 dark:border-gray-700/60 sticky top-0 z-30">
+    <nav className="bg-purple-900/80 dark:bg-purple-950/80 backdrop-blur-sm border-b border-purple-700/60 dark:border-purple-800/60 sticky top-0 z-30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Navigation links */}
@@ -28,26 +28,11 @@ export default function NavBar() {
               </NavLink>
             ) : (
               <>
-                <NavLink href="/today" pathname={pathname}>
-                  Today
-                </NavLink>
                 <NavLink href="/chat" pathname={pathname}>
                   Chat
                 </NavLink>
-                <NavLink href="/memories" pathname={pathname}>
-                  Memories
-                </NavLink>
-                <NavLink href="/calendar" pathname={pathname}>
-                  Calendar
-                </NavLink>
-                <NavLink href="/fitness" pathname={pathname}>
-                  Fitness
-                </NavLink>
-                <NavLink href="/nutrition" pathname={pathname}>
-                  Nutrition
-                </NavLink>
-                <NavLink href="/ops/metrics" pathname={pathname}>
-                  Insights
+                <NavLink href="/test-memory" pathname={pathname}>
+                  Test Memory
                 </NavLink>
               </>
             )}
@@ -58,7 +43,7 @@ export default function NavBar() {
               <div className="flex items-center space-x-6">
                 <Link
                   href="/profile"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors"
+                  className="text-sm font-medium text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 transition-colors"
                 >
                   Profile
                 </Link>
@@ -67,7 +52,7 @@ export default function NavBar() {
                     logout();
                     window.location.href = '/';
                   }}
-                  className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-purple-600 dark:border-purple-700 text-purple-100 dark:text-purple-200 hover:bg-purple-800 dark:hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                 >
                   Sign out
                 </button>
@@ -76,13 +61,13 @@ export default function NavBar() {
               <div className="flex items-center space-x-4">
                 <Link
                   href="/login"
-                  className="text-sm font-medium text-gray-700 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400 transition-colors"
+                  className="text-sm font-medium text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 transition-colors"
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/register"
-                  className="px-4 py-2 text-sm font-medium rounded-lg border border-transparent text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-transparent text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors"
                 >
                   Sign up
                 </Link>
@@ -93,7 +78,7 @@ export default function NavBar() {
           <div className="-mr-2 flex items-center sm:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500 transition-colors"
+              className="inline-flex items-center justify-center p-2 rounded-md text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 hover:bg-purple-800 dark:hover:bg-purple-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500 transition-colors"
               aria-expanded="false"
             >
               <span className="sr-only">Open main menu</span>
@@ -154,39 +139,24 @@ export default function NavBar() {
                 <MobileNavLink href="/memories" pathname={pathname}>
                   Memories
                 </MobileNavLink>
-                <MobileNavLink href="/calendar" pathname={pathname}>
-                  Calendar
-                </MobileNavLink>
-                <MobileNavLink href="/fitness" pathname={pathname}>
-                  Fitness
-                </MobileNavLink>
-                <MobileNavLink href="/nutrition" pathname={pathname}>
-                  Nutrition
-                </MobileNavLink>
-                <MobileNavLink href="/ops/metrics" pathname={pathname}>
-                  Insights
-                </MobileNavLink>
-                <MobileNavLink href="/monitoring" pathname={pathname}>
-                  Monitoring
-                </MobileNavLink>
-                <MobileNavLink href="/debug" pathname={pathname}>
-                  Debug
-                </MobileNavLink>
               </>
             )}
           </div>
-          <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-4 pb-3 border-t border-purple-700/60 dark:border-purple-800/60">
+            <div className="px-4 mb-3">
+              <ThemeToggle />
+            </div>
             {isAuthenticated ? (
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                    <span className="text-indigo-600 dark:text-indigo-300 font-medium">
+                  <div className="h-10 w-10 rounded-full bg-purple-600/20 flex items-center justify-center">
+                    <span className="text-purple-300 font-medium">
                       {user?.email?.charAt(0).toUpperCase()}
                     </span>
                   </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800 dark:text-white">
+                  <div className="text-base font-medium text-purple-100">
                     {user?.email}
                   </div>
                 </div>
@@ -195,7 +165,7 @@ export default function NavBar() {
                     logout();
                     window.location.href = '/login';
                   }}
-                  className="ml-auto flex-shrink-0 bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  className="ml-auto flex-shrink-0 bg-purple-800/50 p-1 rounded-full text-purple-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
                   <span className="sr-only">Sign out</span>
                   <svg
@@ -218,14 +188,14 @@ export default function NavBar() {
               <div className="mt-3 space-y-1">
                 <Link
                   href="/login"
-                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block px-4 py-2 text-base font-medium text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 hover:bg-purple-800 dark:hover:bg-purple-900"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign in
                 </Link>
                 <Link
                   href="/register"
-                  className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="block px-4 py-2 text-base font-medium text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 hover:bg-purple-800 dark:hover:bg-purple-900"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Sign up
@@ -256,8 +226,8 @@ function NavLink({
       data-testid={`nav-link-${href.replace('/', '')}`}
       className={`${
         isActive
-          ? 'border-indigo-500 text-gray-900 dark:text-white'
-          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-300 dark:hover:text-white'
+          ? 'border-purple-300 dark:border-purple-400 text-white dark:text-purple-100'
+          : 'border-transparent text-purple-200 dark:text-purple-300 hover:border-purple-300 dark:hover:border-purple-400 hover:text-white dark:hover:text-purple-100'
       } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
     >
       {children}
@@ -282,8 +252,8 @@ function MobileNavLink({
       data-testid={`mobile-nav-link-${href.replace('/', '')}`}
       className={`${
         isActive
-          ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-          : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+          ? 'bg-purple-600/20 border-purple-400 text-purple-200'
+          : 'border-transparent text-purple-300 hover:bg-purple-800/50 hover:border-purple-500 hover:text-purple-100'
       } block pl-3 pr-4 py-2 border-l-4 text-base font-medium`}
     >
       {children}

@@ -13,14 +13,10 @@ from app.models.user import User
 from app.schemas.memory import MemoryNodeResponse, MemorySearchResult
 from app.schemas.memory_audit import MemoryAuditResponse
 from app.memory.service import memory_service
-# context_tracker removed for MVP focus
 from app import crud
 from app.services.summarization import generate_conversation_summary
 from pydantic import BaseModel, Field
-from app.privacy.redaction import redact_text, redact_metadata
 from app.core.llm import SimpleLLMClient
-
-# EnhancedMemoryService removed for MVP focus
 from datetime import datetime, timezone
 
 # Set up logger
@@ -408,18 +404,16 @@ def update_memory(
     new_content = before_content
     if payload.content is not None:
         try:
-            red_c, _red_info = redact_text(payload.content)
-            new_content = red_c
+            new_content = payload.content
         except Exception:
             new_content = payload.content
 
     new_metadata_str = before_metadata
     if payload.metadata is not None:
         try:
-            red_md = redact_metadata(payload.metadata)
             import json as _json
 
-            new_metadata_str = _json.dumps(red_md)
+            new_metadata_str = _json.dumps(payload.metadata)
         except Exception:
             try:
                 import json as _json
@@ -646,19 +640,6 @@ def create_memory(
     # Apply privacy redaction before persistence
     red_content = canonical_content
     red_meta = metadata
-    try:
-        red_content, red_info = redact_text(canonical_content)
-        red_meta = redact_metadata(metadata)
-        if isinstance(red_meta, dict):
-            red_meta.setdefault("redaction", {}).update(
-                {
-                    "enabled": True,
-                    "counts": {k: int(v) for k, v in (red_info or {}).items() if k != "enabled"},
-                }
-            )
-    except Exception:
-        red_content = canonical_content
-        red_meta = metadata
     # Use memory_service.store_memory to ensure proper vector storage
     try:
         # Signal explicit remember if high importance provided
@@ -1753,20 +1734,7 @@ def update_my_memory(
     # Perform update
     updated = memory_crud.update(db, db_obj=existing, obj_in=updated_data)
 
-    # Update vector store if enabled
-    try:
-        from app.memory.vector_store.factory import get_vector_store
-
-        vs = get_vector_store()
-        if vs and hasattr(vs, "update_memory"):
-            vs.update_memory(memory_id, update_request.content)
-    except Exception as e:
-        # Non-fatal: log but don't fail the update
-        import logging
-
-        logging.getLogger(__name__).warning(
-            f"Failed to update vector store for memory {memory_id}: {e}"
-        )
+    # Vector store update removed for Milestone 1 simplicity
 
     return updated
 
@@ -1798,20 +1766,7 @@ def delete_my_memory(
         # Fallback to hard delete if soft delete fails
         memory_crud.remove(db, id=memory_id)
 
-    # Remove from vector store if enabled
-    try:
-        from app.memory.vector_store.factory import get_vector_store
-
-        vs = get_vector_store()
-        if vs and hasattr(vs, "delete_memory"):
-            vs.delete_memory(memory_id)
-    except Exception as e:
-        # Non-fatal: log but don't fail the delete
-        import logging
-
-        logging.getLogger(__name__).warning(
-            f"Failed to delete from vector store for memory {memory_id}: {e}"
-        )
+    # Vector store deletion removed for Milestone 1 simplicity
 
     return {"status": "deleted", "memory_id": memory_id}
 
@@ -1939,7 +1894,7 @@ async def process_onboarding_prompt(
         # Initialize services
         llm_service = SimpleLLMClient()
         # Use basic memory service for MVP
-        memory_service = memory_service
+        # memory_service already imported at module level
         
         # Step 1: Process prompt through LLM to extract structured information
         processing_prompt = f"""
@@ -2000,12 +1955,13 @@ async def process_onboarding_prompt(
         try:
             # Store the processed summary as onboarding memory
             # Use basic storage to avoid metadata validation issues
-            memory_id = memory_service.store_enhanced_memory(
+            memory_id = memory_service.store_memory(
                 db=db,
                 content=llm_response,
                 content_type="onboarding",
-                user_id=str(current_user.id)
-                # Removed complex metadata to avoid validation errors
+                user_id=str(current_user.id),
+                conversation_id=None,
+                metadata={"source": "onboarding_processing"}
             )
             
             logger.info(f"Stored onboarding memory with ID: {memory_id}")

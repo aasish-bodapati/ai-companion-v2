@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 export default function ChatLayout({
   children,

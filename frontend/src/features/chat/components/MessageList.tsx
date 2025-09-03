@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { format } from 'date-fns';
 import { HandThumbUpIcon, HandThumbDownIcon, SparklesIcon } from '@heroicons/react/24/outline';
-import { StreamingIndicator } from '@/components/ui/StreamingIndicator';
+// StreamingIndicator removed for Milestone 1 simplicity
+const StreamingIndicator = () => null;
 import { IntelligentTyping } from '@/components/chat/IntelligentTyping';
 // MemoryContext requires a conversationId; for live provenance we render a minimal inline panel here.
 
@@ -169,7 +170,7 @@ export function MessageList({
         }`}>
           <div className="max-w-3xl px-4 py-3 rounded-2xl bg-white text-gray-900 shadow-sm border border-gray-100">
             <div className="mb-2">
-              <StreamingIndicator isVisible={true} userName="Assistant" />
+              {/* StreamingIndicator removed for Milestone 1 simplicity */}
             </div>
             <div className="prose prose-sm max-w-none whitespace-pre-wrap break-words">
               {liveAssistant}

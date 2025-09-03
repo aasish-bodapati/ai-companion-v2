@@ -197,29 +197,10 @@ logger.info("Importing API router...")
 try:
     from app.api.api_v1.api import api_router
     from app.core.config import settings
-    from app.middleware.auth_cookies import AuthCookieMiddleware
-
     logger.info("Successfully imported API router")
     logger.info(f"Router prefix: {settings.API_V1_STR}")
 
-    # Add cookie authentication middleware
-    app.add_middleware(AuthCookieMiddleware)
-    
-    # Add rate limiting middleware if enabled
-    if getattr(settings, "RATE_LIMIT_ENABLED", False):
-        from app.middleware.rate_limit import RateLimitMiddleware, RateLimitConfig
-        _rpm = max(1, int(getattr(settings, "RATE_LIMIT_SEND_PER_WINDOW", 60) or 60))
-        _window = max(1, int(getattr(settings, "RATE_LIMIT_WINDOW_SECONDS", 60) or 60))
-        # Make burst limit more permissive for dev: allow up to per-window count as burst
-        # to accommodate React strict mode and concurrent requests.
-        _burst = max(10, _rpm)
-        rate_limit_config = RateLimitConfig(
-            requests_per_minute=_rpm,
-            requests_per_hour=1000,
-            burst_limit=_burst,
-            window_size=_window,
-        )
-        app.add_middleware(RateLimitMiddleware, config=rate_limit_config)
+    # Middleware removed for Milestone 1 simplicity
 
     # Include API router with version prefix
     app.include_router(api_router, prefix=settings.API_V1_STR)

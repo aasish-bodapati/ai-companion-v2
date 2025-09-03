@@ -14,7 +14,7 @@ from app.crud.memory import memory
 # Vector store factory removed for MVP - use direct FAISS
 from app.memory.faiss_store import faiss_store
 import app.memory.embeddings as embeddings
-from app.memory.deduplication import deduplication_service
+# Deduplication removed for Milestone 1 simplicity
 from app.db.session import SessionLocal
 
 logger = logging.getLogger(__name__)
@@ -133,24 +133,7 @@ class StorageMixin:
             except Exception:
                 _has_structured_kv = False
 
-            # Re-enable dedup for non-fact content; keep bypass for facts and structured KV
-            bypass_dedup = (content_type or "").lower() == "fact" or _has_structured_kv
-
-            # Check for semantic duplicates before storing (unless bypassed)
-            if not bypass_dedup:
-                is_duplicate, existing_id = deduplication_service.check_for_duplicates(
-                    db, user_id, s, content_type
-                )
-                if is_duplicate:
-                    # Translate DB id to faiss_id for API consistency
-                    try:
-                        existing_node = memory.get(db, existing_id)
-                        if existing_node and existing_node.faiss_id:
-                            return existing_node.faiss_id
-                    except Exception:
-                        pass
-                    logger.info(f"Skipping duplicate memory for user {user_id}")
-                    return existing_id
+            # Deduplication removed for Milestone 1 simplicity
 
             # Normalize metadata
             md: Dict[str, Any] = {}
@@ -376,7 +359,7 @@ class StorageMixin:
                 try:
                     print(f"🔍 DEBUG: Adding to vector store: user={user_id}, id={faiss_id}")
                     vector_store = faiss_store
-                    vector_store.add(user_id, [faiss_id], [embedding[0]])
+                    vector_store.add_vectors(user_id, [faiss_id], [embedding[0]])
                     print("🔍 DEBUG: Vector store add successful")
                 except Exception as _fe:
                     print(f"🔍 DEBUG: Vector add failed for user={user_id}, id={faiss_id}: {_fe}")

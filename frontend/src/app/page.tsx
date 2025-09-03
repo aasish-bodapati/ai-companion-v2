@@ -1,13 +1,34 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
-import TodayPage from './today/page';
+import { useEffect, useState } from 'react';
+import { apiClient } from '@/services/apiClient';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
 
-  // Show loading while auth is initializing
-  if (isLoading) {
+  // Check onboarding status when authenticated
+  useEffect(() => {
+    if (isAuthenticated && !checkingOnboarding) {
+      setCheckingOnboarding(true);
+      apiClient.get('/onboarding/status')
+        .then(response => {
+          setOnboardingStatus((response.data as any).completed);
+        })
+        .catch(error => {
+          console.error('Failed to check onboarding status:', error);
+          setOnboardingStatus(false); // Default to not completed on error
+        })
+        .finally(() => {
+          setCheckingOnboarding(false);
+        });
+    }
+  }, [isAuthenticated, checkingOnboarding]);
+
+  // Show loading while auth is initializing or checking onboarding
+  if (isLoading || (isAuthenticated && onboardingStatus === null)) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
         <div className="flex flex-col items-center space-y-4">
@@ -20,7 +41,6 @@ export default function Home() {
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
-    // Use window.location for immediate redirect
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
@@ -34,15 +54,22 @@ export default function Home() {
     );
   }
 
-  // If authenticated, redirect directly to chat page
+  // If authenticated, redirect based on onboarding status
   if (typeof window !== 'undefined') {
-    window.location.href = '/chat';
+    if (onboardingStatus === false) {
+      window.location.href = '/onboarding';
+    } else {
+      window.location.href = '/chat';
+    }
   }
+  
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
       <div className="flex flex-col items-center space-y-4">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-        <p className="text-gray-600 dark:text-gray-400">Redirecting to chat...</p>
+        <p className="text-gray-600 dark:text-gray-400">
+          {onboardingStatus === false ? 'Redirecting to onboarding...' : 'Redirecting to chat...'}
+        </p>
       </div>
     </div>
   );

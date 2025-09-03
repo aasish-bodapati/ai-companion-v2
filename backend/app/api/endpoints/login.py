@@ -8,7 +8,7 @@ from app import crud, models
 from app.api import deps
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.middleware.auth_cookies import set_auth_cookies
+# Auth cookies removed for Milestone 1 simplicity
 from app.schemas.user import Token, User as UserSchema
 
 router = APIRouter()
@@ -36,9 +36,7 @@ def login_access_token(
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(user.id, expires_delta=access_token_expires)
 
-    # Set secure httpOnly cookies
-    # Pass request so cookie helper can drop Secure flag on localhost in dev
-    set_auth_cookies(response, access_token, request)
+    # Auth cookies removed for Milestone 1 simplicity
 
     return {
         "access_token": access_token,

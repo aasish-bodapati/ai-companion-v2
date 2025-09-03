@@ -120,7 +120,7 @@ class RetrievalMixin:
                 return []
             
             # Simple FAISS search - query_embedding is already a list, not a tuple
-            faiss_results = store.search(user_id, query_embedding, limit * 2)
+            faiss_results = store.search_vectors(user_id, query_embedding, limit * 2)
             
             logger.info(f"FAISS search returned {len(faiss_results)} results")
             
@@ -156,8 +156,17 @@ class RetrievalMixin:
                     faiss_id=memory_record.faiss_id,
                     content=memory_record.content,
                     content_type=memory_record.content_type,
+                    category=memory_record.category,
+                    subcategory=memory_record.subcategory,
                     relevance_score=score,
+                    importance_score=memory_record.importance_score,
+                    confidence_score=memory_record.confidence_score,
+                    emotional_valence=memory_record.emotional_valence,
                     timestamp=memory_record.timestamp,
+                    effective_date=memory_record.effective_date,
+                    tags=memory_record.tags,
+                    entities=memory_record.entities,
+                    privacy_level=memory_record.privacy_level,
                     memory_metadata=memory_record.memory_metadata
                 )
                 memory_results.append(result)

@@ -2,7 +2,13 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import api from '@/lib/api';
-import logger from '@/utils/logger';
+// Logger removed for Milestone 1 simplicity
+const logger = {
+  info: (msg: string, ...args: any[]) => console.log(msg, ...args),
+  error: (msg: string, ...args: any[]) => console.error(msg, ...args),
+  warn: (msg: string, ...args: any[]) => console.warn(msg, ...args),
+  debug: (msg: string, ...args: any[]) => console.debug(msg, ...args),
+};
 import { useRouter } from 'next/navigation';
 
 import { toast } from 'sonner';

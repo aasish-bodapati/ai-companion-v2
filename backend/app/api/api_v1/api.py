@@ -8,19 +8,10 @@ from app.api.endpoints import (
     conversations_main,
     conversations_messages,
     memory,
-    memory_visualization,
-    memory_monitoring,
-    deduplication,
-    notes,
-    tasks,
-    reminders,
-    weekly,
-    uploads,
-    utils,
-    nudges,
-    debug,
+    onboarding,
+    onboarding_chat,
 )
-from app.core.config import settings
+# settings import removed for Milestone 1 simplicity
 
 api_router = APIRouter()
 # Public and auth
@@ -31,6 +22,10 @@ api_router.include_router(logout.router, tags=["logout"])
 # Core users
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 
+# Onboarding
+api_router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
+api_router.include_router(onboarding_chat.router, prefix="/onboarding-chat", tags=["onboarding-chat"])
+
 # Conversations suite (include CRUD first, then messages to let messages override conflicts)
 api_router.include_router(
     conversations_main.router, prefix="/conversations", tags=["conversations"]
@@ -39,33 +34,7 @@ api_router.include_router(
 api_router.include_router(
     conversations_messages.router, prefix="/conversations", tags=["conversations"]
 )
-if getattr(settings, "STREAMING_ENABLED", False):
-    # Import lazily to avoid import errors when streaming module is removed
-    from app.api.endpoints import conversations_streaming as _conversations_streaming  # type: ignore
+# Streaming removed for Milestone 1 simplicity
 
-    api_router.include_router(
-        _conversations_streaming.router, prefix="/conversations", tags=["conversations"]
-    )
-
-# Memory and related (standardized under /memory) and legacy alias /memories for tests
+# Memory system (simplified for Milestone 1)
 api_router.include_router(memory.router, prefix="/memory", tags=["memory"])
-api_router.include_router(memory.router, prefix="/memories", tags=["memory"])
-api_router.include_router(
-    memory_visualization.router, prefix="/memory-visualization", tags=["memory"]
-)
-api_router.include_router(deduplication.router, prefix="/deduplication", tags=["deduplication"])
-
-# Holistic Memory System and Action System removed for MVP focus
-
-# Additional feature areas
-api_router.include_router(notes.router, tags=["notes"])
-api_router.include_router(tasks.router, tags=["tasks"])
-api_router.include_router(reminders.router, tags=["reminders"])
-api_router.include_router(weekly.router, tags=["weekly"])
-api_router.include_router(uploads.router, tags=["uploads"])
-api_router.include_router(utils.router, prefix="/utils", tags=["utils"])
-api_router.include_router(nudges.router, tags=["nudges"])
-api_router.include_router(debug.router, tags=["debug"])
-
-# Memory monitoring and evaluation
-api_router.include_router(memory_monitoring.router, prefix="/memory-monitoring", tags=["memory-monitoring"])

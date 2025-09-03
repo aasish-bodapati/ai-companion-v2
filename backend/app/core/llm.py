@@ -83,8 +83,10 @@ class SimpleLLMClient:
                 last_user_message = msg.get("content", "").strip().lower()
                 break
         
+        # If no user message found, this might be a duplicate/race condition call
         if not last_user_message:
-            return "Hello! How can I help you today?"
+            print(f"🔍 DEBUG: No user message found in messages: {messages}")
+            return "I'm here to help! What would you like to know or discuss?"
         
         # Handle specific queries that should NOT hallucinate information
         if "what is my name" in last_user_message or "my name" in last_user_message:
