@@ -5,7 +5,7 @@
  * with the memory system, ensuring consistent data flow and real-time updates.
  */
 
-import { apiClient } from './apiClient';
+import api from '@/lib/api';
 
 export interface MemoryNode {
   id: string;
@@ -80,8 +80,8 @@ class MemoryService {
    */
   async getContext(): Promise<MemoryContext> {
     try {
-      const response = await apiClient.get<MemoryContext>(`${this.baseUrl}/context`);
-      return response.data;
+      const response = await api.get<MemoryContext>(`${this.baseUrl}/context`);
+      return response;
     } catch (error) {
       console.error('Failed to get memory context:', error);
       
@@ -124,7 +124,7 @@ class MemoryService {
     recommendations: any[];
   }> {
     try {
-      const response = await apiClient.post<{
+      const response = await api.post<{
         memory_id: string;
         connections: MemoryConnection[];
         insights: MemoryInsight[];
@@ -138,13 +138,13 @@ class MemoryService {
       
       // Notify subscribers of the update
       this.notifySubscribers({
-        memory_id: response.data.memory_id,
+        memory_id: response.memory_id,
         update_type: 'created',
-        data: response.data,
+        data: response,
         timestamp: new Date().toISOString()
       });
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to capture interaction:', error);
       
@@ -202,12 +202,12 @@ class MemoryService {
       if (timeRange) params.append('time_range', timeRange);
       if (category) params.append('category', category);
       
-      const response = await apiClient.get<{
+      const response = await api.get<{
         insights: MemoryInsight[];
         patterns: any[];
         recommendations: any[];
       }>(`${this.baseUrl}/insights?${params}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get insights:', error);
       
@@ -267,8 +267,8 @@ class MemoryService {
       if (category) params.append('category', category);
       if (timeRange) params.append('time_range', timeRange);
       
-      const response = await apiClient.get<MemorySearchResult>(`${this.baseUrl}/search?${params}`);
-      return response.data;
+      const response = await api.get<MemorySearchResult>(`${this.baseUrl}/search?${params}`);
+      return response;
     } catch (error) {
       console.error('Failed to search memories:', error);
       throw error;
@@ -284,12 +284,12 @@ class MemoryService {
     related_insights: MemoryInsight[];
   }> {
     try {
-      const response = await apiClient.get<{
+      const response = await api.get<{
         connections: MemoryConnection[];
         relationship_strength: number;
         related_insights: MemoryInsight[];
       }>(`${this.baseUrl}/${memoryId}/connections`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get memory connections:', error);
       throw error;
@@ -313,7 +313,7 @@ class MemoryService {
     new_insights: MemoryInsight[];
   }> {
     try {
-      const response = await apiClient.put<{
+      const response = await api.put<{
         memory: MemoryNode;
         updated_connections: MemoryConnection[];
         new_insights: MemoryInsight[];
@@ -323,11 +323,11 @@ class MemoryService {
       this.notifySubscribers({
         memory_id: memoryId,
         update_type: 'updated',
-        data: response.data,
+        data: response,
         timestamp: new Date().toISOString()
       });
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to update memory:', error);
       throw error;
@@ -353,12 +353,12 @@ class MemoryService {
       });
       if (category) params.append('category', category);
       
-      const response = await apiClient.get<{
+      const response = await api.get<{
         memories: MemoryNode[];
         total_count: number;
         has_more: boolean;
       }>(`${this.baseUrl}/users/me/memories?${params}`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get memories:', error);
       throw error;
@@ -375,13 +375,13 @@ class MemoryService {
     recommendations: any[];
   }> {
     try {
-      const response = await apiClient.get<{
+      const response = await api.get<{
         today_memories: MemoryNode[];
         insights: MemoryInsight[];
         patterns: any[];
         recommendations: any[];
       }>(`${this.baseUrl}/users/me/memories/digest`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get daily digest:', error);
       
@@ -479,7 +479,7 @@ class MemoryService {
     };
   }> {
     try {
-      const response = await apiClient.get<{
+      const response = await api.get<{
         enabled: boolean;
         stats: {
           total_memories: number;
@@ -487,7 +487,7 @@ class MemoryService {
           recent_activity: any[];
         };
       }>(`${this.baseUrl}/status`);
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Failed to get memory status:', error);
       throw error;

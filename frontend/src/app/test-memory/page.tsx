@@ -6,7 +6,7 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { apiClient } from '@/services/apiClient';
+import api from '@/lib/api';
 
 export default function TestMemoryPage() {
   const [message, setMessage] = useState('');
@@ -21,11 +21,11 @@ export default function TestMemoryPage() {
 
     setIsLoading(true);
     try {
-      const response = await apiClient.post('/onboarding-chat/chat', {
+      const response = await api.post('/onboarding-chat/chat', {
         message: message.trim()
       });
 
-      setResponse(response.data as any);
+      setResponse(response);
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {
@@ -35,8 +35,8 @@ export default function TestMemoryPage() {
 
   const handleTestMemory = async () => {
     try {
-      const response = await apiClient.get('/onboarding-chat/test-memory');
-      setMemories((response.data as any).memories);
+      const response = await api.get('/onboarding-chat/test-memory');
+      setMemories(response.memories);
     } catch (error) {
       console.error('Error testing memory:', error);
     }

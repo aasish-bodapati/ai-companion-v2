@@ -14,6 +14,7 @@ interface Message {
   context?: any;
   suggestions?: string[];
   metrics?: LLMLatencyLatest;
+  used_memory?: boolean;
 }
 
 export default function ChatInterface() {
@@ -25,7 +26,9 @@ export default function ChatInterface() {
   const [conversationHistory, setConversationHistory] = useState<any[]>([]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
@@ -65,7 +68,7 @@ export default function ChatInterface() {
     setIsLoading(true);
 
     try {
-      const response = await api.post('/conversation/chat', {
+      const response = await api.post('/onboarding-chat/chat', {
         message: inputMessage,
         conversation_history: conversationHistory
       });
@@ -82,12 +85,13 @@ export default function ChatInterface() {
 
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
-        content: response.message,
+        content: response.reply || response.message,
         isUser: false,
         timestamp: new Date().toISOString(),
         context: response.context_analysis,
         suggestions: response.suggested_actions,
         metrics: latest,
+        used_memory: response.used_memory,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -95,14 +99,14 @@ export default function ChatInterface() {
       // Update conversation history
       setConversationHistory(prev => [...prev, 
         { role: 'user', content: inputMessage },
-        { role: 'assistant', content: response.message }
+        { role: 'assistant', content: response.reply || response.message }
       ]);
 
     } catch (error) {
       console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: 'Error sending message. Please try again.',
         isUser: false,
         timestamp: new Date().toISOString()
       };
@@ -112,11 +116,60 @@ export default function ChatInterface() {
     }
   };
 
-  const handleSuggestionClick = (suggestion: string) => {
+  const handleSuggestionClick = async (suggestion: string) => {
     setInputMessage(suggestion);
+    
+    // Auto-send the suggestion
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      content: suggestion,
+      isUser: true,
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      const response = await api.post('/onboarding-chat/chat', {
+        message: suggestion,
+        conversation_history: conversationHistory
+      });
+
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        content: response.reply || response.message,
+        isUser: false,
+        timestamp: new Date().toISOString(),
+        context: response.context_analysis,
+        suggestions: response.suggested_actions,
+        used_memory: response.used_memory,
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Update conversation history
+      setConversationHistory(prev => [...prev, 
+        { role: 'user', content: suggestion },
+        { role: 'assistant', content: response.reply || response.message }
+      ]);
+
+    } catch (error) {
+      console.error('Error sending suggestion:', error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        content: 'Error sending message. Please try again.',
+        isUser: false,
+        timestamp: new Date().toISOString()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -154,6 +207,16 @@ export default function ChatInterface() {
               }`}
             >
               <p className="text-sm">{message.content}</p>
+              
+              {/* Memory usage indicator */}
+              {!message.isUser && message.used_memory && (
+                <div className="mt-2">
+                  <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+                    Memory used
+                  </span>
+                </div>
+              )}
+              
               {/* Per-reply latency metrics */}
               {!message.isUser && message.metrics && (
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-600">
@@ -194,7 +257,7 @@ export default function ChatInterface() {
             <div className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span className="text-sm">Thinking...</span>
+                <span className="text-sm">Sending...</span>
               </div>
             </div>
           </div>
@@ -210,7 +273,7 @@ export default function ChatInterface() {
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message here..."
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             disabled={isLoading}

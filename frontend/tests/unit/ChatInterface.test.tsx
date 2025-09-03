@@ -72,6 +72,7 @@ describe('ChatInterface', () => {
     await waitFor(() => {
       expect(mockApi.post).toHaveBeenCalledWith('/onboarding-chat/chat', {
         message: 'Hello, how are you?',
+        conversation_history: [],
       });
     });
   });
@@ -87,6 +88,7 @@ describe('ChatInterface', () => {
     await waitFor(() => {
       expect(mockApi.post).toHaveBeenCalledWith('/onboarding-chat/chat', {
         message: 'Hello, how are you?',
+        conversation_history: [],
       });
     });
   });
@@ -182,6 +184,7 @@ describe('ChatInterface', () => {
     await waitFor(() => {
       expect(mockApi.post).toHaveBeenCalledWith('/onboarding-chat/chat', {
         message: 'Help me plan my week',
+        conversation_history: [],
       });
     });
   });

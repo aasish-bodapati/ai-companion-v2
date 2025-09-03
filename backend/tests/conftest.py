@@ -71,9 +71,11 @@ def client(db_session: Session, test_user: User) -> Generator[TestClient, None, 
     def override_get_current_user():
         return test_user
     
-    # Override the database dependency (use the one from deps, not session)
+    # Override the database dependency (override both deps and session versions)
     from app.api import deps
+    from app.db import session
     app.dependency_overrides[deps.get_db] = override_get_db
+    app.dependency_overrides[session.get_db] = override_get_db
     # Override the current user dependency
     from app.api.deps import get_current_user
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -97,9 +99,11 @@ def client_with_memory(db_session: Session, test_user: User) -> Generator[TestCl
     def override_get_current_user():
         return test_user
     
-    # Override the database dependency (use the one from deps, not session)
+    # Override the database dependency (override both deps and session versions)
     from app.api import deps
+    from app.db import session
     app.dependency_overrides[deps.get_db] = override_get_db
+    app.dependency_overrides[session.get_db] = override_get_db
     # Override the current user dependency
     from app.api.deps import get_current_user
     app.dependency_overrides[get_current_user] = override_get_current_user
@@ -160,9 +164,11 @@ async def async_client(db_session: Session) -> AsyncGenerator[AsyncClient, None]
         finally:
             pass
     
-    # Override the database dependency (use the one from deps, not session)
+    # Override the database dependency (override both deps and session versions)
     from app.api import deps
+    from app.db import session
     app.dependency_overrides[deps.get_db] = override_get_db
+    app.dependency_overrides[session.get_db] = override_get_db
     
     async with AsyncClient(app=app, base_url="http://test") as ac:
         yield ac

@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { apiClient } from '@/services/apiClient';
+import api from '@/lib/api';
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -13,9 +13,9 @@ export default function Home() {
   useEffect(() => {
     if (isAuthenticated && !checkingOnboarding) {
       setCheckingOnboarding(true);
-      apiClient.get('/onboarding/status')
+      api.get('/onboarding/status')
         .then(response => {
-          setOnboardingStatus((response.data as any).completed);
+          setOnboardingStatus(response.completed);
         })
         .catch(error => {
           console.error('Failed to check onboarding status:', error);

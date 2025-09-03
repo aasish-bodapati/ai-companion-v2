@@ -237,3 +237,10 @@ tsconfig.tsbuildinfo
 # Package lock files (optional - some teams prefer to commit these)
 # package-lock.json
 # yarn.lock
+
+# Test reports and generated files
+playwright-report/
+test-results/
+
+# Scripts and utilities (may contain generated files)
+frontend/scripts/

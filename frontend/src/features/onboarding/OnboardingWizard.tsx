@@ -119,10 +119,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Nickname
               </label>
               <input
+                id="nickname"
                 type="text"
                 value={formData.identity?.nickname || ''}
                 onChange={(e) => handleNestedChange('identity', 'nickname', e.target.value)}
@@ -132,10 +133,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="pronouns" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Pronouns
               </label>
               <input
+                id="pronouns"
                 type="text"
                 value={formData.identity?.pronouns || ''}
                 onChange={(e) => handleNestedChange('identity', 'pronouns', e.target.value)}
@@ -145,10 +147,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Location
               </label>
               <input
+                id="location"
                 type="text"
                 value={formData.identity?.location || ''}
                 onChange={(e) => handleNestedChange('identity', 'location', e.target.value)}
@@ -158,10 +161,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="topics" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Topics of Interest
               </label>
               <input
+                id="topics"
                 type="text"
                 value={formData.interests?.topics?.join(', ') || ''}
                 onChange={(e) => handleNestedChange('interests', 'topics', e.target.value.split(',').map(t => t.trim()).filter(Boolean))}
@@ -174,10 +178,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
           {/* Communication Preferences */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="responseStyle" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Response Style
               </label>
               <select
+                id="responseStyle"
                 value={formData.communication?.responseStyle || ''}
                 onChange={(e) => handleNestedChange('communication', 'responseStyle', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -190,10 +195,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="memoryPolicy" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Memory Policy
               </label>
               <select
+                id="memoryPolicy"
                 value={formData.boundaries?.memoryPolicy || ''}
                 onChange={(e) => handleNestedChange('boundaries', 'memoryPolicy', e.target.value)}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -209,10 +215,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
           {/* Personal Assistant Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="daily_schedule" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Daily Schedule
               </label>
               <input
+                id="daily_schedule"
                 type="text"
                 value={formData.daily_schedule || ''}
                 onChange={(e) => handleInputChange('daily_schedule', e.target.value)}
@@ -222,10 +229,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="fitness_goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Fitness Goals
               </label>
               <input
+                id="fitness_goals"
                 type="text"
                 value={formData.fitness_goals || ''}
                 onChange={(e) => handleInputChange('fitness_goals', e.target.value)}
@@ -235,10 +243,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="nutrition_goals" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Nutrition Goals
               </label>
               <input
+                id="nutrition_goals"
                 type="text"
                 value={formData.nutrition_goals || ''}
                 onChange={(e) => handleInputChange('nutrition_goals', e.target.value)}
@@ -248,10 +257,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label htmlFor="communication_style" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Communication Style
               </label>
               <input
+                id="communication_style"
                 type="text"
                 value={formData.communication_style || ''}
                 onChange={(e) => handleInputChange('communication_style', e.target.value)}
@@ -263,10 +273,11 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
 
           {/* Additional Preferences */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor="additional_preferences" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Additional Preferences
             </label>
             <textarea
+              id="additional_preferences"
               value={formData.additional_preferences || ''}
               onChange={(e) => handleInputChange('additional_preferences', e.target.value)}
               rows={3}
@@ -282,7 +293,7 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
                 <span className="text-blue-600 dark:text-blue-400 text-lg">🗿</span>
               </div>
               <div>
-                <label className="block text-lg font-semibold text-blue-900 dark:text-blue-100">
+                <label htmlFor="user_blueprint" className="block text-lg font-semibold text-blue-900 dark:text-blue-100">
                   Your Life Blueprint
                 </label>
                 <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -331,6 +342,7 @@ export default function OnboardingWizard({ mode = 'onboarding' }: OnboardingWiza
             </div>
             
             <textarea
+              id="user_blueprint"
               value={formData.user_blueprint || ''}
               onChange={(e) => handleInputChange('user_blueprint', e.target.value)}
               rows={12}

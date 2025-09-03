@@ -4,11 +4,11 @@
 
 /* Light mode color variables */
 :root {
-  --background: #ffffff;
+  --background: #fafbfc;
   --foreground: #0f172a;
-  --card: #ffffff;
+  --card: #fefefe;
   --card-foreground: #0f172a;
-  --popover: #ffffff;
+  --popover: #fefefe;
   --popover-foreground: #0f172a;
   --primary: #6366f1;
   --primary-foreground: #ffffff;
@@ -21,7 +21,7 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --border: #e2e8f0;
-  --input: #e2e8f0;
+  --input: #f1f5f9;
   --ring: #6366f1;
   --radius: 0.5rem;
 }
@@ -94,6 +94,28 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
+}
+
+/* Text selection styles */
+::selection {
+  background-color: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+::-moz-selection {
+  background-color: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
+}
+
+/* Dark mode text selection */
+.dark ::selection {
+  background-color: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
+}
+
+.dark ::-moz-selection {
+  background-color: hsl(var(--primary) / 0.3);
+  color: hsl(var(--foreground));
 }
 
 /* Smooth transitions for theme changes */
