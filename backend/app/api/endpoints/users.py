@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel
@@ -58,17 +58,15 @@ def read_user_me(
     return current_user
 
 
-@router.get("/me/onboarding", response_model=OnboardingProfile)
+@router.get("/me/onboarding", response_model=Optional[OnboardingProfile])
 def read_user_onboarding(
     current_user: models.User = Depends(deps.get_current_active_user),
     db: Session = Depends(deps.get_db),
 ):
     """
-    Get current user's onboarding profile.
+    Get current user's onboarding profile. Returns null if no profile exists.
     """
     profile = crud.onboarding_profile.get_by_user_id(db, user_id=current_user.id)
-    if not profile:
-        raise HTTPException(status_code=404, detail="Onboarding profile not found")
     return profile
 
 

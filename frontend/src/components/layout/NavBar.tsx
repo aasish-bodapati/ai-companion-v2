@@ -31,6 +31,9 @@ export default function NavBar() {
                 <NavLink href="/chat" pathname={pathname}>
                   Chat
                 </NavLink>
+                <NavLink href="/memories" pathname={pathname}>
+                  Memories
+                </NavLink>
                 <NavLink href="/test-memory" pathname={pathname}>
                   Test Memory
                 </NavLink>
@@ -130,9 +133,6 @@ export default function NavBar() {
               </MobileNavLink>
             ) : (
               <>
-                <MobileNavLink href="/today" pathname={pathname}>
-                  Today
-                </MobileNavLink>
                 <MobileNavLink href="/chat" pathname={pathname}>
                   Chat
                 </MobileNavLink>

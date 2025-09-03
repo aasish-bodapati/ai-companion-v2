@@ -47,6 +47,11 @@ Object.defineProperty(window, 'location', {
 // Mock fetch
 global.fetch = jest.fn()
 
+// Mock TextEncoder and TextDecoder
+const { TextEncoder, TextDecoder } = require('util')
+global.TextEncoder = TextEncoder
+global.TextDecoder = TextDecoder
+
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

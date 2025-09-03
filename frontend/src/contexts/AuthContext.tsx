@@ -34,15 +34,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+interface AuthProviderProps {
+  children: ReactNode;
+  initialUser?: User | null;
+  testMode?: boolean;
+}
+
+export const AuthProvider = ({ children, initialUser, testMode = false }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(initialUser || null);
+  const [token, setToken] = useState<string | null>(testMode ? 'test-token' : null);
+  const [isLoading, setIsLoading] = useState(!testMode);
 
   const router = useRouter();
 
   // Check for existing session on initial load
   useEffect(() => {
+    if (testMode) {
+      // In test mode, skip initialization
+      setIsLoading(false);
+      return;
+    }
+
     console.log('🔍 Auth: useEffect running - checking for existing session');
     const initializeAuth = async () => {
       try {
@@ -73,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     initializeAuth();
-  }, []);
+  }, [testMode]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -124,8 +136,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setToken(tokenResponse.access_token);
         toast.success('Signed in successfully');
         
-                  // After login, route to today page
-        router.replace('/today');
+                  // After login, route to chat page
+        router.replace('/chat');
         
         // Return success status - let the component handle redirection
         return true;
@@ -170,7 +182,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const ok = await login(email, password);
       if (ok) {
-        // login() will route to today page
+        // login() will route to chat page
         return;
       }
     } catch (_) {

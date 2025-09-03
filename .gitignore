@@ -143,6 +143,10 @@ data/
 *.db
 *.sqlite
 *.sqlite3
+debug_test.db
+debug_validation.db
+test.db
+minimal.db
 
 # FAISS vector store files
 data/faiss/

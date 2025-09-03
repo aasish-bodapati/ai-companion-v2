@@ -27,7 +27,7 @@ class BriefingResponse(BaseModel):
 
 
 @router.post("/process-briefing", response_model=BriefingResponse)
-async def process_briefing(
+def process_briefing(
     request: BriefingRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -109,7 +109,7 @@ async def process_briefing(
 
 
 @router.get("/status")
-async def get_onboarding_status(
+def get_onboarding_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

@@ -25,7 +25,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat_with_memory(
+def chat_with_memory(
     request: ChatRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -113,7 +113,7 @@ Respond to the user's message naturally and helpfully, using their onboarding in
 
 
 @router.get("/test-memory")
-async def test_memory_retrieval(
+def test_memory_retrieval(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):

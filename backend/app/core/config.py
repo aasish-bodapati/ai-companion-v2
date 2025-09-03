@@ -10,7 +10,7 @@ import json
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = "your-secret-key-here"  # Change this in production!
+    SECRET_KEY: str = ""  # Must be set via environment variable
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     SERVER_NAME: str = "ai-companion"
     SERVER_HOST: AnyHttpUrl = "http://localhost:8000"
@@ -277,6 +277,15 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Validate critical settings
+        if not self.SECRET_KEY or self.SECRET_KEY == "":
+            raise ValueError(
+                "SECRET_KEY must be set via environment variable. "
+                "Generate one with: openssl rand -hex 32"
+            )
 
 
 # Load env from backend/.env or .env.test for tests

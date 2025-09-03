@@ -82,21 +82,10 @@ async function apiFetch<T = any>(
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const isPublicAuthEndpoint = endpoint === '/login/access-token' || endpoint === '/register';
 
-  console.log('🔍 Auth Debug:', {
-    endpoint: endpoint,
-    isPublicAuthEndpoint: isPublicAuthEndpoint,
-    hasToken: !!token,
-    tokenPreview: token ? '[REDACTED]' : 'None',
-    willAddAuthHeader: !!(token && !headers.has('Authorization') && !isPublicAuthEndpoint)
-  });
+  // Debug logging removed for production security
 
   if (token && !headers.has('Authorization') && !isPublicAuthEndpoint) {
     headers.set('Authorization', `Bearer ${token}`);
-    console.log('🔍 Added Authorization header with token');
-  } else if (!token && !isPublicAuthEndpoint) {
-    console.log('🔍 No token available, request will be unauthenticated');
-  } else if (isPublicAuthEndpoint) {
-    console.log('🔍 Public auth endpoint, skipping token');
   }
   
   // Compose abort signals to support both caller-provided signal and timeout
@@ -157,29 +146,11 @@ async function apiFetch<T = any>(
 
     // Use plain fetch instead of fetchWithCSRF since backend uses JWT auth, not CSRF
     
-    // Debug logging to understand authentication flow
-    console.log('🔍 API Request Debug:', {
-      url: url.toString(),
-      method: config.method,
-      hasAuthHeader: headers.has('Authorization'),
-      authHeaderValue: headers.has('Authorization') ? 'Bearer [REDACTED]' : 'None',
-      tokenInLocalStorage: typeof window !== 'undefined' ? localStorage.getItem('token') ? 'Present' : 'Missing' : 'N/A',
-      hasIdempotencyKey: headers.has('Idempotency-Key'),
-      hasRequestId: headers.has('X-Request-ID')
-    });
+    // Debug logging removed for production security
     
     response = await fetch(url.toString(), config);
     
-    // Debug logging for response
-    console.log('🔍 API Response Debug:', {
-      url: url.toString(),
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
-      rateLimitRemaining: response.headers.get('X-RateLimit-Remaining'),
-      rateLimitLimit: response.headers.get('X-RateLimit-Limit'),
-      rateLimitReset: response.headers.get('X-RateLimit-Reset')
-    });
+    // Debug logging removed for production security
   } catch (err: any) {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -215,14 +186,7 @@ async function apiFetch<T = any>(
   if (response.status !== 204 && response.status !== 205) {
     try {
       textBody = await response.text();
-      console.log('🔍 Response Body Debug:', {
-        url: url.toString(),
-        status: response.status,
-        contentType: contentType,
-        isJson: isJson,
-        bodyLength: textBody ? textBody.length : 0,
-        bodyPreview: (endpoint === '/login/access-token') ? '[REDACTED]' : (textBody ? textBody.substring(0, 200) + (textBody.length > 200 ? '...' : '') : 'None')
-      });
+      // Debug logging removed for production security
     } catch (_) {
       textBody = null;
       console.log('🔍 Failed to read response body for:', url.toString());
@@ -230,11 +194,7 @@ async function apiFetch<T = any>(
     if (isJson && textBody && textBody.trim().length > 0) {
       try {
         payload = JSON.parse(textBody);
-        const safePayload = redactPayload(payload);
-        console.log('🔍 Parsed JSON Payload:', {
-          url: url.toString(),
-          payload: safePayload
-        });
+        // Debug logging removed for production security
       } catch (_) {
         payload = null;
         console.log('🔍 Failed to parse JSON for:', url.toString());
@@ -264,16 +224,7 @@ async function apiFetch<T = any>(
       msg = textBody;
     }
     
-    // Debug logging for error responses
-    console.log('🔍 Error Response Debug:', {
-      url: url.toString(),
-      status: response.status,
-      statusText: response.statusText,
-      serverMessage: serverMsg,
-      fallbackMessage: msg,
-      payload: redactPayload(payload),
-      textBody: (endpoint === '/login/access-token') ? '[REDACTED]' : textBody
-    });
+    // Debug logging removed for production security
 
     // Handle auth failure globally: clear token and redirect to login
     if ((response.status === 401 || response.status === 403) && typeof window !== 'undefined') {
@@ -358,16 +309,7 @@ export async function postStreamRaw(
     timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   }
 
-  // Debug: log outgoing streaming request
-  console.log('🔍 [postStreamRaw] Request', {
-    url: url.toString(),
-    method: 'POST',
-    hasAuthHeader: headers.has('Authorization'),
-    authHeaderValue: headers.has('Authorization') ? 'Bearer [REDACTED]' : 'None',
-    accept: headers.get('Accept'),
-    cacheControl: headers.get('Cache-Control'),
-    connection: headers.get('Connection'),
-  });
+  // Debug logging removed for production security
 
   const response = await fetch(url.toString(), {
     ...options,
@@ -379,16 +321,7 @@ export async function postStreamRaw(
   }).finally(() => {
     if (timeoutId) clearTimeout(timeoutId);
   });
-  console.log('🔍 [postStreamRaw] Response', {
-    url: url.toString(),
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-    contentType: response.headers.get('content-type'),
-    cacheControl: response.headers.get('cache-control'),
-    connection: response.headers.get('connection'),
-    transferEncoding: response.headers.get('transfer-encoding'),
-  });
+  // Debug logging removed for production security
   if (!response.ok) {
     throw new Error(`Streaming request failed: ${response.status}`);
   }

@@ -1231,27 +1231,41 @@ Key principles:
         # Smart memory capture with batching
         if not conversation.incognito_mode and last_user_message.content and len(last_user_message.content.strip()) > 10:
             try:
-                potential_memories = _extract_smart_memories(last_user_message.content)
+                # Analyze the message to get proper content type
+                analysis = smart_memory_filter.analyze_message(last_user_message.content)
                 
-                for memory_text in potential_memories:
-                    if memory_text and len(memory_text.strip()) > 10:
-                        try:
-                            # Add to batch for async processing
-                            memory_batcher.add_memory(
-                                content=memory_text.strip(),
-                                content_type="fact",
-                                user_id=str(current_user.id),
-                                conversation_id=str(conversation_id),
-                                metadata={
-                                    "auto_captured": True, 
-                                    "smart_filtered": True,
-                                    "context_strategy": context.strategy_used.value
-                                },
-                                conversation_history=conversation_history,
-                                store_callback=memory_service.store_memory
-                            )
-                        except Exception as e:
-                            logger.debug(f"Memory batching failed (non-critical): {e}")
+                if analysis.should_capture and analysis.extracted_content:
+                    # Determine content type based on analysis
+                    content_type = "conversation"  # default
+                    if analysis.message_type.value == "preference":
+                        content_type = "preference"
+                    elif analysis.message_type.value == "personal_info":
+                        content_type = "profile"
+                    elif analysis.message_type.value == "fact":
+                        content_type = "fact"
+                    
+                    try:
+                        # Add to batch for async processing
+                        memory_batcher.add_memory(
+                            content=analysis.extracted_content.strip(),
+                            content_type=content_type,
+                            user_id=str(current_user.id),
+                            conversation_id=str(conversation_id),
+                            metadata={
+                                "auto_captured": True, 
+                                "smart_filtered": True,
+                                "message_type": analysis.message_type.value,
+                                "confidence": analysis.confidence,
+                                "context_strategy": context.strategy_used.value
+                            },
+                            conversation_history=conversation_history,
+                            store_callback=memory_service.store_memory
+                        )
+                        logger.debug(f"Added memory to batch: {analysis.extracted_content[:50]}... (type: {content_type})")
+                    except Exception as e:
+                        logger.debug(f"Memory batching failed (non-critical): {e}")
+                else:
+                    logger.debug(f"Message not captured: {analysis.reason}")
                             
             except Exception as e:
                 logger.debug(f"Smart memory capture failed (non-critical): {e}")
