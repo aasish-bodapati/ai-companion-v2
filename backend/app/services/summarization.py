@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import List, Dict, Optional, Tuple
 from uuid import UUID, uuid4
 import logging
 import time
+from dataclasses import dataclass
+from enum import Enum
 
 from sqlalchemy.orm import Session
 
@@ -138,3 +140,283 @@ def generate_conversation_summary(
             exc_info=True,
         )
         return "(stub) Summarization failed; using fallback."
+
+
+class SummaryType(Enum):
+    """Types of summaries for different use cases."""
+    CONVERSATION_OVERVIEW = "conversation_overview"
+    TOPIC_SUMMARY = "topic_summary"
+    KEY_POINTS = "key_points"
+    ACTION_ITEMS = "action_items"
+
+
+@dataclass
+class ConversationSummary:
+    """Structured conversation summary."""
+    summary_type: SummaryType
+    content: str
+    message_count: int
+    time_range: Optional[Tuple[str, str]] = None
+    topics: List[str] = None
+    key_decisions: List[str] = None
+    action_items: List[str] = None
+
+
+class IntelligentSummarizer:
+    """Enhanced summarization service with multiple summary types."""
+    
+    def __init__(self):
+        self.model = MODEL
+        self.temperature = TEMPERATURE
+        self.max_tokens = MAX_TOKENS
+
+    def generate_topic_summary(
+        self,
+        db: Session,
+        conversation_id: UUID,
+        user_id: UUID,
+        topic_keywords: List[str],
+        limit_messages: int = 20
+    ) -> str:
+        """Generate a summary focused on a specific topic."""
+        try:
+            messages = crud.message.get_by_conversation(
+                db, conversation_id, limit=limit_messages
+            )
+            
+            if not messages:
+                return "(empty) No messages to summarize."
+            
+            # Filter messages related to the topic
+            topic_messages = self._filter_messages_by_topic(messages, topic_keywords)
+            
+            if not topic_messages:
+                return f"No messages found related to: {', '.join(topic_keywords)}"
+            
+            transcript = self._build_transcript(topic_messages)
+            
+            system_prompt = (
+                f"You are summarizing a conversation about: {', '.join(topic_keywords)}\n"
+                f"Focus on key points, decisions, and outcomes related to this topic.\n"
+                f"Keep it concise (2-4 bullet points, ~80-120 words).\n"
+                f"- user_id: {user_id}\n"
+                f"- conversation_id: {conversation_id}\n"
+            )
+            
+            summary = generate_response(
+                model=self.model,
+                system_prompt=system_prompt,
+                messages=self._build_messages(transcript)
+            )
+            
+            return (summary or "").strip() or "(stub) Topic summary failed."
+            
+        except Exception as e:
+            logger.error(f"Error generating topic summary: {e}")
+            return "(stub) Topic summary failed."
+
+    def generate_key_points_summary(
+        self,
+        db: Session,
+        conversation_id: UUID,
+        user_id: UUID,
+        limit_messages: int = 30
+    ) -> ConversationSummary:
+        """Generate a structured summary with key points and decisions."""
+        try:
+            messages = crud.message.get_by_conversation(
+                db, conversation_id, limit=limit_messages
+            )
+            
+            if not messages:
+                return ConversationSummary(
+                    summary_type=SummaryType.KEY_POINTS,
+                    content="(empty) No messages to summarize.",
+                    message_count=0
+                )
+            
+            transcript = self._build_transcript(messages)
+            
+            system_prompt = (
+                "Extract key points, decisions, and important information from this conversation.\n"
+                "Format as:\n"
+                "KEY POINTS:\n"
+                "- Point 1\n"
+                "- Point 2\n\n"
+                "DECISIONS:\n"
+                "- Decision 1\n"
+                "- Decision 2\n\n"
+                "ACTION ITEMS:\n"
+                "- Action 1\n"
+                "- Action 2\n"
+                f"- user_id: {user_id}\n"
+                f"- conversation_id: {conversation_id}\n"
+            )
+            
+            summary = generate_response(
+                model=self.model,
+                system_prompt=system_prompt,
+                messages=self._build_messages(transcript)
+            )
+            
+            # Parse the structured summary
+            parsed = self._parse_structured_summary(summary or "")
+            
+            return ConversationSummary(
+                summary_type=SummaryType.KEY_POINTS,
+                content=summary or "(stub) Key points summary failed.",
+                message_count=len(messages),
+                topics=parsed.get("topics", []),
+                key_decisions=parsed.get("decisions", []),
+                action_items=parsed.get("actions", [])
+            )
+            
+        except Exception as e:
+            logger.error(f"Error generating key points summary: {e}")
+            return ConversationSummary(
+                summary_type=SummaryType.KEY_POINTS,
+                content="(stub) Key points summary failed.",
+                message_count=0
+            )
+
+    def generate_conversation_overview(
+        self,
+        db: Session,
+        conversation_id: UUID,
+        user_id: UUID,
+        limit_messages: int = 50
+    ) -> ConversationSummary:
+        """Generate a high-level overview of the entire conversation."""
+        try:
+            messages = crud.message.get_by_conversation(
+                db, conversation_id, limit=limit_messages
+            )
+            
+            if not messages:
+                return ConversationSummary(
+                    summary_type=SummaryType.CONVERSATION_OVERVIEW,
+                    content="(empty) No messages to summarize.",
+                    message_count=0
+                )
+            
+            transcript = self._build_transcript(messages)
+            
+            system_prompt = (
+                "Provide a high-level overview of this conversation.\n"
+                "Include:\n"
+                "- Main topics discussed\n"
+                "- Overall tone and purpose\n"
+                "- Key outcomes or conclusions\n"
+                "Keep it concise (3-5 sentences, ~100-150 words).\n"
+                f"- user_id: {user_id}\n"
+                f"- conversation_id: {conversation_id}\n"
+            )
+            
+            summary = generate_response(
+                model=self.model,
+                system_prompt=system_prompt,
+                messages=self._build_messages(transcript)
+            )
+            
+            # Extract topics from the summary
+            topics = self._extract_topics_from_summary(summary or "")
+            
+            return ConversationSummary(
+                summary_type=SummaryType.CONVERSATION_OVERVIEW,
+                content=summary or "(stub) Overview summary failed.",
+                message_count=len(messages),
+                topics=topics
+            )
+            
+        except Exception as e:
+            logger.error(f"Error generating conversation overview: {e}")
+            return ConversationSummary(
+                summary_type=SummaryType.CONVERSATION_OVERVIEW,
+                content="(stub) Overview summary failed.",
+                message_count=0
+            )
+
+    def _filter_messages_by_topic(
+        self, 
+        messages: List, 
+        topic_keywords: List[str]
+    ) -> List:
+        """Filter messages that are relevant to the given topic keywords."""
+        if not topic_keywords:
+            return messages
+        
+        topic_lower = [kw.lower() for kw in topic_keywords]
+        relevant_messages = []
+        
+        for msg in messages:
+            content = (msg.content or "").lower()
+            if any(keyword in content for keyword in topic_lower):
+                relevant_messages.append(msg)
+        
+        return relevant_messages
+
+    def _build_transcript(self, messages: List) -> List[Dict[str, str]]:
+        """Build transcript from messages."""
+        transcript = []
+        for msg in messages:
+            role = "assistant" if msg.role == "assistant" else "user"
+            content = (msg.content or "").strip()
+            if content:
+                # Cap extremely long content
+                if len(content) > 4000:
+                    content = content[:4000] + " …"
+                transcript.append({"role": role, "content": content})
+        
+        return transcript
+
+    def _parse_structured_summary(self, summary: str) -> Dict[str, List[str]]:
+        """Parse a structured summary into components."""
+        result = {
+            "topics": [],
+            "decisions": [],
+            "actions": []
+        }
+        
+        if not summary:
+            return result
+        
+        lines = summary.split('\n')
+        current_section = None
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            if line.upper().startswith('KEY POINTS'):
+                current_section = "topics"
+            elif line.upper().startswith('DECISIONS'):
+                current_section = "decisions"
+            elif line.upper().startswith('ACTION ITEMS'):
+                current_section = "actions"
+            elif line.startswith('-') and current_section:
+                item = line[1:].strip()
+                if item:
+                    result[current_section].append(item)
+        
+        return result
+
+    def _extract_topics_from_summary(self, summary: str) -> List[str]:
+        """Extract topic keywords from a summary."""
+        if not summary:
+            return []
+        
+        # Simple keyword extraction - in production, you might use more sophisticated NLP
+        common_topics = [
+            "work", "project", "health", "fitness", "food", "travel", "family",
+            "technology", "programming", "learning", "goals", "plans", "ideas"
+        ]
+        
+        summary_lower = summary.lower()
+        found_topics = [topic for topic in common_topics if topic in summary_lower]
+        
+        return found_topics[:5]  # Limit to 5 topics
+
+
+# Create global instance
+intelligent_summarizer = IntelligentSummarizer()

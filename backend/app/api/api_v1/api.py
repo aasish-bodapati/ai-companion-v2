@@ -10,6 +10,7 @@ from app.api.endpoints import (
     memory,
     onboarding,
     onboarding_chat,
+    context_demo,
 )
 # settings import removed for Milestone 1 simplicity
 
@@ -38,3 +39,6 @@ api_router.include_router(
 
 # Memory system (simplified for Milestone 1)
 api_router.include_router(memory.router, prefix="/memory", tags=["memory"])
+
+# Context management demo
+api_router.include_router(context_demo.router, prefix="/context", tags=["context"])

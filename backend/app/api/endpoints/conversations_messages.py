@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.memory.service import memory_service
 from app.crud import conversation as crud_conversation
 from app.crud.conversation import message as crud_message
+from app.services.context_manager import ContextManager
 
 # Legacy services removed for Milestone 1 simplicity
 # These functions are referenced but not implemented
@@ -1156,3 +1157,150 @@ def _extract_simple_memories(text: str) -> List[str]:
 
 
 # Streaming endpoint removed for Milestone 1 simplicity
+
+
+@router.post("/{conversation_id}/intelligent-reply", response_model=AssistantReply)
+async def intelligent_reply_to_conversation(
+    conversation_id: UUID,
+    request: Request,
+    message_in: dict | None = Body(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(deps.get_current_active_user),
+):
+    """
+    Get an AI reply using intelligent context management.
+    This endpoint uses adaptive context strategies based on conversation length and complexity.
+    """
+    try:
+        # Validate conversation ownership
+        conversation = crud.conversation.get(db=db, id=conversation_id)
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        if not crud.conversation.is_owner(db=db, db_obj=conversation, owner_id=current_user.id):
+            raise HTTPException(status_code=400, detail="Not enough permissions")
+
+        # Get the last user message
+        messages = crud.message.get_by_conversation(
+            db=db, conversation_id=conversation_id, limit=1
+        )
+        
+        if not messages:
+            raise HTTPException(status_code=400, detail="No messages in conversation")
+
+        last_user_message = None
+        for message in reversed(messages):
+            if message.role == "user":
+                last_user_message = message
+                break
+
+        if not last_user_message:
+            raise HTTPException(status_code=400, detail="No user message found")
+
+        # Initialize context manager
+        context_manager = ContextManager(memory_service)
+        
+        # Build intelligent context
+        context = context_manager.build_context(
+            db=db,
+            conversation_id=conversation_id,
+            user_id=current_user.id,
+            current_message=last_user_message.content,
+            conversation_incognito=conversation.incognito_mode
+        )
+        
+        # Format context for LLM
+        system_prompt_addition, conversation_history = context_manager.format_context_for_llm(context)
+        
+        # Build enhanced system prompt
+        base_system_prompt = """You are a helpful, personalized AI assistant. Your goal is to be genuinely helpful and remember information about the user.
+
+Key principles:
+- Be natural and conversational
+- Use the user's information when relevant
+- Keep responses concise but helpful
+- Don't make up information you don't have
+- Maintain conversation continuity and reference previous context when appropriate
+- When discussing health, fitness, or nutrition, reference the user's goals to provide tailored advice"""
+
+        system_prompt = f"{base_system_prompt}\n\n{system_prompt_addition}\n\nRespond to the user's message naturally and helpfully."
+
+        # Log context information for debugging
+        logger.info(
+            f"Intelligent context built for conversation {conversation_id}: "
+            f"strategy={context.strategy_used.value}, "
+            f"total_messages={context.total_messages}, "
+            f"phase={context.conversation_phase.value}, "
+            f"immediate_context={len(context.immediate_context)}, "
+            f"relevant_context={len(context.relevant_context)}, "
+            f"background_context={len(context.background_context)}"
+        )
+
+        # Generate AI response
+        try:
+            ai_response = await _call_llm_with_retries(
+                fn=llm_mod.generate_response,
+                model_to_use=getattr(settings, "LLM_MODEL_DEFAULT", "stub-model"),
+                system_prompt=system_prompt,
+                messages=conversation_history + [{"role": "user", "content": last_user_message.content}],
+                max_tokens=400,
+            )
+            
+            # Ensure ai_response is a string
+            if hasattr(ai_response, "content"):
+                ai_response = ai_response.content
+            elif hasattr(ai_response, "message"):
+                ai_response = ai_response.message
+            elif not isinstance(ai_response, str):
+                ai_response = str(ai_response)
+                
+        except Exception as e:
+            logger.error(f"LLM call failed: {e}")
+            ai_response = "I apologize, but I'm having trouble generating a response right now. Please try again."
+
+        # Create assistant message in database
+        assistant_message = crud_message.create_with_conversation(
+            db=db,
+            obj_in=MessageCreate(
+                content=ai_response,
+                role="assistant"
+            ),
+            conversation_id=str(conversation_id)
+        )
+
+        # Auto-memory capture (simplified)
+        if not conversation.incognito_mode and last_user_message.content and len(last_user_message.content.strip()) > 10:
+            try:
+                potential_memories = _extract_simple_memories(last_user_message.content)
+                
+                for memory_text in potential_memories:
+                    if memory_text and len(memory_text.strip()) > 10:
+                        try:
+                            memory_service.store_memory(
+                                db=db,
+                                content=memory_text.strip(),
+                                content_type="fact",
+                                user_id=str(current_user.id),
+                                conversation_id=str(conversation_id),
+                                metadata={"auto_captured": True, "context_strategy": context.strategy_used.value},
+                                conversation_history=conversation_history
+                            )
+                        except Exception as e:
+                            logger.debug(f"Memory storage failed (non-critical): {e}")
+                            
+            except Exception as e:
+                logger.debug(f"Auto-memory capture failed (non-critical): {e}")
+
+        # Return the response with context metadata
+        return AssistantReply(
+            message=ai_response,
+            message_id=str(assistant_message.id),
+            context_strategy=context.strategy_used.value,
+            total_messages=context.total_messages,
+            conversation_phase=context.conversation_phase.value
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Intelligent reply failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate intelligent reply")

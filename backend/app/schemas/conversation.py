@@ -85,7 +85,13 @@ class AssistantReply(BaseModel):
 
     # Back-compat convenience: expose the assistant message id at the top level
     id: UUID | None = None
-    message: Message
+    message: str = Field(..., description="The assistant's response message")
+    message_id: UUID | None = Field(None, description="ID of the created message")
     provenance: List[MemorySearchResult] = []
     # Diagnostics: whether a real LLM call was used (False if local stub or deterministic handler)
     used_llm: bool | None = None
+    
+    # Intelligent context management metadata
+    context_strategy: Optional[str] = Field(None, description="Context strategy used (short/medium/long/topic_shift)")
+    total_messages: Optional[int] = Field(None, description="Total number of messages in conversation")
+    conversation_phase: Optional[str] = Field(None, description="Current conversation phase (opening/developing/deep_dive/topic_shift/closing)")
