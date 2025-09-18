@@ -35,19 +35,8 @@ export default function LoginForm() {
         setEmail('');
         setPassword('');
         
-        // Show success message briefly before redirect
-        setTimeout(() => {
-          // Check if there's a return URL in the query params
-          const searchParams = new URLSearchParams(window.location.search);
-          const returnUrl = searchParams.get('returnUrl');
-          
-          // Redirect to companion by default, or to the returnUrl if it exists
-          const targetUrl = returnUrl || '/chat';
-          router.push(targetUrl);
-          
-          // Force a full page reload to ensure all auth state is properly loaded
-          window.location.href = targetUrl;
-        }, 1000);
+        // AuthContext will handle the redirect to dashboard
+        // No need to do additional redirect here
       }
       
     } catch (err) {

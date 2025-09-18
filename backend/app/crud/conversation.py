@@ -183,6 +183,32 @@ class CRUDMessage(CRUDBase[Message, MessageCreate, Any]):
 
         return db_obj
 
+    def get_recent_messages(
+        self, db: Session, *, conversation_id: str, limit: int = 10
+    ) -> List[Message]:
+        """
+        Get recent messages from a conversation, ordered by creation time.
+        
+        Args:
+            db: Database session
+            conversation_id: ID of the conversation
+            limit: Maximum number of messages to return
+            
+        Returns:
+            List of recent messages
+        """
+        # Convert UUID to string if needed
+        if hasattr(conversation_id, "hex"):
+            conversation_id = str(conversation_id)
+            
+        return (
+            db.query(self.model)
+            .filter(Message.conversation_id == conversation_id)
+            .order_by(Message.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
 
 conversation = CRUDConversation(Conversation)
 message = CRUDMessage(Message)

@@ -1,14 +1,12 @@
 // Main export file for conversations feature
 // Re-export all hooks and utilities from their focused modules
 
-// Types
-export * from './types';
+// Types removed - not used
 
-// Utilities
-export * from './utils';
+// Utilities removed - not used
 
 // API utilities
-export * from './api/deduplication';
+// Deduplication removed - not used
 
 // Conversation hooks
 export * from './hooks/useConversations';

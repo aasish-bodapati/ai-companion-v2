@@ -2,6 +2,177 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Line clamp utilities */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Enhanced Hover Effects and Animations */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Custom hover effects for cards */
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Pulse animation for loading states */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Bounce animation for interactive elements */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.hover-bounce:hover {
+  animation: bounce-subtle 0.6s ease-in-out;
+}
+
+/* Gradient hover effects */
+.hover-gradient:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+/* Shimmer effect for loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Custom focus styles */
+.focus-ring:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Smooth scale animations */
+.scale-on-hover:hover {
+  transform: scale(1.05);
+}
+
+.scale-on-hover:active {
+  transform: scale(0.95);
+}
+
+/* Custom progress bar animation */
+@keyframes progress-fill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--progress-width);
+  }
+}
+
+.progress-animated {
+  animation: progress-fill 1s ease-out;
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass:hover {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(15px);
+}
+
+/* Floating animation for icons */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Custom button hover effects */
+.btn-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.btn-hover-lift:active {
+  transform: translateY(0);
+}
+
+/* Ripple effect */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.ripple::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
 /* Light mode color variables */
 :root {
   --background: #fafbfc;
@@ -39,13 +210,13 @@
   --secondary: #1e293b;
   --secondary-foreground: #f8fafc;
   --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --muted-foreground: #cbd5e1;
   --accent: #1e293b;
   --accent-foreground: #f8fafc;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #334155;
+  --border: #475569;
+  --input: #475569;
   --ring: #818cf8;
 }
 
@@ -58,6 +229,204 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Global text color inheritance for dark mode */
+* {
+  color: inherit;
+}
+
+/* Ensure all text elements inherit proper colors */
+h1, h2, h3, h4, h5, h6, p, span, div, label, li, td, th, strong, em, small, code, pre {
+  color: inherit;
+}
+
+/* Dark mode text color overrides */
+.dark {
+  color: #f8fafc;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: #ffffff;
+}
+
+.dark p, .dark span, .dark div, .dark label, .dark li, .dark td, .dark th {
+  color: #f8fafc;
+}
+
+.dark .text-muted-foreground {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .text-gray-300 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-gray-200 {
+  color: #e2e8f0 !important;
+}
+
+.dark .text-gray-100 {
+  color: #f1f5f9 !important;
+}
+
+.dark .text-gray-900 {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-800 {
+  color: #f8fafc !important;
+}
+
+.dark .text-gray-700 {
+  color: #e2e8f0 !important;
+}
+
+/* Dashboard specific dark mode overrides */
+.dark .text-2xl {
+  color: #ffffff !important;
+}
+
+.dark .text-xl {
+  color: #ffffff !important;
+}
+
+.dark .text-lg {
+  color: #ffffff !important;
+}
+
+.dark .text-base {
+  color: #f8fafc !important;
+}
+
+.dark .text-sm {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-xs {
+  color: #94a3b8 !important;
+}
+
+.dark .font-bold {
+  color: #ffffff !important;
+}
+
+.dark .font-medium {
+  color: #f8fafc !important;
+}
+
+.dark .font-semibold {
+  color: #f8fafc !important;
+}
+
+/* Card content dark mode */
+.dark .card-content * {
+  color: inherit;
+}
+
+.dark .card-content .text-2xl {
+  color: #ffffff !important;
+}
+
+.dark .card-content .text-sm {
+  color: #cbd5e1 !important;
+}
+
+.dark .card-content .text-xs {
+  color: #94a3b8 !important;
+}
+
+/* Ensure all numbers and text in cards are visible */
+.dark [class*="text-"] {
+  color: inherit;
+}
+
+.dark .text-2xl.font-bold {
+  color: #ffffff !important;
+}
+
+.dark .text-sm.font-medium {
+  color: #f8fafc !important;
+}
+
+.dark .text-xs.text-gray-600 {
+  color: #cbd5e1 !important;
+}
+
+.dark .text-xs.text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+/* Comprehensive dark mode text fixes */
+.dark {
+  /* Force all text elements to be visible */
+  --text-primary: #ffffff;
+  --text-secondary: #f8fafc;
+  --text-muted: #cbd5e1;
+  --text-subtle: #94a3b8;
+}
+
+.dark * {
+  /* Override any hardcoded text colors */
+  color: inherit !important;
+}
+
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+  color: var(--text-primary) !important;
+}
+
+.dark p, .dark span, .dark div, .dark label, .dark li, .dark td, .dark th {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-muted-foreground, .dark .text-gray-600, .dark .text-gray-500, .dark .text-gray-400 {
+  color: var(--text-muted) !important;
+}
+
+.dark .text-gray-300, .dark .text-gray-200, .dark .text-gray-100 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-900, .dark .text-gray-800, .dark .text-gray-700 {
+  color: var(--text-primary) !important;
+}
+
+/* Specific overrides for dashboard numbers and labels */
+.dark [class*="text-2xl"], .dark [class*="text-xl"], .dark [class*="text-lg"] {
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="font-bold"], .dark [class*="font-semibold"], .dark [class*="font-medium"] {
+  color: var(--text-primary) !important;
+}
+
+/* Card specific overrides */
+.dark [class*="Card"] * {
+  color: inherit !important;
+}
+
+.dark [class*="Card"] .text-2xl {
+  color: var(--text-primary) !important;
+}
+
+.dark [class*="Card"] .text-sm {
+  color: var(--text-muted) !important;
+}
+
+.dark [class*="Card"] .text-xs {
+  color: var(--text-subtle) !important;
 }
 
 /* Custom scrollbar for dark mode */
@@ -98,24 +467,96 @@ body {
 
 /* Text selection styles */
 ::selection {
-  background-color: hsl(var(--primary) / 0.2);
-  color: hsl(var(--foreground));
+  background-color: #3b82f6;
+  color: #ffffff;
+  text-shadow: none;
 }
 
 ::-moz-selection {
-  background-color: hsl(var(--primary) / 0.2);
-  color: hsl(var(--foreground));
+  background-color: #3b82f6;
+  color: #ffffff;
+  text-shadow: none;
 }
 
 /* Dark mode text selection */
 .dark ::selection {
-  background-color: hsl(var(--primary) / 0.3);
-  color: hsl(var(--foreground));
+  background-color: #60a5fa;
+  color: #000000;
+  text-shadow: none;
 }
 
 .dark ::-moz-selection {
-  background-color: hsl(var(--primary) / 0.3);
-  color: hsl(var(--foreground));
+  background-color: #60a5fa;
+  color: #000000;
+  text-shadow: none;
+}
+
+/* Enhanced text selection for specific elements */
+.selectable-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+.selectable-text::selection {
+  background-color: #3b82f6 !important;
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.dark .selectable-text::selection {
+  background-color: #60a5fa !important;
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+
+/* Make all text selectable by default */
+* {
+  user-select: text;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+}
+
+/* Override for non-selectable elements */
+button, input, textarea, select, [role="button"], [role="tab"], [role="menuitem"], [role="option"] {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Ensure text content is selectable */
+h1, h2, h3, h4, h5, h6, p, span, div, label, li, td, th {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Force text selection on specific components */
+[data-radix-collection-item], [data-radix-tabs-trigger], [data-radix-tabs-content] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Ensure text selection works in tab content */
+[data-state="active"], [data-state="inactive"] {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* Override any potential blocking on text elements */
+.selectable-text *:not(button):not(input):not(textarea):not(select):not([role="button"]):not([role="tab"]) {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
 }
 
 /* Smooth transitions for theme changes */
@@ -129,13 +570,95 @@ body {
   outline-offset: 2px;
 }
 
-/* Selection styles */
-::selection {
-  background-color: hsl(var(--primary) / 0.2);
+/* Toast styling for dark mode - more specific rules */
+[data-sonner-toaster] {
+  z-index: 9999 !important;
 }
 
-.dark ::selection {
-  background-color: hsl(var(--primary) / 0.3);
+[data-sonner-toast] {
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  border: 1px solid #374151 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
+
+[data-sonner-toast][data-type="success"] {
+  background: #064e3b !important;
+  color: #d1fae5 !important;
+  border: 1px solid #065f46 !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: #7f1d1d !important;
+  color: #fecaca !important;
+  border: 1px solid #991b1b !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background: #78350f !important;
+  color: #fde68a !important;
+  border: 1px solid #92400e !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  background: #1e3a8a !important;
+  color: #dbeafe !important;
+  border: 1px solid #1e40af !important;
+}
+
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  [data-sonner-toast] {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #e5e7eb !important;
+  }
+  
+  [data-sonner-toast][data-type="success"] {
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0 !important;
+  }
+}
+
+/* Subtle placeholder styling */
+.placeholder-subtle::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+  font-style: italic !important;
+  font-weight: 400 !important;
+}
+
+.dark .placeholder-subtle::placeholder {
+  color: #6b7280 !important;
+  opacity: 0.6 !important;
+}
+
+/* Enhanced placeholder styling for form inputs */
+input[placeholder]::placeholder,
+textarea[placeholder]::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.7 !important;
+  font-style: italic !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.dark input[placeholder]::placeholder,
+.dark textarea[placeholder]::placeholder {
+  color: #6b7280 !important;
+  opacity: 0.6 !important;
+}
+
+/* Focus state for placeholders */
+input:focus::placeholder,
+textarea:focus::placeholder {
+  opacity: 0.5 !important;
+}
+
+.dark input:focus::placeholder,
+.dark textarea:focus::placeholder {
+  opacity: 0.4 !important;
+}
+
 
 

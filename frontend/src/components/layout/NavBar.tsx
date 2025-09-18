@@ -28,14 +28,17 @@ export default function NavBar() {
               </NavLink>
             ) : (
               <>
+                <NavLink href="/dashboard" pathname={pathname}>
+                  Dashboard
+                </NavLink>
+                <NavLink href="/fitness" pathname={pathname}>
+                  Fitness
+                </NavLink>
+                <NavLink href="/nutrition" pathname={pathname}>
+                  Nutrition
+                </NavLink>
                 <NavLink href="/chat" pathname={pathname}>
-                  Chat
-                </NavLink>
-                <NavLink href="/memories" pathname={pathname}>
-                  Memories
-                </NavLink>
-                <NavLink href="/test-memory" pathname={pathname}>
-                  Test Memory
+                  AI Coach
                 </NavLink>
               </>
             )}
@@ -133,11 +136,17 @@ export default function NavBar() {
               </MobileNavLink>
             ) : (
               <>
-                <MobileNavLink href="/chat" pathname={pathname}>
-                  Chat
+                <MobileNavLink href="/dashboard" pathname={pathname}>
+                  Dashboard
                 </MobileNavLink>
-                <MobileNavLink href="/memories" pathname={pathname}>
-                  Memories
+                <MobileNavLink href="/fitness" pathname={pathname}>
+                  Fitness
+                </MobileNavLink>
+                <MobileNavLink href="/nutrition" pathname={pathname}>
+                  Nutrition
+                </MobileNavLink>
+                <MobileNavLink href="/chat" pathname={pathname}>
+                  AI Coach
                 </MobileNavLink>
               </>
             )}
@@ -162,8 +171,8 @@ export default function NavBar() {
                 </div>
                 <button
                   onClick={() => {
+                    console.log('🔘 NAVBAR: Logout button clicked');
                     logout();
-                    window.location.href = '/login';
                   }}
                   className="ml-auto flex-shrink-0 bg-purple-800/50 p-1 rounded-full text-purple-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                 >
@@ -226,9 +235,9 @@ function NavLink({
       data-testid={`nav-link-${href.replace('/', '')}`}
       className={`${
         isActive
-          ? 'border-purple-300 dark:border-purple-400 text-white dark:text-purple-100'
-          : 'border-transparent text-purple-200 dark:text-purple-300 hover:border-purple-300 dark:hover:border-purple-400 hover:text-white dark:hover:text-purple-100'
-      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+          ? 'border-purple-300 dark:border-purple-400 text-white dark:text-purple-100 scale-105'
+          : 'border-transparent text-purple-200 dark:text-purple-300 hover:border-purple-300 dark:hover:border-purple-400 hover:text-white dark:hover:text-purple-100 hover:scale-105'
+      } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-all duration-300 hover:shadow-lg`}
     >
       {children}
     </Link>

@@ -1,8 +1,33 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Conversation } from '../types';
-import { normalizeTimestamp, toLocalMs } from '../utils';
+// Types and utils removed - using inline types
+interface Conversation {
+  id: string;
+  title: string;
+  created_at: Date;
+  updated_at: Date;
+  user_id: string;
+  created_at_local_ms: number;
+  updated_at_local_ms: number;
+}
+
+const normalizeTimestamp = (ts: string | number | Date): Date => {
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'number') return new Date(ts);
+  if (typeof ts === 'string') {
+    let s = ts.trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T');
+    if (!(/[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s))) s = s + 'Z';
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? new Date(ts) : d;
+  }
+  return new Date();
+};
+
+const toLocalMs = (ts: string | number | Date): number => {
+  return normalizeTimestamp(ts).getTime();
+};
 
 // Get all conversations for the current user
 export const useConversations = () => {

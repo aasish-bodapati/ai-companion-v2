@@ -37,13 +37,51 @@ class User(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
-    goals = relationship(
-        "UserGoal",
+    health_info = relationship(
+        "UserHealthProfile",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    fitness_logs = relationship(
+        "FitnessLog",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    health_info = relationship(
-        "UserHealthInfo",
+    nutrition_logs = relationship(
+        "NutritionLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    mood_logs = relationship(
+        "MoodLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    weight_logs = relationship(
+        "UserWeightLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    nutrition_routines = relationship(
+        "NutritionRoutine",
+        back_populates="created_by_user",
+        cascade="all, delete-orphan",
+    )
+    nutrition_routine_progress = relationship(
+        "NutritionUserRoutineProgress",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    
+    # New relationships for exercise and food databases
+    exercise_history = relationship(
+        "UserExerciseHistory",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    food_history = relationship(
+        "UserFoodHistory", 
         back_populates="user",
         cascade="all, delete-orphan",
     )

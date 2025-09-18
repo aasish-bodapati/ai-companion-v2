@@ -1,6 +1,17 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Message } from '../types';
+// Types removed - using inline type
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: Date;
+  created_at_local_ms: number;
+  context?: any;
+  suggestions?: string[];
+  metrics?: any;
+  used_memory?: boolean;
+}
 
 interface SendMessageParams {
   content: string;
@@ -78,8 +89,8 @@ export const useSendMessage = (conversationId: string) => {
         console.log('[Reply] Response received:', response);
 
         // Send the complete response as a single chunk
-        if (response && response.message && response.message.content) {
-          onChunk?.(response.message.content);
+        if (response && response.message) {
+          onChunk?.(response.message);
         } else {
           console.error('[Reply] No content in response:', response);
         }

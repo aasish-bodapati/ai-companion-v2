@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import React, { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react';
 import api from '@/lib/api';
 // Logger removed for Milestone 1 simplicity
 const logger = {
@@ -42,49 +42,107 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children, initialUser, testMode = false }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(initialUser || null);
-  const [token, setToken] = useState<string | null>(testMode ? 'test-token' : null);
-  const [isLoading, setIsLoading] = useState(!testMode);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const initialized = useRef(false);
 
   const router = useRouter();
 
   // Check for existing session on initial load
   useEffect(() => {
+    // Prevent double initialization in React Strict Mode
+    if (initialized.current) {
+      return;
+    }
+    initialized.current = true;
+    
+    // Setup test user if in test mode
     if (testMode) {
-      // In test mode, skip initialization
+      // Check if user has explicitly logged out
+      const hasLoggedOut = typeof window !== 'undefined' ? localStorage.getItem('user_logged_out') === 'true' : false;
+      if (hasLoggedOut) {
+        setIsLoading(false);
+        return;
+      }
+      // In test mode, set up test user
+      const testUser = {
+        id: '2c9dcf1b-2e81-4b34-8ead-3292730f0ea6',
+        email: 'test@example.com',
+        full_name: 'Test User',
+        is_active: true,
+        is_superuser: false
+      };
+      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTg4MjczMjMsInN1YiI6IjJjOWRjZjFiLTJlODEtNGIzNC04ZWFkLTMyOTI3MzBmMGVhNiJ9.Oh_3rUXNHD6mqtH75SD_V6GrYlWZaMS7VpQ_d2rsKdk';
+
+      setUser(testUser);
+      setToken(testToken);
+
+      // Store token in localStorage for API calls
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', testToken);
+        localStorage.removeItem('user_logged_out'); // Clear logout flag
+      }
+
       setIsLoading(false);
       return;
     }
-
-    console.log('🔍 Auth: useEffect running - checking for existing session');
     const initializeAuth = async () => {
       try {
+        // Only access localStorage on client side
+        if (typeof window === 'undefined') {
+          setIsLoading(false);
+          return;
+        }
+        
         const storedToken = localStorage.getItem('token');
-        console.log('🔍 Auth: Checking stored token:', storedToken ? 'Present' : 'Missing');
-        logger.debug('Auth: Checking stored token:', storedToken ? 'Present' : 'Missing');
         
         if (storedToken) {
           // Verify token and fetch user data
           // Use shared API client which attaches Authorization from localStorage
-          logger.debug('Auth: Verifying token with backend...');
           const userData = await api.get<User>('/users/me');
-          
-          logger.debug('Auth: Token verified, user data:', userData);
           setUser(userData);
           setToken(storedToken);
-
-
-        } else {
-          logger.debug('Auth: No stored token found');
         }
       } catch (error) {
         logger.error('Error initializing auth', error);
-        localStorage.removeItem('token');
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     initializeAuth();
+  }, []);
+
+  // Fallback: If still loading after 2 seconds, force test mode setup
+  useEffect(() => {
+    if (testMode && isLoading) {
+      const timer = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          const hasLoggedOut = localStorage.getItem('user_logged_out') === 'true';
+          if (!hasLoggedOut) {
+            const testUser = {
+              id: '2c9dcf1b-2e81-4b34-8ead-3292730f0ea6',
+              email: 'test@example.com',
+              full_name: 'Test User',
+              is_active: true,
+              is_superuser: false
+            };
+            const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTg4MjczMjMsInN1YiI6IjJjOWRjZjFiLTJlODEtNGIzNC04ZWFkLTMyOTI3MzBmMGVhNiJ9.Oh_3rUXNHD6mqtH75SD_V6GrYlWZaMS7VpQ_d2rsKdk';
+            
+            setUser(testUser);
+            setToken(testToken);
+            localStorage.setItem('token', testToken);
+            localStorage.removeItem('user_logged_out');
+            setIsLoading(false);
+          }
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
   }, [testMode]);
 
   const login = async (email: string, password: string) => {
@@ -125,8 +183,10 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         
         // Get user data with proper headers
         logger.debug('Fetching user data with token');
-        localStorage.setItem('token', tokenResponse.access_token);
-        logger.debug('Token stored in localStorage');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', tokenResponse.access_token);
+          logger.debug('Token stored in localStorage');
+        }
         
         const userData = await api.get<User>('/users/me');
         logger.debug('User data fetched:', userData);
@@ -134,10 +194,22 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         // Update state and storage
         setUser(userData);
         setToken(tokenResponse.access_token);
-        toast.success('Signed in successfully');
         
-                  // After login, route to chat page
-        router.replace('/chat');
+        // Clear logout flag if it exists
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user_logged_out');
+        }
+        
+        // Show success toast
+        toast.success('Signed in successfully', {
+          duration: 3000,
+          className: 'dark:bg-green-900 dark:text-green-100 dark:border-green-700 bg-green-50 text-green-800 border-green-200',
+        });
+        
+        // Small delay to ensure toast is visible before redirect
+        setTimeout(() => {
+          router.replace('/dashboard');
+        }, 100);
         
         // Return success status - let the component handle redirection
         return true;
@@ -177,12 +249,12 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
     // Call public registration endpoint
     const payload = { email, password, full_name: fullName } as any;
     await api.post('/register', payload);
-    toast.success('Account created successfully');
+    // toast.success('Account created successfully');
     // Try auto-login
     try {
       const ok = await login(email, password);
       if (ok) {
-        // login() will route to chat page
+        // login() will route to main page which checks onboarding
         return;
       }
     } catch (_) {
@@ -193,12 +265,28 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
   };
 
   const logout = () => {
+    // Clear state immediately and synchronously
     setUser(null);
     setToken(null);
 
-    localStorage.removeItem('token');
-    router.push('/login');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.setItem('user_logged_out', 'true');
+    }
+    
+    // Show logout success toast
+    toast.success('Signed out successfully', {
+      duration: 2000,
+      className: 'dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700 bg-blue-50 text-blue-800 border-blue-200',
+    });
+    
+    // Use window.location for immediate redirect to prevent any React state race conditions
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   };
+
+  const isAuthenticated = !!user;
 
   return (
     <AuthContext.Provider
@@ -208,7 +296,7 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         login,
         register,
         logout,
-        isAuthenticated: !!user,
+        isAuthenticated,
         isLoading,
 
       }}

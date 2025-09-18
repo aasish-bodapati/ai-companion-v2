@@ -5,6 +5,8 @@
  * and request/response transformation.
  */
 
+import { ErrorHandler } from './errorHandler';
+
 // CSRF not needed - backend uses JWT authentication
 
 // Ensure API base URL includes version prefix `/api/v1` by default
@@ -82,10 +84,16 @@ async function apiFetch<T = any>(
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const isPublicAuthEndpoint = endpoint === '/login/access-token' || endpoint === '/register';
 
-  // Debug logging removed for production security
+  // Debug logging for troubleshooting
+  console.log('🔐 API AUTH: Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'No token');
+  console.log('🔐 API AUTH: Is public endpoint:', isPublicAuthEndpoint);
+  console.log('🔐 API AUTH: Endpoint:', endpoint);
 
   if (token && !headers.has('Authorization') && !isPublicAuthEndpoint) {
     headers.set('Authorization', `Bearer ${token}`);
+    console.log('🔐 API AUTH: Authorization header set');
+  } else if (!token && !isPublicAuthEndpoint) {
+    console.log('🔐 API AUTH: No token available for protected endpoint');
   }
   
   // Compose abort signals to support both caller-provided signal and timeout
@@ -141,16 +149,22 @@ async function apiFetch<T = any>(
   // Make the request with better network error visibility
   let response: Response;
   try {
-    // Dev debug: log outgoing requests (removed for production)
-    // Logging removed to improve performance and reduce bundle size
+    // Debug logging for troubleshooting
+    console.log('🌐 API REQUEST:', {
+      method: config.method || 'GET',
+      url: url.toString(),
+      headers: Object.fromEntries(headers.entries()),
+      body: config.body
+    });
 
     // Use plain fetch instead of fetchWithCSRF since backend uses JWT auth, not CSRF
-    
-    // Debug logging removed for production security
-    
     response = await fetch(url.toString(), config);
     
-    // Debug logging removed for production security
+    console.log('🌐 API RESPONSE:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url
+    });
   } catch (err: any) {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -215,17 +229,12 @@ async function apiFetch<T = any>(
   }
 
   if (!response.ok) {
-    // Prefer server-provided detail/message
-    const serverMsg = payload?.detail || payload?.message;
-    let msg = serverMsg || `Request failed with status ${response.status}`;
-
-    // Fallback: use already-read text body when available
-    if (!serverMsg && textBody && textBody.trim().length > 0) {
-      msg = textBody;
-    }
+    // Create error object with response data
+    const error = new Error('API request failed');
+    (error as any).response = response;
+    (error as any).status = response.status;
+    (error as any).data = payload;
     
-    // Debug logging removed for production security
-
     // Handle auth failure globally: clear token and redirect to login
     if ((response.status === 401 || response.status === 403) && typeof window !== 'undefined') {
       try {
@@ -239,9 +248,6 @@ async function apiFetch<T = any>(
       }
     }
 
-    const error = new Error(msg);
-    (error as any).status = response.status;
-    (error as any).data = payload;
     throw error;
   }
   

@@ -3,7 +3,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 
-from app.schemas.memory import MemorySearchResult
+# Memory system removed - simplified for health focus
 
 # Shared properties
 
@@ -25,6 +25,12 @@ class MessageCreate(MessageBase):
             "If omitted, smart gating applies."
         ),
     )
+
+
+# Properties to receive via API on update
+class MessageUpdate(BaseModel):
+    role: Optional[str] = Field(None, description="Role of the message sender")
+    content: Optional[str] = Field(None, description="Content of the message")
 
 
 # Properties to return via API
@@ -87,7 +93,7 @@ class AssistantReply(BaseModel):
     id: UUID | None = None
     message: str = Field(..., description="The assistant's response message")
     message_id: UUID | None = Field(None, description="ID of the created message")
-    provenance: List[MemorySearchResult] = []
+    provenance: List[dict] = []  # Simplified - no complex memory system
     # Diagnostics: whether a real LLM call was used (False if local stub or deterministic handler)
     used_llm: bool | None = None
     

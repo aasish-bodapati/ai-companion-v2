@@ -1,17 +1,23 @@
-from typing import Optional, List, Dict, Any
+"""
+Onboarding schemas
+"""
+
+from typing import Optional, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 
 
 class OnboardingProfileBase(BaseModel):
-    """Base onboarding profile schema."""
-    # New onboarding flow fields
-    user_prompt: Optional[str] = None  # Raw user input
-    processed_summary: Optional[str] = None  # LLM-processed summary
-    memory_chunks: Optional[List[str]] = None  # Structured memory chunks
-    structured_data: Optional[Dict[str, Any]] = None  # Extracted structured data
+    """Base onboarding profile schema"""
+    user_prompt: Optional[str] = None
+    processed_summary: Optional[str] = None
+    memory_chunks: Optional[Dict[str, Any]] = None
+    structured_data: Optional[Dict[str, Any]] = None
     
-    # Personal assistant focused fields (current schema based on migrations)
+    # Note: age, gender, height_cm, current_weight_kg, activity_level, primary_goal removed
+    # These fields are now in user_health_profile table
+    
+    # Legacy fields (keeping for compatibility)
     daily_schedule: Optional[str] = None
     schedule_preferences: Optional[str] = None
     fitness_goals: Optional[str] = None
@@ -19,29 +25,37 @@ class OnboardingProfileBase(BaseModel):
     dietary_preferences: Optional[str] = None
     communication_style: Optional[str] = None
     additional_preferences: Optional[str] = None
+    
     completed: Optional[bool] = False
 
 
 class OnboardingProfileCreate(OnboardingProfileBase):
-    """Schema for creating an onboarding profile."""
-    user_id: str
-
-
-class OnboardingProfileUpdate(OnboardingProfileBase):
-    """Schema for updating an onboarding profile."""
+    """Schema for creating onboarding profile"""
     pass
 
 
-class OnboardingProfileIn(OnboardingProfileBase):
-    """Schema for onboarding profile input (used by frontend)."""
-    user_blueprint: Optional[str] = None  # Complete user narrative
+class OnboardingProfileUpdate(OnboardingProfileBase):
+    """Schema for updating onboarding profile"""
+    pass
 
 
 class OnboardingProfile(OnboardingProfileBase):
-    """Schema for onboarding profile response."""
+    """Schema for returning onboarding profile"""
     id: str
     user_id: str
     updated_at: Optional[datetime] = None
-
+    
     class Config:
         from_attributes = True
+
+
+class SimpleOnboardingData(BaseModel):
+    """Schema for simplified onboarding data"""
+    # Note: All fields removed - onboarding data is now stored in user_health_profile
+    pass
+
+
+class OnboardingResponse(BaseModel):
+    """Response schema for onboarding completion"""
+    message: str
+    completed: bool = True

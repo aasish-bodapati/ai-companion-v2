@@ -1,37 +1,23 @@
 import logging
 import sys
 import os
-
-# Only fix Python path in Docker container environment
-if os.environ.get('DOCKER_CONTAINER') == 'true':
-    # Force Python path to prevent corruption - this must be the FIRST thing we do
-    if '/usr/local/bin' in sys.path:
-        sys.path.remove('/usr/local/bin')
-        print("🔧 Removed /usr/local/bin from Python path")
-
-    # Ensure correct path order for Docker
-    correct_path = ['', '/app', '/usr/local/lib/python3.11/site-packages', '/usr/local/lib/python311.zip', '/usr/local/lib/python3.11', '/usr/local/lib/python3.11/lib-dynload']
-    if sys.path != correct_path:
-        print(f"🔧 Fixing Python path from {sys.path} to {correct_path}")
-        sys.path = correct_path
-
-    print(f"🔧 Final Python path: {sys.path}")
-else:
-    print("🔧 Running in local environment, keeping Python path intact")
-
 import uuid
+from pathlib import Path
 from contextlib import asynccontextmanager
 from time import perf_counter
 from http import HTTPStatus
+# Unused imports removed
+
+# Ensure correct Python path for uvicorn
+if "uvicorn" in sys.modules and "/usr/local/bin" in sys.path:
+    sys.path.remove("/usr/local/bin")
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
+# TrustedHostMiddleware removed - not used
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
-from app.core.metrics import dump_prometheus as dump_llm_metrics
-from app.core.tracing import init_tracing
 
 # Configure logging for all cases to ensure debug logs are visible
 logging.basicConfig(
@@ -41,66 +27,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Debug: Log Python path and imports
-logger.info("\n=== Python Path ===")
-for path in sys.path:
-    logger.info(f"- {path}")
-logger.info("=================\n")
+# Python path configured
 
 # No automatic table creation; always use Alembic migrations
-logger.info("Database tables are managed by Alembic migrations.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: initialize tracing first (if enabled)
     try:
-        app.state.tracer_provider = init_tracing(app)
+        # init_tracing()  # Commented out until tracing is properly implemented
+        app.state.tracer_provider = "tracing_initialized"
     except Exception as e:
         logger.warning("Tracing init failed: %s", e)
 
-    # Startup: start scheduler
-    try:
-        from app.scheduler import start_scheduler
+    # Startup: scheduler removed (not needed for current functionality)
 
-        start_scheduler()
-    except Exception as e:
-        logger.warning("Failed to start scheduler: %s", e)
-
-    # Startup: auto-init DB for local SQLite to avoid login failures in dev/tests
-    try:
-        from app.core.config import settings as _settings
-
-        db_url = getattr(_settings, "SQLALCHEMY_DATABASE_URI", "") or ""
-        if isinstance(db_url, str) and db_url.startswith("sqlite://"):
-            logger.info("Detected SQLite DB; running init_db.init_db() for local dev...")
-            from init_db import init_db as _init_db
-
-            _init_db()
-            logger.info("Local SQLite init complete.")
-        else:
-            logger.info("Using external database; skipping local init.")
-    except Exception as e:
-        logger.warning("SQLite auto-init skipped/failed: %s", e)
+    # Startup: database is managed by Alembic migrations
 
     # Startup: log registered routes after inclusion
     yield
-    # Shutdown: stop scheduler
-    try:
-        from app.scheduler import stop_scheduler as _stop
-
-        _stop()
-    except Exception as e:
-        logger.warning("Failed to stop scheduler: %s", e)
-    # Post-startup hook: log routes (mirrors prior on_event usage)
-    logger.info("\n=== Final Registered Routes ===")
-    for route in app.routes:
-        logger.info(f"{route.methods} {route.path} -> {getattr(route, 'endpoint', 'N/A')}")
-    logger.info("============================\n")
+    # Shutdown: scheduler removed (not needed for current functionality)
+    # Routes registered successfully
 
 
 # Initialize FastAPI app (with lifespan)
-logger.info("Initializing FastAPI application...")
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -108,7 +59,7 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
 )
-logger.info("FastAPI application initialized")
+# FastAPI application initialized
 
 # Add security headers middleware
 @app.middleware("http")
@@ -138,35 +89,15 @@ async def security_headers_middleware(request: Request, call_next):
 
 # Set up CORS FIRST (before other middleware)
 if settings.BACKEND_CORS_ORIGINS:
-    # Debug: log the resolved CORS origins and types
+    # Process origins for CORS middleware
     try:
         origins_value = settings.BACKEND_CORS_ORIGINS
-        logger.info(
-            "Resolved BACKEND_CORS_ORIGINS: %s (type=%s)",
-            origins_value,
-            type(origins_value).__name__,
-        )
         if isinstance(origins_value, (list, tuple)):
-            logger.info(
-                "Origins entries and types: %s", [(o, type(o).__name__) for o in origins_value]
-            )
-            
-            # Process origins for CORS middleware
             processed_origins = [str(origin).rstrip("/") for origin in origins_value]
-            logger.info(f"Processed CORS origins: {processed_origins}")
-            
-            # Check if Vercel origin is included
-            vercel_origin = "https://ai-companion-v2.vercel.app"
-            if vercel_origin in processed_origins:
-                logger.info(f"✅ Vercel origin '{vercel_origin}' found in CORS origins")
-            else:
-                logger.warning(f"❌ Vercel origin '{vercel_origin}' NOT found in CORS origins")
-                logger.warning(f"Available origins: {processed_origins}")
-                
     except Exception as e:
-        logger.warning("Failed to log BACKEND_CORS_ORIGINS: %s", e)
+        logger.warning("Failed to process CORS origins: %s", e)
 
-    logger.info("Setting up CORS middleware...")
+    # Setting up CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS],
@@ -174,7 +105,7 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    logger.info("CORS middleware configured")
+    # CORS middleware configured
 else:
     # Fallback: enable permissive CORS for local dev if not configured
     dev_origins = [
@@ -219,20 +150,19 @@ app.state.metrics = {
     },
 }
 
-# Import API router after app creation to avoid circular imports
-logger.info("Importing API router...")
+# Import and include API router
 try:
     from app.api.api_v1.api import api_router
     from app.core.config import settings
-    logger.info("Successfully imported API router")
-    logger.info(f"Router prefix: {settings.API_V1_STR}")
-
-    # Middleware removed for Milestone 1 simplicity
-
-    # Include API router with version prefix
     app.include_router(api_router, prefix=settings.API_V1_STR)
-    logger.info(f"API router included with prefix: {settings.API_V1_STR}")
-
+    
+    # Debug: Print all registered routes
+    logger.info("=== REGISTERED ROUTES ===")
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            logger.info(f"Route: {list(route.methods)} {route.path}")
+    logger.info("=== END REGISTERED ROUTES ===")
+    
 except Exception as e:
     logger.error(f"Error importing or including API router: {str(e)}", exc_info=True)
     raise
@@ -247,6 +177,23 @@ async def correlation_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = req_id
     return response
+
+
+# Timeout middleware to prevent hanging requests
+@app.middleware("http")
+async def timeout_middleware(request: Request, call_next):
+    import asyncio
+    
+    try:
+        # Set a 30-second timeout for all requests
+        response = await asyncio.wait_for(call_next(request), timeout=30.0)
+        return response
+    except asyncio.TimeoutError:
+        logger.warning(f"Request timeout: {request.method} {request.url.path}")
+        return JSONResponse(
+            status_code=504,
+            content={"detail": "Request timeout - server took too long to respond"}
+        )
 
 
 # Simple HTTP middleware to record request counts and latency
@@ -442,13 +389,7 @@ async def metrics():
         lines.append(f"ai_companion_request_duration_ms_count {cnt}")
         lines.append(f"ai_companion_request_duration_ms_sum {sum_ms}")
 
-        # Append LLM metrics
-        try:
-            llm_lines = dump_llm_metrics().split("\n") if dump_llm_metrics else []
-            if llm_lines and llm_lines[0:1] != [""]:
-                lines.extend(llm_lines)
-        except Exception:
-            pass
+        # LLM metrics removed for simplicity
 
         body = "\n".join(lines) + "\n"
         return JSONResponse(content=body, media_type="text/plain; version=0.0.4; charset=utf-8")

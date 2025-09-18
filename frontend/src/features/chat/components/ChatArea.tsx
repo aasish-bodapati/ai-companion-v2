@@ -2,13 +2,10 @@ import React, { useState, useCallback } from 'react';
 
 // Hooks
 import { useChatState } from '../hooks/useChatState';
-import { useActionHandlers } from '../hooks/useActionHandlers';
-import { useMemoryHandlers } from '../hooks/useMemoryHandlers';
 import { useAttachmentHandlers } from '../hooks/useAttachmentHandlers';
 
 // Components
 import { ChatContainer } from './ChatContainer';
-import { ActionModals } from './ActionModals';
 import { useChatUtilities } from './ChatUtilities';
 
 interface ChatAreaProps {
@@ -19,8 +16,6 @@ interface ChatAreaProps {
 export function ChatArea({ onNewConversation, initialPrompt }: ChatAreaProps) {
   // Custom hooks for state management
   const chatState = useChatState();
-  const actionHandlers = useActionHandlers();
-  const memoryHandlers = useMemoryHandlers(chatState.conversationId);
   const attachmentHandlers = useAttachmentHandlers();
   const { normalizeUtcToLocal, copyToClipboard } = useChatUtilities();
 
@@ -51,7 +46,6 @@ export function ChatArea({ onNewConversation, initialPrompt }: ChatAreaProps) {
     <div className="flex flex-col h-full">
       <ChatContainer
         chatState={chatState}
-        memoryHandlers={memoryHandlers}
         attachmentHandlers={attachmentHandlers}
         onSend={handleSend}
         onFeedback={handleFeedback}
@@ -60,7 +54,6 @@ export function ChatArea({ onNewConversation, initialPrompt }: ChatAreaProps) {
         copyToClipboard={copyToClipboard}
       />
       
-      <ActionModals actionHandlers={actionHandlers} />
     </div>
   );
 }

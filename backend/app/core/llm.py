@@ -47,7 +47,7 @@ class SimpleLLMClient:
     def __init__(self):
         self.provider = settings.LLM_PROVIDER
         self.dev_mode = settings.LLM_DEV_MODE
-        logger.info(f"Initialized LLM client with provider: {self.provider}, dev_mode: {self.dev_mode}")
+        # LLM client initialized
     
     @log_llm_call
     def generate_response(

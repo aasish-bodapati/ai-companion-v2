@@ -12,7 +12,7 @@ export default function LoginContent() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/chat');
+      router.push('/dashboard');
     }
   }, [isAuthenticated, isLoading, router]);
 

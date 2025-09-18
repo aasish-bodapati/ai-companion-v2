@@ -9,11 +9,16 @@ is_sqlite = db_url.startswith("sqlite:///")
 
 engine_kwargs = {
     "pool_pre_ping": True,
+    "pool_timeout": 30,  # 30 seconds timeout for getting connection from pool
+    "pool_recycle": 3600,  # Recycle connections after 1 hour
 }
 
 if is_sqlite:
     # SQLite needs this in multi-threaded apps like FastAPI dev server
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
+    engine_kwargs["connect_args"] = {
+        "check_same_thread": False,
+        "timeout": 30  # SQLite connection timeout
+    }
 
 engine = create_engine(db_url, **engine_kwargs)
 

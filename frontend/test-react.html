@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>React Test</title>
+    <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        const { useState, useEffect } = React;
+        
+        function TestComponent() {
+            const [count, setCount] = useState(0);
+            
+            console.log('🔍 HTML TEST: Component rendering');
+            console.log('🔍 HTML TEST: About to define useEffect');
+            useEffect(() => {
+                console.log('🔍 HTML TEST: useEffect EXECUTING - this should run');
+                console.log('🔍 HTML TEST: useEffect - count:', count);
+            });
+            console.log('🔍 HTML TEST: useEffect defined');
+            
+            return React.createElement('div', null, 
+                React.createElement('h1', null, 'React Test'),
+                React.createElement('p', null, 'Count: ' + count),
+                React.createElement('button', { onClick: () => setCount(count + 1) }, 'Increment')
+            );
+        }
+        
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(TestComponent));
+    </script>
+</body>
+</html>

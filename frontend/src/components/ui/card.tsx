@@ -66,3 +66,14 @@ export function CardTitle({ className = '', children }: React.PropsWithChildren<
     </h3>
   );
 }
+
+export function CardDescription({ className = '', children }: React.PropsWithChildren<{ className?: string }>) {
+  return (
+    <p className={[
+      'text-sm text-gray-600 dark:text-gray-400',
+      className,
+    ].join(' ')}>
+      {children}
+    </p>
+  );
+}

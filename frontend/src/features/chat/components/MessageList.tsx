@@ -1,21 +1,48 @@
 import React from 'react';
-import { Message } from '../types';
-import { MessageItem } from './MessageItem';
+// ChatMessage type removed - using inline type
+import { MessageBubble } from '@/components/ui/MessageBubble';
+
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: Date;
+  created_at_local_ms: number;
+  context?: any;
+  suggestions?: string[];
+  metrics?: any;
+  used_memory?: boolean;
+}
 
 interface MessageListProps {
-  messages: Message[];
-  isLoading: boolean;
+  messages: ChatMessage[];
+  liveAssistant?: string;
+  liveProvenance?: any[];
+  liveFadeOut?: boolean;
+  isReplyPending?: boolean;
+  isLoading?: boolean;
+  normalizeUtcToLocal?: (ts: string | number | Date) => Date;
+  copyToClipboard?: (text: string) => Promise<void>;
   onFeedback?: (messageId: string, isPositive: boolean) => void;
+  onQuickSave?: (messageId: string) => void;
+  onUndoQuickSave?: (messageId: string) => void;
+  savedQuick?: Record<string, { id: string; }>;
+  memQuickSaveEnabled?: boolean;
+  memShowSavedInline?: boolean;
   feedbackPending?: Record<string, boolean>;
+  messagesEndRef?: React.RefObject<HTMLDivElement>;
 }
 
 export function MessageList({ 
   messages, 
-  isLoading, 
+  isLoading = false,
+  isReplyPending = false,
   onFeedback, 
-  feedbackPending = {} 
+  feedbackPending = {},
+  messagesEndRef,
+  ...otherProps
 }: MessageListProps) {
-  if (messages.length === 0 && !isLoading) {
+  if (messages.length === 0 && !isLoading && !isReplyPending) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center text-muted-foreground">
@@ -29,11 +56,11 @@ export function MessageList({
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => (
-        <MessageItem
+        <MessageBubble
           key={message.id}
-          message={message}
-          onFeedback={onFeedback}
-          feedbackPending={feedbackPending[message.id]}
+          content={message.content}
+          isUser={message.role === 'user'}
+          timestamp={message.created_at.toISOString()}
         />
       ))}
       {isLoading && (
@@ -41,6 +68,7 @@ export function MessageList({
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
         </div>
       )}
+      {messagesEndRef && <div ref={messagesEndRef} />}
     </div>
   );
 }

@@ -13,7 +13,7 @@ def init_tracing() -> None:
     Initialize tracing and observability.
     For now, this is a no-op implementation.
     """
-    logger.info("Tracing initialized (no-op implementation)")
+    # Tracing initialized (no-op implementation)
 
 
 def trace_function(func_name: str, **kwargs) -> None:

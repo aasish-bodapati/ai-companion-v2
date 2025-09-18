@@ -2,8 +2,42 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-import { Message, AssistantReply } from '../types';
-import { normalizeTimestamp, toLocalMs } from '../utils';
+// Types and utils removed - using inline types
+interface Message {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  created_at: Date;
+  created_at_local_ms: number;
+  context?: any;
+  suggestions?: string[];
+  metrics?: any;
+  used_memory?: boolean;
+}
+
+interface AssistantReply {
+  reply: string;
+  context_analysis?: any;
+  suggested_actions?: string[];
+  used_memory?: boolean;
+}
+
+const normalizeTimestamp = (ts: string | number | Date): Date => {
+  if (ts instanceof Date) return ts;
+  if (typeof ts === 'number') return new Date(ts);
+  if (typeof ts === 'string') {
+    let s = ts.trim();
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s)) s = s.replace(' ', 'T');
+    if (!(/[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s))) s = s + 'Z';
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? new Date(ts) : d;
+  }
+  return new Date();
+};
+
+const toLocalMs = (ts: string | number | Date): number => {
+  return normalizeTimestamp(ts).getTime();
+};
 
 // Get messages for a conversation
 export const useMessages = (conversationId: string | null) => {
@@ -82,13 +116,15 @@ export const useSendMessage = (conversationId: string) => {
           conversationId,
         ]) || [];
         
+        const now = new Date();
         queryClient.setQueryData<Message[]>(['messages', conversationId], (old = []) => [
           ...old,
           {
             id: `temp-${Date.now()}`,
             content: newMessage.content,
             role: newMessage.role || 'user',
-            created_at: new Date().toISOString(),
+            created_at: now,
+            created_at_local_ms: now.getTime(),
           },
         ]);
         

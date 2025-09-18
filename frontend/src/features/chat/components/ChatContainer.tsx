@@ -2,12 +2,11 @@ import React from 'react';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { ChatState } from '../hooks/useChatState';
-import { MemoryHandlers } from '../hooks/useMemoryHandlers';
+// Memory system removed - focusing on health logging only
 import { AttachmentHandlers } from '../hooks/useAttachmentHandlers';
 
 interface ChatContainerProps {
   chatState: ChatState;
-  memoryHandlers: MemoryHandlers;
   attachmentHandlers: AttachmentHandlers;
   onSend: (rememberNow?: boolean) => Promise<void>;
   onFeedback: (messageId: string, isPositive: boolean) => void;
@@ -18,7 +17,6 @@ interface ChatContainerProps {
 
 export function ChatContainer({
   chatState,
-  memoryHandlers,
   attachmentHandlers,
   onSend,
   onFeedback,
@@ -39,11 +37,7 @@ export function ChatContainer({
           normalizeUtcToLocal={normalizeUtcToLocal}
           copyToClipboard={copyToClipboard}
           onFeedback={onFeedback}
-          onQuickSave={memoryHandlers.quickSaveMessage}
-          onUndoQuickSave={memoryHandlers.undoQuickSave}
-          savedQuick={memoryHandlers.savedQuick}
-          memQuickSaveEnabled={memoryHandlers.memQuickSaveEnabled}
-          memShowSavedInline={memoryHandlers.memShowSavedInline}
+          // Memory system removed - focusing on health logging only
           feedbackPending={feedbackPending}
           messagesEndRef={chatState.messagesEndRef}
         />

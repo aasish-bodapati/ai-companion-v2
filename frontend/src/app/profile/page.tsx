@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Mail, Calendar } from 'lucide-react';
+import { User, Mail, Calendar, Settings } from 'lucide-react';
+import { OnboardingEditor } from '@/features/health';
 
 export default function ProfilePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -48,7 +49,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
           {/* Basic Account Information */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -85,26 +86,8 @@ export default function ProfilePage() {
             </div>
           </Card>
 
-          {/* Coming Soon */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                <User className="w-5 h-5" />
-                AI Profile
-              </h2>
-            </div>
-            
-            <div className="text-center py-8">
-              <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Profile Features Coming Soon</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                Advanced profile management and AI customization features will be available soon.
-              </p>
-              <Button onClick={() => window.location.href = '/onboarding'}>
-                Complete Onboarding
-              </Button>
-            </div>
-          </Card>
+          {/* Health Profile */}
+          <OnboardingEditor />
         </div>
       </div>
     </div>

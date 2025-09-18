@@ -22,14 +22,7 @@ wheels/
 *.egg
 
 # Virtual environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-.venv312/
+
 
 # IDE
 .vscode/
@@ -214,13 +207,14 @@ debug/
 debug_*.py
 
 # Environment and secrets
-.env
+# Allow .env files for development (but keep them out of production)
+# .env
 .env.local
 .env.development
 .env.test
 .env.production
 .env.staging
-*.env
+# *.env
 secrets/
 .secrets/
 
