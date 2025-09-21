@@ -6,11 +6,13 @@
  */
 
 import { ErrorHandler } from './errorHandler';
+import { logger } from './logger';
+import { envConfig } from './env-validation';
 
 // CSRF not needed - backend uses JWT authentication
 
-// Ensure API base URL includes version prefix `/api/v1` by default
-const RAW_API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000').replace(/\/$/, '');
+// Use validated environment configuration
+const RAW_API_BASE = envConfig.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
 const API_PREFIX = '/api/v1';
 const API_BASE_URL = RAW_API_BASE.endsWith(API_PREFIX) ? RAW_API_BASE : `${RAW_API_BASE}${API_PREFIX}`;
 
@@ -84,16 +86,8 @@ async function apiFetch<T = any>(
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const isPublicAuthEndpoint = endpoint === '/login/access-token' || endpoint === '/register';
 
-  // Debug logging for troubleshooting
-  console.log('🔐 API AUTH: Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'No token');
-  console.log('🔐 API AUTH: Is public endpoint:', isPublicAuthEndpoint);
-  console.log('🔐 API AUTH: Endpoint:', endpoint);
-
   if (token && !headers.has('Authorization') && !isPublicAuthEndpoint) {
     headers.set('Authorization', `Bearer ${token}`);
-    console.log('🔐 API AUTH: Authorization header set');
-  } else if (!token && !isPublicAuthEndpoint) {
-    console.log('🔐 API AUTH: No token available for protected endpoint');
   }
   
   // Compose abort signals to support both caller-provided signal and timeout
@@ -146,25 +140,10 @@ async function apiFetch<T = any>(
     }
   }
   
-  // Make the request with better network error visibility
+  // Make the request
   let response: Response;
   try {
-    // Debug logging for troubleshooting
-    console.log('🌐 API REQUEST:', {
-      method: config.method || 'GET',
-      url: url.toString(),
-      headers: Object.fromEntries(headers.entries()),
-      body: config.body
-    });
-
-    // Use plain fetch instead of fetchWithCSRF since backend uses JWT auth, not CSRF
     response = await fetch(url.toString(), config);
-    
-    console.log('🌐 API RESPONSE:', {
-      status: response.status,
-      statusText: response.statusText,
-      url: response.url
-    });
   } catch (err: any) {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -203,7 +182,7 @@ async function apiFetch<T = any>(
       // Debug logging removed for production security
     } catch (_) {
       textBody = null;
-      console.log('🔍 Failed to read response body for:', url.toString());
+      logger.debug('Failed to read response body for:', url.toString());
     }
     if (isJson && textBody && textBody.trim().length > 0) {
       try {
@@ -211,7 +190,7 @@ async function apiFetch<T = any>(
         // Debug logging removed for production security
       } catch (_) {
         payload = null;
-        console.log('🔍 Failed to parse JSON for:', url.toString());
+        logger.debug('Failed to parse JSON for:', url.toString());
       }
     }
   }

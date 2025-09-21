@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SimpleRoutineWithProgress } from '@/lib/simpleRoutineApi';
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
+import { logger } from '@/lib/logger';
 
 interface Workout {
   activity_type: string;
@@ -50,21 +51,21 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated }
   // Initialize form data when routine changes
   useEffect(() => {
     if (routine) {
-      console.log('🔍 EditRoutineDialog - Routine data received:', routine);
-      console.log('🔍 EditRoutineDialog - workout_schedule:', routine.workout_schedule);
+      logger.debug('🔍 EditRoutineDialog - Routine data received:', routine);
+      logger.debug('🔍 EditRoutineDialog - workout_schedule:', routine.workout_schedule);
       
       setRoutineName(routine.name);
       
       // Extract activity types from existing workouts
       const activityTypes = new Set<string>();
       if (routine.workout_schedule && Array.isArray(routine.workout_schedule)) {
-        console.log('🔍 EditRoutineDialog - Processing workout_schedule with', routine.workout_schedule.length, 'days');
+        logger.debug('🔍 EditRoutineDialog - Processing workout_schedule with', routine.workout_schedule.length, 'days');
         routine.workout_schedule.forEach((day: any, dayIndex: number) => {
-          console.log(`🔍 EditRoutineDialog - Processing day ${dayIndex}:`, day);
+          logger.debug(`🔍 EditRoutineDialog - Processing day ${dayIndex}:`, day);
           if (day.exercises && Array.isArray(day.exercises)) {
-            console.log(`🔍 EditRoutineDialog - Day ${day.day} has ${day.exercises.length} exercises`);
+            logger.debug(`🔍 EditRoutineDialog - Day ${day.day} has ${day.exercises.length} exercises`);
             day.exercises.forEach((exercise: any, exerciseIndex: number) => {
-              console.log(`🔍 EditRoutineDialog - Exercise ${exerciseIndex}:`, exercise);
+              logger.debug(`🔍 EditRoutineDialog - Exercise ${exerciseIndex}:`, exercise);
               // Map exercise names to activity types (simplified mapping)
               if (exercise.exercise_name.toLowerCase().includes('press') || 
                   exercise.exercise_name.toLowerCase().includes('squat') ||
@@ -77,15 +78,15 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated }
           }
         });
       }
-      console.log('🔍 EditRoutineDialog - Activity types extracted:', Array.from(activityTypes));
+      logger.debug('🔍 EditRoutineDialog - Activity types extracted:', Array.from(activityTypes));
       setSelectedActivityTypes(Array.from(activityTypes));
 
       // Convert workout_schedule to dayWorkouts format
       const convertedDayWorkouts: DayWorkouts[] = DAYS_OF_WEEK.map(day => {
         const existingDay = routine.workout_schedule?.find((d: any) => d.day === day);
-        console.log(`🔍 EditRoutineDialog - Looking for ${day}:`, existingDay);
+        logger.debug(`🔍 EditRoutineDialog - Looking for ${day}:`, existingDay);
         if (existingDay && existingDay.exercises) {
-          console.log(`🔍 EditRoutineDialog - Found exercises for ${day}:`, existingDay.exercises);
+          logger.debug(`🔍 EditRoutineDialog - Found exercises for ${day}:`, existingDay.exercises);
           return {
             day,
             workouts: existingDay.exercises.map((ex: any) => ({
@@ -98,7 +99,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated }
         }
         return { day, workouts: [] };
       });
-      console.log('🔍 EditRoutineDialog - Converted dayWorkouts:', convertedDayWorkouts);
+      logger.debug('🔍 EditRoutineDialog - Converted dayWorkouts:', convertedDayWorkouts);
       setDayWorkouts(convertedDayWorkouts);
     }
   }, [routine]);

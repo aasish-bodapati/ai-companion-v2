@@ -8,7 +8,7 @@ from .user_goals import user_health_profile
 
 __all__ = [
     "fitness_log",
-    "nutrition_log", 
+    "nutrition_log",
     "mood_log",
     "simple_routine",
     "simple_user_routine_progress",

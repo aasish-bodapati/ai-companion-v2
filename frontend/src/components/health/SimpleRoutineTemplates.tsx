@@ -9,6 +9,7 @@ import { simpleRoutineApi, SimpleRoutineWithProgress } from '@/lib/simpleRoutine
 import { CustomRoutineBuilder } from '@/features/health/components/CustomRoutineBuilder';
 import { EditRoutineDialog } from '@/features/health/components/EditRoutineDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { 
   PlusIcon, 
   PlayIcon, 
@@ -31,17 +32,13 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
   const [editingRoutine, setEditingRoutine] = useState<SimpleRoutineWithProgress | null>(null);
 
   const loadRoutines = useCallback(async () => {
-    console.log('🔄 loadRoutines called, isAuthenticated:', isAuthenticated);
-    
     if (!isAuthenticated) {
-      console.log('❌ Not authenticated, skipping routine load');
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
-      console.log('📡 Loading routines from database...');
       
       // Load routines from database via API
       const response = await simpleRoutineApi.getRoutines({
@@ -49,26 +46,16 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
         limit: 50
       });
       
-      console.log('✅ Loaded routines from database:', response);
-      console.log('📊 Number of routines found in database:', response.routines?.length || 0);
       setRoutines(response.routines);
       
       // Load detailed workout data for each routine
-      console.log('🏋️ Loading detailed workout data for each routine...');
       const routinesWithWorkoutsData = await Promise.all(
         response.routines.map(async (routine) => {
           try {
-            console.log(`Loading detailed workout data for routine: ${routine.name} (${routine.id})`);
             const detailedRoutine = await simpleRoutineApi.getRoutine(routine.id);
-            console.log(`Successfully loaded detailed workout data for ${routine.name}:`, detailedRoutine);
             return detailedRoutine;
           } catch (error) {
-            console.error(`Failed to load workout data for routine ${routine.id} (${routine.name}):`, error);
-            console.error('Error details:', {
-              message: (error as any).message,
-              status: (error as any).status,
-              data: (error as any).data
-            });
+            console.error(`Failed to load workout data for routine ${routine.id}:`, error);
             // Return basic routine with empty workout data if detailed loading fails
             return {
               ...routine,
@@ -79,17 +66,10 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
         })
       );
       
-      console.log('🏋️ Routines with workout data loaded:', routinesWithWorkoutsData);
-      console.log('🔍 Debug - First routine with workouts:', routinesWithWorkoutsData[0]);
-      if (routinesWithWorkoutsData[0]) {
-        console.log('🔍 Debug - First routine workout_schedule:', routinesWithWorkoutsData[0].workout_schedule);
-        console.log('🔍 Debug - First routine total_workouts_per_week:', routinesWithWorkoutsData[0].total_workouts_per_week);
-      }
       setRoutinesWithWorkouts(routinesWithWorkoutsData);
       
     } catch (error) {
-      console.error('❌ Failed to load routines:', error);
-      console.error('Error details:', error);
+      console.error('Failed to load routines:', error);
       toast.error('Failed to load routines. Please try again.');
     } finally {
       setLoading(false);
@@ -104,9 +84,7 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
   const handleStartRoutine = async (routineId: string) => {
     try {
       setActionLoading(routineId);
-      console.log('🚀 Starting routine:', routineId);
       const result = await simpleRoutineApi.startRoutine(routineId);
-      console.log('✅ Routine started successfully:', result);
       toast.success('Routine set as active!');
       await loadRoutines();
       onRoutineSelected?.();
@@ -161,7 +139,6 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
   const handleEditRoutine = (routine: SimpleRoutineWithProgress) => {
     // Find the detailed routine with workout data
     const detailedRoutine = routinesWithWorkouts.find(r => r.id === routine.id) || routine;
-    console.log('🔍 EditRoutineDialog - Using detailed routine:', detailedRoutine);
     setEditingRoutine(detailedRoutine);
   };
 
@@ -235,14 +212,7 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
                   const workoutSchedule = routineWithWorkouts?.workout_schedule || [];
                   const totalWorkouts = routineWithWorkouts?.total_workouts_per_week || 0;
                   
-                  // Debug logging
-                  console.log(`🔍 Debug for routine ${routine.name}:`, {
-                    routineId: routine.id,
-                    routineWithWorkouts: routineWithWorkouts,
-                    workoutSchedule: workoutSchedule,
-                    totalWorkouts: totalWorkouts,
-                    routinesWithWorkoutsLength: routinesWithWorkouts.length
-                  });
+                  // Get routine with workout data
                   
                   // If we don't have detailed workout data, show appropriate message
                   if (!routineWithWorkouts || totalWorkouts === 0) {
@@ -254,7 +224,7 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
                             <span>No detailed workout plan available</span>
                           </div>
                           <div className="text-xs text-orange-600 dark:text-orange-300 mt-2">
-                            ℹ️ This routine doesn't have a detailed workout schedule. You can edit it to add exercises.
+                            ℹ️ This routine doesn&apos;t have a detailed workout schedule. You can edit it to add exercises.
                           </div>
                         </div>
                       </div>

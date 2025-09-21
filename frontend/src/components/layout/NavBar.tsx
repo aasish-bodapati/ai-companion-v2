@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { useState } from 'react';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 
@@ -18,7 +19,8 @@ export default function NavBar() {
 
   return (
     <nav className="bg-purple-900/80 dark:bg-purple-950/80 backdrop-blur-sm border-b border-purple-700/60 dark:border-purple-800/60 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center h-16">
           {/* Left side - Navigation links */}
           <div className="hidden sm:flex space-x-8">
@@ -27,32 +29,14 @@ export default function NavBar() {
                 Home
               </NavLink>
             ) : (
-              <>
-                <NavLink href="/dashboard" pathname={pathname}>
-                  Dashboard
-                </NavLink>
-                <NavLink href="/fitness" pathname={pathname}>
-                  Fitness
-                </NavLink>
-                <NavLink href="/nutrition" pathname={pathname}>
-                  Nutrition
-                </NavLink>
-                <NavLink href="/chat" pathname={pathname}>
-                  AI Coach
-                </NavLink>
-              </>
+              // Navigation links removed - using bottom tab bar instead
+              null
             )}
           </div>
           <div className="hidden sm:flex sm:items-center gap-4">
             <ThemeToggle />
             {isAuthenticated ? (
               <div className="flex items-center space-x-6">
-                <Link
-                  href="/profile"
-                  className="text-sm font-medium text-purple-200 dark:text-purple-300 hover:text-white dark:hover:text-purple-100 transition-colors"
-                >
-                  Profile
-                </Link>
                 <button
                   onClick={() => {
                     logout();
@@ -135,20 +119,8 @@ export default function NavBar() {
                 Home
               </MobileNavLink>
             ) : (
-              <>
-                <MobileNavLink href="/dashboard" pathname={pathname}>
-                  Dashboard
-                </MobileNavLink>
-                <MobileNavLink href="/fitness" pathname={pathname}>
-                  Fitness
-                </MobileNavLink>
-                <MobileNavLink href="/nutrition" pathname={pathname}>
-                  Nutrition
-                </MobileNavLink>
-                <MobileNavLink href="/chat" pathname={pathname}>
-                  AI Coach
-                </MobileNavLink>
-              </>
+              // Navigation links removed - using bottom tab bar instead
+              null
             )}
           </div>
           <div className="pt-4 pb-3 border-t border-purple-700/60 dark:border-purple-800/60">
@@ -171,7 +143,7 @@ export default function NavBar() {
                 </div>
                 <button
                   onClick={() => {
-                    console.log('🔘 NAVBAR: Logout button clicked');
+                    logger.debug('🔘 NAVBAR: Logout button clicked');
                     logout();
                   }}
                   className="ml-auto flex-shrink-0 bg-purple-800/50 p-1 rounded-full text-purple-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
@@ -214,6 +186,7 @@ export default function NavBar() {
           </div>
         </div>
       )}
+      </div>
     </nav>
   );
 }

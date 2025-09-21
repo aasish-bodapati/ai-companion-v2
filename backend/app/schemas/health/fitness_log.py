@@ -3,7 +3,6 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 from enum import Enum
 
-
 class ActivityType(str, Enum):
     RUNNING = "running"
     WALKING = "walking"
@@ -20,12 +19,10 @@ class ActivityType(str, Enum):
     SPORTS = "sports"
     OTHER = "other"
 
-
 class IntensityLevel(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
-
 
 class MealType(str, Enum):
     BREAKFAST = "breakfast"
@@ -33,14 +30,12 @@ class MealType(str, Enum):
     DINNER = "dinner"
     SNACK = "snack"
 
-
 class MoodLevel(str, Enum):
     VERY_LOW = "very_low"
     LOW = "low"
     NEUTRAL = "neutral"
     HIGH = "high"
     VERY_HIGH = "very_high"
-
 
 # Base schemas
 class FitnessLogBase(BaseModel):
@@ -54,14 +49,10 @@ class FitnessLogBase(BaseModel):
     reps: Optional[int] = Field(None, ge=0)
     sets: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
-    location: Optional[str] = None
-    weather: Optional[str] = None
-    activity_date: datetime
-
+    activity_date: Optional[datetime] = None
 
 class FitnessLogCreate(FitnessLogBase):
     timezone_offset: Optional[int] = Field(None, description="Timezone offset in minutes from UTC")
-
 
 class FitnessLogUpdate(BaseModel):
     activity_type: Optional[ActivityType] = None
@@ -74,10 +65,7 @@ class FitnessLogUpdate(BaseModel):
     reps: Optional[int] = Field(None, ge=0)
     sets: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
-    location: Optional[str] = None
-    weather: Optional[str] = None
     activity_date: Optional[datetime] = None
-
 
 class FitnessLog(FitnessLogBase):
     id: str
@@ -87,7 +75,6 @@ class FitnessLog(FitnessLogBase):
 
     class Config:
         from_attributes = True
-
 
 # Nutrition schemas
 class FoodItem(BaseModel):
@@ -101,7 +88,6 @@ class FoodItem(BaseModel):
     sugar_g: Optional[float] = Field(None, ge=0)
     sodium_mg: Optional[float] = Field(None, ge=0)
 
-
 class NutritionLogBase(BaseModel):
     meal_type: MealType
     meal_name: Optional[str] = None
@@ -112,16 +98,14 @@ class NutritionLogBase(BaseModel):
     fiber_g: Optional[float] = Field(None, ge=0)
     sugar_g: Optional[float] = Field(None, ge=0)
     sodium_mg: Optional[float] = Field(None, ge=0)
-    food_items: List[FoodItem]
+    food_items: Optional[List[FoodItem]] = None
     notes: Optional[str] = None
     mood_before: Optional[str] = None
     mood_after: Optional[str] = None
     meal_date: datetime
 
-
 class NutritionLogCreate(NutritionLogBase):
     pass
-
 
 class NutritionLogUpdate(BaseModel):
     meal_type: Optional[MealType] = None
@@ -139,7 +123,6 @@ class NutritionLogUpdate(BaseModel):
     mood_after: Optional[str] = None
     meal_date: Optional[datetime] = None
 
-
 class NutritionLog(NutritionLogBase):
     id: str
     user_id: str
@@ -148,7 +131,6 @@ class NutritionLog(NutritionLogBase):
 
     class Config:
         from_attributes = True
-
 
 # Mood schemas
 class MoodLogBase(BaseModel):
@@ -164,10 +146,8 @@ class MoodLogBase(BaseModel):
     activities: Optional[List[str]] = None
     log_date: datetime
 
-
 class MoodLogCreate(MoodLogBase):
     pass
-
 
 class MoodLogUpdate(BaseModel):
     mood_rating: Optional[int] = Field(None, ge=1, le=10)
@@ -182,7 +162,6 @@ class MoodLogUpdate(BaseModel):
     activities: Optional[List[str]] = None
     log_date: Optional[datetime] = None
 
-
 class MoodLog(MoodLogBase):
     id: str
     user_id: str
@@ -191,7 +170,6 @@ class MoodLog(MoodLogBase):
 
     class Config:
         from_attributes = True
-
 
 # Analytics schemas
 class DailySummary(BaseModel):
@@ -210,7 +188,6 @@ class DailySummary(BaseModel):
     fitness_activities: int
     meals_logged: int
 
-
 class WeeklySummary(BaseModel):
     week_start: datetime
     week_end: datetime
@@ -225,7 +202,6 @@ class WeeklySummary(BaseModel):
     goals_achieved: int
     total_goals: int
 
-
 class LoggingInsight(BaseModel):
     type: str  # "trend", "recommendation", "achievement", "warning"
     title: str
@@ -233,4 +209,3 @@ class LoggingInsight(BaseModel):
     data: Optional[Dict[str, Any]] = None
     actionable: bool = False
     priority: str = "medium"  # "low", "medium", "high"
-

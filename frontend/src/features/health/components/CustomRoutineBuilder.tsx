@@ -1,22 +1,54 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+// Removed Card imports - using simple divs to avoid stacking context issues
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PlusIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
+import { api } from '@/lib/api';
+import { logger } from '@/lib/logger';
+import { WORKOUT_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
+import { WorkoutInputComponents } from '@/components/health/WorkoutInputComponents';
+
+interface Exercise {
+  id: number;
+  name: string;
+  logging_category: string;
+  logging_category_info: {
+    id: number;
+    name: string;
+    display_name: string;
+  };
+  difficulty: string;
+  calories_per_minute: number;
+  description: string;
+}
 
 interface Workout {
   id: string;
   activity_type: string;
-  activity_name: string;
+  selectedExercise?: Exercise; // Selected exercise from database
   sets: number;
   reps: number;
+  // Flexible attributes based on exercise type
+  weight?: number;
+  weight_unit?: 'lbs' | 'kg';
+  equipment_type?: 'dumbbell' | 'barbell' | 'machine' | 'bodyweight';
+  duration?: number; // for cardio
+  distance?: number; // for running
+  notes?: string;
+  // Additional category-specific fields
+  total_reps?: number; // for repetition_only
+  difficulty?: string; // for hold_static
+  intensity?: string; // for cardio
+  heart_rate?: number; // for cardio
+  time?: number; // for distance_based
+  pace?: string; // for distance_based
 }
 
 interface DayWorkouts {
@@ -29,37 +61,117 @@ interface CustomRoutineBuilderProps {
 }
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const ACTIVITY_TYPES = [
-  'weightlifting', 'cardio', 'running', 'walking', 'cycling', 'swimming', 
-  'yoga', 'pilates', 'hiit', 'dancing', 'sports', 'other'
-];
 
 function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [routineName, setRoutineName] = useState('');
   const [dayWorkouts, setDayWorkouts] = useState<DayWorkouts[]>([]);
-  const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  // Exercise selection state
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [loadingExercises, setLoadingExercises] = useState(false);
+  const [workoutCategoryData, setWorkoutCategoryData] = useState<Record<string, any>>({});
+  const [exerciseSearchValues, setExerciseSearchValues] = useState<Record<string, string>>({});
 
-  const toggleActivityType = (activityType: string) => {
-    setSelectedActivityTypes(prev => {
-      if (prev.includes(activityType)) {
-        return prev.filter(type => type !== activityType);
-      } else {
-        return [...prev, activityType];
+  // Load exercises on component mount
+  useEffect(() => {
+    const loadExercises = async () => {
+      try {
+        setLoadingExercises(true);
+        const response = await api.get('/health/exercises/all');
+        setAllExercises(response.exercises || []);
+      } catch (error) {
+        console.error('Failed to load exercises:', error);
+        toast.error('Failed to load exercises');
+      } finally {
+        setLoadingExercises(false);
       }
-    });
+    };
+
+    loadExercises();
+  }, []);
+
+  // Debug workout state changes
+  useEffect(() => {
+    console.log('🔄 DayWorkouts state changed:', dayWorkouts);
+  }, [dayWorkouts]);
+
+
+  // Handle exercise search input change
+  const handleExerciseSearchChange = (day: string, workoutId: string, value: string) => {
+    setExerciseSearchValues(prev => ({
+      ...prev,
+      [`${day}-${workoutId}`]: value
+    }));
   };
 
+  // Handle exercise selection for a specific workout
+  const handleWorkoutExerciseSelect = (day: string, workoutId: string, exercise: Exercise) => {
+    console.log('🎯 Exercise selected:', { day, workoutId, exercise });
+    
+    updateWorkout(day, workoutId, 'selectedExercise', exercise);
+    updateWorkout(day, workoutId, 'activity_type', exercise.logging_category);
+    
+    // Update search value to show selected exercise name
+    setExerciseSearchValues(prev => ({
+      ...prev,
+      [`${day}-${workoutId}`]: exercise.name
+    }));
+    
+    // Find the corresponding workout category for the exercise's logging category
+    const category = WORKOUT_CATEGORIES.find(cat => cat.id === exercise.logging_category);
+    console.log('📋 Found category:', category);
+    
+    if (category) {
+      // Initialize category-specific data
+      const categoryData: Record<string, any> = {};
+      category.loggingAttributes.required.forEach(attr => {
+        categoryData[attr.name] = '';
+      });
+      category.loggingAttributes.optional.forEach(attr => {
+        categoryData[attr.name] = '';
+      });
+      
+      console.log('📝 Category data initialized:', categoryData);
+      
+      // Store category data for this specific workout
+      setWorkoutCategoryData(prev => ({
+        ...prev,
+        [`${day}-${workoutId}`]: categoryData
+      }));
+    } else {
+      console.error('❌ Category not found for logging_category:', exercise.logging_category);
+      console.log('Available categories:', WORKOUT_CATEGORIES.map(cat => cat.id));
+    }
+  };
+
+  // Handle category data changes for a specific workout
+  const handleWorkoutCategoryDataChange = (day: string, workoutId: string, field: string, value: any) => {
+    setWorkoutCategoryData(prev => ({
+      ...prev,
+      [`${day}-${workoutId}`]: {
+        ...prev[`${day}-${workoutId}`],
+        [field]: value
+      }
+    }));
+  };
+
+  // Remove exercise selection handler - no longer needed for manual input
+
   const addWorkoutToDay = (day: string) => {
-    const defaultActivityType = selectedActivityTypes.length > 0 ? selectedActivityTypes[0] : 'weightlifting';
+    const workoutId = Date.now().toString();
     const newWorkout: Workout = {
-      id: Date.now().toString(),
-      activity_type: defaultActivityType,
-      activity_name: '',
+      id: workoutId,
+      activity_type: '',
       sets: 3,
       reps: 10
     };
+
+    // Initialize empty search value for the new workout
+    setExerciseSearchValues(prev => ({
+      ...prev,
+      [`${day}-${workoutId}`]: ''
+    }));
 
     setDayWorkouts(prev => {
       const existingDay = prev.find(d => d.day === day);
@@ -104,7 +216,6 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
     });
   };
 
-
   const saveRoutine = async () => {
     if (!routineName.trim()) {
       toast.error('Please enter a routine name');
@@ -124,7 +235,8 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
       const allWorkouts = dayWorkouts.flatMap(dayWorkout => 
         dayWorkout.workouts.map(workout => ({
           ...workout,
-          day: dayWorkout.day
+          day: dayWorkout.day,
+          activity_name: workout.selectedExercise?.name || 'Unknown Exercise'
         }))
       );
 
@@ -140,20 +252,20 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
         description: `Custom routine with ${totalWorkouts} workouts across ${dayWorkouts.length} days`,
         difficulty: 'intermediate', // Default difficulty
         duration_weeks: 4, // Default duration
-        tags: selectedActivityTypes // Use selected activity types as tags
+        tags: ['Custom'] // Use custom tag for user-created routines
       };
       
-      console.log('💾 Saving routine with workout plan to database:', routineToSave);
-      console.log('📋 Workout days data:', dayWorkouts);
-      console.log('📤 API request payload:', {
+      logger.debug('Saving routine with workout plan to database:', routineToSave);
+      logger.debug('Workout days data:', dayWorkouts);
+      logger.debug('API request payload:', {
         routine_data: routineToSave,
         workout_days: dayWorkouts
       });
       
       // Use the new API endpoint for detailed workout plans
       const savedRoutine = await simpleRoutineApi.createRoutineWithWorkoutPlan(routineToSave, dayWorkouts);
-      console.log('✅ Routine with workout plan saved successfully:', savedRoutine);
-      console.log('🆔 Database routine ID:', savedRoutine.id);
+      logger.info('Routine with workout plan saved successfully:', savedRoutine);
+      logger.debug('Database routine ID:', savedRoutine.id);
       
       toast.success(`Routine "${routineName}" saved successfully! ${totalWorkouts} workouts planned.`);
       onRoutineCreated?.(savedRoutine);
@@ -161,7 +273,6 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
       // Reset form
       setRoutineName('');
       setDayWorkouts([]);
-      setSelectedActivityTypes([]);
       setIsOpen(false);
     } catch (error) {
       console.error('Failed to save routine:', error);
@@ -171,211 +282,227 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
     }
   };
 
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (open) {
+        setIsOpen(true);
+      }
+      // Don't close on click outside - only close via button
+    }}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+        <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
           <PlusIcon className="h-4 w-4 mr-2" />
           Create Custom Routine
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Custom Routine</DialogTitle>
-          <DialogDescription>
-            Build a personalized workout routine by selecting activity types and planning workouts for each day of the week.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          {/* Routine Details */}
-          <div>
-            <Label htmlFor="routineName">Routine Name</Label>
-            <Input
-              id="routineName"
-              value={routineName}
-              onChange={(e) => setRoutineName(e.target.value)}
-              placeholder="e.g., My Custom Workout"
-            />
-          </div>
-
-          {/* Daily Workout Plan */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Weekly Workout Plan</h3>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0)} total workouts
-              </div>
+      <DialogContent className="max-w-4xl h-[80vh] overflow-hidden p-0 bg-white dark:bg-gray-900 border-0 shadow-2xl flex flex-col">
+        <div className="flex flex-col h-full min-h-0">
+          {/* Clean Header - Fixed at top with proper z-index */}
+          <DialogHeader className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-10 relative">
+            <div>
+              <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">Create Custom Routine</DialogTitle>
+              <DialogDescription className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                Build a personalized workout routine by selecting exercises and planning workouts for each day of the week.
+              </DialogDescription>
             </div>
+          </DialogHeader>
+          
+          {/* Scrollable content area - Allow dropdown to escape */}
+          <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 relative z-10">
+            <div className="p-4">
+            <div className="space-y-4">
+              {/* Routine Details */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <div className="space-y-2">
+                  <Label htmlFor="routineName" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Routine Name</Label>
+                  <Input
+                    id="routineName"
+                    value={routineName}
+                    onChange={(e) => setRoutineName(e.target.value)}
+                    placeholder="e.g., My Custom Workout"
+                    className="border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                  />
+                </div>
+              </div>
 
-            {/* Activity Type Selection */}
-            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Activity Types for This Routine</h4>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {ACTIVITY_TYPES.map(activityType => (
-                  <label key={activityType} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedActivityTypes.includes(activityType)}
-                      onChange={() => toggleActivityType(activityType)}
-                      className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                    />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 capitalize">
-                      {activityType}
+              {/* Daily Workout Plan */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Weekly Workout Plan</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Plan your exercises for each day of the week</p>
+                  </div>
+                  <div className="bg-indigo-100 dark:bg-indigo-900 px-3 py-1.5 rounded-full">
+                    <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                      {dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0)} total workouts
                     </span>
-                  </label>
-                ))}
-              </div>
-              {selectedActivityTypes.length === 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  Select at least one activity type to add workouts
-                </p>
-              )}
-            </div>
+                  </div>
+                </div>
 
-            <div className="space-y-6 max-h-96 overflow-y-auto">
-              {DAYS.map(day => {
-                const dayData = dayWorkouts.find(d => d.day === day);
-                const workouts = dayData?.workouts || [];
-                
-                return (
-                  <Card key={day} className="border-solid border-gray-200 dark:border-gray-700">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-base">{day}</CardTitle>
-                        <Button 
-                          onClick={() => addWorkoutToDay(day)} 
-                          size="sm"
-                          variant="outline"
-                          disabled={selectedActivityTypes.length === 0}
-                        >
-                          <PlusIcon className="h-4 w-4 mr-2" />
-                          Add Workout
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {workouts.length === 0 ? (
-                        <div className="text-center py-4 text-gray-500">
-                          <p>
-                            {selectedActivityTypes.length === 0 
-                              ? `Select activity types above to add workouts for ${day}`
-                              : `No workouts planned for ${day}`
-                            }
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {workouts.map((workout, index) => (
-                            <div key={workout.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4 space-y-4">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium">Workout {index + 1}</h4>
-                                <Button
-                                  onClick={() => removeWorkout(day, workout.id)}
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-red-600 hover:text-red-700"
-                                >
-                                  <TrashIcon className="h-4 w-4" />
-                                </Button>
+                <div className="space-y-2">
+                  {DAYS.map(day => {
+                    const dayData = dayWorkouts.find(d => d.day === day);
+                    const workouts = dayData?.workouts || [];
+                    
+                    return (
+                      <div key={day} className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
+                        <div className="p-4 pb-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold text-xs">{day.charAt(0)}</span>
                               </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Activity Type</Label>
-                                  <Select
-                                    value={workout.activity_type}
-                                    onValueChange={(value) => updateWorkout(day, workout.id, 'activity_type', value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {selectedActivityTypes.map(type => (
-                                        <SelectItem key={type} value={type}>
-                                          {type.charAt(0).toUpperCase() + type.slice(1)}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label>Activity Name</Label>
-                                  <Input
-                                    value={workout.activity_name}
-                                    onChange={(e) => updateWorkout(day, workout.id, 'activity_name', e.target.value)}
-                                    placeholder="e.g., Upper Body Strength"
-                                  />
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Sets</Label>
-                                  <Input
-                                    type="number"
-                                    value={workout.sets}
-                                    onChange={(e) => updateWorkout(day, workout.id, 'sets', Number(e.target.value))}
-                                    min="1"
-                                    max="20"
-                                    placeholder="3"
-                                  />
-                                </div>
-                                <div>
-                                  <Label>Reps</Label>
-                                  <Input
-                                    type="number"
-                                    value={workout.reps}
-                                    onChange={(e) => updateWorkout(day, workout.id, 'reps', Number(e.target.value))}
-                                    min="1"
-                                    max="100"
-                                    placeholder="10"
-                                  />
-                                </div>
-                              </div>
+                              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{day}</h3>
                             </div>
-                          ))}
+                            <Button 
+                              onClick={() => addWorkoutToDay(day)} 
+                              size="sm"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 h-auto"
+                            >
+                              <PlusIcon className="h-3 w-3 mr-1" />
+                              Add Workout
+                            </Button>
+                          </div>
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
+                        <div className="px-4 pb-4">
+                          {workouts.length === 0 ? (
+                            <div className="text-center py-2 text-gray-500 text-sm">
+                              <p>No workouts planned for {day}</p>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {workouts.map((workout, index) => (
+                                <div key={workout.id} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3 shadow-sm">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-bold text-xs">{index + 1}</span>
+                                      </div>
+                                      <h4 className="font-semibold text-gray-900 dark:text-white">Workout {index + 1}</h4>
+                                    </div>
+                                    <Button
+                                      onClick={() => removeWorkout(day, workout.id)}
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                  
+                                  {/* Exercise Selection */}
+                                  <div>
+                                    <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Select Exercise</Label>
+                                    <SearchableDropdown
+                                      options={allExercises.map(exercise => ({
+                                        value: exercise.id.toString(),
+                                        label: exercise.name,
+                                        description: exercise.logging_category_info.display_name
+                                      }))}
+                                      value={workout.selectedExercise?.id?.toString() || ''}
+                                      onChange={(option) => {
+                                        if (option) {
+                                          const exercise = allExercises.find(ex => ex.id.toString() === option.value);
+                                          if (exercise) {
+                                            console.log('🎯 Exercise selected:', exercise);
+                                            handleWorkoutExerciseSelect(day, workout.id, exercise);
+                                          }
+                                        }
+                                      }}
+                                      placeholder={loadingExercises ? "Loading exercises..." : "Type to search 654 exercises..."}
+                                      disabled={loadingExercises}
+                                    />
+                                  </div>
 
-          {/* Actions */}
-          <div className="space-y-3 pt-4 border-t">
-            {/* Status Messages */}
-            {(!routineName.trim() || selectedActivityTypes.length === 0 || dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0) === 0) && (
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                <p>To save your routine, you need:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  {!routineName.trim() && <li>Enter a routine name</li>}
-                  {selectedActivityTypes.length === 0 && <li>Select at least one activity type</li>}
-                  {dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0) === 0 && <li>Add at least one workout</li>}
-                </ul>
+                                  {/* Dynamic Workout Fields - Show when exercise is selected */}
+                                  {(() => {
+                                    console.log('🎨 Form render check - workout.selectedExercise:', workout.selectedExercise);
+                                    console.log('🎨 Form render check - workout:', workout);
+                                    
+                                    if (!workout.selectedExercise) {
+                                      console.log('❌ No selected exercise, not rendering form');
+                                      return null;
+                                    }
+                                    
+                                    console.log('🎨 Rendering form for exercise:', workout.selectedExercise);
+                                    const category = WORKOUT_CATEGORIES.find(cat => cat.id === workout.selectedExercise?.logging_category);
+                                    const categoryData = workoutCategoryData[`${day}-${workout.id}`] || {};
+                                    
+                                    console.log('📋 Category found:', category);
+                                    console.log('📝 Category data:', categoryData);
+                                    
+                                    if (!category) {
+                                      console.error('❌ Category not found for exercise:', workout.selectedExercise);
+                                      return (
+                                        <div className="p-4 bg-red-100 dark:bg-red-900 rounded-lg border border-red-200 dark:border-red-700">
+                                          <p className="text-red-600 dark:text-red-400">
+                                            Category not found for: {workout.selectedExercise.logging_category}
+                                          </p>
+                                          <p className="text-sm text-red-500 dark:text-red-300 mt-2">
+                                            Available categories: {WORKOUT_CATEGORIES.map(cat => cat.id).join(', ')}
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return (
+                                      <div className="space-y-4">
+                                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                                            {workout.selectedExercise.name} - {category.displayName} Details
+                                          </h5>
+                                          <WorkoutInputComponents
+                                            category={category}
+                                            values={categoryData}
+                                            onChange={(field, value) => handleWorkoutCategoryDataChange(day, workout.id, field, value)}
+                                          />
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            )}
-            
-            <div className="flex gap-3">
-              <Button
-                onClick={saveRoutine}
-                disabled={loading || !routineName.trim() || selectedActivityTypes.length === 0 || dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0) === 0}
-                className="flex-1 bg-purple-600 hover:bg-purple-700"
-              >
-                {loading ? 'Saving...' : 'Save Routine'}
-              </Button>
-              <Button
-                onClick={() => setIsOpen(false)}
-                variant="outline"
-                className="flex-1"
-              >
-                Cancel
-              </Button>
+
+              {/* Actions - Aligned with other containers */}
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <div className="flex gap-4">
+                <Button
+                  onClick={saveRoutine}
+                  disabled={loading || !routineName.trim() || dayWorkouts.reduce((sum, day) => sum + day.workouts.length, 0) === 0}
+                  variant="outline"
+                  className="flex-1 border-2 border-white dark:border-white hover:bg-white hover:text-gray-900 text-white dark:text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-lg"
+                >
+                  {loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    'Save Routine'
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setIsOpen(false)}
+                  variant="outline"
+                  className="flex-1 border-2 border-white dark:border-white hover:bg-white hover:text-gray-900 text-white dark:text-white font-bold rounded-lg shadow-lg"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            </div>
             </div>
           </div>
+          
+          {/* Removed complex dropdown portal - using simple manual input */}
         </div>
       </DialogContent>
     </Dialog>

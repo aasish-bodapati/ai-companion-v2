@@ -3,14 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SimpleRoutineTemplates } from '@/components/health/SimpleRoutineTemplates';
 import { SimpleWorkoutLogger } from '@/features/health/components/SimpleWorkoutLogger';
 import { ProgressiveWorkoutLogger } from '@/components/health/ProgressiveWorkoutLogger';
 import { SmartWorkoutLogger } from '@/components/health/SmartWorkoutLogger';
 import FitnessLogsView from '@/components/health/FitnessLogsView';
+import DynamicExerciseLogger from '@/components/health/DynamicExerciseLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   FireIcon, 
   ChartBarIcon, 
@@ -18,28 +21,30 @@ import {
   ClockIcon,
   TrophyIcon,
   CalendarIcon,
-  BoltIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  BoltIcon
 } from '@heroicons/react/24/outline';
 import { useSuccessToast, useErrorToast, useWarningToast } from '@/components/ui/toast';
 import { AnimatedButton, AnimatedCard, AnimatedCounter } from '@/components/ui/micro-interactions';
-import { LoadingOverlay, StatsCardSkeleton } from '@/components/ui/loading-states';
+import { StatsCardSkeleton } from '@/components/ui/loading-states';
 import api from '@/lib/api';
 
 export default function FitnessPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [activeTab, setActiveTab] = useState('logs');
   const [showSmartLogger, setShowSmartLogger] = useState(false);
+  const [showExerciseLogger, setShowExerciseLogger] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [todayStats, setTodayStats] = useState({
     workouts: 0,
     totalMinutes: 0,
     caloriesBurned: 0
   });
-  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [workoutSuccess, setWorkoutSuccess] = useState(false);
 
@@ -51,7 +56,6 @@ export default function FitnessPage() {
   useEffect(() => {
     const checkOnboarding = async () => {
       if (!isAuthenticated) {
-        setCheckingOnboarding(false);
         return;
       }
 
@@ -62,15 +66,12 @@ export default function FitnessPage() {
       } catch (error) {
         console.error('Failed to check onboarding status:', error);
         setOnboardingStatus(false);
-        warningToast('Onboarding Status', 'Could not verify your profile completion status. You can still use the fitness tracker.');
-        // Don't redirect on error - let users access fitness page
-      } finally {
-        setCheckingOnboarding(false);
+        // Don't show warning toast for background check
       }
     };
 
     checkOnboarding();
-  }, [isAuthenticated, router, warningToast]);
+  }, [isAuthenticated]);
 
   const handleLogSuccess = async () => {
     setWorkoutSuccess(true);
@@ -110,13 +111,36 @@ export default function FitnessPage() {
     setTimeout(() => setWorkoutSuccess(false), 2000);
   };
 
+  const handleExerciseSelect = (exercise: any) => {
+    setSelectedExercise(exercise);
+    setShowExerciseLogger(true);
+  };
+
+  const handleExerciseLog = async (exerciseData: any) => {
+    try {
+      // Here you would call your API to log the exercise
+      logger.debug('Logging exercise:', exerciseData);
+      successToast('Exercise logged successfully!');
+      setShowExerciseLogger(false);
+      setSelectedExercise(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error logging exercise:', error);
+      errorToast('Failed to log exercise');
+    }
+  };
+
+  const handleExerciseCancel = () => {
+    setShowExerciseLogger(false);
+    setSelectedExercise(null);
+  };
+
   useEffect(() => {
     // Load today's stats
     const loadTodayStats = async () => {
       if (!isAuthenticated) return;
       
       try {
-        setIsLoadingStats(true);
         setStatsError(null);
         // Load today's fitness data with timezone offset
         const timezoneOffset = new Date().getTimezoneOffset();
@@ -129,7 +153,7 @@ export default function FitnessPage() {
       } catch (error) {
         console.error('Failed to load today stats:', error);
         setStatsError('Failed to load stats');
-        errorToast('Stats Loading Failed', 'Could not load your workout statistics. Using sample data.');
+        // Don't show error toast for background loading
         
         // Fallback to mock data
         setTodayStats({
@@ -138,24 +162,23 @@ export default function FitnessPage() {
           caloriesBurned: Math.floor(Math.random() * 500)
         });
       } finally {
-        setIsLoadingStats(false);
+        // Add a small delay to make the loading feel more natural
+        setTimeout(() => setIsLoadingStats(false), 300);
       }
     };
 
-    if (isAuthenticated && onboardingStatus) {
+    if (isAuthenticated) {
       loadTodayStats();
     }
-  }, [isAuthenticated, onboardingStatus, errorToast]);
+  }, [isAuthenticated, errorToast]);
 
-  if (!isAuthenticated || checkingOnboarding) {
+  if (!isAuthenticated) {
     return (
       <ProtectedRoute>
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              {!isAuthenticated ? 'Loading...' : 'Checking status...'}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -166,18 +189,19 @@ export default function FitnessPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Hero Section */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-3xl mb-8">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h1 className="text-4xl font-bold text-white mb-3">
-                    Fitness & Recovery
-                  </h1>
-                  <p className="text-xl text-white/90 mb-6 max-w-2xl">
-                    Track your workouts, monitor your progress, and optimize your fitness journey with AI-powered insights.
-                  </p>
+          <div className="max-w-4xl mx-auto space-y-8">
+            {/* Hero Section */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 rounded-3xl mb-8">
+              <div className="absolute inset-0 bg-black/10"></div>
+              <div className="relative px-6 py-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                      Fitness & Recovery
+                    </h1>
+                    <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
+                      Track your workouts, monitor your progress, and optimize your fitness journey with AI-powered insights.
+                    </p>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                     <button
                       onClick={() => setShowSmartLogger(true)}
@@ -188,13 +212,13 @@ export default function FitnessPage() {
                       <BoltIcon className="h-5 w-5" />
                       <span>Log Today&apos;s Workout</span>
                     </button>
-                    <AnimatedButton
+                    <button
                       onClick={() => setActiveTab('routines')}
-                      className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0"
+                      className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
                     >
                       <ChartBarIcon className="h-5 w-5" />
-                      View Routines
-                    </AnimatedButton>
+                      <span>View Routines</span>
+                    </button>
                   </div>
                   <div className="flex items-center gap-4 text-white/80">
                     <div className="flex items-center gap-2">
@@ -237,80 +261,86 @@ export default function FitnessPage() {
 
             {/* Today's Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <LoadingOverlay isLoading={isLoadingStats} message="Loading workout stats...">
-                <AnimatedCard hover={false}>
-                  <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white" data-testid="stats-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-orange-100 text-sm font-medium">Today&apos;s Workouts</p>
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm font-medium">Today&apos;s Workouts</p>
+                        {isLoadingStats ? (
+                          <div className="h-8 w-16 bg-orange-400/30 rounded animate-pulse"></div>
+                        ) : (
                           <AnimatedCounter 
                             value={todayStats.workouts} 
                             className="text-3xl font-bold"
                             duration={0.8}
                           />
-                        </div>
-                        <FireIcon className="h-8 w-8 text-orange-200" />
+                        )}
                       </div>
-                      {statsError && (
-                        <div className="mt-2 text-xs text-orange-200 opacity-75">
-                          ⚠️ {statsError}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              </LoadingOverlay>
+                      <FireIcon className="h-8 w-8 text-orange-200" />
+                    </div>
+                    {statsError && (
+                      <div className="mt-2 text-xs text-orange-200 opacity-75">
+                        ⚠️ {statsError}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
-              <LoadingOverlay isLoading={isLoadingStats} message="Loading workout stats...">
-                <AnimatedCard hover={false}>
-                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white" data-testid="stats-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-blue-100 text-sm font-medium">Total Minutes</p>
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium">Total Minutes</p>
+                        {isLoadingStats ? (
+                          <div className="h-8 w-16 bg-blue-400/30 rounded animate-pulse"></div>
+                        ) : (
                           <AnimatedCounter 
                             value={todayStats.totalMinutes} 
                             className="text-3xl font-bold"
                             duration={0.8}
                           />
-                        </div>
-                        <ClockIcon className="h-8 w-8 text-blue-200" />
+                        )}
                       </div>
-                      {statsError && (
-                        <div className="mt-2 text-xs text-blue-200 opacity-75">
-                          ⚠️ {statsError}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              </LoadingOverlay>
+                      <ClockIcon className="h-8 w-8 text-blue-200" />
+                    </div>
+                    {statsError && (
+                      <div className="mt-2 text-xs text-blue-200 opacity-75">
+                        ⚠️ {statsError}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
-              <LoadingOverlay isLoading={isLoadingStats} message="Loading workout stats...">
-                <AnimatedCard hover={false}>
-                  <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white" data-testid="stats-card">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-red-100 text-sm font-medium">Calories Burned</p>
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-red-100 text-sm font-medium">Calories Burned</p>
+                        {isLoadingStats ? (
+                          <div className="h-8 w-16 bg-red-400/30 rounded animate-pulse"></div>
+                        ) : (
                           <AnimatedCounter 
                             value={todayStats.caloriesBurned} 
                             className="text-3xl font-bold"
                             duration={0.8}
                           />
-                        </div>
-                        <TrophyIcon className="h-8 w-8 text-red-200" />
+                        )}
                       </div>
-                      {statsError && (
-                        <div className="mt-2 text-xs text-red-200 opacity-75">
-                          ⚠️ {statsError}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </AnimatedCard>
-              </LoadingOverlay>
+                      <TrophyIcon className="h-8 w-8 text-red-200" />
+                    </div>
+                    {statsError && (
+                      <div className="mt-2 text-xs text-red-200 opacity-75">
+                        ⚠️ {statsError}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
               <AnimatedCard hover={true} onClick={() => setActiveTab('log')}>
                 <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all duration-200 cursor-pointer">
@@ -325,6 +355,7 @@ export default function FitnessPage() {
                   </CardContent>
                 </Card>
               </AnimatedCard>
+
             </div>
 
             {/* Main Content with Tabs */}
@@ -477,6 +508,21 @@ export default function FitnessPage() {
           onClose={() => setShowSmartLogger(false)}
           onSuccess={handleLogSuccess}
         />
+
+
+        {/* Dynamic Exercise Logger Dialog */}
+        <Dialog open={showExerciseLogger} onOpenChange={setShowExerciseLogger}>
+          <DialogContent className="max-w-2xl">
+            {selectedExercise && (
+              <DynamicExerciseLogger
+                exercise={selectedExercise}
+                onSave={handleExerciseLog}
+                onCancel={handleExerciseCancel}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
       </div>
     </ProtectedRoute>
   );

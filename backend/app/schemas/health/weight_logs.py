@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
-
 class UserWeightLogBase(BaseModel):
     """Base schema for user weight logs."""
     weight_kg: float = Field(..., gt=0, le=500, description="Weight in kilograms")
@@ -13,11 +12,9 @@ class UserWeightLogBase(BaseModel):
     notes: Optional[str] = Field(None, description="Additional notes")
     log_date: datetime = Field(..., description="Date and time of the measurement")
 
-
 class UserWeightLogCreate(UserWeightLogBase):
     """Schema for creating weight logs."""
     pass
-
 
 class UserWeightLogUpdate(BaseModel):
     """Schema for updating weight logs."""
@@ -28,7 +25,6 @@ class UserWeightLogUpdate(BaseModel):
     hip_circumference_cm: Optional[float] = Field(None, ge=0, le=200)
     notes: Optional[str] = None
     log_date: Optional[datetime] = None
-
 
 class UserWeightLog(UserWeightLogBase):
     """Schema for weight log responses."""

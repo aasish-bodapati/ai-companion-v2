@@ -1,0 +1,654 @@
+name,category,difficulty_level,calories_per_minute,is_popular,usage_count,wger_id,wger_category_id
+Plank Jacks,abs,beginner,5.0,1,0,1489,10
+Deadlifts,back,beginner,5.0,1,0,184,12
+TRX dips,arms,beginner,5.0,1,0,1269,8
+Perpendicular Unilateral Landmine Row,shoulders,beginner,5.0,1,0,1580,13
+Pull Ups on Machine,back,beginner,5.0,1,0,477,12
+Barbell Wrist Curl,arms,beginner,5.0,1,0,51,8
+Long-Pulley (low Row),back,beginner,5.0,1,0,394,12
+Hammercurls,arms,beginner,5.0,1,0,272,8
+Plank Shoulter Taps,abs,beginner,5.0,1,0,1091,10
+Clap Push-UP,chest,beginner,5.0,1,0,1554,11
+Pin Squat,legs,beginner,5.0,1,0,1437,9
+Incline Bench Press - MP,chest,beginner,5.0,1,0,539,11
+Pseudo Planche Push-up,shoulders,beginner,5.0,1,0,1284,13
+Lying Rotator Cuff Exercise,shoulders,beginner,5.0,0,0,406,13
+Cable Tricep Kickback,arms,beginner,5.0,1,0,1509,8
+JALONES PECHO NEUTRO,back,beginner,5.0,1,0,1136,12
+Side Crunch,abs,beginner,5.0,1,0,576,10
+Sitting Calf Raises,legs,beginner,5.0,1,0,1494,9
+kettlebell sumo deadlift,legs,beginner,5.0,1,0,1612,9
+Kettlebell deadlifts,back,beginner,5.0,0,0,1003,12
+"Hip Raise, Lying",back,beginner,5.0,0,0,292,12
+Ab wheel,abs,beginner,5.0,1,0,1573,10
+Front Plank,abs,beginner,5.0,1,0,1307,10
+Dumbbell Split Squat,legs,beginner,5.0,0,0,1366,9
+Estiramiento de piernas y cadera,legs,beginner,5.0,1,0,1589,9
+Lower Back Extensions,back,beginner,5.0,0,0,1348,12
+T-Bar row,back,beginner,5.0,1,0,919,12
+Bayesian Curl,arms,beginner,5.0,1,0,1493,8
+Abduction while standing,legs,beginner,5.0,0,0,1096,9
+Pullover,back,beginner,5.0,1,0,1273,12
+box jumps,cardio,beginner,5.0,1,0,1373,15
+Side Bends on Machine,abs,beginner,5.0,1,0,556,10
+Wall-sit,legs,beginner,5.0,1,0,1408,9
+Pull-ups,back,beginner,5.0,1,0,475,12
+Black Widow Knee Slides,abs,beginner,5.0,1,0,1475,10
+Run - Interval Training,cardio,beginner,5.0,0,0,529,15
+Swimming 50m sprints,cardio,beginner,5.0,0,0,961,15
+Reverse Wood Chops,back,beginner,5.0,1,0,1433,12
+Handstand Pushup,shoulders,beginner,5.0,1,0,282,13
+Sliding Lateral Lunge,legs,beginner,5.0,1,0,1604,9
+Crunches With Cable,abs,beginner,5.0,1,0,173,10
+Smith Machine Split Squat,legs,beginner,5.0,1,0,1594,9
+Head tilts,back,beginner,5.0,0,0,1018,12
+Back bridge,back,beginner,5.0,0,0,1263,12
+Deficit Deadlift,back,beginner,5.0,0,0,189,12
+Cross-Bench Dumbbell Pullovers,chest,beginner,5.0,1,0,161,11
+Front Squats,legs,beginner,5.0,1,0,257,9
+Standing Side Crunches,abs,beginner,5.0,1,0,1426,10
+Rocking Triceps Pushdown,arms,beginner,5.0,1,0,1485,8
+Barbell Hack Squats,legs,beginner,5.0,0,0,43,9
+Triceps Dips (Assisted),arms,beginner,5.0,1,0,1372,8
+Sumo Squats,legs,beginner,5.0,1,0,632,9
+Incline Chest Press DB,chest,beginner,5.0,1,0,1444,11
+Seated Dumbbell Curls,arms,beginner,5.0,1,0,1289,8
+Vpushup,abs,beginner,5.0,1,0,1090,10
+Side-lying External Rotation,shoulders,beginner,5.0,0,0,578,13
+Barbell Lunges Walking,legs,beginner,5.0,0,0,802,9
+V-Bar Pulldown,back,beginner,5.0,0,0,695,12
+Dumbbell Crunches,abs,beginner,5.0,1,0,1415,10
+Forward shoulder rotation,back,beginner,5.0,0,0,1004,12
+"Lateral Rows on Cable, One Armed",shoulders,beginner,5.0,1,0,349,13
+Overhead Triceps Extension,arms,beginner,5.0,1,0,1519,8
+Reverse EZ Bar Cable Curls,arms,beginner,5.0,1,0,914,8
+Bear Walk,chest,beginner,5.0,1,0,57,11
+Lying Leg Raise,abs,beginner,5.0,1,0,1313,10
+Neutral Grip Lat Pulldown,back,beginner,5.0,1,0,1510,12
+Remo maquina agarre estrecho,back,beginner,5.0,0,0,1119,12
+Row,back,beginner,5.0,1,0,508,12
+Trx Single Arm Bicep Curl,arms,beginner,5.0,1,0,1262,8
+Alternative DB Gorilla rows,back,beginner,5.0,1,0,1501,12
+PALLOF PRESS,abs,beginner,5.0,1,0,1194,10
+Kettlebell Swings,legs,beginner,5.0,1,0,331,9
+Hip hinge,legs,beginner,5.0,1,0,1578,9
+Back extensión,back,beginner,5.0,1,0,1143,12
+Dumbbell Underhand Dead Row,arms,beginner,5.0,1,0,1463,8
+Snach,shoulders,beginner,5.0,1,0,599,13
+Reverse Preacher Curl (Close Grip),arms,beginner,5.0,1,0,913,8
+Snap Down,legs,beginner,5.0,1,0,1576,9
+Floor Skull Crusher,arms,beginner,5.0,1,0,1468,8
+Reach ups,abs,beginner,5.0,1,0,1287,10
+Leg Curls (sitting),legs,beginner,5.0,1,0,366,9
+Pause Hack Squats,legs,beginner,5.0,1,0,1464,9
+Alternating High Cable Row,back,beginner,5.0,1,0,1486,12
+No Leg Drive Dumbbell Chest Press,chest,beginner,5.0,1,0,1461,11
+Biceps Curls With Barbell,arms,beginner,5.0,1,0,91,8
+Dumbbell Hip Thrust,legs,beginner,5.0,1,0,1614,9
+Ball Slams,cardio,beginner,5.0,1,0,1525,15
+Standing biceps stretch left,arms,beginner,5.0,1,0,1232,8
+Quadruped thoracic rotation left,back,beginner,5.0,0,0,1028,12
+Standing Calf Stretch,legs,beginner,5.0,1,0,1239,9
+One Arm Triceps Extensions on Cable,arms,beginner,5.0,0,0,803,8
+Arm Raises (T/Y/I),arms,beginner,5.0,1,0,1606,8
+Bodyweight Squat HD,cardio,beginner,5.0,1,0,1312,15
+Omni Cable Cross-over,chest,beginner,5.0,1,0,1484,11
+Crunch en maquina,abs,beginner,5.0,1,0,1617,10
+commando pull-ups,abs,beginner,5.0,1,0,980,10
+Dragon squat,legs,beginner,5.0,1,0,1201,9
+Jumping Jack HD,cardio,beginner,5.0,1,0,1314,15
+Wall Drills,legs,beginner,5.0,1,0,1196,9
+Push-Up,chest,beginner,5.0,1,0,1551,11
+Dumbbell Scaption,shoulders,beginner,5.0,1,0,1602,13
+Dumbbell Chest Press,chest,beginner,5.0,1,0,1278,11
+Cable Rear Delt Fly,shoulders,beginner,5.0,1,0,822,13
+V-BAR PULL DOWNS,back,beginner,5.0,1,0,920,12
+Head turns,shoulders,beginner,5.0,0,0,1007,13
+High Knee Jumps,cardio,beginner,5.0,1,0,285,15
+Barbell Triceps Extension,arms,beginner,5.0,1,0,50,8
+Triceps Machine,arms,beginner,5.0,1,0,661,8
+"Rowing seated, narrow grip",back,beginner,5.0,1,0,512,12
+Crunches HD,abs,beginner,5.0,1,0,1319,10
+TRX Tricep Extension,arms,beginner,5.0,1,0,1266,8
+Walking,cardio,beginner,5.0,1,0,1104,15
+Rear Delt Raises,shoulders,beginner,5.0,0,0,487,13
+Plank,abs,beginner,5.0,1,0,458,10
+Bird Dog,abs,beginner,5.0,1,0,1572,10
+Leg curl with elastic,calves,beginner,5.0,1,0,1603,14
+Skullcrusher SZ-bar,arms,beginner,5.0,1,0,246,8
+Benchpress Dumbbells,chest,beginner,5.0,1,0,75,11
+Knee to Chest Stretch,legs,beginner,5.0,1,0,1452,9
+Curl de biceps con agarre prono,arms,beginner,5.0,1,0,1190,8
+Incline Bench Press - Barbell,chest,beginner,5.0,1,0,538,11
+Barbell Hip Thrust,legs,beginner,5.0,0,0,906,9
+Skipping - Standard,cardio,beginner,5.0,1,0,595,15
+Side Plank,abs,beginner,5.0,1,0,1321,10
+Reverse Nordic Curl,legs,beginner,5.0,1,0,909,9
+Cable External Rotation,shoulders,beginner,5.0,1,0,142,13
+Cable Fly,chest,beginner,5.0,1,0,924,11
+Chin Up,back,beginner,5.0,0,0,152,12
+Recruitment Pulls,arms,beginner,5.0,0,0,1216,8
+Lat Pull Down (Straight Back),back,beginner,5.0,1,0,355,12
+Upper Back,back,beginner,5.0,1,0,1381,12
+Facepull,shoulders,beginner,5.0,1,0,222,13
+Chin tuck,back,beginner,5.0,0,0,1006,12
+Bodyweight lunge HD,legs,beginner,5.0,1,0,1324,9
+Left neck stretch,shoulders,beginner,5.0,0,0,1008,13
+Backward shoulder rotation,back,beginner,5.0,0,0,1005,12
+Diagonal Shoulder Press,shoulders,beginner,5.0,0,0,193,13
+ClimbMill,cardio,beginner,5.0,1,0,1449,15
+Seated rear delt rise,back,beginner,5.0,1,0,1098,12
+Alternating bicep curls,arms,beginner,5.0,0,0,1012,8
+Scapula Pulls,back,beginner,5.0,1,0,1435,12
+Lateral Push Off,legs,beginner,5.0,1,0,1325,9
+SEATED CABLE MID TRAP SHRUG,back,beginner,5.0,1,0,922,12
+Dumbbell Hang Power Cleans,back,beginner,5.0,0,0,1087,12
+Decline Bench Press Dumbbell,chest,beginner,5.0,1,0,186,11
+Cable Press Around,chest,beginner,5.0,1,0,1457,11
+Stair Master,cardio,beginner,5.0,1,0,1548,15
+Ring Dips,arms,beginner,5.0,1,0,501,8
+Seated Knee Tuck,abs,beginner,5.0,1,0,1105,10
+Cycling,cardio,beginner,5.0,1,0,177,15
+Scissors,abs,beginner,5.0,1,0,545,10
+Deadhang,arms,beginner,5.0,0,0,182,8
+Push-up rotations,arms,beginner,5.0,0,0,985,8
+Box Squat,abs,beginner,5.0,1,0,977,10
+Triceps stretch right,arms,beginner,5.0,1,0,1231,8
+Incline Dumbbell Bench Press,chest,beginner,5.0,1,0,1276,11
+Seated Cable Row,back,beginner,5.0,0,0,1117,12
+Cable Woodchoppers,abs,beginner,5.0,1,0,145,10
+Stair Master,cardio,beginner,5.0,1,0,1549,15
+W-Raise,abs,beginner,5.0,1,0,1474,10
+Wall Squat,legs,beginner,5.0,1,0,718,9
+Patada de burro con mancuerna,legs,beginner,5.0,1,0,1616,9
+Standing Rope Forearm,arms,beginner,5.0,0,0,623,8
+rubber band glute kickback,legs,beginner,5.0,1,0,1613,9
+Pin OHP,shoulders,beginner,5.0,1,0,1439,13
+Hip Thrust,legs,beginner,5.0,1,0,294,9
+Single Leg RDL,legs,beginner,5.0,1,0,1388,9
+Shoulder dislocates,shoulders,beginner,5.0,0,0,1081,13
+Push-Ups | Decline,chest,beginner,5.0,1,0,1112,11
+Bodyweight Squat HD,legs,beginner,5.0,1,0,1315,9
+Alternate back lunges,legs,beginner,5.0,1,0,1102,9
+Machine chest fly,chest,beginner,5.0,1,0,926,11
+Right neck stretch,shoulders,beginner,5.0,0,0,1009,13
+Inverted Rows,chest,beginner,5.0,1,0,1198,11
+Splinter Sit-ups,abs,beginner,5.0,1,0,607,10
+L Hold,abs,beginner,5.0,0,0,382,10
+Front pull wide,back,beginner,5.0,1,0,258,12
+"Leg Raises, Standing",abs,beginner,5.0,1,0,378,10
+Squats on Multipress,legs,beginner,5.0,1,0,341,9
+Larsen Press,chest,beginner,5.0,1,0,1546,11
+Bent Over Rowing Reverse,back,beginner,5.0,1,0,84,12
+Side Slides + Squats,legs,beginner,5.0,1,0,1195,9
+Mountain climbers,chest,beginner,5.0,0,0,996,11
+"Rowing, T-bar",back,beginner,5.0,1,0,513,12
+Sled Push,cardio,beginner,5.0,1,0,1523,15
+TRX Obliques,abs,beginner,5.0,1,0,1259,10
+Standing Dowel Shoulder press,shoulders,beginner,5.0,0,0,1575,13
+Leverage Machine Chest Press,chest,beginner,5.0,1,0,379,11
+Jumping Jacks,legs,beginner,5.0,1,0,320,9
+Leg Press on Hackenschmidt Machine,legs,beginner,5.0,1,0,375,9
+High knees,cardio,beginner,5.0,0,0,983,15
+Cross-Body Cable Y-Raise,back,beginner,5.0,1,0,1458,12
+Medicine ball booklet crunch,abs,beginner,5.0,1,0,976,10
+Exercise Band Plantarflexion,legs,beginner,5.0,1,0,1242,9
+Calf Raise with machine (seated),legs,beginner,5.0,0,0,1365,9
+Recumbent Bike,cardio,beginner,5.0,1,0,1376,15
+lying bicep curl,arms,beginner,5.0,1,0,1535,8
+Lateral Walk,back,beginner,5.0,1,0,1514,12
+Talons fesses,cardio,beginner,5.0,1,0,1285,15
+Schoulder Raise (Dumbbell),shoulders,beginner,5.0,1,0,1338,13
+Supine press,back,beginner,5.0,1,0,1583,12
+Plate twist,abs,beginner,5.0,1,0,1079,10
+"Shoulder Press, Dumbbells",shoulders,beginner,5.0,1,0,567,13
+Rowing with TRX band,back,beginner,5.0,0,0,674,12
+Sumo Deadlift,legs,beginner,5.0,1,0,630,9
+Jerk OL,shoulders,beginner,5.0,1,0,1445,13
+Shrugs on Multipress,shoulders,beginner,5.0,1,0,575,13
+Pullover Machine,back,beginner,5.0,1,0,1384,12
+Pullup on fingerboard,arms,beginner,5.0,0,0,821,8
+High Row,back,beginner,5.0,1,0,1492,12
+Bizeps Curls Trifecta,arms,beginner,5.0,1,0,1483,8
+Arabesque,legs,beginner,5.0,1,0,1141,9
+Hamstring Chokes,legs,beginner,5.0,1,0,1398,9
+Triceps Extensions on Cable,arms,beginner,5.0,1,0,659,8
+Snatch OL,back,beginner,5.0,1,0,1447,12
+Seated Bench Press,chest,beginner,5.0,1,0,1094,11
+Hand Grip,arms,beginner,5.0,0,0,279,8
+Single Arm Plank to Row,back,beginner,5.0,1,0,1022,12
+Romanian Deadlift,legs,beginner,5.0,0,0,507,9
+Drag Pushdown,arms,beginner,5.0,1,0,1481,8
+Lying Triceps Extensions,arms,beginner,5.0,1,0,1480,8
+2 Handed Kettlebell Swing,abs,beginner,5.0,0,0,9,10
+Lying Triceps Kickback,arms,beginner,5.0,1,0,1490,8
+Triceps Overhead (Dumbbell),arms,beginner,5.0,1,0,1336,8
+Wall Slides,back,beginner,5.0,1,0,716,12
+"Shoulder Press, on Machine",shoulders,beginner,5.0,1,0,543,13
+Reverse Cable Flye,back,beginner,5.0,1,0,1473,12
+"Shoulder Press, Barbell",shoulders,beginner,5.0,1,0,566,13
+Push OHP,shoulders,beginner,5.0,1,0,1440,13
+Biceps Curl With Cable,arms,beginner,5.0,1,0,95,8
+Overhead Press,chest,beginner,5.0,1,0,687,11
+Lat Pull DB,back,beginner,5.0,1,0,1434,12
+Front Pull narrow,back,beginner,5.0,1,0,259,12
+"Calf raises, left leg",calves,beginner,5.0,1,0,1203,14
+Crunches on Machine,abs,beginner,5.0,1,0,172,10
+Standing Calf Raises,calves,beginner,5.0,1,0,622,14
+Cable Lateral Raises (Single Arm),shoulders,beginner,5.0,1,0,1378,13
+Suspended crossess,cardio,beginner,5.0,1,0,927,15
+Elevated prayer stretch,back,beginner,5.0,1,0,1027,12
+Sit Up Elbow Thrust,abs,beginner,5.0,1,0,1479,10
+Smith Machine Split Squat,legs,beginner,5.0,1,0,1593,9
+Step-ups,legs,beginner,5.0,0,0,981,9
+Seated Cable Rows,back,beginner,5.0,1,0,921,12
+Dumbbell rear delt row,shoulders,beginner,5.0,1,0,1227,13
+Barbell Bench Press - NB,chest,beginner,5.0,1,0,1295,11
+Jalón cerrado,back,beginner,5.0,1,0,1126,12
+Standing biceps stretch right,arms,beginner,5.0,1,0,1233,8
+Ball crunches,abs,beginner,5.0,0,0,165,10
+Abdominal Stabilization,abs,beginner,5.0,1,0,56,10
+Finger Pushup,arms,beginner,5.0,0,0,1217,8
+Lunges,legs,beginner,5.0,0,0,984,9
+Fingerboard 20 mm edge,arms,beginner,5.0,0,0,820,8
+Split squats right,legs,beginner,5.0,0,0,992,9
+Military Press mit SZ-Bar,shoulders,beginner,5.0,0,0,418,13
+Skullcrusher Dumbbells,arms,beginner,5.0,1,0,245,8
+Dumbbell Lunges Standing,legs,beginner,5.0,1,0,205,9
+Battle Ropes,cardio,beginner,5.0,1,0,1524,15
+Heel Touches,abs,beginner,5.0,1,0,1411,10
+Dumbbell upright-row,arms,beginner,5.0,1,0,1229,8
+Knee Raises,abs,beginner,5.0,1,0,978,10
+Dumbbell Floor Press,arms,beginner,5.0,1,0,1084,8
+Pistol squats right,legs,beginner,5.0,0,0,1020,9
+Jalón cerrado supino,back,beginner,5.0,1,0,1127,12
+TORSO TWIST,abs,beginner,5.0,1,0,1377,10
+Neck half circles,back,beginner,5.0,0,0,1017,12
+Rack Deadlift,back,beginner,5.0,1,0,484,12
+Shoulder Press (Dumbbell),arms,beginner,5.0,1,0,1337,8
+Dumbbell drag curls,arms,beginner,5.0,1,0,1224,8
+Smith Machine Close-grip Bench Press,arms,beginner,5.0,1,0,598,8
+Seated Corkscrew,abs,beginner,5.0,1,0,1477,10
+Shoulder width three-point push-up,arms,beginner,5.0,0,0,1209,8
+Biceps Curl Machine,arms,beginner,5.0,1,0,1424,8
+Cable Concentration Curl,arms,beginner,5.0,1,0,1109,8
+Incline Plank With Alternate Floor Touch,abs,beginner,5.0,1,0,312,10
+Crunches,abs,beginner,5.0,1,0,167,10
+Reverse Grip Bench Press,chest,beginner,5.0,1,0,498,11
+Triceps Pushdown,arms,beginner,5.0,1,0,1185,8
+Power Clean,chest,beginner,5.0,1,0,683,11
+Hercules Pillars,arms,beginner,5.0,1,0,284,8
+"Calf raises, one legged",calves,beginner,5.0,1,0,702,14
+Horizontal traction isometry,abs,beginner,5.0,1,0,1101,10
+Incline OHP DB,shoulders,beginner,5.0,1,0,1441,13
+Dips,chest,beginner,5.0,1,0,194,11
+Low Pulley Cable fFly,chest,beginner,5.0,1,0,1271,11
+Seated Dumbbell Calf Raise,calves,beginner,5.0,1,0,1620,14
+Straight-arm Pull Down (rope Attachment),back,beginner,5.0,1,0,629,12
+Leg Curls (standing),legs,beginner,5.0,1,0,367,9
+Leg Presses (wide),legs,beginner,5.0,1,0,374,9
+Reverse Snow Angel,back,beginner,5.0,1,0,1215,12
+Side plank right,abs,beginner,5.0,0,0,1019,10
+Barbell Ab Rollout,abs,beginner,5.0,1,0,41,10
+Overhand Cable Curl,abs,beginner,5.0,1,0,439,10
+Dumbbell Lunges Walking,legs,beginner,5.0,1,0,206,9
+Barbell Lunges Standing,legs,beginner,5.0,1,0,46,9
+Skydiver with arms in T-position,back,beginner,5.0,0,0,1210,12
+Single Leg RDL,legs,beginner,5.0,1,0,1389,9
+"Shrugs, Dumbbells",shoulders,beginner,5.0,1,0,572,13
+Butterfly Sit Up,abs,beginner,5.0,1,0,1476,10
+Hammercurls on Cable,arms,beginner,5.0,1,0,275,8
+bicycle crunches,abs,beginner,5.0,1,0,1412,10
+Full Sit Outs,abs,beginner,5.0,1,0,260,10
+Muscle up,back,beginner,5.0,1,0,423,12
+Standing Soleus Stretch,legs,beginner,5.0,1,0,1240,9
+Butterfly Reverse,shoulders,beginner,5.0,1,0,139,13
+Lat Pull Down (Leaning Back),back,beginner,5.0,1,0,354,12
+Low-Cable Cross-Over - NB,chest,beginner,5.0,1,0,1296,11
+Frog stand,abs,beginner,5.0,1,0,1238,10
+Seated Hip Adduction,legs,beginner,5.0,1,0,12,9
+Unilateral Cable row,back,beginner,5.0,1,0,1621,12
+Remo maquina agarre estrecho supino,back,beginner,5.0,0,0,1120,12
+Pull-up Isometric Hold,back,beginner,5.0,1,0,1537,12
+Schwimmen,cardio,beginner,5.0,0,0,1574,15
+Trunk Rotation With Cable,abs,beginner,5.0,1,0,672,10
+DB Skull Crushers,arms,beginner,5.0,1,0,1499,8
+Reverse Curl,arms,beginner,5.0,1,0,495,8
+Chin-ups,back,beginner,5.0,1,0,154,12
+Incline Chest-Supported Dumbbell Row,back,beginner,5.0,1,0,1283,12
+March or jog in place,cardio,beginner,5.0,1,0,1584,15
+Dumbbell Frog Press,legs,beginner,5.0,1,0,1503,9
+Isometria trazioni impugnatura inversa,back,beginner,5.0,1,0,1282,12
+Front Raises,shoulders,beginner,5.0,1,0,256,13
+Lat Pull Down (close grip),back,beginner,5.0,0,0,1350,12
+Turkish Get-Up,abs,beginner,5.0,1,0,675,10
+Straight-arm Pull Down (bar Attachment),back,beginner,5.0,1,0,628,12
+Seated Triceps Press,arms,beginner,5.0,1,0,549,8
+Decline Bench Press Barbell,chest,beginner,5.0,1,0,185,11
+Leverage Machine Iso Row,back,beginner,5.0,1,0,380,12
+Plantarflexion Stretch with Band,legs,beginner,5.0,0,0,1275,9
+Spider Curl,arms,beginner,5.0,1,0,1465,8
+Ski Machine,cardio,beginner,5.0,1,0,1526,15
+Lateral-to-Front Raises,shoulders,beginner,5.0,1,0,351,13
+Pendular hack,legs,beginner,5.0,0,0,1521,9
+Glute Drive,legs,beginner,5.0,1,0,1528,9
+Incline Dumbbell Press,chest,beginner,5.0,1,0,1277,11
+Cable Curls,arms,beginner,5.0,1,0,1531,8
+TRX Rows,abs,beginner,5.0,1,0,959,10
+Isometric Wipers,chest,beginner,5.0,1,0,314,11
+Diamond push ups,chest,beginner,5.0,1,0,386,11
+Sitting Calf Stretch (Dorsiflexion),legs,beginner,5.0,1,0,1274,9
+Barbell squat,legs,beginner,5.0,1,0,1627,9
+Leg Curl,legs,beginner,5.0,1,0,364,9
+Dumbbell bicep curl to press,arms,beginner,5.0,1,0,1226,8
+High Pull,back,beginner,5.0,1,0,1187,12
+Incline Skull Crush,arms,beginner,5.0,1,0,911,8
+Push-Ups | Parallettes,chest,beginner,5.0,1,0,1113,11
+Biceps Curls With Dumbbell,arms,beginner,5.0,1,0,92,8
+Treadmill Cardio,cardio,beginner,5.0,0,0,1615,15
+Plank,chest,beginner,5.0,1,0,1317,11
+Low Pulley Cable fFly,chest,beginner,5.0,1,0,1272,11
+Ice Scream maker,abs,beginner,5.0,1,0,1248,10
+Alternating dumbbell hammer curl,arms,beginner,5.0,1,0,1567,8
+Triceps Extensions on Cable With Bar,arms,beginner,5.0,1,0,660,8
+Australian pull-ups,arms,beginner,5.0,1,0,1219,8
+Standing Pancake Good Morning,legs,beginner,5.0,1,0,1397,9
+Nordic Curl,legs,beginner,5.0,1,0,910,9
+Quadriped Arm and Leg Raise,back,beginner,5.0,1,0,957,12
+No push-up burpees,chest,beginner,5.0,0,0,998,11
+Dips Between Two Benches,arms,beginner,5.0,1,0,197,8
+Butterfly,chest,beginner,5.0,1,0,135,11
+Bronco,cardio,beginner,5.0,0,0,1579,15
+Reverse lunges,legs,beginner,5.0,0,0,999,9
+Reverse Bar Curl,arms,beginner,5.0,1,0,493,8
+Wall Handstand,shoulders,beginner,5.0,0,0,711,13
+Delt Stretch,shoulders,beginner,5.0,1,0,1536,13
+Pike Push Ups,arms,beginner,5.0,1,0,454,8
+Russian Twist,abs,beginner,5.0,1,0,1193,10
+Reverse Plank,abs,beginner,5.0,0,0,500,10
+Push Press,shoulders,beginner,5.0,1,0,478,13
+Cycling cardio session,cardio,beginner,5.0,0,0,1204,15
+Side Dumbbell Trunk Flexion,abs,beginner,5.0,1,0,577,10
+Bench Press,chest,beginner,5.0,1,0,73,11
+Roman Chair,abs,beginner,5.0,0,0,505,10
+Front lever pull-up,abs,beginner,5.0,1,0,1252,10
+Dumbbell Bent Over Row,shoulders,beginner,5.0,1,0,1085,13
+JALON EN BANCO INCLINADO,back,beginner,5.0,1,0,1138,12
+"Fly With Dumbbells, Decline Bench",chest,beginner,5.0,1,0,239,11
+Dumbbell Hex Press,chest,beginner,5.0,0,0,1353,11
+Decline Pushups,chest,beginner,5.0,1,0,188,11
+Clean,legs,beginner,5.0,1,0,1438,9
+Cossack squat,legs,beginner,5.0,1,0,1407,9
+Incline Close Grip Barbell Bench Press,arms,beginner,5.0,1,0,1467,8
+Bent Over Rowing Reverse,back,beginner,5.0,1,0,525,12
+Kopfüber Gewichtaufheben,abs,beginner,5.0,1,0,1322,10
+Thruster,legs,beginner,5.0,1,0,650,9
+Hindu Squats,legs,beginner,5.0,1,0,291,9
+Barbell Reverse Wrist Curl,arms,beginner,5.0,0,0,48,8
+Counterclockwise neck circles,back,beginner,5.0,0,0,1016,12
+Double Kettlebell Front Squat,legs,beginner,5.0,1,0,1361,9
+Bent Over Dumbbell Rows,back,beginner,5.0,1,0,81,12
+Clockwise neck circles,back,beginner,5.0,0,0,1015,12
+Alternating Biceps Curls With Dumbbell,arms,beginner,5.0,1,0,1192,8
+Dumbbell sumo deadlift,legs,beginner,5.0,0,0,1088,9
+Jalón abierto,back,beginner,5.0,1,0,1124,12
+"Upright Row, on Multi Press",shoulders,beginner,5.0,1,0,691,13
+Prone Scapular Retraction - Arms at Side,back,beginner,5.0,1,0,468,12
+knee push-ups,arms,beginner,5.0,1,0,1218,8
+Double Leg Calf Raise,legs,beginner,5.0,1,0,1243,9
+Wall balls,legs,beginner,5.0,1,0,1100,9
+Dumbbell Incline Curl,arms,beginner,5.0,1,0,204,8
+"Calf raises, right leg",calves,beginner,5.0,0,0,1021,14
+Low Pulley Cable fFly,chest,beginner,5.0,1,0,1270,11
+Pin Bench Press BB,chest,beginner,5.0,1,0,1436,11
+Kettlebell Swing,abs,beginner,5.0,1,0,960,10
+Incline Crunches,abs,beginner,5.0,1,0,171,10
+Respiración profunda (de pie o sentado),chest,beginner,5.0,1,0,1591,11
+Pistol Squat,legs,beginner,5.0,1,0,456,9
+Handstand,shoulders,beginner,5.0,1,0,1516,13
+Bodyweight Biceps Curl,arms,beginner,5.0,1,0,1608,8
+Low Box Squat - Wide Stance,legs,beginner,5.0,1,0,397,9
+Speed Deadlift,legs,beginner,5.0,0,0,604,9
+Negative Crunches,abs,beginner,5.0,1,0,427,10
+Dumbbell Shoulder Rotations,shoulders,beginner,5.0,1,0,1429,13
+Hanging Leg Raises,abs,beginner,5.0,1,0,283,10
+Dragon-flag,abs,beginner,5.0,1,0,1409,10
+Stationary Bike,cardio,beginner,5.0,0,0,624,15
+Shotgun Row,back,beginner,5.0,1,0,562,12
+Towel Superman,back,beginner,5.0,1,0,1455,12
+Superman,back,beginner,5.0,1,0,636,12
+Hollow Hold,abs,beginner,5.0,1,0,297,10
+Dumbbell close grip bench press,arms,beginner,5.0,1,0,1228,8
+TRX gorilla biceps curl,arms,beginner,5.0,1,0,1261,8
+Hamstring Kicks,legs,beginner,5.0,1,0,1387,9
+High-Incline Smith Machine Press,chest,beginner,5.0,1,0,1508,11
+Curl with kettlebell two hands,arms,beginner,5.0,1,0,974,8
+Rear Delt Raise,shoulders,beginner,5.0,1,0,829,13
+Plank-to-Elbow Extension,abs,beginner,5.0,1,0,1406,10
+Sloper hanging,arms,beginner,5.0,0,0,804,8
+Pause Bench,chest,beginner,5.0,1,0,445,11
+Incline Bench Press - Dumbbell,chest,beginner,5.0,1,0,537,11
+Wide Pull Up,back,beginner,5.0,1,0,1542,12
+Dumbbell Deadlift,legs,beginner,5.0,0,0,1370,9
+Hyper Y W Combo,back,beginner,5.0,1,0,1487,12
+3D lunge warmup,cardio,beginner,5.0,0,0,1115,15
+Split squats left,legs,beginner,5.0,0,0,991,9
+Leg Presses (narrow),legs,beginner,5.0,1,0,373,9
+Elephant Walks,legs,beginner,5.0,1,0,1391,9
+Axe Hold,arms,beginner,5.0,0,0,31,8
+Jumping Jack HD,cardio,beginner,5.0,1,0,1316,15
+Wide-grip Pulldown,back,beginner,5.0,1,0,723,12
+Close-grip Press-ups,chest,beginner,5.0,1,0,1086,11
+Overhead Cable Tricep Extension,arms,beginner,5.0,1,0,1513,8
+Weighted Step-ups,legs,beginner,5.0,0,0,722,9
+Dynamic Planche,abs,beginner,5.0,1,0,1286,10
+Toes to bar,abs,beginner,5.0,0,0,1529,10
+PULL OVER POLEA ALTA,back,beginner,5.0,1,0,1137,12
+Leg Extension,legs,beginner,5.0,1,0,369,9
+Rotary Torso Machine,abs,beginner,5.0,1,0,1374,10
+Overhead Squat,legs,beginner,5.0,0,0,441,9
+Kong Curl,arms,beginner,5.0,1,0,1511,8
+Barbell Hip Thrust,legs,beginner,5.0,1,0,902,9
+Sit-ups,abs,beginner,5.0,1,0,591,10
+YWTs,back,beginner,5.0,0,0,1083,12
+Hyperextensions,back,beginner,5.0,1,0,301,12
+Front neck stretch,back,beginner,5.0,0,0,1011,12
+Front Plate Raise,shoulders,beginner,5.0,1,0,827,13
+Front Raises with Plates,shoulders,beginner,5.0,1,0,254,13
+"Leg Raises, Lying",abs,beginner,5.0,1,0,377,10
+Double Kettlebell Clean and Press,arms,beginner,5.0,1,0,1360,8
+DB Underhand bench press,chest,beginner,5.0,1,0,1497,11
+Cardio en bicicleta estática,cardio,beginner,5.0,0,0,1618,15
+Torso rotation strech,chest,beginner,5.0,1,0,1451,11
+Forward arm circles,arms,beginner,5.0,0,0,994,8
+Side split squats right,legs,beginner,5.0,0,0,987,9
+Roll Down,back,beginner,5.0,0,0,1399,12
+Dynamic side hold,abs,beginner,5.0,1,0,1099,10
+Side-laying interior rotation,shoulders,beginner,5.0,1,0,1582,13
+Side split squats left,legs,beginner,5.0,0,0,986,9
+Front lever tuck,back,beginner,5.0,1,0,1214,12
+Standing Bicep Curl,arms,beginner,5.0,1,0,621,8
+Arnold Shoulder Press,shoulders,beginner,5.0,0,0,20,13
+Sit & Reach,back,beginner,5.0,1,0,1394,12
+TRX roll out,abs,beginner,5.0,1,0,1246,10
+Jogging,cardio,beginner,5.0,0,0,319,15
+Bench Press Narrow Grip,arms,beginner,5.0,1,0,76,8
+scorpion kick,back,beginner,5.0,0,0,1206,12
+Elliptical,cardio,beginner,5.0,1,0,962,15
+Tibialis raises,calves,beginner,5.0,0,0,1200,14
+Back neck stretch,back,beginner,5.0,0,0,1010,12
+Push-Ups | Incline,chest,beginner,5.0,1,0,1111,11
+Deadbug,abs,beginner,5.0,0,0,178,10
+Bent over row to external rotation,back,beginner,5.0,0,0,1082,12
+Good Morning,legs,beginner,5.0,1,0,1392,9
+Chest Press,chest,beginner,5.0,1,0,129,11
+Dumbbell Goblet Squat,legs,beginner,5.0,1,0,203,9
+Zone 2 Running,cardio,beginner,5.0,0,0,908,15
+Devil’s Press,shoulders,beginner,5.0,1,0,1556,13
+Landmine press,shoulders,beginner,5.0,1,0,346,13
+Single Leg Extension,legs,beginner,5.0,1,0,71,9
+Underhand Lat Pull Down,back,beginner,5.0,1,0,684,12
+Meditación guiada o libre,cardio,beginner,5.0,0,0,1592,15
+Wall Pushup,arms,beginner,5.0,1,0,713,8
+Child's pose,back,beginner,5.0,0,0,1002,12
+Remada unilateral no cabo,back,beginner,5.0,1,0,1491,12
+"Wrist curl, dumbbells",arms,beginner,5.0,0,0,1205,8
+Pendelay Rows,back,beginner,5.0,1,0,448,12
+Calf Press Using Leg Press Machine,calves,beginner,5.0,1,0,146,14
+Crossbody Leg Swings,legs,beginner,5.0,1,0,1395,9
+Prisoner Squat,legs,beginner,5.0,0,0,1208,9
+Bag training,cardio,beginner,5.0,1,0,1092,15
+Cable Shrug-In,shoulders,beginner,5.0,1,0,1472,13
+Burpees,chest,beginner,5.0,0,0,132,11
+Hack Squats,legs,beginner,5.0,1,0,1414,9
+Seated bench press,chest,beginner,5.0,1,0,1095,11
+Dumbbell Single-leg Hip Thrust,legs,beginner,5.0,1,0,1234,9
+Forearm Curls (underhand grip),arms,beginner,5.0,0,0,1333,8
+Fly With Cable,chest,beginner,5.0,1,0,237,11
+Smith Press,shoulders,beginner,5.0,1,0,916,13
+Kroc Row,back,beginner,5.0,1,0,1471,12
+Calf Raise using Hack Squat Machine,legs,beginner,5.0,1,0,1466,9
+Cable Cross-over,chest,beginner,5.0,1,0,323,11
+Lateral Raises,shoulders,beginner,5.0,1,0,348,13
+Blackroll,back,beginner,5.0,0,0,1363,12
+Seated Knee Tuck,abs,beginner,5.0,1,0,1106,10
+Dumbbel Bradford press,shoulders,beginner,5.0,1,0,1504,13
+Fly With Dumbbells,chest,beginner,5.0,1,0,238,11
+Body-Ups,arms,beginner,5.0,0,0,112,8
+High Pull,shoulders,beginner,5.0,1,0,289,13
+Good Mornings,legs,beginner,5.0,1,0,268,9
+Side to Side Push Ups,chest,beginner,5.0,1,0,583,11
+"Shoulder Press, on Multi Press",shoulders,beginner,5.0,1,0,569,13
+Side Lying Hip Abduction,legs,beginner,5.0,0,0,1202,9
+Braced Squat,legs,beginner,5.0,1,0,124,9
+Squats,legs,beginner,5.0,1,0,615,9
+"Upright Row, SZ-bar",shoulders,beginner,5.0,1,0,693,13
+Archer Pull Up,back,beginner,5.0,1,0,1545,12
+Crossbody Hamstring Stretch,legs,beginner,5.0,1,0,1400,9
+Dumbbell Cheat Curl,arms,beginner,5.0,1,0,1482,8
+Dumbbell Pullover,back,beginner,5.0,1,0,1488,12
+Trap press,shoulders,beginner,5.0,1,0,1581,13
+Bulgarian split squats left,legs,beginner,5.0,0,0,988,9
+punches,arms,beginner,5.0,1,0,1462,8
+Run,cardio,beginner,5.0,0,0,527,15
+Renegade Row,back,beginner,5.0,1,0,490,12
+Flutter Kicks,abs,beginner,5.0,1,0,235,10
+Extensión de gluteo en  máquina,legs,beginner,5.0,1,0,1132,9
+Sitting Calf Raises,calves,beginner,5.0,1,0,590,14
+Bent-over Lateral Raises,shoulders,beginner,5.0,0,0,82,13
+Stiff-legged Deadlifts,legs,beginner,5.0,1,0,627,9
+Leg Raise,legs,beginner,5.0,1,0,376,9
+Kneeling kickbacks,legs,beginner,5.0,0,0,990,9
+Standing Pancake,legs,beginner,5.0,1,0,1396,9
+Dumbbell Concentration Curl,arms,beginner,5.0,1,0,202,8
+Bent High Pulls,shoulders,beginner,5.0,1,0,79,13
+1-Arm Half-Kneeling Lat Pulldown,back,beginner,5.0,1,0,1470,12
+Toe Taps,abs,beginner,5.0,1,0,1425,10
+Bulgarian split squats right,legs,beginner,5.0,0,0,989,9
+Toe Touch,legs,beginner,5.0,1,0,1390,9
+"Rowing, Lying on Bench",back,beginner,5.0,1,0,510,12
+Pendulum Squat,legs,beginner,5.0,1,0,1527,9
+TRX hammer curl,arms,beginner,5.0,1,0,1260,8
+Seated W Curl,arms,beginner,5.0,1,0,1448,8
+One Arm Bent Row,back,beginner,5.0,0,0,1186,12
+Incline Dumbbell Row,back,beginner,5.0,0,0,310,12
+Dumbbell farmer's carrie,legs,beginner,5.0,0,0,1116,9
+Reverse Grip Barbell Curls,arms,beginner,5.0,1,0,1290,8
+Medicine ball twist,abs,beginner,5.0,1,0,1089,10
+Handstand Push Up,shoulders,beginner,5.0,1,0,907,13
+Band pull-aparts,back,beginner,5.0,0,0,1380,12
+High plank,chest,beginner,5.0,0,0,1001,11
+Single-arm Preacher Curl,arms,beginner,5.0,1,0,584,8
+Bent over Cable Flye,chest,beginner,5.0,1,0,1469,11
+4-count burpees,chest,beginner,5.0,0,0,997,11
+Straight Bar Cable Front Raise,shoulders,beginner,5.0,1,0,917,13
+Biceps Close Grip Pull Down,arms,beginner,5.0,1,0,1280,8
+Quadruped thoracic rotation right,back,beginner,5.0,0,0,1029,12
+Copenhagen Adduction Exercise,legs,beginner,5.0,1,0,1605,9
+High-Cable Cross Tricep Extention - NB,arms,beginner,5.0,1,0,1298,8
+Floor dips,arms,beginner,5.0,0,0,1000,8
+Front Lever,abs,beginner,5.0,1,0,1245,10
+Squat Thrust,legs,beginner,5.0,1,0,616,9
+Shoulder Raise Side and Front DB,shoulders,beginner,5.0,1,0,1443,13
+"Romanian deadlift, single leg",legs,beginner,5.0,1,0,1211,9
+Single Leg Hamstring Stretch,legs,beginner,5.0,1,0,1393,9
+Bent Over Rowing,back,beginner,5.0,1,0,83,12
+Triceps stretch left,arms,beginner,5.0,1,0,1230,8
+"Shrugs, Barbells",shoulders,beginner,5.0,1,0,571,13
+DB Upper Chest Variation,chest,beginner,5.0,1,0,1496,11
+Front Wood Chop,back,beginner,5.0,0,0,516,12
+Clean and Jerk OL,shoulders,beginner,5.0,1,0,1446,13
+"Long-Pulley, Narrow",back,beginner,5.0,1,0,395,12
+Crunches With Legs Up,abs,beginner,5.0,1,0,174,10
+Arco femorale una gamba,back,beginner,5.0,1,0,1294,12
+Biceps with TRX,abs,beginner,5.0,1,0,958,10
+Upright Row w/ Dumbbells,shoulders,beginner,5.0,1,0,694,13
+Rest (for timed workouts),arms,beginner,5.0,0,0,1114,8
+Plate Pinch Hold,arms,beginner,5.0,1,0,1430,8
+EZ-Bar Skullcrusher - NB,arms,beginner,5.0,1,0,1297,8
+Meadows Row,back,beginner,5.0,1,0,1304,12
+Estiramiento de brazos y cuello,abs,beginner,5.0,1,0,1590,10
+Seated Dumbbell Side Lateral,shoulders,beginner,5.0,1,0,918,13
+Dumbbell Push-Up,chest,beginner,5.0,0,0,801,11
+Exercise Band Dorsiflexion,legs,beginner,5.0,1,0,1241,9
+JM Press,arms,beginner,5.0,1,0,1302,8
+walking bridge,abs,beginner,5.0,1,0,1103,10
+One armed push-ups,abs,beginner,5.0,1,0,1293,10
+Bretzel stretch,back,beginner,5.0,1,0,1577,12
+Yoga exercise: Cow-cat,back,beginner,5.0,1,0,1244,12
+one-handed kettlebell curls,arms,beginner,5.0,1,0,975,8
+Drop Curl,arms,beginner,5.0,1,0,1512,8
+Helms Row,back,beginner,5.0,1,0,1303,12
+Left levator scapulae stretch,back,beginner,5.0,0,0,1013,12
+Trazioni impugnatura inversa,abs,beginner,5.0,1,0,1292,10
+Upper External Oblique,chest,beginner,5.0,1,0,688,11
+Close-grip Lat Pull Down,back,beginner,5.0,1,0,158,12
+Planche de cote dynamique,abs,beginner,5.0,1,0,1288,10
+Scorpion Kick,back,beginner,5.0,0,0,1207,12
+Glute Bridge,legs,beginner,5.0,1,0,265,9
+BUS DRIVERS,shoulders,beginner,5.0,1,0,915,13
+Rowing Machine,cardio,beginner,5.0,1,0,1093,15
+Lying Dumbbell Curls,arms,beginner,5.0,1,0,1530,8
+Leg Extension,legs,beginner,5.0,1,0,851,9
+Leg raises pull up bar,abs,beginner,5.0,1,0,979,10
+High Knee Skips HD,cardio,beginner,5.0,1,0,1318,15
+Jump rope: basic jumps,cardio,beginner,5.0,0,0,993,15
+Leg Press,legs,beginner,5.0,1,0,371,9
+Tricep Pushdown on Cable,arms,beginner,5.0,1,0,805,8
+Plank with Alternating Leg Lift,legs,beginner,5.0,1,0,1410,9
+Tricep Dumbbell Kickback,arms,beginner,5.0,1,0,655,8
+Kreis Press DB,shoulders,beginner,5.0,1,0,1442,13
+Leg Curls (laying),legs,beginner,5.0,1,0,365,9
+Cobra Stretch,back,beginner,5.0,1,0,1450,12
+Incline Dumbbell Fly,chest,beginner,5.0,1,0,308,11
+Dumbbell wide bicep curls,arms,beginner,5.0,1,0,1225,8
+Claps over the head,arms,beginner,5.0,1,0,1223,8
+SMITH MACHINE SLIGHT INCLINE PRESS,chest,beginner,5.0,1,0,925,11
+Incline Push up,chest,beginner,5.0,1,0,313,11
+Hindu Pushups,shoulders,beginner,5.0,1,0,1080,13
+Butterfly Narrow Grip,chest,beginner,5.0,1,0,137,11
+Dumbbells on Scott Machine,arms,beginner,5.0,1,0,208,8
+Squat Jumps,legs,beginner,5.0,1,0,614,9
+Typewriter Pull-ups,back,beginner,5.0,1,0,1607,12
+Elbows Tucked DB Bench Press,arms,beginner,5.0,1,0,1498,8
+Biceps Curls With SZ-bar,arms,beginner,5.0,1,0,94,8
+Shoulder Shrug,shoulders,beginner,5.0,1,0,570,13
+LYING DUMBBELL ROW SS SEATED SHRUG,back,beginner,5.0,1,0,923,12
+Flexión lateral,abs,beginner,5.0,0,0,1188,10
+Backward arm circles,arms,beginner,5.0,0,0,995,8
+Dumbbell Triceps Extension,arms,beginner,5.0,1,0,211,8
+DB UCV,chest,beginner,5.0,1,0,1500,11
+Leg Press Toe Press,legs,beginner,5.0,1,0,1515,9
+Bench Dips On Floor HD,arms,beginner,5.0,1,0,1320,8
+Barbell Hip Thrust,legs,beginner,5.0,1,0,901,9
+Side Plank,abs,beginner,5.0,1,0,580,10
+Right levator scapulae stretch,back,beginner,5.0,0,0,1014,12
+Extensión de gluteos en polea,legs,beginner,5.0,1,0,1131,9
+Jalón abierto supino,back,beginner,5.0,1,0,1125,12
+Run - Treadmill,cardio,beginner,5.0,0,0,530,15
+Preacher Curls,arms,beginner,5.0,1,0,465,8
+Straight Bar Cable Curls,arms,beginner,5.0,1,0,912,8
+DB Cross Body Hammer Curls,arms,beginner,5.0,1,0,1502,8
+Calf Raises on Hackenschmitt Machine,calves,beginner,5.0,1,0,148,14
+Levitation Crunch,abs,beginner,5.0,1,0,1478,10
+Incline Bench Reverse Fly - Hello,back,beginner,5.0,1,0,828,12

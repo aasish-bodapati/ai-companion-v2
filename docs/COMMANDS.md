@@ -2,16 +2,18 @@
 
 ## 🚀 Essential Commands
 
-### Frontend Development
+### Stop Servers
 ```bash
-# From frontend/ directory
-npm run dev              # Start Next.js dev server (port 3000)
-npm run dev:webpack      # Start with webpack (alternative)
-npm run build            # Build for production
-npm run start            # Start production server
-npm run lint             # Run ESLint
-npm run typecheck        # Run TypeScript checks
-```
+# Kill Python server (Windows)
+taskkill /f /im python.exe
+
+# Or kill by port (Windows)
+netstat -ano | findstr :8000
+taskkill /f /pid <PID_NUMBER>
+
+# Kill Node server (Windows)
+taskkill /f /im node.exe
+
 
 ### Backend Development
 ```bash
@@ -35,17 +37,7 @@ alembic revision --autogenerate -m "description"
 python init_db.py
 ```
 
-### Stop Servers
-```bash
-# Kill Python server (Windows)
-taskkill /f /im python.exe
 
-# Or kill by port (Windows)
-netstat -ano | findstr :8000
-taskkill /f /pid <PID_NUMBER>
-
-# Kill Node server (Windows)
-taskkill /f /im node.exe
 ```
 
 ## 🔧 Development Workflow

@@ -44,7 +44,7 @@ def get_fitness_logs(
 
         # Get logs from database
         logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_date_obj,
             end_date=end_date_obj,
@@ -63,7 +63,7 @@ def get_fitness_logs(
         total_workouts = len(all_logs)
         total_duration = sum(log.duration_minutes or 0 for log in all_logs)
         total_calories = sum(log.calories_burned or 0 for log in all_logs)
-        
+
         # Note: difficulty_rating not available in current model
         average_difficulty = 0
 
@@ -79,12 +79,12 @@ def get_fitness_logs(
                 exercise_detail = {
                     "exercise_name": log.activity_name or log.activity_type,
                     "sets": log.sets,
-                    "reps": log.reps,
+                    "reps": str(log.reps) if log.reps else "0",
                     "weight_used": log.weight_kg,
                     "notes": log.notes
                 }
                 exercises.append(exercise_detail)
-            
+
             log_dict = {
                 "id": str(log.id),
                 "user_id": str(log.user_id),
@@ -97,6 +97,7 @@ def get_fitness_logs(
                 "difficulty_rating": None,  # Not available in current model
                 "notes": log.notes,
                 "logged_at": log.activity_date.isoformat() if log.activity_date else None,
+                "activity_date": log.activity_date.isoformat() if log.activity_date else None,
                 "created_at": log.created_at.isoformat() if log.created_at else None
             }
             logs_data.append(log_dict)
@@ -140,7 +141,7 @@ def get_fitness_log(
         exercise_detail = {
             "exercise_name": log.activity_name or log.activity_type,
             "sets": log.sets,
-            "reps": log.reps,
+            "reps": str(log.reps) if log.reps else "0",
             "weight_used": log.weight_kg,
             "notes": log.notes
         }
@@ -158,6 +159,7 @@ def get_fitness_log(
         "difficulty_rating": None,  # Not available in current model
         "notes": log.notes,
         "logged_at": log.activity_date.isoformat() if log.activity_date else None,
+        "activity_date": log.activity_date.isoformat() if log.activity_date else None,
         "created_at": log.created_at.isoformat() if log.created_at else None
     }
 
@@ -170,28 +172,47 @@ def create_fitness_log(
 ):
     """Create a new fitness log."""
     try:
-        # Convert exercises to JSON string if it's a list
-        if isinstance(log_data.exercises, list):
-            log_data.exercises = json.dumps(log_data.exercises)
-
-        log = fitness_log.create(db, obj_in=log_data, user_id=current_user.id)
+        # Convert to dict and handle field mapping
+        log_data_dict = log_data.model_dump()
         
+        # Handle field name mapping from frontend
+        if 'workout_name' in log_data_dict and log_data_dict['workout_name']:
+            log_data_dict['activity_name'] = log_data_dict['workout_name']
+        
+        # Set default activity_date if not provided
+        if not log_data_dict.get('activity_date'):
+            from datetime import datetime
+            log_data_dict['activity_date'] = datetime.now()
+        
+        # Convert exercises to JSON string if it's a list
+        if 'exercises' in log_data_dict and isinstance(log_data_dict['exercises'], list):
+            log_data_dict['exercises'] = json.dumps(log_data_dict['exercises'])
+
+        # Create a new schema instance with the processed data
+        from app.schemas.health.fitness_log import FitnessLogCreate
+        processed_log_data = FitnessLogCreate(**log_data_dict)
+        
+        log = fitness_log.create_with_user(db, obj_in=processed_log_data, user_id=current_user.id)
+
         return {
             "id": str(log.id),
             "user_id": str(log.user_id),
-            "routine_id": str(log.routine_id) if log.routine_id else None,
-            "routine_name": log.routine_name,
-            "workout_name": log.workout_name,
-            "exercises": json.loads(log.exercises) if isinstance(log.exercises, str) else log.exercises,
+            "routine_id": None,  # Not available in current model
+            "routine_name": None,  # Not available in current model
+            "workout_name": log.activity_name,  # Map activity_name to workout_name for frontend
+            "exercises": [],  # Not available in current model
             "duration_minutes": log.duration_minutes,
             "calories_burned": log.calories_burned,
             "difficulty_rating": None,  # Not available in current model
             "notes": log.notes,
-            "logged_at": log.logged_at.isoformat() if log.logged_at else None,
+            "logged_at": log.activity_date.isoformat() if log.activity_date else None,  # Map activity_date to logged_at
+            "activity_date": log.activity_date.isoformat() if log.activity_date else None,
             "created_at": log.created_at.isoformat() if log.created_at else None
         }
     except Exception as e:
         print(f"Error creating fitness log: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to create fitness log")
 
 @router.put("/{log_id}", response_model=dict)
@@ -213,7 +234,7 @@ def update_fitness_log(
             log_data.exercises = json.dumps(log_data.exercises)
 
         updated_log = fitness_log.update(db, db_obj=log, obj_in=log_data)
-        
+
         return {
             "id": str(updated_log.id),
             "user_id": str(updated_log.user_id),
@@ -280,7 +301,7 @@ def get_fitness_stats(
         total_workouts = len(logs)
         total_duration = sum(log.duration_minutes or 0 for log in logs)
         total_calories = sum(log.calories_burned or 0 for log in logs)
-        
+
         # Note: difficulty_rating not available in current model
         average_difficulty = 0
 
@@ -352,10 +373,10 @@ def get_workout_streak(
     try:
         # Get all logs for streak calculation
         logs = fitness_log.get_user_logs(db, user_id=current_user.id)
-        
+
         current_streak = calculate_workout_streak(logs)
         longest_streak = calculate_longest_streak(logs)
-        
+
         # Get last workout date
         last_workout_date = None
         if logs:
@@ -376,40 +397,40 @@ def calculate_workout_streak(logs):
     """Calculate current workout streak in days."""
     if not logs:
         return 0
-    
+
     # Sort logs by date (most recent first)
     sorted_logs = sorted(logs, key=lambda x: x.activity_date or x.created_at, reverse=True)
-    
+
     streak = 0
     current_date = datetime.now().date()
-    
+
     for log in sorted_logs:
         log_date = (log.activity_date or log.created_at).date()
-        
+
         # If this is today or yesterday, continue the streak
         if log_date == current_date or log_date == current_date - timedelta(days=1):
             streak += 1
             current_date = log_date
         else:
             break
-    
+
     return streak
 
 def calculate_longest_streak(logs):
     """Calculate the longest workout streak."""
     if not logs:
         return 0
-    
+
     # Sort logs by date
     sorted_logs = sorted(logs, key=lambda x: x.activity_date or x.created_at)
-    
+
     longest_streak = 0
     current_streak = 0
     last_date = None
-    
+
     for log in sorted_logs:
         log_date = (log.activity_date or log.created_at).date()
-        
+
         if last_date is None:
             current_streak = 1
         elif log_date == last_date + timedelta(days=1):
@@ -417,7 +438,7 @@ def calculate_longest_streak(logs):
         else:
             longest_streak = max(longest_streak, current_streak)
             current_streak = 1
-        
+
         last_date = log_date
-    
+
     return max(longest_streak, current_streak)

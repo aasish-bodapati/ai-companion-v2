@@ -20,7 +20,6 @@ from app.schemas.health.simple_routine import (
 
 router = APIRouter()
 
-
 @router.get("/", response_model=SimpleRoutineListResponse)
 def get_routines(
     *,
@@ -38,15 +37,15 @@ def get_routines(
         routines_list = simple_routine.get_user_routines(db, user_id=current_user.id, skip=skip, limit=limit)
     else:
         routines_list = simple_routine.get_all_routines(db, skip=skip, limit=limit)
-    
+
     # Get user progress and workout details for each routine
     routines_with_progress = []
     for routine_obj in routines_list:
         progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
-        
+
         # Prepare routine data with proper tags handling
         routine_data = routine_obj.__dict__.copy()
-        
+
         # Convert tags from JSON string to list if needed
         if routine_data.get('tags') and isinstance(routine_data['tags'], str):
             try:
@@ -58,24 +57,27 @@ def get_routines(
                     routine_data['tags'] = [tag.strip() for tag in routine_data['tags'].split(',')]
                 else:
                     routine_data['tags'] = [routine_data['tags']]
+
+        # Add required fields for SimpleRoutineWithProgress
+        routine_data['workout_schedule'] = []  # Empty for now
+        routine_data['total_workouts_per_week'] = 0  # Default value
         
         if progress and progress.routine_id == routine_obj.id:
             routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=progress)
         else:
             routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=None)
-        
+
         # Note: Workout details are now accessed via the workout_days relationship
         # No need to manually build workout_schedule as it's handled by the frontend
-        
+
         routines_with_progress.append(routine_with_progress)
-    
+
     return SimpleRoutineListResponse(
         routines=routines_with_progress,
         total=len(routines_with_progress),
         page=skip // limit + 1,
         size=limit
     )
-
 
 @router.get("/{routine_id}", response_model=SimpleRoutineWithProgress)
 def get_routine(
@@ -88,13 +90,13 @@ def get_routine(
     routine_obj = simple_routine.get(db, id=routine_id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     # Get user progress
     progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
-    
+
     # Prepare routine data with proper tags handling
     routine_data = routine_obj.__dict__.copy()
-    
+
     # Convert tags from JSON string to list if needed
     if routine_data.get('tags') and isinstance(routine_data['tags'], str):
         try:
@@ -106,11 +108,11 @@ def get_routine(
                 routine_data['tags'] = [tag.strip() for tag in routine_data['tags'].split(',')]
             else:
                 routine_data['tags'] = [routine_data['tags']]
-    
+
     # Load detailed workout data
     workout_days = routine_workout_day.get_by_routine(db, routine_id=routine_id)
     workout_schedule = []
-    
+
     for workout_day in workout_days:
         exercises = routine_exercise.get_by_workout_day(db, workout_day_id=workout_day.id)
         workout_schedule.append({
@@ -128,16 +130,15 @@ def get_routine(
                 for exercise in exercises
             ]
         })
-    
+
     # Add workout schedule to routine data
     routine_data['workout_schedule'] = workout_schedule
     routine_data['total_workouts_per_week'] = len(workout_schedule)
-    
+
     if progress and progress.routine_id == routine_id:
         return SimpleRoutineWithProgress(**routine_data, user_progress=progress)
     else:
         return SimpleRoutineWithProgress(**routine_data, user_progress=None)
-
 
 @router.post("/", response_model=SimpleRoutine)
 def create_routine(
@@ -149,7 +150,6 @@ def create_routine(
     """Create a new routine"""
     return simple_routine.create_with_user(db, obj_in=routine_in, user_id=current_user.id)
 
-
 @router.post("/with-workout-plan", response_model=SimpleRoutine)
 def create_routine_with_workout_plan(
     *,
@@ -160,23 +160,22 @@ def create_routine_with_workout_plan(
     """Create a new routine with detailed workout plan"""
     try:
         print(f"🔍 Received request data: {request_data}")
-        
+
         routine_data = SimpleRoutineCreate(**request_data.get("routine_data", {}))
         workout_days = request_data.get("workout_days", [])
-        
+
         print(f"📋 Routine data: {routine_data}")
         print(f"🏋️ Workout days: {workout_days}")
-        
+
         return simple_routine.create_with_workout_plan(
-            db, 
-            routine_data=routine_data, 
-            workout_days=workout_days, 
+            db,
+            routine_data=routine_data,
+            workout_days=workout_days,
             user_id=current_user.id
         )
     except Exception as e:
         print(f"❌ Error creating routine with workout plan: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to create routine: {str(e)}")
-
 
 @router.post("/{routine_id}/start", response_model=SimpleUserRoutineProgress)
 def start_routine(
@@ -190,17 +189,17 @@ def start_routine(
     routine = simple_routine.get(db, id=routine_id)
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     # Stop any currently active routine
     current_progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
     if current_progress:
         current_progress.is_active = False
         db.commit()
-    
+
     # Start new routine
     from datetime import datetime
     from app.models.health.simple_routine import SimpleUserRoutineProgress
-    
+
     progress = SimpleUserRoutineProgress(
         routine_id=routine_id,
         user_id=current_user.id,
@@ -211,7 +210,6 @@ def start_routine(
     db.commit()
     db.refresh(progress)
     return progress
-
 
 @router.post("/{routine_id}/stop")
 def stop_routine(
@@ -229,7 +227,6 @@ def stop_routine(
     else:
         raise HTTPException(status_code=404, detail="Active routine not found")
 
-
 @router.post("/{routine_id}/log-workout")
 def log_workout(
     *,
@@ -241,17 +238,16 @@ def log_workout(
     progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
     if not progress or progress.routine_id != routine_id:
         raise HTTPException(status_code=404, detail="Active routine not found")
-    
+
     progress.workouts_completed += 1
     from datetime import datetime
     progress.last_workout_date = datetime.utcnow()
     db.commit()
-    
+
     return {
         "message": "Workout logged successfully",
         "workouts_completed": progress.workouts_completed
     }
-
 
 @router.put("/{routine_id}/with-workout-plan", response_model=SimpleRoutine)
 def update_routine_with_workout_plan(
@@ -264,35 +260,35 @@ def update_routine_with_workout_plan(
     """Update a routine with detailed workout plan"""
     try:
         print(f"🔍 Updating routine {routine_id} with workout plan")
-        
+
         # Check if routine exists and belongs to user
         routine = simple_routine.get(db, id=routine_id)
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found")
-        
+
         if routine.created_by_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this routine")
-        
+
         routine_data = SimpleRoutineUpdate(**request_data.get("routine_data", {}))
         workout_days = request_data.get("workout_days", [])
-        
+
         print(f"📋 Routine data: {routine_data}")
         print(f"🏋️ Workout days: {workout_days}")
-        
+
         # Update routine basic info
         routine.name = routine_data.name
         routine.description = routine_data.description
         routine.difficulty = routine_data.difficulty
         routine.duration_weeks = routine_data.duration_weeks
         routine.tags = routine_data.tags
-        
+
         # Delete existing workout days and exercises
         from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
         existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == routine_id).all()
         for day in existing_workout_days:
             db.query(RoutineExercise).filter(RoutineExercise.workout_day_id == day.id).delete()
             db.delete(day)
-        
+
         # Add new workout days and exercises
         if workout_days and len(workout_days) > 0:
             for day_data in workout_days:
@@ -307,7 +303,7 @@ def update_routine_with_workout_plan(
                 )
                 db.add(workout_day)
                 db.flush()
-                
+
                 for i, exercise_data in enumerate(day_data.get('workouts', [])):
                     exercise = RoutineExercise(
                         id=str(uuid.uuid4()),
@@ -319,16 +315,15 @@ def update_routine_with_workout_plan(
                     )
                     db.add(exercise)
                     print(f"💪 Added exercise: {exercise.exercise_name}")
-        
+
         db.commit()
         db.refresh(routine)
         print(f"✅ Routine updated successfully: {routine.name}")
         return routine
-        
+
     except Exception as e:
         print(f"❌ Error updating routine with workout plan: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to update routine: {str(e)}")
-
 
 @router.put("/{routine_id}", response_model=SimpleRoutine)
 def update_routine(
@@ -342,13 +337,12 @@ def update_routine(
     routine_obj = simple_routine.get(db, id=routine_id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     # Check if user owns this routine
     if routine_obj.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this routine")
-    
-    return simple_routine.update(db, db_obj=routine_obj, obj_in=routine_in)
 
+    return simple_routine.update(db, db_obj=routine_obj, obj_in=routine_in)
 
 @router.delete("/{routine_id}")
 def delete_routine(
@@ -361,12 +355,10 @@ def delete_routine(
     routine_obj = simple_routine.get(db, id=routine_id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     # Check if user owns this routine
     if routine_obj.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this routine")
-    
+
     simple_routine.remove(db, id=routine_id)
     return {"message": "Routine deleted successfully"}
-
-

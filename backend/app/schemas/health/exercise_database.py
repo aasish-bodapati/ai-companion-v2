@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
-
 # Exercise schemas
 class ExerciseBase(BaseModel):
     name: str = Field(..., description="Exercise name")
@@ -22,10 +21,8 @@ class ExerciseBase(BaseModel):
     tips: Optional[List[str]] = Field(None, description="Form tips and safety notes")
     variations: Optional[List[str]] = Field(None, description="Exercise variations")
 
-
 class ExerciseCreate(ExerciseBase):
     pass
-
 
 class ExerciseUpdate(BaseModel):
     name: Optional[str] = None
@@ -41,17 +38,15 @@ class ExerciseUpdate(BaseModel):
     tips: Optional[List[str]] = None
     variations: Optional[List[str]] = None
 
-
 class Exercise(ExerciseBase):
     id: str
     is_popular: bool = False
     usage_count: int = 0
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class ExerciseWithStats(Exercise):
     """Exercise with user-specific statistics."""
@@ -59,7 +54,6 @@ class ExerciseWithStats(Exercise):
     user_last_performed: Optional[datetime] = None
     user_avg_duration: Optional[float] = None
     user_personal_records: Optional[Dict[str, Any]] = None
-
 
 # User Exercise History schemas
 class UserExerciseHistoryBase(BaseModel):
@@ -74,10 +68,8 @@ class UserExerciseHistoryBase(BaseModel):
     preferred_intensity: Optional[str] = None
     notes: Optional[str] = None
 
-
 class UserExerciseHistoryCreate(UserExerciseHistoryBase):
     user_id: str
-
 
 class UserExerciseHistoryUpdate(BaseModel):
     times_performed: Optional[int] = None
@@ -90,7 +82,6 @@ class UserExerciseHistoryUpdate(BaseModel):
     preferred_intensity: Optional[str] = None
     notes: Optional[str] = None
 
-
 class UserExerciseHistory(UserExerciseHistoryBase):
     id: str
     user_id: str
@@ -98,10 +89,9 @@ class UserExerciseHistory(UserExerciseHistoryBase):
     created_at: datetime
     updated_at: datetime
     exercise: Optional[Exercise] = None
-    
+
     class Config:
         from_attributes = True
-
 
 # Exercise Template schemas
 class ExerciseTemplateBase(BaseModel):
@@ -112,10 +102,8 @@ class ExerciseTemplateBase(BaseModel):
     estimated_duration_minutes: Optional[int] = Field(None, description="Estimated duration")
     exercises: List[Dict[str, Any]] = Field(..., description="Exercise configurations")
 
-
 class ExerciseTemplateCreate(ExerciseTemplateBase):
     pass
-
 
 class ExerciseTemplateUpdate(BaseModel):
     name: Optional[str] = None
@@ -125,7 +113,6 @@ class ExerciseTemplateUpdate(BaseModel):
     estimated_duration_minutes: Optional[int] = None
     exercises: Optional[List[Dict[str, Any]]] = None
 
-
 class ExerciseTemplate(ExerciseTemplateBase):
     id: str
     is_popular: bool = False
@@ -133,10 +120,9 @@ class ExerciseTemplate(ExerciseTemplateBase):
     created_by_system: bool = True
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 # Search and filter schemas
 class ExerciseSearchRequest(BaseModel):
@@ -148,13 +134,11 @@ class ExerciseSearchRequest(BaseModel):
     limit: int = Field(20, ge=1, le=100, description="Result limit")
     offset: int = Field(0, ge=0, description="Result offset")
 
-
 class ExerciseSearchResponse(BaseModel):
     exercises: List[ExerciseWithStats]
     total_count: int
     has_more: bool
     filters_applied: Dict[str, Any]
-
 
 # Smart suggestions
 class SmartSuggestion(BaseModel):
@@ -163,12 +147,10 @@ class SmartSuggestion(BaseModel):
     confidence_score: float = Field(..., ge=0, le=1, description="Confidence in suggestion")
     similar_to: Optional[List[str]] = Field(None, description="Similar exercises user has done")
 
-
 class SmartSuggestionsResponse(BaseModel):
     suggestions: List[SmartSuggestion]
     user_preferences: Dict[str, Any]
     generated_at: datetime
-
 
 # Exercise logging integration
 class QuickExerciseLog(BaseModel):
@@ -182,7 +164,6 @@ class QuickExerciseLog(BaseModel):
     distance_km: Optional[float] = None
     notes: Optional[str] = None
     use_smart_defaults: bool = True  # Fill in defaults based on user history
-
 
 class ExerciseLogWithDefaults(BaseModel):
     """Exercise log data with smart defaults applied."""

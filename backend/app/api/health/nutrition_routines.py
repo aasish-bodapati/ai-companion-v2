@@ -7,9 +7,6 @@ from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.crud.health.nutrition_routine import (
     nutrition_routine,
-    nutrition_meal_plan,
-    nutrition_meal,
-    nutrition_meal_food,
     nutrition_user_routine_progress
 )
 from app.schemas.health.nutrition_routine import (
@@ -24,7 +21,6 @@ from app.schemas.health.nutrition_routine import (
 )
 
 router = APIRouter()
-
 
 @router.get("/", response_model=List[NutritionRoutine])
 def get_routines(
@@ -47,9 +43,8 @@ def get_routines(
         )
         template_routines = nutrition_routine.get_templates(db, skip=0, limit=50)
         routines = user_routines + template_routines
-    
-    return routines
 
+    return routines
 
 @router.get("/{routine_id}", response_model=NutritionRoutineWithMealPlans)
 def get_routine(
@@ -63,13 +58,13 @@ def get_routine(
         routine = nutrition_routine.get(db, id=routine_id)
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found")
-        
+
         print(f"DEBUG: Found routine: {routine.name}")
-        
+
         # Get meal plans with meals and foods
         meal_plans = nutrition_meal_plan.get_by_routine(db, routine_id=routine_id)
         print(f"DEBUG: Found {len(meal_plans)} meal plans")
-        
+
         # Convert routine to dict and remove SQLAlchemy state
         routine_dict = {
             "id": routine.id,
@@ -84,25 +79,25 @@ def get_routine(
             "created_at": routine.created_at.isoformat() if routine.created_at else None,
             "updated_at": routine.updated_at.isoformat() if routine.updated_at else None
         }
-        
+
         routine_with_plans = NutritionRoutineWithMealPlans(
             **routine_dict,
             meal_plans=[]
         )
-        
+
         for meal_plan in meal_plans:
             print(f"DEBUG: Processing meal plan: {meal_plan.id}")
             meals = nutrition_meal.get_by_meal_plan(db, meal_plan_id=meal_plan.id)
             print(f"DEBUG: Found {len(meals)} meals for meal plan")
-            
+
             # Create meal plan with meals using proper schema
             meal_plan_with_meals = []
-            
+
             for meal in meals:
                 print(f"DEBUG: Processing meal: {meal.meal_name}")
                 food_items = nutrition_meal_food.get_by_meal(db, meal_id=meal.id)
                 print(f"DEBUG: Found {len(food_items)} food items for meal")
-                
+
                 # Create meal with foods using proper schema
                 meal_with_foods = {
                     "id": meal.id,
@@ -132,7 +127,7 @@ def get_routine(
                     ]
                 }
                 meal_plan_with_meals.append(meal_with_foods)
-            
+
             # Create meal plan with meals
             meal_plan_data = {
                 "id": meal_plan.id,
@@ -146,18 +141,17 @@ def get_routine(
                 "updated_at": meal_plan.updated_at.isoformat() if meal_plan.updated_at else None,
                 "meals": meal_plan_with_meals
             }
-            
+
             routine_with_plans.meal_plans.append(meal_plan_data)
-        
+
         print(f"DEBUG: Returning routine with {len(routine_with_plans.meal_plans)} meal plans")
         return routine_with_plans
-        
+
     except Exception as e:
         print(f"DEBUG: Error in get_routine: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
-
 
 @router.post("/", response_model=NutritionRoutine)
 def create_routine(
@@ -170,10 +164,9 @@ def create_routine(
     routine_dict = routine_data.dict()
     routine_dict["created_by_user_id"] = current_user.id
     routine_dict["is_template"] = False
-    
+
     routine = nutrition_routine.create(db, obj_in=routine_dict)
     return routine
-
 
 @router.post("/with-meal-plans", response_model=NutritionRoutine)
 def create_routine_with_meal_plans(
@@ -185,21 +178,20 @@ def create_routine_with_meal_plans(
     """Create a nutrition routine with detailed meal plans."""
     try:
         print(f"🍎 Creating nutrition routine: {request_data.routine_data.name}")
-        
+
         routine = nutrition_routine.create_with_meal_plans(
             db=db,
             routine_data=request_data.routine_data,
             meal_plans_data=request_data.meal_plans,
             user_id=current_user.id
         )
-        
+
         print(f"✅ Nutrition routine created successfully: {routine.name}")
         return routine
-        
+
     except Exception as e:
         print(f"❌ Error creating nutrition routine: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to create routine: {str(e)}")
-
 
 @router.put("/{routine_id}", response_model=NutritionRoutine)
 def update_routine(
@@ -213,13 +205,12 @@ def update_routine(
     routine = nutrition_routine.get(db, id=routine_id)
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     if routine.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this routine")
-    
+
     routine = nutrition_routine.update(db, db_obj=routine, obj_in=routine_data)
     return routine
-
 
 @router.put("/{routine_id}/with-meal-plans", response_model=NutritionRoutine)
 def update_routine_with_meal_plans(
@@ -232,7 +223,7 @@ def update_routine_with_meal_plans(
     """Update a nutrition routine with detailed meal plans."""
     try:
         print(f"🍎 Updating nutrition routine {routine_id}")
-        
+
         routine = nutrition_routine.update_with_meal_plans(
             db=db,
             routine_id=routine_id,
@@ -240,17 +231,16 @@ def update_routine_with_meal_plans(
             meal_plans_data=request_data.meal_plans,
             user_id=current_user.id
         )
-        
+
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found or not authorized")
-        
+
         print(f"✅ Nutrition routine updated successfully: {routine.name}")
         return routine
-        
+
     except Exception as e:
         print(f"❌ Error updating nutrition routine: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to update routine: {str(e)}")
-
 
 @router.delete("/{routine_id}")
 def delete_routine(
@@ -263,13 +253,12 @@ def delete_routine(
     routine = nutrition_routine.get(db, id=routine_id)
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     if routine.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this routine")
-    
+
     nutrition_routine.remove(db, id=routine_id)
     return {"message": "Routine deleted successfully"}
-
 
 # User progress endpoints
 @router.post("/{routine_id}/start", response_model=NutritionUserRoutineProgress)
@@ -283,12 +272,11 @@ def start_routine(
     routine = nutrition_routine.get(db, id=routine_id)
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
-    
+
     progress = nutrition_user_routine_progress.start_routine(
         db, routine_id=routine_id, user_id=current_user.id
     )
     return progress
-
 
 @router.post("/{routine_id}/stop")
 def stop_routine(
@@ -301,12 +289,11 @@ def stop_routine(
     success = nutrition_user_routine_progress.stop_routine(
         db, routine_id=routine_id, user_id=current_user.id
     )
-    
+
     if not success:
         raise HTTPException(status_code=404, detail="Active routine not found")
-    
-    return {"message": "Routine stopped successfully"}
 
+    return {"message": "Routine stopped successfully"}
 
 @router.post("/{routine_id}/log-meal")
 def log_meal(
@@ -319,12 +306,11 @@ def log_meal(
     success = nutrition_user_routine_progress.log_meal(
         db, routine_id=routine_id, user_id=current_user.id
     )
-    
+
     if not success:
         raise HTTPException(status_code=404, detail="Active routine not found")
-    
-    return {"message": "Meal logged successfully"}
 
+    return {"message": "Meal logged successfully"}
 
 @router.get("/progress/active", response_model=Optional[NutritionUserRoutineProgress])
 def get_active_routine(
@@ -336,7 +322,6 @@ def get_active_routine(
     return nutrition_user_routine_progress.get_user_active_routine(
         db, user_id=current_user.id
     )
-
 
 @router.get("/progress/history", response_model=List[NutritionUserRoutineProgress])
 def get_routine_history(

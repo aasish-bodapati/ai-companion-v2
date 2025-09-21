@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -46,17 +46,13 @@ export function QuickRoutineLogger({ onSuccess }: QuickRoutineLoggerProps) {
 
   const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-  useEffect(() => {
-    loadTodayRoutine();
-  }, []);
-
-  const loadTodayRoutine = async () => {
+  const loadTodayRoutine = useCallback(async () => {
     try {
       setLoading(true);
       
       // Get today's routine items from active routines
       const [fitnessRoutines, nutritionRoutines] = await Promise.all([
-        api.get('/health/simple-routines?active_only=true'),
+        api.get('/health/simple-routines/?active_only=true'),
         api.get('/health/nutrition-routines?active_only=true')
       ]);
 
@@ -118,7 +114,11 @@ export function QuickRoutineLogger({ onSuccess }: QuickRoutineLoggerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDay]);
+
+  useEffect(() => {
+    loadTodayRoutine();
+  }, [loadTodayRoutine]);
 
   const toggleItem = async (itemId: string) => {
     const item = todayItems.find(i => i.id === itemId);

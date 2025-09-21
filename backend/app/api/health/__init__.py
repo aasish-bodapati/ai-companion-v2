@@ -11,7 +11,10 @@ from . import (
     foods,
     contextual_logging,
     insights,
-    fitness_logs
+    fitness_logs,
+    nutrition_logs,
+    profile,
+    analytics
 )
 
 router = APIRouter()
@@ -30,3 +33,6 @@ router.include_router(foods.router, prefix="/foods", tags=["foods"])
 router.include_router(contextual_logging.router, prefix="/contextual-logging", tags=["contextual-logging"])
 router.include_router(insights.router, prefix="/insights", tags=["insights"])
 router.include_router(fitness_logs.router, prefix="/fitness-logs", tags=["fitness-logs"])
+router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nutrition-logs"])
+router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
+router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

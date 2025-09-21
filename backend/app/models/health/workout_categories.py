@@ -3,7 +3,6 @@ from sqlalchemy.sql import func
 from app.db.base_class import Base
 import uuid
 
-
 class WorkoutCategory(Base):
     """Workout categories for organizing exercises."""
 

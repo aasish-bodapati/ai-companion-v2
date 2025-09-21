@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 @router.get("/search", response_model=FoodSearchResponse)
 async def search_foods(
     *,
@@ -54,19 +53,19 @@ async def search_foods(
             limit=limit,
             offset=offset
         )
-        
+
         # Get user food history for personalization
         user_history = food_database.user_food_history.get_user_history(
             db, user_id=current_user.id
         )
         history_dict = {h.food_id: h for h in user_history}
-        
+
         # Enrich foods with user data
         foods_with_user_data = []
         for food in foods:
             user_data = history_dict.get(food.id)
             food_dict = food.__dict__.copy()
-            
+
             if user_data:
                 food_dict.update({
                     "user_times_logged": user_data.times_logged,
@@ -81,11 +80,11 @@ async def search_foods(
                     "user_avg_serving_grams": None,
                     "user_rating": None
                 })
-            
+
             foods_with_user_data.append(FoodWithUserData(**food_dict))
-        
+
         has_more = len(foods) == limit and (offset + limit) < total_count
-        
+
         return FoodSearchResponse(
             foods=foods_with_user_data,
             total_count=total_count,
@@ -100,11 +99,10 @@ async def search_foods(
                 "verified_only": verified_only
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Error searching foods: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to search foods")
-
 
 @router.get("/popular", response_model=List[FoodWithUserData])
 async def get_popular_foods(
@@ -119,19 +117,19 @@ async def get_popular_foods(
         foods = food_database.food.get_popular_foods(
             db, category=category, limit=limit
         )
-        
+
         # Get user history for personalization
         user_history = food_database.user_food_history.get_user_history(
             db, user_id=current_user.id
         )
         history_dict = {h.food_id: h for h in user_history}
-        
+
         # Add user data
         foods_with_user_data = []
         for food in foods:
             user_data = history_dict.get(food.id)
             food_dict = food.__dict__.copy()
-            
+
             if user_data:
                 food_dict.update({
                     "user_times_logged": user_data.times_logged,
@@ -146,15 +144,14 @@ async def get_popular_foods(
                     "user_avg_serving_grams": None,
                     "user_rating": None
                 })
-            
+
             foods_with_user_data.append(FoodWithUserData(**food_dict))
-        
+
         return foods_with_user_data
-        
+
     except Exception as e:
         logger.error(f"Error getting popular foods: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get popular foods")
-
 
 @router.get("/suggestions", response_model=FoodSuggestionsResponse)
 async def get_smart_suggestions(
@@ -170,35 +167,35 @@ async def get_smart_suggestions(
         suggestion_foods = food_database.food.get_smart_suggestions(
             db, user_id=current_user.id, meal_type=meal_type, category=category, limit=limit
         )
-        
+
         # Get user preferences from history
         user_history = food_database.user_food_history.get_user_favorites(
             db, user_id=current_user.id, limit=20
         )
-        
+
         # Build user preferences profile
         preferred_categories = {}
         preferred_brands = {}
         avg_calories = 0
         total_foods = 0
-        
+
         for history in user_history:
             if history.food:
                 # Count categories
                 cat = history.food.category
                 preferred_categories[cat] = preferred_categories.get(cat, 0) + history.times_logged
-                
+
                 # Count brands
                 if history.food.brand:
                     brand = history.food.brand
                     preferred_brands[brand] = preferred_brands.get(brand, 0) + history.times_logged
-                
+
                 # Calculate average calories
                 if history.avg_serving_grams and history.food.calories_per_100g:
                     calories = (history.food.calories_per_100g * history.avg_serving_grams) / 100
                     avg_calories = (avg_calories * total_foods + calories) / (total_foods + 1)
                     total_foods += 1
-        
+
         user_preferences = {
             "preferred_categories": preferred_categories,
             "preferred_brands": preferred_brands,
@@ -206,23 +203,23 @@ async def get_smart_suggestions(
             "total_foods_logged": len(user_history),
             "most_frequent_food": user_history[0].food.name if user_history else None
         }
-        
+
         # Generate suggestions with reasoning
         suggestions = []
         for food in suggestion_foods:
             reason = "Popular food in this category"
             confidence = 0.7
             nutritional_benefits = []
-            
+
             # Personalize reasoning
             if food.category in preferred_categories:
                 reason = f"Great {food.category} choice - matches your preferences"
                 confidence = min(0.95, confidence + 0.2)
-            
+
             if food.brand and food.brand in preferred_brands:
                 reason = f"From {food.brand} - a brand you often choose"
                 confidence = min(0.95, confidence + 0.1)
-            
+
             # Highlight nutritional benefits
             if food.protein_per_100g and food.protein_per_100g > 15:
                 nutritional_benefits.append("High in protein")
@@ -230,7 +227,7 @@ async def get_smart_suggestions(
                 nutritional_benefits.append("Good source of fiber")
             if food.calories_per_100g < 100:
                 nutritional_benefits.append("Low calorie")
-            
+
             # Suggest serving size based on user history
             serving_suggestion = None
             if user_history:
@@ -242,7 +239,7 @@ async def get_smart_suggestions(
                         "grams": round(avg_serving, 0),
                         "description": f"Based on your typical {food.category} servings"
                     }
-            
+
             suggestions.append(FoodSuggestion(
                 food=Food.from_orm(food),
                 reason=reason,
@@ -250,18 +247,17 @@ async def get_smart_suggestions(
                 nutritional_benefits=nutritional_benefits,
                 serving_suggestion=serving_suggestion
             ))
-        
+
         return FoodSuggestionsResponse(
             suggestions=suggestions,
             user_preferences=user_preferences,
             meal_context=meal_type,
             generated_at=datetime.now(timezone.utc)
         )
-        
+
     except Exception as e:
         logger.error(f"Error getting food suggestions: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get food suggestions")
-
 
 @router.get("/barcode/{barcode}", response_model=BarcodeSearchResponse)
 async def search_by_barcode(
@@ -272,7 +268,7 @@ async def search_by_barcode(
     """Search food by barcode."""
     try:
         food = food_database.food.search_by_barcode(db, barcode=barcode)
-        
+
         if food:
             return BarcodeSearchResponse(
                 found=True,
@@ -282,17 +278,16 @@ async def search_by_barcode(
             # If exact match not found, suggest similar foods
             # This is a simplified approach - in production you'd use more sophisticated matching
             suggested_foods = food_database.food.get_popular_foods(db, limit=5)
-            
+
             return BarcodeSearchResponse(
                 found=False,
                 food=None,
                 suggested_foods=[Food.from_orm(f) for f in suggested_foods]
             )
-        
+
     except Exception as e:
         logger.error(f"Error searching by barcode: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to search by barcode")
-
 
 @router.get("/categories", response_model=List[FoodCategory])
 async def get_food_categories():
@@ -363,13 +358,12 @@ async def get_food_categories():
                 "subcategories": ["healthy_snacks", "chips_crackers", "desserts", "candy"]
             }
         ]
-        
+
         return [FoodCategory(**cat) for cat in categories]
-        
+
     except Exception as e:
         logger.error(f"Error getting categories: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get categories")
-
 
 @router.get("/quick-log/{food_id}", response_model=FoodLogWithDefaults)
 async def get_food_with_defaults(
@@ -384,15 +378,15 @@ async def get_food_with_defaults(
         food = food_database.food.get(db, id=food_id)
         if not food:
             raise HTTPException(status_code=404, detail="Food not found")
-        
+
         # Get user history for this food
         user_history = food_database.user_food_history.get_user_history(db, user_id=current_user.id)
         food_history = next((h for h in user_history if h.food_id == food_id), None)
-        
+
         # Calculate smart defaults
         suggested_serving_grams = food.default_serving_grams or 100
         suggested_meal_type = None
-        
+
         if food_history:
             suggested_serving_grams = food_history.avg_serving_grams or suggested_serving_grams
             suggested_meal_type = food_history.most_common_meal_type
@@ -408,7 +402,7 @@ async def get_food_with_defaults(
                 suggested_serving_grams = 200
             elif food.category == "nuts_seeds":
                 suggested_serving_grams = 30
-        
+
         # Calculate nutritional info for suggested serving
         multiplier = suggested_serving_grams / 100
         nutritional_info = {
@@ -421,10 +415,10 @@ async def get_food_with_defaults(
             "sugar_g": round((food.sugar_per_100g or 0) * multiplier, 1),
             "sodium_mg": round((food.sodium_per_100g or 0) * multiplier, 1)
         }
-        
+
         # Get alternatives
         alternatives = food_database.food_alternative.get_alternatives(db, food_id=food_id, limit=3)
-        
+
         return FoodLogWithDefaults(
             food=Food.from_orm(food),
             suggested_serving_grams=suggested_serving_grams,
@@ -433,13 +427,12 @@ async def get_food_with_defaults(
             user_history=UserFoodHistory.from_orm(food_history) if food_history else None,
             alternatives=[alt for alt in alternatives]  # Would need proper schema conversion
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error getting food defaults: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get food defaults")
-
 
 @router.get("/recent", response_model=List[FoodWithUserData])
 async def get_recent_foods(
@@ -454,7 +447,7 @@ async def get_recent_foods(
         recent_history = food_database.user_food_history.get_recent_foods(
             db, user_id=current_user.id, days=days, limit=limit
         )
-        
+
         foods_with_user_data = []
         for history in recent_history:
             if history.food:
@@ -466,13 +459,12 @@ async def get_recent_foods(
                     "user_rating": history.rating
                 })
                 foods_with_user_data.append(FoodWithUserData(**food_dict))
-        
+
         return foods_with_user_data
-        
+
     except Exception as e:
         logger.error(f"Error getting recent foods: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get recent foods")
-
 
 @router.get("/favorites", response_model=List[FoodWithUserData])
 async def get_favorite_foods(
@@ -486,7 +478,7 @@ async def get_favorite_foods(
         favorites = food_database.user_food_history.get_user_favorites(
             db, user_id=current_user.id, limit=limit
         )
-        
+
         foods_with_user_data = []
         for history in favorites:
             if history.food:
@@ -498,13 +490,12 @@ async def get_favorite_foods(
                     "user_rating": history.rating
                 })
                 foods_with_user_data.append(FoodWithUserData(**food_dict))
-        
+
         return foods_with_user_data
-        
+
     except Exception as e:
         logger.error(f"Error getting favorite foods: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get favorite foods")
-
 
 @router.get("/templates", response_model=List[MealTemplate])
 async def get_meal_templates(
@@ -528,13 +519,12 @@ async def get_meal_templates(
             max_prep_time=max_prep_time,
             limit=limit
         )
-        
+
         return [MealTemplate.from_orm(template) for template in templates]
-        
+
     except Exception as e:
         logger.error(f"Error getting meal templates: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get meal templates")
-
 
 @router.get("/nutrition/{food_id}", response_model=NutritionalProfile)
 async def get_nutritional_profile(
@@ -548,22 +538,22 @@ async def get_nutritional_profile(
         food = food_database.food.get(db, id=food_id)
         if not food:
             raise HTTPException(status_code=404, detail="Food not found")
-        
+
         # Calculate nutrition for serving size
         multiplier = serving_grams / 100
-        
+
         calories = food.calories_per_100g * multiplier
         protein_g = (food.protein_per_100g or 0) * multiplier
         carbs_g = (food.carbs_per_100g or 0) * multiplier
         fat_g = (food.fat_per_100g or 0) * multiplier
-        
+
         # Calculate macronutrient percentages
         total_macro_calories = (protein_g * 4) + (carbs_g * 4) + (fat_g * 9)
-        
+
         protein_percent = (protein_g * 4 / total_macro_calories * 100) if total_macro_calories > 0 else 0
         carbs_percent = (carbs_g * 4 / total_macro_calories * 100) if total_macro_calories > 0 else 0
         fat_percent = (fat_g * 9 / total_macro_calories * 100) if total_macro_calories > 0 else 0
-        
+
         return NutritionalProfile(
             serving_grams=serving_grams,
             calories=round(calories, 1),
@@ -577,7 +567,7 @@ async def get_nutritional_profile(
             carbs_percent=round(carbs_percent, 1),
             fat_percent=round(fat_percent, 1)
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:

@@ -2,12 +2,9 @@
 
 import React, { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react';
 import api from '@/lib/api';
-// Logger removed for Milestone 1 simplicity
+// Simple logger for errors only
 const logger = {
-  info: (msg: string, ...args: any[]) => console.log(msg, ...args),
   error: (msg: string, ...args: any[]) => console.error(msg, ...args),
-  warn: (msg: string, ...args: any[]) => console.warn(msg, ...args),
-  debug: (msg: string, ...args: any[]) => console.debug(msg, ...args),
 };
 import { useRouter } from 'next/navigation';
 
@@ -114,7 +111,7 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
     };
 
     initializeAuth();
-  }, []);
+  }, [testMode]);
 
   // Fallback: If still loading after 2 seconds, force test mode setup
   useEffect(() => {
@@ -143,11 +140,11 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
       
       return () => clearTimeout(timer);
     }
-  }, [testMode]);
+  }, [testMode, isLoading]);
 
   const login = async (email: string, password: string) => {
     try {
-      logger.debug('Attempting login', { email });
+      // logger.debug('Attempting login', { email });
       const formData = new URLSearchParams({
         username: email,
         password: password,
@@ -157,12 +154,12 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         client_secret: '',
       });
       
-      logger.debug('Sending login request');
+      // logger.debug('Sending login request');
       
       // Add timeout to prevent hanging requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        logger.warn('Login request timeout, aborting...');
+        // logger.warn('Login request timeout, aborting...');
         controller.abort();
       }, 10000); // 10 second timeout
       
@@ -179,17 +176,17 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         );
         
         clearTimeout(timeoutId);
-        logger.debug('Login successful, token received:', tokenResponse.access_token ? 'Present' : 'Missing');
+        // logger.debug('Login successful, token received:', tokenResponse.access_token ? 'Present' : 'Missing');
         
         // Get user data with proper headers
-        logger.debug('Fetching user data with token');
+        // logger.debug('Fetching user data with token');
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', tokenResponse.access_token);
-          logger.debug('Token stored in localStorage');
+          // logger.debug('Token stored in localStorage');
         }
         
         const userData = await api.get<User>('/users/me');
-        logger.debug('User data fetched:', userData);
+        // logger.debug('User data fetched:', userData);
         
         // Update state and storage
         setUser(userData);
@@ -208,7 +205,16 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         
         // Small delay to ensure toast is visible before redirect
         setTimeout(() => {
-          router.replace('/dashboard');
+          // Get the original URL from sessionStorage or default to dashboard
+          const originalUrl = typeof window !== 'undefined' ? sessionStorage.getItem('originalUrl') : null;
+          const redirectUrl = originalUrl || '/dashboard';
+          
+          // Clear the stored URL
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('originalUrl');
+          }
+          
+          router.replace(redirectUrl);
         }, 100);
         
         // Return success status - let the component handle redirection

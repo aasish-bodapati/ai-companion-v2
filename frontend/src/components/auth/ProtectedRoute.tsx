@@ -15,6 +15,10 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
+      // Store the current URL before redirecting to login
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('originalUrl', window.location.pathname);
+      }
       // Redirect to login page if not authenticated
       router.push('/login');
     }

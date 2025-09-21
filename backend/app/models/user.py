@@ -1,9 +1,7 @@
-from sqlalchemy import Boolean, Column, String
+from sqlalchemy import Boolean, Column, String, Integer
 from sqlalchemy.orm import relationship
-import uuid
 
 from app.db.base_class import Base
-
 
 class User(Base):
     """User model for authentication and authorization."""
@@ -11,9 +9,9 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(
-        String(36),
+        Integer,
         primary_key=True,
-        default=lambda: str(uuid.uuid4()),
+        autoincrement=True,
         index=True,
         nullable=False,
     )
@@ -22,15 +20,8 @@ class User(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
-    # When null -> follow global settings.MEMORY_ENABLED; when True/False -> override per user
-    memory_enabled = Column(Boolean(), nullable=True)
 
     # Relationships
-    conversations = relationship(
-        "Conversation",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
     onboarding_profile = relationship(
         "OnboardingProfile",
         back_populates="user",
@@ -73,7 +64,7 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    
+
     # New relationships for exercise and food databases
     exercise_history = relationship(
         "UserExerciseHistory",
@@ -81,11 +72,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
     food_history = relationship(
-        "UserFoodHistory", 
+        "UserFoodHistory",
         back_populates="user",
         cascade="all, delete-orphan",
     )
-
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}'>"

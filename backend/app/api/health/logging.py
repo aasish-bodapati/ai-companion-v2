@@ -23,29 +23,28 @@ logger = logging.getLogger(__name__)
 def get_user_timezone_range(date_obj: datetime, timezone_offset_hours: int = 0):
     """
     Get start and end of day in user's timezone, converted to UTC for database queries.
-    
+
     Args:
         date_obj: The date to get range for
         timezone_offset_hours: User's timezone offset from UTC (e.g., +8 for Singapore, -5 for EST)
-    
+
     Returns:
         tuple: (start_of_day_utc, end_of_day_utc)
     """
     # Create timezone-aware datetime for user's timezone
     user_tz = timezone(timedelta(hours=timezone_offset_hours))
-    
+
     # Get start and end of day in user's timezone
     start_of_day_user = datetime.combine(date_obj.date(), datetime.min.time()).replace(tzinfo=user_tz)
     end_of_day_user = datetime.combine(date_obj.date(), datetime.max.time()).replace(tzinfo=user_tz)
-    
+
     # Convert to UTC for database queries
     start_of_day_utc = start_of_day_user.astimezone(timezone.utc)
     end_of_day_utc = end_of_day_user.astimezone(timezone.utc)
-    
+
     return start_of_day_utc, end_of_day_utc
 
 router = APIRouter()
-
 
 @router.get("/fitness/today")
 async def get_fitness_today(
@@ -71,25 +70,25 @@ async def get_fitness_today(
             today = now_local.date()
             start_of_day = datetime.combine(today, datetime.min.time())
             end_of_day = datetime.combine(today, datetime.max.time())
-        
+
         # Get today's fitness logs
         logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_day,
             end_date=end_of_day
         )
-        
+
         # Calculate summary
         total_workouts = len(logs)
         total_minutes = sum(log.duration_minutes or 0 for log in logs)
         total_calories = sum(log.calories_burned or 0 for log in logs)
-        
+
         # Convert intensity strings to numbers for average calculation
         intensity_map = {'low': 3, 'medium': 6, 'high': 9}
         intensity_values = [intensity_map.get(log.intensity, 0) for log in logs if log.intensity]
         avg_intensity = sum(intensity_values) / len(intensity_values) if intensity_values else 0
-        
+
         return {
             "workouts": total_workouts,
             "totalMinutes": total_minutes,
@@ -104,7 +103,6 @@ async def get_fitness_today(
             "caloriesBurned": 0,
             "avgIntensity": 0
         }
-
 
 @router.get("/fitness/weekly")
 async def get_fitness_weekly(
@@ -134,20 +132,20 @@ async def get_fitness_weekly(
             week_end = week_start + timedelta(days=6)
             start_of_week = datetime.combine(week_start, datetime.min.time())
             end_of_week = datetime.combine(week_end, datetime.max.time())
-        
+
         # Get this week's fitness logs
         logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         # Calculate summary
         total_workouts = len(logs)
         total_minutes = sum(log.duration_minutes or 0 for log in logs)
         avg_calories_per_workout = sum(log.calories_burned or 0 for log in logs) / len(logs) if logs else 0
-        
+
         # Calculate streak (simplified - consecutive days with workouts)
         streak = 0
         current_date = today
@@ -158,7 +156,7 @@ async def get_fitness_weekly(
                 current_date -= timedelta(days=1)
             else:
                 break
-        
+
         return {
             "totalWorkouts": total_workouts,
             "totalMinutes": total_minutes,
@@ -174,7 +172,6 @@ async def get_fitness_weekly(
             "streak": 0
         }
 
-
 @router.get("/nutrition/today")
 async def get_nutrition_today(
     *,
@@ -188,23 +185,23 @@ async def get_nutrition_today(
         today = now_utc.date()
         start_of_day = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
         end_of_day = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         # Get today's nutrition logs
         logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_day,
             end_date=end_of_day
         )
-        
+
         # Calculate summary
-        total_calories = sum(log.calories or 0 for log in logs)
-        total_protein = sum(log.protein or 0 for log in logs)
-        total_carbs = sum(log.carbohydrates or 0 for log in logs)
-        total_fat = sum(log.fat or 0 for log in logs)
-        total_water = sum(log.water_intake or 0 for log in logs)
+        total_calories = sum(log.total_calories or 0 for log in logs)
+        total_protein = sum(log.protein_g or 0 for log in logs)
+        total_carbs = sum(log.carbs_g or 0 for log in logs)
+        total_fat = sum(log.fat_g or 0 for log in logs)
+        total_water = 0  # water_intake field doesn't exist in current model
         total_meals = len(logs)
-        
+
         return {
             "calories": total_calories,
             "protein": total_protein,
@@ -224,7 +221,6 @@ async def get_nutrition_today(
             "meals": 0
         }
 
-
 @router.get("/nutrition/weekly")
 async def get_nutrition_weekly(
     *,
@@ -238,30 +234,30 @@ async def get_nutrition_weekly(
         today = now_utc.date()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
-        
+
         start_of_week = datetime.combine(week_start, datetime.min.time(), tzinfo=timezone.utc)
         end_of_week = datetime.combine(week_end, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         # Get this week's nutrition logs
         logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         # Calculate summary
-        total_calories = sum(log.calories or 0 for log in logs)
-        total_protein = sum(log.protein or 0 for log in logs)
-        total_water = sum(log.water_intake or 0 for log in logs)
+        total_calories = sum(log.total_calories or 0 for log in logs)
+        total_protein = sum(log.protein_g or 0 for log in logs)
+        total_water = 0  # water_intake field doesn't exist in current model
         total_meals = len(logs)
-        
+
         # Calculate averages
         days_in_week = 7
         avg_calories = total_calories / days_in_week
         avg_protein = total_protein / days_in_week
         avg_water = total_water / days_in_week
-        
+
         return {
             "avgCalories": round(avg_calories, 0),
             "avgProtein": round(avg_protein, 0),
@@ -277,7 +273,6 @@ async def get_nutrition_weekly(
             "totalMeals": 0
         }
 
-
 @router.get("/nutrition/recent")
 async def get_recent_meals(
     *,
@@ -289,11 +284,11 @@ async def get_recent_meals(
     try:
         # Get recent nutrition logs
         logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             limit=limit
         )
-        
+
         # Format the response
         meals = []
         for log in logs:
@@ -308,12 +303,11 @@ async def get_recent_meals(
                 "meal_date": log.meal_date.isoformat() if log.meal_date else None,
                 "created_at": log.created_at.isoformat() if log.created_at else None
             })
-        
+
         return {"meals": meals}
     except Exception as e:
         logger.error(f"Failed to get recent meals: {e}")
         return {"meals": []}
-
 
 # ============================================================================
 # FITNESS LOGGING CRUD ENDPOINTS
@@ -336,7 +330,6 @@ async def create_fitness_log(
         logger.error(f"Error creating fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create fitness log")
 
-
 @router.get("/fitness", response_model=List[FitnessLog])
 async def get_fitness_logs(
     *,
@@ -350,7 +343,7 @@ async def get_fitness_logs(
     """Get fitness logs for the current user."""
     try:
         logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             skip=skip,
             limit=limit,
@@ -361,7 +354,6 @@ async def get_fitness_logs(
     except Exception as e:
         logger.error(f"Error getting fitness logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get fitness logs")
-
 
 @router.get("/fitness/{fitness_log_id}", response_model=FitnessLog)
 async def get_fitness_log(
@@ -382,7 +374,6 @@ async def get_fitness_log(
         logger.error(f"Error getting fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get fitness log")
 
-
 @router.put("/fitness/{fitness_log_id}", response_model=FitnessLog)
 async def update_fitness_log(
     *,
@@ -396,7 +387,7 @@ async def update_fitness_log(
         fitness_log_entry = fitness_log.get(db, id=str(fitness_log_id))
         if not fitness_log_entry or fitness_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Fitness log not found")
-        
+
         updated_log = fitness_log.update(
             db, db_obj=fitness_log_entry, obj_in=fitness_log_in
         )
@@ -406,7 +397,6 @@ async def update_fitness_log(
     except Exception as e:
         logger.error(f"Error updating fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update fitness log")
-
 
 @router.delete("/fitness/{fitness_log_id}")
 async def delete_fitness_log(
@@ -420,7 +410,7 @@ async def delete_fitness_log(
         fitness_log_entry = fitness_log.get(db, id=str(fitness_log_id))
         if not fitness_log_entry or fitness_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Fitness log not found")
-        
+
         fitness_log.remove(db, id=str(fitness_log_id))
         return {"message": "Fitness log deleted successfully"}
     except HTTPException:
@@ -428,7 +418,6 @@ async def delete_fitness_log(
     except Exception as e:
         logger.error(f"Error deleting fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete fitness log")
-
 
 # ============================================================================
 # NUTRITION LOGGING CRUD ENDPOINTS
@@ -451,7 +440,6 @@ async def create_nutrition_log(
         logger.error(f"Error creating nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create nutrition log")
 
-
 @router.get("/nutrition", response_model=List[NutritionLog])
 async def get_nutrition_logs(
     *,
@@ -465,7 +453,7 @@ async def get_nutrition_logs(
     """Get nutrition logs for the current user."""
     try:
         logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             skip=skip,
             limit=limit,
@@ -476,7 +464,6 @@ async def get_nutrition_logs(
     except Exception as e:
         logger.error(f"Error getting nutrition logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get nutrition logs")
-
 
 @router.get("/nutrition/{nutrition_log_id}", response_model=NutritionLog)
 async def get_nutrition_log(
@@ -497,7 +484,6 @@ async def get_nutrition_log(
         logger.error(f"Error getting nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get nutrition log")
 
-
 @router.put("/nutrition/{nutrition_log_id}", response_model=NutritionLog)
 async def update_nutrition_log(
     *,
@@ -511,7 +497,7 @@ async def update_nutrition_log(
         nutrition_log_entry = nutrition_log.get(db, id=str(nutrition_log_id))
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
-        
+
         updated_log = nutrition_log.update(
             db, db_obj=nutrition_log_entry, obj_in=nutrition_log_in
         )
@@ -521,7 +507,6 @@ async def update_nutrition_log(
     except Exception as e:
         logger.error(f"Error updating nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update nutrition log")
-
 
 @router.delete("/nutrition/{nutrition_log_id}")
 async def delete_nutrition_log(
@@ -535,7 +520,7 @@ async def delete_nutrition_log(
         nutrition_log_entry = nutrition_log.get(db, id=str(nutrition_log_id))
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
-        
+
         nutrition_log.remove(db, id=str(nutrition_log_id))
         return {"message": "Nutrition log deleted successfully"}
     except HTTPException:
@@ -543,7 +528,6 @@ async def delete_nutrition_log(
     except Exception as e:
         logger.error(f"Error deleting nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete nutrition log")
-
 
 # ============================================================================
 # MOOD LOGGING CRUD ENDPOINTS
@@ -566,7 +550,6 @@ async def create_mood_log(
         logger.error(f"Error creating mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create mood log")
 
-
 @router.get("/mood", response_model=List[MoodLog])
 async def get_mood_logs(
     *,
@@ -580,7 +563,7 @@ async def get_mood_logs(
     """Get mood logs for the current user."""
     try:
         logs = mood_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             skip=skip,
             limit=limit,
@@ -591,7 +574,6 @@ async def get_mood_logs(
     except Exception as e:
         logger.error(f"Error getting mood logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get mood logs")
-
 
 @router.get("/mood/{mood_log_id}", response_model=MoodLog)
 async def get_mood_log(
@@ -612,7 +594,6 @@ async def get_mood_log(
         logger.error(f"Error getting mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get mood log")
 
-
 @router.put("/mood/{mood_log_id}", response_model=MoodLog)
 async def update_mood_log(
     *,
@@ -626,7 +607,7 @@ async def update_mood_log(
         mood_log_entry = mood_log.get(db, id=str(mood_log_id))
         if not mood_log_entry or mood_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Mood log not found")
-        
+
         updated_log = mood_log.update(
             db, db_obj=mood_log_entry, obj_in=mood_log_in
         )
@@ -636,7 +617,6 @@ async def update_mood_log(
     except Exception as e:
         logger.error(f"Error updating mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update mood log")
-
 
 @router.delete("/mood/{mood_log_id}")
 async def delete_mood_log(
@@ -650,7 +630,7 @@ async def delete_mood_log(
         mood_log_entry = mood_log.get(db, id=str(mood_log_id))
         if not mood_log_entry or mood_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Mood log not found")
-        
+
         mood_log.remove(db, id=str(mood_log_id))
         return {"message": "Mood log deleted successfully"}
     except HTTPException:
@@ -658,7 +638,6 @@ async def delete_mood_log(
     except Exception as e:
         logger.error(f"Error deleting mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete mood log")
-
 
 # Daily summary endpoint (alias for analytics/daily)
 @router.get("/daily-summary")
@@ -669,7 +648,6 @@ async def get_daily_summary(
 ):
     """Get today's daily summary (alias for analytics/daily)."""
     return await get_daily_analytics(db=db, current_user=current_user)
-
 
 # Analytics endpoints
 @router.get("/analytics/daily")
@@ -685,33 +663,33 @@ async def get_daily_analytics(
         today = now_utc.date()
         start_of_day = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
         end_of_day = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         # Get today's logs
         fitness_logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_day,
             end_date=end_of_day
         )
-        
+
         nutrition_logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_day,
             end_date=end_of_day
         )
-        
+
         mood_logs = mood_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_day,
             end_date=end_of_day
         )
-        
+
         # Calculate fitness metrics
         total_calories_burned = sum(log.calories_burned or 0 for log in fitness_logs)
         fitness_activities = len(fitness_logs)
-        
+
         # Calculate nutrition metrics
         total_calories_consumed = sum(log.calories or 0 for log in nutrition_logs)
         total_protein_g = sum(log.protein_g or 0 for log in nutrition_logs)
@@ -719,18 +697,18 @@ async def get_daily_analytics(
         total_fat_g = sum(log.fat_g or 0 for log in nutrition_logs)
         water_intake_ml = sum(log.water_ml or 0 for log in nutrition_logs)
         meals_logged = len(nutrition_logs)
-        
+
         # Calculate mood metrics
         avg_mood = sum(log.mood_score or 0 for log in mood_logs) / len(mood_logs) if mood_logs else 0
         avg_energy = sum(log.energy_level or 0 for log in mood_logs) / len(mood_logs) if mood_logs else 0
-        
+
         # Calculate net calories
         net_calories = total_calories_consumed - total_calories_burned
-        
+
         # Mock data for missing fields (these would come from other sources in a real app)
         total_steps = 8500  # Would come from fitness tracker
         total_sleep_hours = 7.5  # Would come from sleep tracker
-        
+
         return {
             "date": today.isoformat(),
             "total_calories_burned": total_calories_burned,
@@ -766,7 +744,6 @@ async def get_daily_analytics(
             "meals_logged": 0
         }
 
-
 @router.get("/analytics/weekly")
 async def get_weekly_analytics(
     *,
@@ -780,38 +757,38 @@ async def get_weekly_analytics(
         today = now_utc.date()
         week_start = today - timedelta(days=today.weekday())
         week_end = week_start + timedelta(days=6)
-        
+
         start_of_week = datetime.combine(week_start, datetime.min.time(), tzinfo=timezone.utc)
         end_of_week = datetime.combine(week_end, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         # Get this week's logs
         fitness_logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         nutrition_logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         mood_logs = mood_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         # Calculate fitness metrics
         total_workouts = len(fitness_logs)
         total_calories_burned = sum(log.calories_burned or 0 for log in fitness_logs)
         total_workout_minutes = sum(log.duration_minutes or 0 for log in fitness_logs)
         avg_calories_per_workout = total_calories_burned / total_workouts if total_workouts > 0 else 0
-        
+
         # Calculate nutrition metrics
         total_calories_consumed = sum(log.calories or 0 for log in nutrition_logs)
         total_protein_g = sum(log.protein_g or 0 for log in nutrition_logs)
@@ -819,20 +796,20 @@ async def get_weekly_analytics(
         total_fat_g = sum(log.fat_g or 0 for log in nutrition_logs)
         total_water_ml = sum(log.water_ml or 0 for log in nutrition_logs)
         total_meals = len(nutrition_logs)
-        
+
         # Calculate mood metrics
         avg_mood = sum(log.mood_score or 0 for log in mood_logs) / len(mood_logs) if mood_logs else 0
         avg_energy = sum(log.energy_level or 0 for log in mood_logs) / len(mood_logs) if mood_logs else 0
         avg_stress = sum(log.stress_level or 0 for log in mood_logs) / len(mood_logs) if mood_logs else 0
-        
+
         # Calculate net calories
         net_calories = total_calories_consumed - total_calories_burned
-        
+
         # Mock data for missing fields
         total_steps = 59500  # Would come from fitness tracker
         avg_sleep_hours = 7.2  # Would come from sleep tracker
         average_water_intake_ml = total_water_ml / 7  # Average per day
-        
+
         return {
             "week_start": week_start.isoformat(),
             "week_end": week_end.isoformat(),
@@ -878,7 +855,6 @@ async def get_weekly_analytics(
             "total_meals": 0
         }
 
-
 @router.get("/insights")
 async def get_insights(
     *,
@@ -889,40 +865,40 @@ async def get_insights(
     try:
         # This would typically call an AI service to generate insights
         # For now, we'll return some mock insights based on recent data
-        
+
         # Get recent data for insights
         now_utc = datetime.now(timezone.utc)
         today = now_utc.date()
         week_start = today - timedelta(days=7)
-        
+
         start_of_week = datetime.combine(week_start, datetime.min.time(), tzinfo=timezone.utc)
         end_of_week = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         # Get recent logs
         fitness_logs = fitness_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         nutrition_logs = nutrition_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         mood_logs = mood_log.get_user_logs(
-            db, 
+            db,
             user_id=current_user.id,
             start_date=start_of_week,
             end_date=end_of_week
         )
-        
+
         # Generate basic insights
         insights = []
-        
+
         # Fitness insights
         if len(fitness_logs) > 0:
             avg_workout_duration = sum(log.duration_minutes or 0 for log in fitness_logs) / len(fitness_logs)
@@ -940,7 +916,7 @@ async def get_insights(
                     "message": "You've only logged " + str(len(fitness_logs)) + " workouts this week. Try to aim for at least 3-4 sessions.",
                     "priority": "warning"
                 })
-        
+
         # Nutrition insights
         if len(nutrition_logs) > 0:
             avg_calories = sum(log.calories or 0 for log in nutrition_logs) / len(nutrition_logs)
@@ -951,7 +927,7 @@ async def get_insights(
                     "message": f"Your average daily calorie intake of {avg_calories:.0f} calories looks well-balanced.",
                     "priority": "positive"
                 })
-        
+
         # Mood insights
         if len(mood_logs) > 0:
             avg_mood = sum(log.mood_score or 0 for log in mood_logs) / len(mood_logs)
@@ -969,7 +945,7 @@ async def get_insights(
                     "message": "Your mood scores have been excellent lately. Whatever you're doing, keep it up!",
                     "priority": "positive"
                 })
-        
+
         # Default insight if no data
         if not insights:
             insights.append({
@@ -978,9 +954,9 @@ async def get_insights(
                 "message": "Start logging your fitness activities, meals, and mood to get personalized insights.",
                 "priority": "info"
             })
-        
+
         return insights
-        
+
     except Exception as e:
         logger.error(f"Error getting insights: {str(e)}")
         return [{

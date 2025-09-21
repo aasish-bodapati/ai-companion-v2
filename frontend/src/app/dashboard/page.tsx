@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -76,9 +76,9 @@ export default function DashboardPage() {
     todayMeals: 0
   });
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
+  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update time every minute
@@ -91,7 +91,7 @@ export default function DashboardPage() {
   }, []);
 
   // Load dashboard data function
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!isAuthenticated) return;
 
     try {
@@ -158,7 +158,7 @@ export default function DashboardPage() {
         return; // Success, exit early
         
       } catch (dashboardError) {
-        console.warn('Unified dashboard API not available, falling back to individual calls:', dashboardError);
+        // Fallback to individual API calls
       }
       
       // Fallback to original individual API calls
@@ -267,7 +267,7 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   // Get current meal suggestion based on time
   const getCurrentMealSuggestion = () => {
@@ -310,7 +310,6 @@ export default function DashboardPage() {
   useEffect(() => {
     const checkOnboarding = async () => {
       if (!isAuthenticated) {
-        setCheckingOnboarding(false);
         return;
       }
 
@@ -324,8 +323,6 @@ export default function DashboardPage() {
         console.error('Failed to check onboarding status:', error);
         setOnboardingStatus(false);
         router.push('/onboarding');
-      } finally {
-        setCheckingOnboarding(false);
       }
     };
 
@@ -333,21 +330,19 @@ export default function DashboardPage() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated && onboardingStatus) {
+    if (isAuthenticated) {
       loadDashboardData();
     }
-  }, [isAuthenticated, onboardingStatus]);
+  }, [isAuthenticated, loadDashboardData]);
 
-  if (!isAuthenticated || checkingOnboarding || onboardingStatus === null || onboardingStatus === false) {
+  if (!isAuthenticated || onboardingStatus === false) {
     return (
       <ProtectedRoute>
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">
-              {!isAuthenticated ? 'Loading...' :
-               checkingOnboarding ? 'Checking onboarding status...' :
-               onboardingStatus === false ? 'Redirecting to onboarding...' : 'Loading...'}
+              {!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
             </p>
           </div>
         </div>
@@ -376,33 +371,34 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto space-y-8">
 
-          {/* Hero Section */}
-          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl mb-8">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="relative px-8 py-12">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <h1 className="text-4xl font-bold text-white mb-3">
-                    Dashboard
-                  </h1>
-                  <p className="text-xl text-white/90 mb-6 max-w-2xl">
-                    Welcome back! Track your health journey and stay on top of your fitness and nutrition goals.
-                  </p>
-                  <div className="flex items-center gap-4 text-white/80">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
-                      <span className="text-sm">Health Overview</span>
+            {/* Hero Section */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-3xl mb-8">
+              <div className="absolute inset-0 bg-black/10"></div>
+              <div className="relative px-6 py-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                      Dashboard
+                    </h1>
+                    <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
+                      Welcome back! Track your health journey and stay on top of your fitness and nutrition goals.
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 text-white/80">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
+                        <span className="text-sm">Health Overview</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                        <span className="text-sm">Progress Tracking</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
+                        <span className="text-sm">Smart Insights</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      <span className="text-sm">Progress Tracking</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
-                      <span className="text-sm">Smart Insights</span>
-                    </div>
-                  </div>
                   <div className="mt-4 text-white/70">
                     {currentTime.toLocaleDateString('en-US', { 
                       weekday: 'long', 
@@ -411,9 +407,9 @@ export default function DashboardPage() {
                     })}
                   </div>
                 </div>
-                <div className="hidden lg:block">
-                  <div className="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                    <ChartBarIcon className="h-16 w-16 text-white" />
+                <div className="hidden md:block">
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <ChartBarIcon className="h-10 w-10 text-white" />
                   </div>
                 </div>
               </div>
@@ -568,6 +564,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </ProtectedRoute>
-  );
+      </div>
+      </ProtectedRoute>
+    );
 }

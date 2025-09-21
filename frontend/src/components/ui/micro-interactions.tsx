@@ -80,7 +80,7 @@ export function AnimatedButton({
     e.preventDefault();
     e.stopPropagation();
     if (!disabled && !loading && onClick) {
-      onClick(e);
+      onClick();
     }
   };
 

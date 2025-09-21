@@ -3,10 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SimpleNutritionLogForm } from '@/features/health/components/SimpleNutritionLogForm';
 import { ProgressiveNutritionLogger } from '@/components/health/ProgressiveNutritionLogger';
 import { NutritionRoutineManager } from '@/features/health/components/NutritionRoutineManager';
+import { SmartMealLogger } from '@/components/health/SmartMealLogger';
+import NutritionLogsView from '@/components/health/NutritionLogsViewFitness';
 import { 
   HeartIcon, 
   ChartBarIcon, 
@@ -15,7 +18,8 @@ import {
   TrophyIcon,
   CalendarIcon,
   FireIcon,
-  BoltIcon
+  BoltIcon,
+  ListBulletIcon
 } from '@heroicons/react/24/outline';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,8 +29,10 @@ export default function NutritionPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(true);
-  const [activeTab, setActiveTab] = useState('routines');
+  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
+  const [activeTab, setActiveTab] = useState('logs');
+  const [showSmartLogger, setShowSmartLogger] = useState(false);
+  const [mealSuccess, setMealSuccess] = useState(false);
   const [todayStats, setTodayStats] = useState({
     meals: 0,
     calories: 0,
@@ -38,7 +44,6 @@ export default function NutritionPage() {
   useEffect(() => {
     const checkOnboarding = async () => {
       if (!isAuthenticated) {
-        setCheckingOnboarding(false);
         return;
       }
 
@@ -52,8 +57,6 @@ export default function NutritionPage() {
         console.error('Failed to check onboarding status:', error);
         setOnboardingStatus(false);
         router.push('/onboarding');
-      } finally {
-        setCheckingOnboarding(false);
       }
     };
 
@@ -85,7 +88,11 @@ export default function NutritionPage() {
         fat: prev.fat + 20
       }));
     }
-    console.log('Meal logged successfully!');
+    
+    // Show success animation
+    setMealSuccess(true);
+    setTimeout(() => setMealSuccess(false), 2000);
+    logger.debug('Meal logged successfully!');
   }, []);
 
   useEffect(() => {
@@ -115,21 +122,19 @@ export default function NutritionPage() {
       }
     };
 
-    if (isAuthenticated && onboardingStatus) {
+    if (isAuthenticated) {
       loadTodayStats();
     }
-  }, [isAuthenticated, onboardingStatus]);
+  }, [isAuthenticated]);
 
-  if (!isAuthenticated || checkingOnboarding || onboardingStatus === null || onboardingStatus === false) {
+  if (!isAuthenticated || onboardingStatus === false) {
     return (
       <ProtectedRoute>
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
           <div className="text-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
             <p className="text-gray-600 dark:text-gray-400">
-              {!isAuthenticated ? 'Loading...' :
-               checkingOnboarding ? 'Checking onboarding status...' :
-               onboardingStatus === false ? 'Redirecting to onboarding...' : 'Loading...'}
+              {!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
             </p>
           </div>
         </div>
@@ -142,22 +147,25 @@ export default function NutritionPage() {
       <ProtectedRoute>
         <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="container mx-auto px-4 py-8">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-3xl mb-8">
-              <div className="absolute inset-0 bg-black/10"></div>
-              <div className="relative px-8 py-12">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h1 className="text-4xl font-bold text-white mb-3">
-                      Nutrition & Wellness
-                    </h1>
-                    <p className="text-xl text-white/90 mb-6 max-w-2xl">
-                      Track your meals, monitor macros, and fuel your fitness goals with intelligent nutrition insights.
-                    </p>
+            <div className="max-w-4xl mx-auto space-y-8">
+              {/* Hero Section */}
+              <div className="relative overflow-hidden bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500 rounded-3xl mb-8">
+                <div className="absolute inset-0 bg-black/10"></div>
+                <div className="relative px-6 py-10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                        Nutrition & Wellness
+                      </h1>
+                      <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
+                        Track your meals, monitor macros, and fuel your fitness goals with intelligent nutrition insights.
+                      </p>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                       <button
-                        onClick={() => setActiveTab('log')}
-                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 transition-all duration-200 backdrop-blur-sm"
+                        onClick={() => setShowSmartLogger(true)}
+                        className={`bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 ${
+                          mealSuccess ? 'animate-pulse bg-green-500/20 border-2 border-green-400' : ''
+                        }`}
                       >
                         <BoltIcon className="h-5 w-5" />
                         <span>Log Today&apos;s Meal</span>
@@ -251,7 +259,11 @@ export default function NutritionPage() {
             <div className="space-y-8">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-8">
+                  <TabsList className="grid w-full grid-cols-4 mb-8">
+                    <TabsTrigger value="logs" className="flex items-center gap-2">
+                      <ListBulletIcon className="h-4 w-4" />
+                      Meal Logs
+                    </TabsTrigger>
                     <TabsTrigger value="routines" className="flex items-center gap-2">
                       <ChartBarIcon className="h-4 w-4" />
                       Nutrition Routines
@@ -265,6 +277,13 @@ export default function NutritionPage() {
                       Progress
                     </TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="logs" className="space-y-6">
+                    <NutritionLogsView 
+                      refreshTrigger={mealSuccess ? Date.now() : undefined} 
+                      isActive={activeTab === 'logs'}
+                    />
+                  </TabsContent>
 
                   <TabsContent value="routines" className="space-y-6">
                     <NutritionRoutineManager />
@@ -410,6 +429,14 @@ export default function NutritionPage() {
             </div>
           </div>
         </div>
+
+        {/* Smart Meal Logger Modal */}
+        <SmartMealLogger
+          isOpen={showSmartLogger}
+          onClose={() => setShowSmartLogger(false)}
+          onSuccess={handleLogSuccess}
+        />
+      </div>
       </ProtectedRoute>
     </ErrorBoundary>
   );

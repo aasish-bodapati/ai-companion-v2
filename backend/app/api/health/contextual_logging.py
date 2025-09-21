@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-
 @router.get("/context", response_model=LoggingContext)
 async def get_logging_context(
     *,
@@ -40,7 +39,7 @@ async def get_logging_context(
         now_utc = datetime.now(timezone.utc)
         today = now_utc.date()
         current_hour = now_utc.hour
-        
+
         # Get active routines
         active_fitness_routines = db.query(SimpleRoutine).join(
             SimpleUserRoutineProgress
@@ -50,7 +49,7 @@ async def get_logging_context(
                 SimpleUserRoutineProgress.is_active == True
             )
         ).all()
-        
+
         active_nutrition_routines = db.query(NutritionRoutine).join(
             NutritionUserRoutineProgress
         ).filter(
@@ -59,11 +58,11 @@ async def get_logging_context(
                 NutritionUserRoutineProgress.is_active == True
             )
         ).all()
-        
+
         # Get today's logs
         today_start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
         today_end = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-        
+
         today_fitness = db.query(FitnessLog).filter(
             and_(
                 FitnessLog.user_id == current_user.id,
@@ -71,7 +70,7 @@ async def get_logging_context(
                 FitnessLog.activity_date <= today_end
             )
         ).all()
-        
+
         today_nutrition = db.query(NutritionLog).filter(
             and_(
                 NutritionLog.user_id == current_user.id,
@@ -79,29 +78,29 @@ async def get_logging_context(
                 NutritionLog.meal_date <= today_end
             )
         ).all()
-        
+
         # Determine current context
         context_type = determine_context_type(current_hour, today_fitness, today_nutrition)
-        
+
         # Get workout suggestions if relevant
         workout_suggestions = []
         if context_type in ["morning_workout", "evening_workout", "routine_scheduled"]:
             workout_suggestions = await generate_workout_suggestions(
                 db, current_user.id, active_fitness_routines, today_fitness, now_utc
             )
-        
+
         # Get meal suggestions if relevant
         meal_suggestions = []
         if context_type in ["meal_time", "nutrition_tracking"]:
             meal_suggestions = await generate_meal_suggestions(
                 db, current_user.id, active_nutrition_routines, today_nutrition, now_utc
             )
-        
+
         # Calculate progress metrics
         progress_metrics = calculate_progress_metrics(
             active_fitness_routines, active_nutrition_routines, today_fitness, today_nutrition
         )
-        
+
         return LoggingContext(
             context_type=context_type,
             current_time=now_utc,
@@ -115,11 +114,10 @@ async def get_logging_context(
                 current_hour, today_fitness, today_nutrition, active_fitness_routines, active_nutrition_routines
             )
         )
-        
+
     except Exception as e:
         logger.error(f"Error getting logging context: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get logging context")
-
 
 @router.post("/workout/smart", response_model=QuickLogResponse)
 async def smart_workout_log(
@@ -141,18 +139,18 @@ async def smart_workout_log(
             if not exercise:
                 logger.warning(f"Exercise not found with ID: {workout_data.exercise_id}, continuing without exercise details")
                 # Don't throw an error, just continue without exercise details
-        
+
         # Apply smart defaults based on context
         enhanced_data = await apply_workout_smart_defaults(
             db, current_user.id, workout_data, exercise
         )
-        
+
         # Validate and fix intensity value
         intensity = enhanced_data.get("intensity", workout_data.intensity)
         if intensity == "moderate":
             intensity = "medium"
             enhanced_data["intensity"] = intensity
-        
+
         # Create fitness log entry
         log_entry = FitnessLog(
             user_id=current_user.id,
@@ -168,9 +166,9 @@ async def smart_workout_log(
             notes=workout_data.notes,
             activity_date=workout_data.activity_date or datetime.now(timezone.utc)
         )
-        
+
         db.add(log_entry)
-        
+
         # Update exercise history if exercise provided
         if exercise:
             exercise_database.user_exercise_history.update_exercise_history(
@@ -182,10 +180,10 @@ async def smart_workout_log(
                 weight_kg=log_entry.weight_kg,
                 reps=log_entry.reps
             )
-            
+
             # Increment exercise usage
             exercise_database.exercise.increment_usage(db, exercise.id)
-        
+
         # Update routine progress if applicable
         routine_updates = []
         if workout_data.routine_id:
@@ -194,10 +192,10 @@ async def smart_workout_log(
             )
             if routine_update:
                 routine_updates.append(routine_update)
-        
+
         db.commit()
         db.refresh(log_entry)
-        
+
         # Invalidate user caches after successful logging
         logger.info(f"🏋️ SMART WORKOUT LOG: Invalidating caches for user {current_user.id}")
         try:
@@ -207,7 +205,7 @@ async def smart_workout_log(
             logger.info(f"🏋️ SMART WORKOUT LOG: Cache invalidation completed")
         except Exception as e:
             logger.warning(f"🏋️ SMART WORKOUT LOG: Cache invalidation failed: {e}")
-        
+
         # Generate insights
         logger.info(f"🏋️ SMART WORKOUT LOG: Generating insights for user {current_user.id}")
         try:
@@ -221,9 +219,9 @@ async def smart_workout_log(
                 progress_summary="Workout logged successfully",
                 next_goals=[]
             )
-        
+
         logger.info(f"🏋️ SMART WORKOUT LOG: About to return response for log_id: {log_entry.id}")
-        
+
         logger.info(f"🏋️ SMART WORKOUT LOG: Getting next suggestions for user {current_user.id}")
         try:
             next_suggestions = await get_next_workout_suggestions(db, current_user.id, log_entry)
@@ -231,7 +229,7 @@ async def smart_workout_log(
         except Exception as e:
             logger.warning(f"🏋️ SMART WORKOUT LOG: Next suggestions generation failed: {e}")
             next_suggestions = []
-        
+
         response = QuickLogResponse(
             success=True,
             log_id=log_entry.id,
@@ -240,10 +238,10 @@ async def smart_workout_log(
             insights=insights,
             next_suggestions=next_suggestions
         )
-        
+
         logger.info(f"🏋️ SMART WORKOUT LOG: Response created successfully: {response}")
         return response
-        
+
     except HTTPException as e:
         logger.error(f"HTTPException in smart workout log: {str(e)}")
         logger.error(f"HTTPException status_code: {e.status_code}")
@@ -254,7 +252,6 @@ async def smart_workout_log(
         logger.error(f"Error logging smart workout: {str(e)}", exc_info=True)
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to log workout")
-
 
 @router.post("/meal/smart", response_model=QuickLogResponse)
 async def smart_meal_log(
@@ -269,7 +266,7 @@ async def smart_meal_log(
         enhanced_data = await apply_meal_smart_defaults(
             db, current_user.id, meal_data
         )
-        
+
         # Create nutrition log entry
         log_entry = NutritionLog(
             user_id=current_user.id,
@@ -288,9 +285,9 @@ async def smart_meal_log(
             mood_after=meal_data.mood_after,
             meal_date=meal_data.meal_date or datetime.now(timezone.utc)
         )
-        
+
         db.add(log_entry)
-        
+
         # Update food history for each food item
         if meal_data.food_ids:
             for food_id in meal_data.food_ids:
@@ -300,10 +297,10 @@ async def smart_meal_log(
                     food_id=food_id,
                     meal_type=log_entry.meal_type
                 )
-                
+
                 # Increment food usage
                 food_database.food.increment_usage(db, food_id)
-        
+
         # Update routine progress if applicable
         routine_updates = []
         if meal_data.routine_id:
@@ -312,18 +309,18 @@ async def smart_meal_log(
             )
             if routine_update:
                 routine_updates.append(routine_update)
-        
+
         db.commit()
         db.refresh(log_entry)
-        
+
         # Invalidate user caches after successful logging
         await cache_invalidator.on_user_activity_logged(current_user.id, "nutrition")
         for food_id in meal_data.food_ids or []:
             await cache_invalidator.on_food_usage_updated(food_id)
-        
+
         # Generate insights
         insights = await generate_meal_insights(db, current_user.id, log_entry)
-        
+
         return QuickLogResponse(
             success=True,
             log_id=log_entry.id,
@@ -332,7 +329,7 @@ async def smart_meal_log(
             insights=insights,
             next_suggestions=await get_next_meal_suggestions(db, current_user.id, log_entry)
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -340,16 +337,15 @@ async def smart_meal_log(
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to log meal")
 
-
 # Helper functions
 
 def determine_context_type(hour: int, fitness_logs: List[FitnessLog], nutrition_logs: List[NutritionLog]) -> str:
     """Determine the current logging context based on time and activity."""
-    
+
     # Morning workout time
     if 6 <= hour < 10 and len(fitness_logs) == 0:
         return "morning_workout"
-    
+
     # Meal times
     if 7 <= hour < 10 and len([n for n in nutrition_logs if "breakfast" in (n.meal_type or "").lower()]) == 0:
         return "meal_time"
@@ -357,11 +353,11 @@ def determine_context_type(hour: int, fitness_logs: List[FitnessLog], nutrition_
         return "meal_time"
     elif 18 <= hour < 21 and len([n for n in nutrition_logs if "dinner" in (n.meal_type or "").lower()]) == 0:
         return "meal_time"
-    
+
     # Evening workout time
     if 17 <= hour < 20 and len(fitness_logs) < 2:
         return "evening_workout"
-    
+
     # General tracking
     if len(fitness_logs) == 0 and len(nutrition_logs) == 0:
         return "getting_started"
@@ -369,9 +365,8 @@ def determine_context_type(hour: int, fitness_logs: List[FitnessLog], nutrition_
         return "nutrition_tracking"
     elif len(fitness_logs) == 0 and len(nutrition_logs) > 0:
         return "fitness_tracking"
-    
-    return "general_logging"
 
+    return "general_logging"
 
 def get_time_of_day(hour: int) -> str:
     """Get time of day category."""
@@ -384,23 +379,22 @@ def get_time_of_day(hour: int) -> str:
     else:
         return "night"
 
-
 async def generate_workout_suggestions(
-    db: Session, 
-    user_id: str, 
+    db: Session,
+    user_id: str,
     active_routines: List[SimpleRoutine],
     today_logs: List[FitnessLog],
     current_time: datetime
 ) -> List[ContextualWorkoutSuggestion]:
     """Generate contextual workout suggestions."""
-    
+
     suggestions = []
-    
+
     # Routine-based suggestions
     for routine in active_routines:
         # Get today's planned workout (simplified)
         current_day = current_time.strftime("%A").lower()
-        
+
         suggestion = ContextualWorkoutSuggestion(
             routine_id=routine.id,
             routine_name=routine.name,
@@ -412,14 +406,14 @@ async def generate_workout_suggestions(
             time_sensitive=True
         )
         suggestions.append(suggestion)
-    
+
     # If no routine-based suggestions, add general ones
     if not suggestions:
         # Get user's favorite exercises
         user_history = exercise_database.user_exercise_history.get_user_favorites(
             db, user_id=user_id, limit=3
         )
-        
+
         for history in user_history:
             if history.exercise:
                 suggestion = ContextualWorkoutSuggestion(
@@ -432,9 +426,8 @@ async def generate_workout_suggestions(
                     time_sensitive=False
                 )
                 suggestions.append(suggestion)
-    
-    return suggestions[:3]  # Return top 3
 
+    return suggestions[:3]  # Return top 3
 
 async def generate_meal_suggestions(
     db: Session,
@@ -444,10 +437,10 @@ async def generate_meal_suggestions(
     current_time: datetime
 ) -> List[ContextualMealSuggestion]:
     """Generate contextual meal suggestions."""
-    
+
     suggestions = []
     current_hour = current_time.hour
-    
+
     # Determine meal type based on time
     meal_type = "breakfast"
     if 11 <= current_hour < 15:
@@ -456,14 +449,14 @@ async def generate_meal_suggestions(
         meal_type = "dinner"
     elif current_hour >= 22 or current_hour < 6:
         meal_type = "snack"
-    
+
     # Get user's favorite foods for this meal type
     user_favorites = food_database.user_food_history.get_user_favorites(
         db, user_id=user_id, limit=5
     )
-    
+
     meal_favorites = [f for f in user_favorites if f.most_common_meal_type == meal_type]
-    
+
     for favorite in meal_favorites[:3]:
         if favorite.food:
             suggestion = ContextualMealSuggestion(
@@ -477,9 +470,8 @@ async def generate_meal_suggestions(
                 time_sensitive=True
             )
             suggestions.append(suggestion)
-    
-    return suggestions
 
+    return suggestions
 
 def calculate_progress_metrics(
     fitness_routines: List[SimpleRoutine],
@@ -488,14 +480,13 @@ def calculate_progress_metrics(
     today_nutrition: List[NutritionLog]
 ) -> Dict[str, Any]:
     """Calculate progress metrics for context."""
-    
+
     return {
         "active_routines": len(fitness_routines) + len(nutrition_routines),
         "today_workouts": len(today_fitness),
         "today_meals": len(today_nutrition),
         "completion_rate": min(100, (len(today_fitness) + len(today_nutrition)) / max(1, len(fitness_routines) + len(nutrition_routines)) * 100)
     }
-
 
 def generate_smart_reminders(
     hour: int,
@@ -505,30 +496,29 @@ def generate_smart_reminders(
     nutrition_routines: List[NutritionRoutine]
 ) -> List[str]:
     """Generate smart reminders based on context."""
-    
+
     reminders = []
-    
+
     # Workout reminders
     if fitness_routines and len(fitness_logs) == 0:
         if 6 <= hour < 10:
             reminders.append("Great time for a morning workout!")
         elif 17 <= hour < 20:
             reminders.append("Perfect time for an evening workout session")
-    
+
     # Meal reminders
     breakfast_logged = any("breakfast" in (log.meal_type or "").lower() for log in nutrition_logs)
     lunch_logged = any("lunch" in (log.meal_type or "").lower() for log in nutrition_logs)
     dinner_logged = any("dinner" in (log.meal_type or "").lower() for log in nutrition_logs)
-    
+
     if 7 <= hour < 11 and not breakfast_logged:
         reminders.append("Don't forget to log your breakfast!")
     elif 12 <= hour < 15 and not lunch_logged:
         reminders.append("Time to log your lunch")
     elif 18 <= hour < 22 and not dinner_logged:
         reminders.append("Remember to log your dinner")
-    
-    return reminders
 
+    return reminders
 
 async def apply_workout_smart_defaults(
     db: Session,
@@ -537,10 +527,10 @@ async def apply_workout_smart_defaults(
     exercise: Optional[Exercise]
 ) -> Dict[str, Any]:
     """Apply smart defaults to workout data."""
-    
+
     enhanced_data = {}
     applied_defaults = []
-    
+
     # Get user history for similar exercises
     if exercise:
         user_history = db.query(UserExerciseHistory).filter(
@@ -549,19 +539,18 @@ async def apply_workout_smart_defaults(
                 UserExerciseHistory.exercise_id == exercise.id
             )
         ).first()
-        
+
         if user_history and not workout_data.duration_minutes:
             enhanced_data["duration_minutes"] = user_history.avg_duration_minutes or 30
             applied_defaults.append(f"Duration set to {enhanced_data['duration_minutes']} minutes based on your history")
-        
+
         if not workout_data.calories_burned and exercise.calories_per_minute:
             duration = workout_data.duration_minutes or enhanced_data.get("duration_minutes", 30)
             enhanced_data["calories_burned"] = int(exercise.calories_per_minute * duration)
             applied_defaults.append(f"Calories estimated at {enhanced_data['calories_burned']} based on exercise data")
-    
+
     enhanced_data["applied_defaults"] = applied_defaults
     return enhanced_data
-
 
 async def apply_meal_smart_defaults(
     db: Session,
@@ -569,10 +558,10 @@ async def apply_meal_smart_defaults(
     meal_data: SmartMealLog
 ) -> Dict[str, Any]:
     """Apply smart defaults to meal data."""
-    
+
     enhanced_data = {}
     applied_defaults = []
-    
+
     # Auto-detect meal type based on time if not provided
     if not meal_data.meal_type:
         current_hour = datetime.now(timezone.utc).hour
@@ -584,12 +573,11 @@ async def apply_meal_smart_defaults(
             enhanced_data["meal_type"] = "dinner"
         else:
             enhanced_data["meal_type"] = "snack"
-        
+
         applied_defaults.append(f"Meal type set to {enhanced_data['meal_type']} based on current time")
-    
+
     enhanced_data["applied_defaults"] = applied_defaults
     return enhanced_data
-
 
 async def update_routine_progress(
     db: Session,
@@ -599,7 +587,7 @@ async def update_routine_progress(
     log_entry: Union[FitnessLog, NutritionLog]
 ) -> Optional[RoutineProgressUpdate]:
     """Update routine progress based on logged activity."""
-    
+
     if routine_type == "fitness":
         progress = db.query(SimpleUserRoutineProgress).filter(
             and_(
@@ -607,21 +595,20 @@ async def update_routine_progress(
                 SimpleUserRoutineProgress.routine_id == routine_id
             )
         ).first()
-        
+
         if progress:
             progress.workouts_completed = (progress.workouts_completed or 0) + 1
             progress.last_workout_date = log_entry.activity_date
             db.commit()
-            
+
             return RoutineProgressUpdate(
                 routine_id=routine_id,
                 routine_type="fitness",
                 workouts_completed=progress.workouts_completed,
                 achievement_unlocked=progress.workouts_completed % 5 == 0  # Achievement every 5 workouts
             )
-    
-    return None
 
+    return None
 
 async def generate_workout_insights(
     db: Session,
@@ -630,10 +617,10 @@ async def generate_workout_insights(
     exercise: Optional[Exercise]
 ) -> LoggingInsights:
     """Generate insights after workout logging."""
-    
+
     insights = []
     achievements = []
-    
+
     # Compare with previous workouts
     recent_workouts = db.query(FitnessLog).filter(
         and_(
@@ -641,28 +628,28 @@ async def generate_workout_insights(
             FitnessLog.activity_type == log_entry.activity_type
         )
     ).order_by(FitnessLog.activity_date.desc()).limit(5).all()
-    
+
     if len(recent_workouts) > 1:
         prev_workout = recent_workouts[1]  # Second most recent
-        
+
         if log_entry.duration_minutes and prev_workout.duration_minutes:
             if log_entry.duration_minutes > prev_workout.duration_minutes:
                 insights.append(f"Great job! You worked out {log_entry.duration_minutes - prev_workout.duration_minutes} minutes longer than last time")
-        
+
         if log_entry.calories_burned and prev_workout.calories_burned:
             if log_entry.calories_burned > prev_workout.calories_burned:
                 insights.append(f"You burned {log_entry.calories_burned - prev_workout.calories_burned} more calories than your previous session")
-    
+
     # Check for achievements
     total_workouts = db.query(func.count(FitnessLog.id)).filter(
         FitnessLog.user_id == user_id
     ).scalar()
-    
+
     if total_workouts == 1:
         achievements.append("First Workout Logged! 🎉")
     elif total_workouts % 10 == 0:
         achievements.append(f"{total_workouts} Workouts Milestone! 🏆")
-    
+
     return LoggingInsights(
         insights=insights,
         achievements=achievements,
@@ -670,22 +657,21 @@ async def generate_workout_insights(
         next_goals=["Try increasing duration by 5 minutes next time"] if log_entry.duration_minutes and log_entry.duration_minutes < 45 else []
     )
 
-
 async def generate_meal_insights(
     db: Session,
     user_id: str,
     log_entry: NutritionLog
 ) -> LoggingInsights:
     """Generate insights after meal logging."""
-    
+
     insights = []
     achievements = []
-    
+
     # Calculate today's nutrition totals
     today = log_entry.meal_date.date()
     today_start = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
     today_end = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-    
+
     today_nutrition = db.query(NutritionLog).filter(
         and_(
             NutritionLog.user_id == user_id,
@@ -693,28 +679,28 @@ async def generate_meal_insights(
             NutritionLog.meal_date <= today_end
         )
     ).all()
-    
+
     total_calories = sum(log.total_calories for log in today_nutrition)
     total_protein = sum(log.protein_g or 0 for log in today_nutrition)
-    
+
     insights.append(f"Today's total: {total_calories} calories, {total_protein:.1f}g protein")
-    
+
     # Protein goal check
     if total_protein >= 100:
         insights.append("Excellent! You've hit your protein goal for today 💪")
     elif total_protein >= 75:
         insights.append("You're close to your protein goal - keep it up!")
-    
+
     # Check for achievements
     total_meals = db.query(func.count(NutritionLog.id)).filter(
         NutritionLog.user_id == user_id
     ).scalar()
-    
+
     if total_meals == 1:
         achievements.append("First Meal Logged! 🍽️")
     elif total_meals % 20 == 0:
         achievements.append(f"{total_meals} Meals Milestone! 🌟")
-    
+
     return LoggingInsights(
         insights=insights,
         achievements=achievements,
@@ -722,28 +708,26 @@ async def generate_meal_insights(
         next_goals=["Try adding more vegetables to your next meal"] if log_entry.meal_type != "snack" else []
     )
 
-
 async def get_next_workout_suggestions(
     db: Session,
     user_id: str,
     last_workout: FitnessLog
 ) -> List[str]:
     """Get suggestions for next workout."""
-    
+
     suggestions = []
-    
+
     # Suggest rest day if high intensity
     if last_workout.intensity == "high":
         suggestions.append("Consider a light recovery workout or rest day tomorrow")
-    
+
     # Suggest different muscle groups
     if last_workout.activity_type == "strength":
         suggestions.append("Try some cardio for your next session")
     elif last_workout.activity_type == "cardio":
         suggestions.append("Consider adding some strength training")
-    
-    return suggestions
 
+    return suggestions
 
 async def get_next_meal_suggestions(
     db: Session,
@@ -751,14 +735,14 @@ async def get_next_meal_suggestions(
     last_meal: NutritionLog
 ) -> List[str]:
     """Get suggestions for next meal."""
-    
+
     suggestions = []
-    
+
     # Suggest based on macros
     if (last_meal.protein_g or 0) < 20 and last_meal.meal_type != "snack":
         suggestions.append("Consider adding more protein to your next meal")
-    
+
     if last_meal.meal_type == "breakfast":
         suggestions.append("Don't forget to stay hydrated throughout the day")
-    
+
     return suggestions

@@ -39,10 +39,10 @@ export function OnboardingEditor() {
 
     try {
       setLoading(true);
-      const response = await api.get('/health/onboarding/profile');
+      const response = await api.get('/health/profile/');
       setData(response || {});
     } catch (error) {
-      console.error('Failed to load onboarding data:', error);
+      console.error('Failed to load health profile data:', error);
       toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
@@ -65,7 +65,18 @@ export function OnboardingEditor() {
 
     try {
       setSaving(true);
-      await api.put('/health/onboarding/profile', data);
+      
+      // Check if profile exists
+      const existingProfile = await api.get('/health/profile/');
+      
+      if (existingProfile) {
+        // Update existing profile
+        await api.put('/health/profile/', data);
+      } else {
+        // Create new profile
+        await api.post('/health/profile/', data);
+      }
+      
       setEditing(false);
       toast.success('Profile updated successfully!');
     } catch (error) {

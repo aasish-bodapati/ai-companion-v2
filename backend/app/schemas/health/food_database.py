@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
-
 # Food schemas
 class FoodBase(BaseModel):
     name: str = Field(..., description="Food name")
@@ -15,7 +14,7 @@ class FoodBase(BaseModel):
     subcategory: Optional[str] = Field(None, description="Food subcategory")
     barcode: Optional[str] = Field(None, description="Product barcode")
     usda_fdc_id: Optional[str] = Field(None, description="USDA Food Data Central ID")
-    
+
     # Nutritional info per 100g
     calories_per_100g: float = Field(..., ge=0, description="Calories per 100g")
     protein_per_100g: Optional[float] = Field(0, ge=0, description="Protein per 100g")
@@ -24,27 +23,25 @@ class FoodBase(BaseModel):
     fiber_per_100g: Optional[float] = Field(0, ge=0, description="Fiber per 100g")
     sugar_per_100g: Optional[float] = Field(0, ge=0, description="Sugar per 100g")
     sodium_per_100g: Optional[float] = Field(0, ge=0, description="Sodium per 100g in mg")
-    
+
     # Additional nutrients
     calcium_per_100g: Optional[float] = Field(None, ge=0, description="Calcium per 100g in mg")
     iron_per_100g: Optional[float] = Field(None, ge=0, description="Iron per 100g in mg")
     vitamin_c_per_100g: Optional[float] = Field(None, ge=0, description="Vitamin C per 100g in mg")
     vitamin_d_per_100g: Optional[float] = Field(None, ge=0, description="Vitamin D per 100g in mcg")
-    
+
     # Serving information
     common_serving_sizes: Optional[List[Dict[str, Any]]] = Field(None, description="Common serving sizes")
     default_serving_grams: Optional[float] = Field(100, ge=0, description="Default serving size in grams")
-    
+
     # Metadata
     description: Optional[str] = Field(None, description="Food description")
     ingredients: Optional[List[str]] = Field(None, description="Ingredients list")
     allergens: Optional[List[str]] = Field(None, description="Allergen information")
     dietary_tags: Optional[List[str]] = Field(None, description="Dietary tags")
 
-
 class FoodCreate(FoodBase):
     pass
-
 
 class FoodUpdate(BaseModel):
     name: Optional[str] = None
@@ -62,7 +59,6 @@ class FoodUpdate(BaseModel):
     description: Optional[str] = None
     dietary_tags: Optional[List[str]] = None
 
-
 class Food(FoodBase):
     id: str
     is_verified: bool = False
@@ -70,10 +66,9 @@ class Food(FoodBase):
     usage_count: int = 0
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class FoodWithUserData(Food):
     """Food with user-specific data."""
@@ -81,7 +76,6 @@ class FoodWithUserData(Food):
     user_last_logged: Optional[datetime] = None
     user_avg_serving_grams: Optional[float] = None
     user_rating: Optional[int] = None
-
 
 # User Food History schemas
 class UserFoodHistoryBase(BaseModel):
@@ -93,10 +87,8 @@ class UserFoodHistoryBase(BaseModel):
     notes: Optional[str] = None
     rating: Optional[int] = Field(None, ge=1, le=5, description="1-5 star rating")
 
-
 class UserFoodHistoryCreate(UserFoodHistoryBase):
     user_id: str
-
 
 class UserFoodHistoryUpdate(BaseModel):
     times_logged: Optional[int] = None
@@ -106,7 +98,6 @@ class UserFoodHistoryUpdate(BaseModel):
     notes: Optional[str] = None
     rating: Optional[int] = Field(None, ge=1, le=5)
 
-
 class UserFoodHistory(UserFoodHistoryBase):
     id: str
     user_id: str
@@ -114,10 +105,9 @@ class UserFoodHistory(UserFoodHistoryBase):
     created_at: datetime
     updated_at: datetime
     food: Optional[Food] = None
-    
+
     class Config:
         from_attributes = True
-
 
 # Meal Template schemas
 class MealTemplateBase(BaseModel):
@@ -125,27 +115,25 @@ class MealTemplateBase(BaseModel):
     description: Optional[str] = Field(None, description="Template description")
     meal_type: str = Field(..., description="Meal type")
     cuisine_type: Optional[str] = Field(None, description="Cuisine type")
-    
+
     # Nutritional summary
     total_calories: float = Field(..., ge=0, description="Total calories")
     total_protein_g: Optional[float] = Field(None, ge=0, description="Total protein")
     total_carbs_g: Optional[float] = Field(None, ge=0, description="Total carbs")
     total_fat_g: Optional[float] = Field(None, ge=0, description="Total fat")
     total_fiber_g: Optional[float] = Field(None, ge=0, description="Total fiber")
-    
+
     # Template data
     foods: List[Dict[str, Any]] = Field(..., description="Food configurations")
-    
+
     # Dietary information
     dietary_tags: Optional[List[str]] = Field(None, description="Dietary tags")
     allergens: Optional[List[str]] = Field(None, description="Allergen information")
     prep_time_minutes: Optional[int] = Field(None, ge=0, description="Prep time in minutes")
     difficulty_level: Optional[str] = Field(None, description="Difficulty level")
 
-
 class MealTemplateCreate(MealTemplateBase):
     pass
-
 
 class MealTemplateUpdate(BaseModel):
     name: Optional[str] = None
@@ -161,7 +149,6 @@ class MealTemplateUpdate(BaseModel):
     dietary_tags: Optional[List[str]] = None
     prep_time_minutes: Optional[int] = None
 
-
 class MealTemplate(MealTemplateBase):
     id: str
     is_popular: bool = False
@@ -169,10 +156,9 @@ class MealTemplate(MealTemplateBase):
     created_by_system: bool = True
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 # Search and filter schemas
 class FoodSearchRequest(BaseModel):
@@ -186,13 +172,11 @@ class FoodSearchRequest(BaseModel):
     limit: int = Field(20, ge=1, le=100, description="Result limit")
     offset: int = Field(0, ge=0, description="Result offset")
 
-
 class FoodSearchResponse(BaseModel):
     foods: List[FoodWithUserData]
     total_count: int
     has_more: bool
     filters_applied: Dict[str, Any]
-
 
 # Smart suggestions
 class FoodSuggestion(BaseModel):
@@ -202,13 +186,11 @@ class FoodSuggestion(BaseModel):
     nutritional_benefits: Optional[List[str]] = Field(None, description="Key nutritional benefits")
     serving_suggestion: Optional[Dict[str, Any]] = Field(None, description="Suggested serving size")
 
-
 class FoodSuggestionsResponse(BaseModel):
     suggestions: List[FoodSuggestion]
     user_preferences: Dict[str, Any]
     meal_context: Optional[str] = None
     generated_at: datetime
-
 
 # Food alternatives
 class FoodAlternative(BaseModel):
@@ -219,23 +201,19 @@ class FoodAlternative(BaseModel):
     confidence_score: float
     nutritional_comparison: Optional[Dict[str, Any]] = None
 
-
 class FoodAlternativesResponse(BaseModel):
     alternatives: List[FoodAlternative]
     original_food: Food
     filter_reason: Optional[str] = None
 
-
 # Barcode scanning
 class BarcodeSearchRequest(BaseModel):
     barcode: str = Field(..., description="Product barcode")
-
 
 class BarcodeSearchResponse(BaseModel):
     found: bool
     food: Optional[Food] = None
     suggested_foods: Optional[List[Food]] = Field(None, description="Similar foods if exact match not found")
-
 
 # Quick logging
 class QuickFoodLog(BaseModel):
@@ -244,7 +222,6 @@ class QuickFoodLog(BaseModel):
     serving_grams: Optional[float] = None
     meal_type: Optional[str] = None
     use_smart_defaults: bool = True
-
 
 class FoodLogWithDefaults(BaseModel):
     """Food log data with smart defaults applied."""
@@ -255,7 +232,6 @@ class FoodLogWithDefaults(BaseModel):
     user_history: Optional[UserFoodHistory] = None
     alternatives: Optional[List[FoodAlternative]] = None
 
-
 # Categories and metadata
 class FoodCategory(BaseModel):
     name: str
@@ -263,7 +239,6 @@ class FoodCategory(BaseModel):
     description: str
     icon: str
     subcategories: Optional[List[str]] = None
-
 
 class NutritionalProfile(BaseModel):
     """Nutritional profile for a serving size."""
@@ -275,7 +250,7 @@ class NutritionalProfile(BaseModel):
     fiber_g: float
     sugar_g: float
     sodium_mg: float
-    
+
     # Calculated percentages (optional)
     protein_percent: Optional[float] = None
     carbs_percent: Optional[float] = None

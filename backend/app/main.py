@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
+from app.core.rate_limiting import rate_limit_middleware
 
 # Configure logging for all cases to ensure debug logs are visible
 logging.basicConfig(
@@ -30,7 +31,6 @@ logger = logging.getLogger(__name__)
 # Python path configured
 
 # No automatic table creation; always use Alembic migrations
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -50,14 +50,46 @@ async def lifespan(app: FastAPI):
     # Shutdown: scheduler removed (not needed for current functionality)
     # Routes registered successfully
 
-
 # Initialize FastAPI app (with lifespan)
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    description="""
+    ## HealthLog AI - Your Personal Wellness Assistant
+
+    A comprehensive health and fitness tracking API that helps users manage their wellness journey.
+
+    ### Features
+    - **Authentication**: JWT-based user authentication and authorization
+    - **Health Logging**: Track workouts, nutrition, and health metrics
+    - **Routine Management**: Create and manage custom fitness and nutrition routines
+    - **Analytics**: Get insights and recommendations based on your data
+    - **Exercise Database**: Access to comprehensive exercise and food databases
+
+    ### Authentication
+    Most endpoints require authentication. Use the `/login/access-token` endpoint to get a JWT token, then include it in the Authorization header:
+    ```
+    Authorization: Bearer <your-token>
+    ```
+
+    ### Rate Limiting
+    API requests are rate limited to prevent abuse:
+    - Authentication endpoints: 10 requests per minute
+    - Search endpoints: 30 requests per minute
+    - General API: 100 requests per minute
+    """,
+    version="1.0.0",
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+    contact={
+        "name": "HealthLog AI Support",
+        "email": "support@healthlog-ai.com",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
 )
 # FastAPI application initialized
 
@@ -65,14 +97,22 @@ app = FastAPI(
 @app.middleware("http")
 async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
-    
+
+    # CORS headers (manual fallback)
+    origin = request.headers.get("origin")
+    if origin and origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+
     # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    
+
     # Content Security Policy
     csp = (
         "default-src 'self'; "
@@ -84,8 +124,14 @@ async def security_headers_middleware(request: Request, call_next):
         "frame-ancestors 'none';"
     )
     response.headers["Content-Security-Policy"] = csp
-    
+
     return response
+
+# Rate limiting middleware
+@app.middleware("http")
+async def rate_limiting_middleware(request: Request, call_next):
+    """Apply rate limiting to all requests."""
+    return await rate_limit_middleware(request, call_next)
 
 # Set up CORS FIRST (before other middleware)
 if settings.BACKEND_CORS_ORIGINS:
@@ -94,17 +140,21 @@ if settings.BACKEND_CORS_ORIGINS:
         origins_value = settings.BACKEND_CORS_ORIGINS
         if isinstance(origins_value, (list, tuple)):
             processed_origins = [str(origin).rstrip("/") for origin in origins_value]
+        else:
+            processed_origins = [str(origins_value).rstrip("/")]
     except Exception as e:
         logger.warning("Failed to process CORS origins: %s", e)
+        processed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
     # Setting up CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[str(origin).rstrip("/") for origin in settings.BACKEND_CORS_ORIGINS],
+        allow_origins=processed_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    logger.info("CORS middleware configured with origins: %s", processed_origins)
     # CORS middleware configured
 else:
     # Fallback: enable permissive CORS for local dev if not configured
@@ -150,23 +200,35 @@ app.state.metrics = {
     },
 }
 
+# Add OPTIONS handler for CORS preflight requests
+@app.options("/{full_path:path}")
+async def options_handler(request: Request):
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
+            "Access-Control-Allow-Credentials": "true",
+        }
+    )
+
 # Import and include API router
 try:
     from app.api.api_v1.api import api_router
     from app.core.config import settings
     app.include_router(api_router, prefix=settings.API_V1_STR)
-    
+
     # Debug: Print all registered routes
     logger.info("=== REGISTERED ROUTES ===")
     for route in app.routes:
         if hasattr(route, 'methods') and hasattr(route, 'path'):
             logger.info(f"Route: {list(route.methods)} {route.path}")
     logger.info("=== END REGISTERED ROUTES ===")
-    
+
 except Exception as e:
     logger.error(f"Error importing or including API router: {str(e)}", exc_info=True)
     raise
-
 
 # Correlation ID middleware (adds X-Request-ID header)
 @app.middleware("http")
@@ -178,12 +240,11 @@ async def correlation_id_middleware(request: Request, call_next):
     response.headers["X-Request-ID"] = req_id
     return response
 
-
 # Timeout middleware to prevent hanging requests
 @app.middleware("http")
 async def timeout_middleware(request: Request, call_next):
     import asyncio
-    
+
     try:
         # Set a 30-second timeout for all requests
         response = await asyncio.wait_for(call_next(request), timeout=30.0)
@@ -194,7 +255,6 @@ async def timeout_middleware(request: Request, call_next):
             status_code=504,
             content={"detail": "Request timeout - server took too long to respond"}
         )
-
 
 # Simple HTTP middleware to record request counts and latency
 @app.middleware("http")
@@ -254,7 +314,6 @@ async def metrics_middleware(request: Request, call_next):
         except Exception as e:
             logger.debug("metrics_middleware failure: %s", e)
 
-
 # Standardized error handlers (return consistent error shape)
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -283,7 +342,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         media_type="application/problem+json",
     )
 
-
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Return RFC 7807 problem+json for validation errors (422)."""
@@ -306,20 +364,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=status_code, content=problem, media_type="application/problem+json"
     )
 
-
 # Add root endpoint
 @app.get("/")
 async def root():
     logger.info("Root endpoint called")
-    return {"message": "Welcome to Minimal AI Companion API"}
-
+    return {"message": "Welcome to HealthLog API"}
 
 # Add health check endpoint
 @app.get("/health")
 async def health_check():
     logger.info("Health check endpoint called")
     return {"status": "ok"}
-
 
 # Prometheus-compatible metrics endpoint
 @app.get("/metrics")
@@ -397,6 +452,5 @@ async def metrics():
         logger.error("metrics endpoint failure: %s", e, exc_info=True)
         # Return minimal safe payload
         return JSONResponse(content="", media_type="text/plain; version=0.0.4; charset=utf-8")
-
 
 # (Removed deprecated on_event startup handlers; handled in lifespan)

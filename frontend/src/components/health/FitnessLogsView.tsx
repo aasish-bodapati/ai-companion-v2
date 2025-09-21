@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,11 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarIcon, ClockIcon, FireIcon, TrophyIcon, ChartBarIcon, ChevronLeftIcon, ChevronRightIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { format, parseISO, addDays, subDays } from 'date-fns';
 import { useSuccessToast, useErrorToast, useWarningToast } from '@/components/ui/toast';
+import { logger } from '@/lib/logger';
 import { AnimatedButton, AnimatedCard, AnimatedCounter } from '@/components/ui/micro-interactions';
 import { LoadingOverlay, WorkoutCardSkeleton, CalendarSkeleton, StatsCardSkeleton } from '@/components/ui/loading-states';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import api from '@/lib/api';
-import { SmartWorkoutLogger } from './SmartWorkoutLogger';
+import { DynamicWorkoutLogger } from './DynamicWorkoutLogger';
 
 interface WorkoutLog {
   id: string;
@@ -48,7 +49,6 @@ interface FitnessLogsViewProps {
 function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProps) {
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'week' | 'month'>('month');
   const [currentDay, setCurrentDay] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -85,32 +85,38 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {
-    loadLogs();
-  }, [filter]);
-
-  // Watch for refresh trigger
-  useEffect(() => {
-    if (refreshTrigger) {
-      loadLogs();
-    }
-  }, [refreshTrigger]);
-
-  // Always default to today when component loads
-  useEffect(() => {
-    setCurrentDay(new Date());
-  }, []);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       // Load fitness logs with timezone offset
       const timezoneOffset = new Date().getTimezoneOffset();
-      const response = await api.get(`/health/fitness-logs?period=${filter}&size=50`);
+      const response = await api.get(`/health/fitness-logs/?period=month&size=50`, { timeoutMs: 10000 });
       
-      setLogs(response.logs || []);
-      setStats(response.stats || stats);
+      // Handle both old and new API response formats
+      if (response.logs) {
+        setLogs(response.logs || []);
+        setStats(response.stats || {});
+      } else if (Array.isArray(response)) {
+        // Old API format - direct array
+        setLogs(response || []);
+        setStats({
+          totalWorkouts: 0,
+          totalDuration: 0,
+          totalCalories: 0,
+          averageDifficulty: 0,
+          currentStreak: 0
+        });
+      } else {
+        setLogs([]);
+        setStats({
+          totalWorkouts: 0,
+          totalDuration: 0,
+          totalCalories: 0,
+          averageDifficulty: 0,
+          currentStreak: 0
+        });
+      }
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
       setError('Failed to load workout logs');
@@ -118,7 +124,23 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
     } finally {
       setLoading(false);
     }
-  };
+  }, [errorToast]);
+
+  useEffect(() => {
+    loadLogs();
+  }, [loadLogs]);
+
+  // Watch for refresh trigger
+  useEffect(() => {
+    if (refreshTrigger) {
+      loadLogs();
+    }
+  }, [refreshTrigger, loadLogs]);
+
+  // Always default to today when component loads
+  useEffect(() => {
+    setCurrentDay(new Date());
+  }, []);
 
   const getDifficultyColor = (rating: number) => {
     if (rating <= 3) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -244,7 +266,7 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
       
       setIsEditDialogOpen(false);
       setEditingLog(null);
-      console.log('Workout log updated successfully');
+      logger.debug('Workout log updated successfully');
       loadLogs(); // Refresh stats
     } catch (error) {
       console.error('Failed to update workout log:', error);
@@ -276,7 +298,7 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
         notes: '',
         activity_type: 'weightlifting'
       });
-      console.log('Workout log added successfully');
+      logger.debug('Workout log added successfully');
       loadLogs(); // Refresh stats
     } catch (error) {
       console.error('Failed to add workout log:', error);
@@ -452,29 +474,6 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
         <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Workout Logs</h2>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={filter === 'week' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('week')}
-            >
-              This Week
-            </Button>
-            <Button
-              variant={filter === 'month' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('month')}
-            >
-              This Month
-            </Button>
-            <Button
-              variant={filter === 'all' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setFilter('all')}
-            >
-              All Time
-            </Button>
-          </div>
         </div>
 
         {/* View Controls */}
@@ -562,14 +561,6 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
                   </Button>
                 </>
               )}
-              
-              <CalendarIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <input
-                type="date"
-                value={format(currentDay, 'yyyy-MM-dd')}
-                onChange={(e) => setCurrentDay(new Date(e.target.value))}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
             </div>
           )}
 
@@ -634,86 +625,67 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <AnimatedCard hover={false}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <TrophyIcon className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {viewMode === 'day' ? 'Today\'s Workouts' : 'Total Workouts'}
-                  </p>
-                  <AnimatedCounter 
-                    value={viewMode === 'day' ? getCurrentDayStats().count : stats.totalWorkouts}
-                    className="text-2xl font-bold text-gray-900 dark:text-white"
-                    duration={0.8}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
 
-        <AnimatedCard hover={false}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <ClockIcon className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {viewMode === 'day' ? 'Today\'s Duration' : 'Total Duration'}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {viewMode === 'day' ? formatDuration(getCurrentDayStats().totalDuration) : formatDuration(stats.totalDuration)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
 
-        <AnimatedCard hover={false}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <FireIcon className="h-8 w-8 text-red-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {viewMode === 'day' ? 'Today\'s Calories' : 'Calories Burned'}
-                  </p>
-                  <AnimatedCounter 
-                    value={viewMode === 'day' ? getCurrentDayStats().totalCalories : stats.totalCalories}
-                    className="text-2xl font-bold text-gray-900 dark:text-white"
-                    duration={0.8}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
+      {/* Day Navigation - Always show in day view */}
+      {viewMode === 'day' && (
+        <div className="space-y-4">
+          {/* Day Navigation */}
+          <div className="flex items-center justify-center gap-4 py-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateDay('prev')}
+              className="flex items-center gap-1"
+            >
+              <ChevronLeftIcon className="h-4 w-4" />
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <CalendarIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-900 dark:text-white">
+                {format(currentDay, 'EEEE, MMM d, yyyy')}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentDay(new Date())}
+                className="text-xs px-2 py-1"
+              >
+                Today
+              </Button>
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigateDay('next')}
+              className="flex items-center gap-1"
+            >
+              Next
+              <ChevronRightIcon className="h-4 w-4" />
+            </Button>
+          </div>
 
-        <AnimatedCard hover={false}>
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <ChartBarIcon className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Current Streak</p>
-                  <AnimatedCounter 
-                    value={stats.currentStreak}
-                    suffix=" days"
-                    className="text-2xl font-bold text-gray-900 dark:text-white"
-                    duration={0.8}
-                  />
-                </div>
+          {/* Day Stats Summary */}
+          <div className="flex items-center justify-center py-3 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+              <Badge variant="outline" className="text-xs">
+                {getCurrentDayStats().count} workout{getCurrentDayStats().count !== 1 ? 's' : ''}
+              </Badge>
+              <div className="flex items-center gap-1">
+                <ClockIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span>{formatDuration(getCurrentDayStats().totalDuration)}</span>
               </div>
-            </CardContent>
-          </Card>
-        </AnimatedCard>
-      </div>
-
+              <div className="flex items-center gap-1">
+                <FireIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                <span>{getCurrentDayStats().totalCalories} cal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logs List */}
       <div className="space-y-4">
@@ -721,63 +693,21 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
           <Card>
             <CardContent className="p-8 text-center">
               <TrophyIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Workout Logs Yet</h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No Workout Logs Found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 Start logging your workouts to see your progress here!
               </p>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Log Your First Workout
+              </Button>
             </CardContent>
           </Card>
         ) : viewMode === 'day' ? (
           <div className="space-y-6">
-            {/* Day Navigation Header */}
-            <div className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDay('prev')}
-                className="flex items-center gap-1 text-sm"
-              >
-                <ChevronLeftIcon className="h-4 w-4" />
-                Prev
-              </Button>
-              
-              <div className="flex items-center gap-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {format(currentDay, 'MMM d, yyyy')}
-                </h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentDay(new Date())}
-                  className="text-xs px-2 py-1"
-                >
-                  Today
-                </Button>
-                <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                  <Badge variant="outline" className="text-xs">
-                    {getCurrentDayStats().count}
-                  </Badge>
-                  <div className="flex items-center gap-1">
-                    <ClockIcon className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                    <span>{formatDuration(getCurrentDayStats().totalDuration)}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <FireIcon className="h-3 w-3 text-gray-500 dark:text-gray-400" />
-                    <span>{getCurrentDayStats().totalCalories}</span>
-                  </div>
-                </div>
-              </div>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateDay('next')}
-                className="flex items-center gap-1 text-sm"
-              >
-                Next
-                <ChevronRightIcon className="h-4 w-4" />
-              </Button>
-            </div>
 
           {/* Workouts for current day - Clean Card Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -907,7 +837,7 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
                                   <div>
                                     <div className="text-xs font-medium text-yellow-800 dark:text-yellow-200 uppercase tracking-wide mb-1">Notes</div>
                                     <div className="text-sm text-yellow-700 dark:text-yellow-300 italic">
-                                      "{exercise.notes}"
+                                      &ldquo;{exercise.notes}&rdquo;
                                     </div>
                                   </div>
                                 </div>
@@ -1204,7 +1134,7 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
       </div>
 
       {/* Edit Workout Dialog - Using SmartWorkoutLogger for consistency */}
-      <SmartWorkoutLogger 
+      <DynamicWorkoutLogger 
         isOpen={isEditDialogOpen}
         onClose={() => {
           setIsEditDialogOpen(false);
@@ -1224,69 +1154,15 @@ function FitnessLogsView({ className = '', refreshTrigger }: FitnessLogsViewProp
         } : undefined}
       />
 
-      {/* Add Workout Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add Workout</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="add-activity-name">Workout Name</Label>
-              <Input
-                id="add-activity-name"
-                value={editFormData.activity_name}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, activity_name: e.target.value }))}
-                placeholder="e.g. Morning Run"
-                className="placeholder:text-gray-400 placeholder:italic"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="add-duration">Duration (minutes)</Label>
-                <Input
-                  id="add-duration"
-                  type="number"
-                  value={editFormData.duration_minutes || ''}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 0 }))}
-                  placeholder="e.g. 30"
-                  className="placeholder:text-gray-400 placeholder:italic"
-                />
-              </div>
-              <div>
-                <Label htmlFor="add-calories">Calories Burned</Label>
-                <Input
-                  id="add-calories"
-                  type="number"
-                  value={editFormData.calories_burned || ''}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, calories_burned: parseInt(e.target.value) || 0 }))}
-                  placeholder="e.g. 250"
-                  className="placeholder:text-gray-400 placeholder:italic"
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="add-notes">Notes</Label>
-              <Textarea
-                id="add-notes"
-                value={editFormData.notes}
-                onChange={(e) => setEditFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="How did the workout feel?"
-                className="placeholder:text-gray-400 placeholder:italic"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddLog}>
-              Add Workout
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add Workout Dialog - Using DynamicWorkoutLogger */}
+      <DynamicWorkoutLogger 
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onSuccess={() => {
+          setIsAddDialogOpen(false);
+          loadLogs(); // Refresh the logs
+        }}
+      />
 
       {/* Bulk Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>

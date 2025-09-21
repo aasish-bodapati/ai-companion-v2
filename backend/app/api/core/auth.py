@@ -13,7 +13,6 @@ from app.schemas.user import Token, User as UserSchema
 
 router = APIRouter()
 
-
 @router.post("/login/access-token", response_model=Token)
 def login_access_token(
     response: Response,
@@ -43,14 +42,12 @@ def login_access_token(
         "token_type": "bearer",
     }
 
-
 @router.post("/login/test-token", response_model=UserSchema)
 def test_token(current_user: models.User = Depends(deps.get_current_user)):
     """
     Test access token
     """
     return current_user
-
 
 @router.post("/logout")
 def logout(response: Response, current_user: models.User = Depends(deps.get_current_active_user)):

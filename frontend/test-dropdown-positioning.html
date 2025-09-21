@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dropdown Positioning Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 50px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .dropdown {
+            position: fixed;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: -4px; /* This should eliminate the gap */
+        }
+        .dropdown-item {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .dropdown-item:hover {
+            background: #f5f5f5;
+        }
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Dropdown Positioning Test</h2>
+        <p>Type in the input field to see the dropdown positioning:</p>
+        <input type="text" class="input-field" id="testInput" placeholder="Type here...">
+        <div class="dropdown" id="dropdown" style="display: none;">
+            <div class="dropdown-item">Option 1</div>
+            <div class="dropdown-item">Option 2</div>
+            <div class="dropdown-item">Option 3</div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('testInput');
+        const dropdown = document.getElementById('dropdown');
+
+        input.addEventListener('input', function() {
+            if (this.value.length > 0) {
+                const rect = this.getBoundingClientRect();
+                dropdown.style.display = 'block';
+                dropdown.style.top = (rect.bottom + window.scrollY - 2) + 'px';
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.width = rect.width + 'px';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

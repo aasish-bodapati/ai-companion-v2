@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -153,15 +153,7 @@ export function ProgressiveNutritionLogger({
   const currentStepData = steps[currentStep];
   const progressPercentage = ((currentStep + 1) / steps.length) * 100;
 
-  useEffect(() => {
-    loadFoodSuggestions();
-  }, [mealData.meal_type]);
-
-  useEffect(() => {
-    calculateNutrition();
-  }, [mealData.food_items]);
-
-  const loadFoodSuggestions = async () => {
+  const loadFoodSuggestions = useCallback(async () => {
     try {
       const params = new URLSearchParams();
       if (mealData.meal_type) {
@@ -174,7 +166,7 @@ export function ProgressiveNutritionLogger({
     } catch (error) {
       console.error('Failed to load food suggestions:', error);
     }
-  };
+  }, [mealData.meal_type]);
 
   const searchFoods = async (query: string) => {
     if (!query.trim()) {
@@ -190,7 +182,7 @@ export function ProgressiveNutritionLogger({
     }
   };
 
-  const calculateNutrition = () => {
+  const calculateNutrition = useCallback(() => {
     const totals = mealData.food_items.reduce(
       (acc, item) => ({
         calories: acc.calories + item.calories,
@@ -205,7 +197,15 @@ export function ProgressiveNutritionLogger({
     );
 
     setMealData(prev => ({ ...prev, ...totals }));
-  };
+  }, [mealData.food_items]);
+
+  useEffect(() => {
+    loadFoodSuggestions();
+  }, [mealData.meal_type, loadFoodSuggestions]);
+
+  useEffect(() => {
+    calculateNutrition();
+  }, [mealData.food_items, calculateNutrition]);
 
   const updateMealData = (updates: Partial<MealData>) => {
     setMealData(prev => ({ ...prev, ...updates }));

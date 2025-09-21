@@ -1,34 +1,37 @@
-# PowerShell script to restart development server with clean cache
-Write-Host "Stopping any running Next.js processes..." -ForegroundColor Yellow
+# Development Server Restart Script
+# This script helps manage the development server and hot reload issues
 
-# Kill any existing Next.js processes
-Get-Process | Where-Object {$_.ProcessName -eq "node" -and $_.MainWindowTitle -like "*next*"} | Stop-Process -Force -ErrorAction SilentlyContinue
+Write-Host "🔄 Restarting Development Server..." -ForegroundColor Cyan
 
-Write-Host "Cleaning all caches..." -ForegroundColor Yellow
+# Kill any existing Node processes on port 3000
+Write-Host "🔍 Checking for existing processes..." -ForegroundColor Yellow
+$processes = Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue
+if ($processes) {
+    Write-Host "⚠️  Found existing processes on port 3000" -ForegroundColor Red
+    $processes | ForEach-Object {
+        $pid = $_.OwningProcess
+        $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+        if ($process) {
+            Write-Host "🛑 Stopping process: $($process.ProcessName) (PID: $pid)" -ForegroundColor Red
+            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+        }
+    }
+}
 
-# Remove .next directory
+# Clean Next.js cache
+Write-Host "🧹 Cleaning Next.js cache..." -ForegroundColor Yellow
 if (Test-Path ".next") {
-    Remove-Item -Recurse -Force ".next"
-    Write-Host "Removed .next directory" -ForegroundColor Green
+    Remove-Item -Recurse -Force ".next" -ErrorAction SilentlyContinue
+    Write-Host "✅ Cache cleaned" -ForegroundColor Green
 }
 
-# Remove node_modules/.cache if it exists
-if (Test-Path "node_modules/.cache") {
-    Remove-Item -Recurse -Force "node_modules/.cache"
-    Write-Host "Removed node_modules/.cache" -ForegroundColor Green
-}
+# Start development server
+Write-Host "🚀 Starting development server..." -ForegroundColor Green
+Write-Host "📝 Available commands:" -ForegroundColor Cyan
+Write-Host "   npm run dev        - Standard development server" -ForegroundColor White
+Write-Host "   npm run dev:turbo  - Turbo mode (experimental)" -ForegroundColor White
+Write-Host "   npm run dev:clean  - Clean cache and start" -ForegroundColor White
+Write-Host ""
 
-# Remove TypeScript build info
-if (Test-Path "tsconfig.tsbuildinfo") {
-    Remove-Item -Force "tsconfig.tsbuildinfo"
-    Write-Host "Removed TypeScript build info" -ForegroundColor Green
-}
-
-# Clear npm cache
-Write-Host "Clearing npm cache..." -ForegroundColor Yellow
-npm cache clean --force
-
-Write-Host "Starting development server with clean cache..." -ForegroundColor Yellow
-
-# Start development server with webpack (more stable than turbo)
-npm run dev:webpack
+# Start the server
+npm run dev

@@ -15,7 +15,7 @@ from app.schemas.health.user_goals import UserHealthProfileCreate, UserHealthPro
 #     def get_by_user(self, db: Session, *, user_id: str) -> Optional[UserHealthGoals]:
 #         """Get health goals for a specific user."""
 #         return db.query(self.model).filter(UserHealthGoals.user_id == user_id).first()
-#     
+#
 #     def create_with_user(self, db: Session, *, obj_in: UserHealthGoalsCreate, user_id: str) -> UserHealthGoals:
 #         """Create health goals for a user."""
 #         obj_in_data = obj_in.model_dump()
@@ -25,14 +25,14 @@ from app.schemas.health.user_goals import UserHealthProfileCreate, UserHealthPro
 #         db.commit()
 #         db.refresh(db_obj)
 #         return db_obj
-#     
+#
 #     def update_by_user(self, db: Session, *, user_id: str, obj_in: UserHealthGoalsUpdate) -> Optional[UserHealthGoals]:
 #         """Update health goals for a user."""
 #         db_obj = self.get_by_user(db, user_id=user_id)
 #         if not db_obj:
 #             return None
 #         return self.update(db, db_obj=db_obj, obj_in=obj_in)
-#     
+#
 #     def get_active_goals(self, db: Session, *, user_id: str) -> Optional[UserHealthGoals]:
 #         """Get active health goals for a user."""
 #         return (
@@ -41,13 +41,12 @@ from app.schemas.health.user_goals import UserHealthProfileCreate, UserHealthPro
 #             .first()
 #         )
 
-
 class CRUDUserHealthProfile(CRUDBase[UserHealthProfile, UserHealthProfileCreate, UserHealthProfileUpdate]):
-    def get_by_user(self, db: Session, *, user_id: str) -> Optional[UserHealthProfile]:
+    def get_by_user(self, db: Session, *, user_id: int) -> Optional[UserHealthProfile]:
         """Get health profile for a specific user."""
         return db.query(self.model).filter(UserHealthProfile.user_id == user_id).first()
-    
-    def create_with_user(self, db: Session, *, obj_in: UserHealthProfileCreate, user_id: str) -> UserHealthProfile:
+
+    def create_with_user(self, db: Session, *, obj_in: UserHealthProfileCreate, user_id: int) -> UserHealthProfile:
         """Create health profile for a user."""
         obj_in_data = obj_in.model_dump()
         obj_in_data["user_id"] = user_id
@@ -56,14 +55,13 @@ class CRUDUserHealthProfile(CRUDBase[UserHealthProfile, UserHealthProfileCreate,
         db.commit()
         db.refresh(db_obj)
         return db_obj
-    
-    def update_by_user(self, db: Session, *, user_id: str, obj_in: UserHealthProfileUpdate) -> Optional[UserHealthProfile]:
+
+    def update_by_user(self, db: Session, *, user_id: int, obj_in: UserHealthProfileUpdate) -> Optional[UserHealthProfile]:
         """Update health profile for a user."""
         db_obj = self.get_by_user(db, user_id=user_id)
         if not db_obj:
             return None
         return self.update(db, db_obj=db_obj, obj_in=obj_in)
-
 
 # Create instances
 # user_health_goals = CRUDUserHealthGoals(UserHealthGoals)  # DEPRECATED

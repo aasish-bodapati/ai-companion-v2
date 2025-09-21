@@ -8,7 +8,6 @@ from app.core.config import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-
 def create_access_token(subject: Union[str, Any], expires_delta: timedelta = None) -> str:
     """
     Create a JWT access token.
@@ -29,7 +28,6 @@ def create_access_token(subject: Union[str, Any], expires_delta: timedelta = Non
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-
 def decode_token(token: str) -> dict:
     """
     Decode a JWT token.
@@ -41,7 +39,6 @@ def decode_token(token: str) -> dict:
         dict: The decoded token payload.
     """
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -55,7 +52,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: True if the password matches, False otherwise.
     """
     return pwd_context.verify(plain_password, hashed_password)
-
 
 def get_password_hash(password: str) -> str:
     """

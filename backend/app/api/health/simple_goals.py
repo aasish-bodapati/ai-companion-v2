@@ -25,20 +25,20 @@ async def get_health_goals(
     try:
         query = "SELECT * FROM user_health_goals_simple WHERE user_id = :user_id"
         params = {"user_id": current_user.id}
-        
+
         if goal_type:
             query += " AND goal_type = :goal_type"
             params["goal_type"] = goal_type
-            
+
         if status:
             query += " AND status = :status"
             params["status"] = status
-            
+
         query += " ORDER BY created_at DESC"
-        
+
         result = db.execute(text(query), params)
         goals = result.fetchall()
-        
+
         # Convert to list of dictionaries
         goal_list = []
         for goal in goals:
@@ -59,9 +59,9 @@ async def get_health_goals(
                 "updated_at": goal[13]
             }
             goal_list.append(goal_dict)
-        
+
         return goal_list
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch goals: {str(e)}")
 
@@ -76,9 +76,9 @@ async def create_health_goal(
     try:
         import uuid
         from datetime import datetime
-        
+
         goal_id = str(uuid.uuid4())
-        
+
         # Extract data from request
         goal_type = goal_data.get("goal_type", "general")
         title = goal_data.get("title", "New Goal")
@@ -90,14 +90,14 @@ async def create_health_goal(
         priority = goal_data.get("priority", "medium")
         status = goal_data.get("status", "active")
         metadata = goal_data.get("metadata", {})
-        
+
         # Insert new goal
         query = """
-            INSERT INTO user_health_goals_simple 
+            INSERT INTO user_health_goals_simple
             (id, user_id, goal_type, title, description, target_value, current_value, unit, target_date, priority, status, metadata, created_at, updated_at)
             VALUES (:id, :user_id, :goal_type, :title, :description, :target_value, :current_value, :unit, :target_date, :priority, :status, :metadata, :created_at, :updated_at)
         """
-        
+
         params = {
             "id": goal_id,
             "user_id": current_user.id,
@@ -114,12 +114,12 @@ async def create_health_goal(
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat()
         }
-        
+
         db.execute(text(query), params)
         db.commit()
-        
+
         return {"id": goal_id, "message": "Goal created successfully"}
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create goal: {str(e)}")
 
@@ -134,39 +134,39 @@ async def update_health_goal(
     """Update an existing health goal"""
     try:
         from datetime import datetime
-        
+
         # Check if goal exists and belongs to user
         check_query = "SELECT id FROM user_health_goals_simple WHERE id = :goal_id AND user_id = :user_id"
         result = db.execute(text(check_query), {"goal_id": goal_id, "user_id": current_user.id})
         if not result.fetchone():
             raise HTTPException(status_code=404, detail="Goal not found")
-        
+
         # Build update query dynamically
         update_fields = []
         params = {"goal_id": goal_id, "user_id": current_user.id}
-        
+
         for field in ["title", "description", "target_value", "current_value", "unit", "target_date", "priority", "status"]:
             if field in goal_data:
                 update_fields.append(f"{field} = :{field}")
                 params[field] = goal_data[field]
-        
+
         if "metadata" in goal_data:
             update_fields.append("metadata = :metadata")
             params["metadata"] = json.dumps(goal_data["metadata"])
-        
+
         if not update_fields:
             raise HTTPException(status_code=400, detail="No fields to update")
-        
+
         update_fields.append("updated_at = :updated_at")
         params["updated_at"] = datetime.now().isoformat()
-        
+
         query = f"UPDATE user_health_goals_simple SET {', '.join(update_fields)} WHERE id = :goal_id AND user_id = :user_id"
-        
+
         db.execute(text(query), params)
         db.commit()
-        
+
         return {"message": "Goal updated successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -186,14 +186,14 @@ async def delete_health_goal(
         result = db.execute(text(check_query), {"goal_id": goal_id, "user_id": current_user.id})
         if not result.fetchone():
             raise HTTPException(status_code=404, detail="Goal not found")
-        
+
         # Delete goal
         delete_query = "DELETE FROM user_health_goals_simple WHERE id = :goal_id AND user_id = :user_id"
         db.execute(text(delete_query), {"goal_id": goal_id, "user_id": current_user.id})
         db.commit()
-        
+
         return {"message": "Goal deleted successfully"}
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -209,34 +209,34 @@ async def get_goals_summary(
     try:
         # Get counts by type
         type_query = """
-            SELECT goal_type, COUNT(*) as count 
-            FROM user_health_goals_simple 
-            WHERE user_id = :user_id 
+            SELECT goal_type, COUNT(*) as count
+            FROM user_health_goals_simple
+            WHERE user_id = :user_id
             GROUP BY goal_type
         """
         type_result = db.execute(text(type_query), {"user_id": current_user.id})
         type_counts = {row[0]: row[1] for row in type_result.fetchall()}
-        
+
         # Get counts by status
         status_query = """
-            SELECT status, COUNT(*) as count 
-            FROM user_health_goals_simple 
-            WHERE user_id = :user_id 
+            SELECT status, COUNT(*) as count
+            FROM user_health_goals_simple
+            WHERE user_id = :user_id
             GROUP BY status
         """
         status_result = db.execute(text(status_query), {"user_id": current_user.id})
         status_counts = {row[0]: row[1] for row in status_result.fetchall()}
-        
+
         # Get total count
         total_query = "SELECT COUNT(*) FROM user_health_goals_simple WHERE user_id = :user_id"
         total_result = db.execute(text(total_query), {"user_id": current_user.id})
         total_count = total_result.fetchone()[0]
-        
+
         return {
             "total_goals": total_count,
             "by_type": type_counts,
             "by_status": status_counts
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch goals summary: {str(e)}")

@@ -3,27 +3,29 @@ Simplified configuration for HealthLog AI - Health-focused only
 """
 
 from typing import Any, Dict, List, Optional, Union
-from pydantic import AnyHttpUrl, validator
+from pydantic import AnyHttpUrl, Field, field_validator
 from pydantic_settings import BaseSettings
 import secrets
 import os
 from pathlib import Path
 
-
 class Settings(BaseSettings):
     # Project settings
-    PROJECT_NAME: str = "HealthLog AI - Your Personal Wellness Assistant"
-    
+    PROJECT_NAME: str = "HealthLog - Your Personal Wellness Assistant"
+
     # API settings
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    SECRET_KEY: str = Field(
+        default="your-secret-key-here-change-in-production",
+        description="JWT secret key - MUST be changed in production"
+    )
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 2  # 2 days (reduced from 8 days for security)
 
     # CORS settings
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",
-        "http://localhost:3001", 
+        "http://localhost:3001",
         "http://localhost:8000",
         "http://localhost:8001",
         "https://localhost:3000",
@@ -32,7 +34,8 @@ class Settings(BaseSettings):
         "https://localhost:8001",
     ]
 
-    @validator("BACKEND_CORS_ORIGINS", pre=True)
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
@@ -40,35 +43,46 @@ class Settings(BaseSettings):
             return v
         raise ValueError(v)
 
-    # Database settings
-    SQLALCHEMY_DATABASE_URI: Optional[str] = "sqlite:///./data/minimal.db"
-    
-    # LLM settings
-    LLM_PROVIDER: str = "stub"  # "openai", "anthropic", "together", "stub"
-    LLM_DEV_MODE: bool = False  # Enable dev mode for testing
-    OPENAI_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None
-    TOGETHER_API_KEY: Optional[str] = None
-    
-    # Together AI settings
-    TOGETHER_MODEL: str = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free"
-    TOGETHER_MAX_TOKENS: int = 1000
-    TOGETHER_TEMPERATURE: float = 0.7
-    
-    # OpenAI settings
-    OPENAI_MODEL: str = "gpt-3.5-turbo"
-    OPENAI_MAX_TOKENS: int = 1000
-    OPENAI_TEMPERATURE: float = 0.7
-    
-    # Anthropic settings
-    ANTHROPIC_MODEL: str = "claude-3-haiku-20240307"
-    ANTHROPIC_MAX_TOKENS: int = 1000
-    ANTHROPIC_TEMPERATURE: float = 0.7
+    @field_validator("SECRET_KEY")
+    @classmethod
+    def validate_secret_key(cls, v: str) -> str:
+        """Validate that SECRET_KEY is properly set for production."""
+        if not v or v == "your-secret-key-here-change-in-production":
+            if os.getenv("ENVIRONMENT") == "production":
+                raise ValueError("SECRET_KEY must be set to a secure value in production")
+            # Allow default for development
+            return v
+        if len(v) < 32:
+            raise ValueError("SECRET_KEY must be at least 32 characters long")
+        return v
+
+    @field_validator("ACCESS_TOKEN_EXPIRE_MINUTES")
+    @classmethod
+    def validate_token_expiry(cls, v: int) -> int:
+        """Validate token expiry is reasonable."""
+        if v < 15:  # Minimum 15 minutes
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be at least 15 minutes")
+        if v > 60 * 24 * 7:  # Maximum 7 days
+            raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES should not exceed 7 days")
+        return v
+
+    @field_validator("SQLALCHEMY_DATABASE_URI")
+    @classmethod
+    def validate_database_uri(cls, v: Optional[str]) -> Optional[str]:
+        """Validate database URI format."""
+        if not v:
+            raise ValueError("SQLALCHEMY_DATABASE_URI must be set")
+        if not v.startswith(("postgresql://", "sqlite:///")):
+            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL or SQLite URI")
+        return v
+
+    # Database settings - PostgreSQL only
+    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/ai_companion_powerbi"
 
     # User management
     FIRST_SUPERUSER: str = "admin@example.com"
     FIRST_SUPERUSER_PASSWORD: str = "admin123"
-    
+
     # Test user for development
     TEST_USER_EMAIL: str = "test@example.com"
     TEST_USER_PASSWORD: str = "test123"
@@ -80,11 +94,15 @@ class Settings(BaseSettings):
     HEALTH_LOGGING_ENABLED: bool = True
     MAX_DAILY_LOGS: int = 50  # Max logs per day per user
     LOG_RETENTION_DAYS: int = 365  # Keep logs for 1 year
+    
+    # Security settings
+    RATE_LIMITING_ENABLED: bool = True
+    REDIS_URL: Optional[str] = None  # Redis URL for rate limiting and caching
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
-        extra = "ignore"  # Ignore extra environment variables
-
+    model_config = {
+        "case_sensitive": True,
+        "env_file": ".env",
+        "extra": "ignore"  # Ignore extra environment variables
+    }
 
 settings = Settings()

@@ -12,7 +12,6 @@ from app.crud.health.user_goals import user_health_profile
 
 router = APIRouter()
 
-
 @router.get("/status")
 def get_onboarding_status(
     db: Session = Depends(get_db),
@@ -25,11 +24,11 @@ def get_onboarding_status(
         # Check if user has completed onboarding by checking health profile
         health_profile = user_health_profile.get_by_user(db=db, user_id=current_user.id)
         has_completed = health_profile is not None
-        
+
         return {
             "completed": has_completed,
             "has_health_profile": has_completed
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to check onboarding status: {str(e)}")

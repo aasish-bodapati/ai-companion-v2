@@ -9,7 +9,6 @@ import uuid
 
 from app.db.base_class import Base
 
-
 class UserGoal(Base):
     """User goal model for tracking objectives and progress."""
 
@@ -22,7 +21,7 @@ class UserGoal(Base):
         index=True,
         nullable=False,
     )
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
     category = Column(String(50), nullable=True)  # e.g., "fitness", "health", "career"

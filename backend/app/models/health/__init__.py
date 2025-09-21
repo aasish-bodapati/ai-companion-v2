@@ -5,21 +5,24 @@ Health models - All health-related database models
 from .fitness_log import FitnessLog, NutritionLog, MoodLog
 from .user_goals import UserHealthProfile
 from .simple_routine import SimpleRoutine, SimpleUserRoutineProgress
-from .nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress, NutritionMealPlan, NutritionMeal, NutritionMealFood
+from .nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress
 from .workout_categories import WorkoutCategory
 from .weight_logs import UserWeightLog
+from .exercise_database import Exercise, UserExerciseHistory
+from .exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum
 __all__ = [
     "FitnessLog",
-    "NutritionLog", 
+    "NutritionLog",
     "MoodLog",
     "UserHealthProfile",
     "SimpleRoutine",
     "SimpleUserRoutineProgress",
     "NutritionRoutine",
     "NutritionUserRoutineProgress",
-    "NutritionMealPlan",
-    "NutritionMeal",
-    "NutritionMealFood",
     "WorkoutCategory",
     "UserWeightLog",
+    "Exercise",
+    "UserExerciseHistory",
+    "ExerciseLoggingCategory",
+    "ExerciseLoggingCategoryEnum",
 ]

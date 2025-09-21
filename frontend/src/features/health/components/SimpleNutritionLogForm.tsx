@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { PlusIcon, TrashIcon, CalculatorIcon } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
+import { logger } from '@/lib/logger';
 
 interface SimpleNutritionLogFormProps {
   onSuccess: () => void;
@@ -149,9 +150,9 @@ export function SimpleNutritionLogForm({ onSuccess }: SimpleNutritionLogFormProp
 
     setLoading(true);
     try {
-      console.log('Submitting nutrition data:', formData);
+      logger.debug('Submitting nutrition data:', formData);
       const response = await api.post('/health/logging/nutrition', formData);
-      console.log('Nutrition log response:', response);
+      logger.debug('Nutrition log response:', response);
       toast.success('Meal logged successfully!');
       onSuccess();
       

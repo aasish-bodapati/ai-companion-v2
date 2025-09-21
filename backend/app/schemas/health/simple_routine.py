@@ -6,7 +6,6 @@ from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 
-
 class SimpleRoutineBase(BaseModel):
     """Base routine schema"""
     name: str
@@ -18,11 +17,9 @@ class SimpleRoutineBase(BaseModel):
     # Note: workout_schedule and total_workouts_per_week removed
     # Workout details are now in workout_days relationship
 
-
 class SimpleRoutineCreate(SimpleRoutineBase):
     """Schema for creating a routine"""
     pass
-
 
 class SimpleRoutineUpdate(SimpleRoutineBase):
     """Schema for updating a routine"""
@@ -30,18 +27,16 @@ class SimpleRoutineUpdate(SimpleRoutineBase):
     difficulty: Optional[str] = None
     duration_weeks: Optional[int] = None
 
-
 class SimpleRoutine(SimpleRoutineBase):
     """Schema for returning a routine"""
-    id: str
-    created_by_user_id: Optional[str] = None
+    id: int
+    created_by_user_id: Optional[int] = None
     is_active: bool = True
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class SimpleUserRoutineProgressBase(BaseModel):
     """Base user routine progress schema"""
@@ -51,35 +46,30 @@ class SimpleUserRoutineProgressBase(BaseModel):
     workouts_completed: int = 0
     last_workout_date: Optional[datetime] = None
 
-
 class SimpleUserRoutineProgressCreate(SimpleUserRoutineProgressBase):
     """Schema for creating user routine progress"""
-    routine_id: str
-
+    routine_id: int
 
 class SimpleUserRoutineProgressUpdate(SimpleUserRoutineProgressBase):
     """Schema for updating user routine progress"""
     pass
 
-
 class SimpleUserRoutineProgress(SimpleUserRoutineProgressBase):
     """Schema for returning user routine progress"""
-    id: str
-    user_id: str
-    routine_id: str
+    id: int
+    user_id: int
+    routine_id: int
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class SimpleRoutineWithProgress(SimpleRoutine):
     """Routine with user progress included"""
     user_progress: Optional[SimpleUserRoutineProgress] = None
     workout_schedule: Optional[List[dict]] = None
     total_workouts_per_week: Optional[int] = 0
-
 
 class RoutineExerciseBase(BaseModel):
     """Base exercise schema"""
@@ -91,11 +81,9 @@ class RoutineExerciseBase(BaseModel):
     notes: Optional[str] = None
     order_index: int = 0
 
-
 class RoutineExerciseCreate(RoutineExerciseBase):
     """Schema for creating an exercise"""
     pass
-
 
 class RoutineExercise(RoutineExerciseBase):
     """Schema for returning an exercise"""
@@ -103,10 +91,9 @@ class RoutineExercise(RoutineExerciseBase):
     workout_day_id: str
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class RoutineWorkoutDayBase(BaseModel):
     """Base workout day schema"""
@@ -115,28 +102,24 @@ class RoutineWorkoutDayBase(BaseModel):
     workout_name: str
     description: Optional[str] = None
 
-
 class RoutineWorkoutDayCreate(RoutineWorkoutDayBase):
     """Schema for creating a workout day"""
     exercises: List[RoutineExerciseCreate] = []
 
-
 class RoutineWorkoutDay(RoutineWorkoutDayBase):
     """Schema for returning a workout day"""
     id: str
-    routine_id: str
+    routine_id: int
     exercises: List[RoutineExercise] = []
     created_at: datetime
     updated_at: datetime
-    
+
     class Config:
         from_attributes = True
-
 
 class SimpleRoutineWithWorkouts(SimpleRoutine):
     """Routine with detailed workout plan"""
     workout_days: List[RoutineWorkoutDay] = []
-
 
 class SimpleRoutineListResponse(BaseModel):
     """Response schema for routine list"""

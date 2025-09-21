@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import {
   BoltIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 import api from '@/lib/api';
 
 interface RoutineExercise {
@@ -90,59 +91,35 @@ export function SmartWorkoutLogger({ isOpen, onClose, onSuccess, initialData }: 
 
   const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-  useEffect(() => {
-    if (isOpen) {
-      if (initialData) {
-        // Editing mode - populate manual form with initial data
-        setManualWorkoutName(initialData.workout_name || '');
-        setManualWorkoutNotes(initialData.notes || '');
-        setManualDuration(initialData.duration_minutes || 0);
-        setManualCalories(initialData.calories_burned || 0);
-        setManualExercises(initialData.exercises?.map((ex, index) => ({
-          id: `manual-${index}`,
-          exercise_name: ex.exercise_name,
-          sets: ex.sets,
-          reps: ex.reps,
-          weight_used: ex.weight_used,
-          notes: ex.notes || ''
-        })) || []);
-        setActiveTab('manual');
-      } else {
-        // New workout mode - load today's routine
-        loadTodayWorkouts();
-      }
-    }
-  }, [isOpen, initialData]);
-
-  const loadTodayWorkouts = async () => {
+  const loadTodayWorkouts = useCallback(async () => {
     try {
       setLoading(true);
       
       // Get all routines and find the active one
-      const routinesResponse = await api.get('/health/simple-routines');
+      const routinesResponse = await api.get('/health/simple-routines/');
       const activeRoutine = routinesResponse.routines?.find((routine: any) => 
         routine.user_progress?.is_active === true
       );
       
-      console.log('🔍 Active routine:', activeRoutine);
-      console.log('📅 Current day:', currentDay);
+      logger.debug('🔍 Active routine:', activeRoutine);
+      logger.debug('📅 Current day:', currentDay);
       
       if (!activeRoutine) {
-        console.log('❌ No active routine found');
+        logger.debug('❌ No active routine found');
         setTodayWorkouts([]);
         return;
       }
 
       // Fetch detailed routine data with workout schedule
       const detailedRoutine = await api.get(`/health/simple-routines/${activeRoutine.id}`);
-      console.log('🔍 Detailed routine:', detailedRoutine);
+      logger.debug('🔍 Detailed routine:', detailedRoutine);
 
       // Get today's workout schedule - workout_schedule is an array, not an object
       const todaySchedule = detailedRoutine.workout_schedule?.find((day: any) => 
         day.day.toLowerCase() === currentDay
       )?.exercises || [];
       
-      console.log('🏋️ Today\'s schedule:', todaySchedule);
+      logger.debug('🏋️ Today\'s schedule:', todaySchedule);
       
       const workouts: TodayWorkout[] = todaySchedule.map((exercise: any, index: number) => ({
         exercise: {
@@ -171,7 +148,31 @@ export function SmartWorkoutLogger({ isOpen, onClose, onSuccess, initialData }: 
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentDay]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (initialData) {
+        // Editing mode - populate manual form with initial data
+        setManualWorkoutName(initialData.workout_name || '');
+        setManualWorkoutNotes(initialData.notes || '');
+        setManualDuration(initialData.duration_minutes || 0);
+        setManualCalories(initialData.calories_burned || 0);
+        setManualExercises(initialData.exercises?.map((ex, index) => ({
+          id: `manual-${index}`,
+          exercise_name: ex.exercise_name,
+          sets: ex.sets,
+          reps: ex.reps,
+          weight_used: ex.weight_used,
+          notes: ex.notes || ''
+        })) || []);
+        setActiveTab('manual');
+      } else {
+        // New workout mode - load today's routine
+        loadTodayWorkouts();
+      }
+    }
+  }, [isOpen, initialData, loadTodayWorkouts]);
 
   const updateWorkout = (exerciseId: string, field: string, value: any) => {
     setTodayWorkouts(prev => 
@@ -253,8 +254,8 @@ export function SmartWorkoutLogger({ isOpen, onClose, onSuccess, initialData }: 
           workoutData.sets = workout.sets;
         }
         
-        console.log('🏋️ FRONTEND: Sending workout data:', workoutData);
-        console.log('🏋️ FRONTEND: API endpoint: /health/contextual-logging/workout/smart');
+        logger.debug('🏋️ FRONTEND: Sending workout data:', workoutData);
+        logger.debug('🏋️ FRONTEND: API endpoint: /health/contextual-logging/workout/smart');
         
         await api.post('/health/contextual-logging/workout/smart', workoutData);
       }
@@ -299,12 +300,12 @@ export function SmartWorkoutLogger({ isOpen, onClose, onSuccess, initialData }: 
 
   const logManualWorkout = async () => {
     if (!manualWorkoutName.trim()) {
-      console.log('Please enter a workout name');
+      logger.debug('Please enter a workout name');
       return;
     }
 
     if (manualExercises.length === 0) {
-      console.log('Please add at least one exercise');
+      logger.debug('Please add at least one exercise');
       return;
     }
 
@@ -330,7 +331,7 @@ export function SmartWorkoutLogger({ isOpen, onClose, onSuccess, initialData }: 
         use_smart_defaults: true
       });
 
-      console.log('Manual workout logged successfully!');
+      logger.debug('Manual workout logged successfully!');
       onSuccess?.();
     } catch (error) {
       console.error('Failed to log manual workout:', error);

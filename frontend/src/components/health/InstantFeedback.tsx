@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,27 +49,12 @@ export function InstantFeedback({
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(true);
 
-  useEffect(() => {
-    loadFeedback();
-  }, [logType, logId]);
-
-  useEffect(() => {
-    if (autoClose && feedback && !feedback.celebration_worthy) {
-      const timer = setTimeout(() => {
-        handleClose();
-      }, 5000); // Auto-close after 5 seconds for non-celebration feedback
-      
-      return () => clearTimeout(timer);
-    }
-  }, [feedback, autoClose]);
-
-  const loadFeedback = async () => {
+  const loadFeedback = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get(`/health/insights/instant-feedback/${logType}/${logId}`);
       setFeedback(response);
     } catch (error) {
-      console.error('Failed to load instant feedback:', error);
       // Show a simple success message as fallback
       setFeedback({
         feedback_type: logType,
@@ -83,14 +68,28 @@ export function InstantFeedback({
     } finally {
       setLoading(false);
     }
-  };
+  }, [logType, logId]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setVisible(false);
     setTimeout(() => {
       onClose?.();
     }, 300); // Allow fade animation to complete
-  };
+  }, [onClose]);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [logType, logId, loadFeedback]);
+
+  useEffect(() => {
+    if (autoClose && feedback && !feedback.celebration_worthy) {
+      const timer = setTimeout(() => {
+        handleClose();
+      }, 5000); // Auto-close after 5 seconds for non-celebration feedback
+      
+      return () => clearTimeout(timer);
+    }
+  }, [feedback, autoClose, handleClose]);
 
   if (!visible || loading) {
     return null;

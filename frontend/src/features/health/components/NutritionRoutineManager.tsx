@@ -17,7 +17,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { toast } from 'sonner';
 import nutritionRoutineApi, { NutritionRoutine, NutritionUserRoutineProgress, NutritionRoutineWithMealPlans } from '@/lib/nutritionRoutineApi';
-import { SimpleNutritionRoutineBuilder } from './SimpleNutritionRoutineBuilder';
+import { logger } from '@/lib/logger';
 
 interface NutritionRoutineManagerProps {
   onRoutineSelect?: (routine: NutritionRoutine) => void;
@@ -28,47 +28,32 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
   const [routinesWithMeals, setRoutinesWithMeals] = useState<NutritionRoutineWithMealPlans[]>([]);
   const [activeProgress, setActiveProgress] = useState<NutritionUserRoutineProgress | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showBuilder, setShowBuilder] = useState(false);
-  const [editingRoutine, setEditingRoutine] = useState<NutritionRoutineWithMealPlans | null>(null);
 
   const loadRoutines = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Loading nutrition routines...');
       
       const [routinesData, progressData] = await Promise.all([
         nutritionRoutineApi.getRoutines(true), // Only user-created routines
         nutritionRoutineApi.getActiveRoutine()
       ]);
       
-      console.log('Basic routines loaded:', routinesData);
-      console.log('Active progress:', progressData);
-      
       setRoutines(routinesData);
       setActiveProgress(progressData);
       
       // Load detailed meal data for each routine
-      console.log('Loading detailed meal data for each routine...');
       const routinesWithMealsData = await Promise.all(
         routinesData.map(async (routine) => {
           try {
-            console.log(`Loading detailed data for routine: ${routine.name} (${routine.id})`);
             const detailedRoutine = await nutritionRoutineApi.getRoutine(routine.id);
-            console.log(`Successfully loaded detailed data for ${routine.name}:`, detailedRoutine);
             return detailedRoutine;
           } catch (error) {
-            console.error(`Failed to load meals for routine ${routine.id} (${routine.name}):`, error);
-            console.error('Error details:', {
-              message: (error as any).message,
-              status: (error as any).status,
-              data: (error as any).data
-            });
+            console.error(`Failed to load meals for routine ${routine.id}:`, error);
             return { ...routine, meal_plans: [] };
           }
         })
       );
       
-      console.log('Routines with meals loaded:', routinesWithMealsData);
       setRoutinesWithMeals(routinesWithMealsData);
     } catch (error) {
       console.error('Failed to load nutrition routines:', error);
@@ -130,30 +115,6 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
     }
   };
 
-  const handleEditRoutine = async (routine: NutritionRoutine) => {
-    try {
-      // Try to fetch the full routine data with meal plans for editing
-      try {
-        const fullRoutine = await nutritionRoutineApi.getRoutine(routine.id);
-        setEditingRoutine(fullRoutine);
-        setShowBuilder(true);
-      } catch (apiError) {
-        console.warn('Failed to load full routine data, using basic data:', apiError);
-        // Fallback: use the basic routine data and let the component handle it
-        setEditingRoutine(routine as any);
-        setShowBuilder(true);
-      }
-    } catch (error) {
-      console.error('Failed to load routine details:', error);
-      toast.error('Failed to load routine details');
-    }
-  };
-
-  const handleBuilderSuccess = () => {
-    setShowBuilder(false);
-    setEditingRoutine(null);
-    loadRoutines();
-  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -208,10 +169,6 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
             Create and manage your personalized nutrition plans
           </p>
         </div>
-        <Button onClick={() => setShowBuilder(true)}>
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Create Routine
-        </Button>
       </div>
 
       {activeProgress && (
@@ -269,10 +226,6 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               Create your first nutrition routine to start tracking your meals and macros.
             </p>
-            <Button onClick={() => setShowBuilder(true)}>
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Create Your First Routine
-            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -347,13 +300,6 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleEditRoutine(routine)}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
                       onClick={() => handleDeleteRoutine(routine.id)}
                     >
                       <TrashIcon className="h-4 w-4" />
@@ -387,15 +333,6 @@ export function NutritionRoutineManager({ onRoutineSelect }: NutritionRoutineMan
         </div>
       )}
 
-      <SimpleNutritionRoutineBuilder
-        isOpen={showBuilder}
-        onClose={() => {
-          setShowBuilder(false);
-          setEditingRoutine(null);
-        }}
-        onSuccess={handleBuilderSuccess}
-        editingRoutine={editingRoutine || undefined}
-      />
     </div>
   );
 }

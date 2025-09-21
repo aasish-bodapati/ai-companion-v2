@@ -23,11 +23,11 @@ from .weight_logs import (
 __all__ = [
     # Fitness logging
     "FitnessLog",
-    "FitnessLogCreate", 
+    "FitnessLogCreate",
     "FitnessLogUpdate",
     "NutritionLog",
     "NutritionLogCreate",
-    "NutritionLogUpdate", 
+    "NutritionLogUpdate",
     "MoodLog",
     "MoodLogCreate",
     "MoodLogUpdate",
