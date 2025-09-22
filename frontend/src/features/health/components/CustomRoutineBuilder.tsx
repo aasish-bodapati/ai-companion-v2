@@ -43,10 +43,10 @@ interface Workout {
   distance?: number; // for running
   notes?: string;
   // Additional category-specific fields
-  total_reps?: number; // for repetition_only
-  difficulty?: string; // for hold_static
-  intensity?: string; // for cardio
-  heart_rate?: number; // for cardio
+  total_reps?: number; // for bodyweight exercises
+  difficulty?: string; // for cardio_duration exercises
+  intensity?: string; // for cardio_duration
+  heart_rate?: number; // for cardio_duration
   time?: number; // for distance_based
   pace?: string; // for distance_based
 }

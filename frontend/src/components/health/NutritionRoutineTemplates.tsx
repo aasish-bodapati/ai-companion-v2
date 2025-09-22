@@ -21,7 +21,7 @@ import {
   BoltIcon,
   HeartIcon
 } from '@heroicons/react/24/outline';
-import { UnifiedRoutineWizard } from './UnifiedRoutineWizard';
+import { CustomNutritionRoutineBuilder } from '@/features/health/components/CustomNutritionRoutineBuilder';
 
 interface NutritionRoutineTemplatesProps {
   onRoutineSelected?: () => void;
@@ -33,7 +33,6 @@ export function NutritionRoutineTemplates({ onRoutineSelected }: NutritionRoutin
   const [activeProgress, setActiveProgress] = useState<NutritionUserRoutineProgress | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const loadRoutines = useCallback(async () => {
     if (!isAuthenticated) {
@@ -175,13 +174,7 @@ export function NutritionRoutineTemplates({ onRoutineSelected }: NutritionRoutin
             Create and manage your personalized nutrition plans
           </p>
         </div>
-        <Button
-          onClick={() => setShowCreateDialog(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-        >
-          <PlusIcon className="h-4 w-4 mr-2" />
-          Create Routine
-        </Button>
+        <CustomNutritionRoutineBuilder onRoutineCreated={handleRoutineCreated} />
       </div>
 
       {activeProgress && (
@@ -316,12 +309,6 @@ export function NutritionRoutineTemplates({ onRoutineSelected }: NutritionRoutin
         </div>
       )}
 
-      {/* Create Routine Dialog */}
-      <UnifiedRoutineWizard
-        isOpen={showCreateDialog}
-        onClose={() => setShowCreateDialog(false)}
-        onSuccess={handleRoutineCreated}
-      />
     </div>
   );
 }

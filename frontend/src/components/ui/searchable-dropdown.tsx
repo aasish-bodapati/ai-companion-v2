@@ -45,15 +45,39 @@ export function SearchableDropdown({
   // Find selected option
   const selectedOption = options.find(option => option.value === value) || null;
 
-  // Filter options based on search term
+  // Filter and sort options based on search term
   const filteredOptions = useMemo(() => {
     if (!searchTerm.trim()) return options;
     
     const term = searchTerm.toLowerCase();
-    return options.filter(option => 
+    const filtered = options.filter(option => 
       option.label.toLowerCase().includes(term) ||
       option.description?.toLowerCase().includes(term)
     );
+    
+    // Sort by relevance to search term, then alphabetically
+    return filtered.sort((a, b) => {
+      const aLabel = a.label.toLowerCase();
+      const bLabel = b.label.toLowerCase();
+      
+      // Prioritize exact matches at the beginning
+      const aStartsWith = aLabel.startsWith(term);
+      const bStartsWith = bLabel.startsWith(term);
+      
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      
+      // Then prioritize matches closer to the beginning
+      const aIndex = aLabel.indexOf(term);
+      const bIndex = bLabel.indexOf(term);
+      
+      if (aIndex !== bIndex) {
+        return aIndex - bIndex;
+      }
+      
+      // Finally sort alphabetically for ties
+      return a.label.localeCompare(b.label);
+    });
   }, [options, searchTerm]);
 
   console.log('🔍 SearchableDropdown: Filtered options:', filteredOptions.length);

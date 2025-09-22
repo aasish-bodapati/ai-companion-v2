@@ -161,11 +161,7 @@ export function DynamicWorkoutLogger({
         exercise.distance = exerciseData.distance;
         exercise.intensity = exerciseData.intensity;
         exercise.heart_rate = exerciseData.heart_rate;
-      } else if (selectedCategory.id === 'hold_static') {
-        exercise.duration = exerciseData.duration;
         exercise.difficulty = exerciseData.difficulty;
-      } else if (selectedCategory.id === 'repetition_only') {
-        exercise.total_reps = exerciseData.total_reps;
       } else if (selectedCategory.id === 'distance_based') {
         exercise.distance = exerciseData.distance;
         exercise.time = exerciseData.time;

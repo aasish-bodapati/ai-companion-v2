@@ -9,8 +9,6 @@ import {
   UserIcon, 
   WrenchScrewdriverIcon, 
   HeartIcon, 
-  ClockIcon, 
-  ArrowPathIcon, 
   MapIcon 
 } from '@heroicons/react/24/outline';
 import api from '@/lib/api';
@@ -46,7 +44,7 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
     id: 'bodyweight',
     name: 'bodyweight',
     displayName: 'Bodyweight Exercises',
-    description: 'Exercises using only your body weight',
+    description: 'Exercises using only your body weight and repetition-based exercises',
     icon: UserIcon,
     color: 'blue',
     loggingAttributes: {
@@ -55,6 +53,7 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
         { name: 'reps', type: 'number', label: 'Reps', min: 1, max: 1000 }
       ],
       optional: [
+        { name: 'total_reps', type: 'number', label: 'Total Reps', min: 1, max: 10000 },
         { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
       ]
     }
@@ -82,7 +81,7 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
     id: 'cardio_duration',
     name: 'cardio_duration',
     displayName: 'Cardio & Duration',
-    description: 'Cardiovascular exercises tracked by time',
+    description: 'Cardiovascular exercises and static holds tracked by time',
     icon: HeartIcon,
     color: 'green',
     loggingAttributes: {
@@ -94,39 +93,7 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
         { name: 'distance_unit', type: 'select', label: 'Distance Unit', options: ['miles', 'km', 'meters'] },
         { name: 'intensity', type: 'select', label: 'Intensity', options: ['low', 'medium', 'high'] },
         { name: 'heart_rate', type: 'number', label: 'Heart Rate (bpm)', min: 40, max: 220 },
-        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
-      ]
-    }
-  },
-  {
-    id: 'hold_static',
-    name: 'hold_static',
-    displayName: 'Hold & Static',
-    description: 'Static holds and isometric exercises',
-    icon: ClockIcon,
-    color: 'purple',
-    loggingAttributes: {
-      required: [
-        { name: 'duration', type: 'number', label: 'Hold Time (seconds)', min: 1, max: 3600 }
-      ],
-      optional: [
         { name: 'difficulty', type: 'select', label: 'Difficulty', options: ['beginner', 'intermediate', 'advanced'] },
-        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
-      ]
-    }
-  },
-  {
-    id: 'repetition_only',
-    name: 'repetition_only',
-    displayName: 'Repetition Only',
-    description: 'Simple repetition-based exercises',
-    icon: ArrowPathIcon,
-    color: 'orange',
-    loggingAttributes: {
-      required: [
-        { name: 'total_reps', type: 'number', label: 'Total Reps', min: 1, max: 10000 }
-      ],
-      optional: [
         { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
       ]
     }

@@ -11,7 +11,7 @@ import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
 import { WORKOUT_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { SimpleRoutineWithProgress } from '@/lib/simpleRoutineApi';
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
 import { logger } from '@/lib/logger';
@@ -112,6 +112,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
   const [loading, setLoading] = useState(false);
   const [allExercises, setAllExercises] = useState<ExerciseOption[]>([]);
   const [loadingExercises, setLoadingExercises] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(0); // Index of currently selected day
 
   // Initialize form data when routine changes or mode changes
   useEffect(() => {
@@ -139,9 +140,16 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
           day_order: day.day_order || 0,
           workout_name: day.workout_name || `${day.day_name || day.day} Workout`,
           description: day.description,
-          exercises: day.exercises ? day.exercises.map((ex: any) => ({
-            exercise_name: ex.exercise_name || ex.activity_name,
-            logging_category: ex.logging_category || 'weighted',
+          exercises: day.exercises ? day.exercises.map((ex: any) => {
+            // Look up the exercise in allExercises to get the correct logging_category
+            const exerciseName = ex.exercise_name || ex.activity_name;
+            const dbExercise = allExercises.find(ae => ae.name === exerciseName);
+            const loggingCategory = dbExercise?.logging_category || ex.logging_category || 'bodyweight';
+            
+            
+            return {
+            exercise_name: exerciseName,
+            logging_category: loggingCategory,
             sets: ex.sets || 3,
             reps: ex.reps || '10',
             weight: ex.weight,
@@ -158,7 +166,8 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
             weight_notes: ex.weight_notes || '',
             rest_time: ex.rest_time || '2-3 min',
             notes: ex.notes || ''
-          })) : []
+          };
+          }) : []
         }));
         
         console.log('🔍 EditRoutineDialog - Loaded workout days:', loadedWorkoutDays);
@@ -171,9 +180,16 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
           day_order: day.day_order || index,
           workout_name: day.workout_name || `${day.day} Workout`,
           description: day.description,
-          exercises: day.exercises ? day.exercises.map((ex: any) => ({
-            exercise_name: ex.exercise_name || ex.activity_name,
-            logging_category: ex.logging_category || 'weighted',
+          exercises: day.exercises ? day.exercises.map((ex: any) => {
+            // Look up the exercise in allExercises to get the correct logging_category
+            const exerciseName = ex.exercise_name || ex.activity_name;
+            const dbExercise = allExercises.find(ae => ae.name === exerciseName);
+            const loggingCategory = dbExercise?.logging_category || ex.logging_category || 'bodyweight';
+            
+            
+            return {
+            exercise_name: exerciseName,
+            logging_category: loggingCategory,
             sets: ex.sets || 3,
             reps: ex.reps || '10',
             weight: ex.weight,
@@ -190,7 +206,8 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
             weight_notes: ex.weight_notes || '',
             rest_time: ex.rest_time || '2-3 min',
             notes: ex.notes || ''
-          })) : []
+          };
+          }) : []
         }));
         
         console.log('🔍 EditRoutineDialog - Loaded from workout_schedule:', loadedWorkoutDays);
@@ -200,7 +217,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
         setWorkoutDays([]);
       }
     }
-  }, [routine, mode]);
+  }, [routine, mode, allExercises]);
 
   // Debug workoutDays changes
   useEffect(() => {
@@ -248,11 +265,9 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                   ...day.exercises,
                   {
                     exercise_name: '',
-                    logging_category: 'weighted', // Default to weighted for new exercises
+                    logging_category: 'bodyweight', // Default to bodyweight for new exercises
                     sets: 1,
                     reps: '',
-                    weight_notes: '',
-                    rest_time: '2-3 min',
                     notes: ''
                   }
                 ]
@@ -270,11 +285,9 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
           description: '',
           exercises: [{
             exercise_name: '',
-            logging_category: 'weighted', // Default to weighted for new exercises
+            logging_category: 'bodyweight', // Default to bodyweight for new exercises
             sets: 1,
             reps: '',
-            weight_notes: '',
-            rest_time: '2-3 min',
             notes: ''
           }]
         };
@@ -350,8 +363,23 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
             description: day.description || `${day.exercises.length} exercises`,
             workouts: day.exercises.map(exercise => ({
               activity_name: exercise.exercise_name,
+              logging_category: exercise.logging_category,
               sets: exercise.sets,
-              reps: exercise.reps.toString()
+              reps: exercise.reps ? exercise.reps.toString() : null,
+              weight: exercise.weight || null,
+              weight_unit: exercise.weight_unit || null,
+              duration: exercise.duration || null,
+              distance: exercise.distance || null,
+              distance_unit: exercise.distance_unit || null,
+              intensity: exercise.intensity || null,
+              heart_rate: exercise.heart_rate || null,
+              difficulty: exercise.difficulty || null,
+              total_reps: exercise.total_reps || null,
+              time: exercise.time || null,
+              pace: exercise.pace || null,
+              weight_notes: exercise.weight_notes || null,
+              rest_time: exercise.rest_time || null,
+              notes: exercise.notes || null
             }))
           }));
 
@@ -403,10 +431,31 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
             description: day.description || `${day.exercises.length} exercises`,
             workouts: day.exercises.map(exercise => ({
               activity_name: exercise.exercise_name,
+              logging_category: exercise.logging_category,
               sets: exercise.sets,
-              reps: exercise.reps.toString()
+              reps: exercise.reps ? exercise.reps.toString() : null,
+              weight: exercise.weight || null,
+              weight_unit: exercise.weight_unit || null,
+              duration: exercise.duration || null,
+              distance: exercise.distance || null,
+              distance_unit: exercise.distance_unit || null,
+              intensity: exercise.intensity || null,
+              heart_rate: exercise.heart_rate || null,
+              difficulty: exercise.difficulty || null,
+              total_reps: exercise.total_reps || null,
+              time: exercise.time || null,
+              pace: exercise.pace || null,
+              weight_notes: exercise.weight_notes || null,
+              rest_time: exercise.rest_time || null,
+              notes: exercise.notes || null
             }))
           }));
+
+        // Debug: Log the data being sent
+        console.log('🔍 Sending routine data:', {
+          routine_data: routineData,
+          workout_days: workoutDaysData
+        });
 
         // Update the routine
         await simpleRoutineApi.updateRoutineWithWorkoutPlan(routine.id, {
@@ -433,7 +482,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
       <DialogContent className="max-w-4xl h-[80vh] overflow-visible p-0 bg-white dark:bg-gray-900 border-0 shadow-2xl flex flex-col [&>button]:absolute [&>button]:top-4 [&>button]:right-4 [&>button]:z-30">
         <div className="flex flex-col h-full min-h-0">
                 {/* Clean Header - Fixed at top with proper z-index */}
-                <DialogHeader className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-10 relative">
+                <DialogHeader className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-20 relative">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 pr-4">
                       <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
@@ -450,7 +499,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                 </DialogHeader>
           
           {/* Scrollable content area - Allow dropdown to escape */}
-          <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 relative z-10">
+          <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 relative z-0">
             <div className="p-4">
               <div className="space-y-4">
                 {/* Routine Details */}
@@ -481,68 +530,106 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    {DAYS_OF_WEEK.map(day => {
-                      const dayData = workoutDays.find(d => d.day_name === day);
+                  {/* Day Navigation */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-center gap-4">
+                      <Button
+                        onClick={() => setSelectedDay(Math.max(0, selectedDay - 1))}
+                        disabled={selectedDay === 0}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronLeftIcon className="h-4 w-4" />
+                      </Button>
+                      <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {DAYS_OF_WEEK[selectedDay]}
+                      </div>
+                      <Button
+                        onClick={() => setSelectedDay(Math.min(DAYS_OF_WEEK.length - 1, selectedDay + 1))}
+                        disabled={selectedDay === DAYS_OF_WEEK.length - 1}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Selected Day Workout Plan */}
+                  <div>
+                    {(() => {
+                      const currentDay = DAYS_OF_WEEK[selectedDay];
+                      const dayData = workoutDays.find(d => d.day_name === currentDay);
                       const exercises = dayData?.exercises || [];
-                      console.log(`🔍 Rendering ${day}:`, { dayData, exercises: exercises.length });
+                      console.log(`🔍 Rendering ${currentDay}:`, { dayData, exercises: exercises.length });
                       
                       return (
-                        <div key={day} className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
-                          <div className="p-4 pb-3">
+                        <div className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
+                          <div className="p-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
-                                  <span className="text-white font-bold text-xs">{day.charAt(0)}</span>
+                                <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white font-bold text-xs">{currentDay.charAt(0)}</span>
                                 </div>
-                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{day}</h3>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{currentDay}</h3>
                               </div>
                               <Button 
-                                onClick={() => addExerciseToDay(day)} 
+                                onClick={() => addExerciseToDay(currentDay)} 
                                 size="sm"
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 h-auto"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2 py-1 h-7"
                               >
                                 <PlusIcon className="h-3 w-3 mr-1" />
                                 Add Workout
                               </Button>
                             </div>
                           </div>
-                          <div className="px-4 pb-4">
+                          <div className="px-3 pb-3">
                             {exercises.length === 0 ? (
-                              <div className="text-center py-2 text-gray-500 text-sm">
-                                <p>No workouts planned for {day}</p>
+                              <div className="text-center py-6 text-gray-500 text-sm">
+                                <p>No workouts planned for {currentDay}</p>
+                                <p className="text-xs mt-1">Click "Add Workout" to get started</p>
                               </div>
                             ) : (
-                              <div className="space-y-3">
+                              <div className="space-y-2">
                                 {exercises.map((exercise, index) => {
-                                  console.log(`🔍 Rendering exercise ${index} for ${day}:`, exercise);
+                                  console.log(`🔍 Rendering exercise ${index} for ${currentDay}:`, exercise);
                                   console.log(`🔍 Current exercise name: "${exercise.exercise_name}"`);
                                   console.log(`🔍 Available exercises:`, allExercises.slice(0, 5).map(ex => ex.name));
                                   console.log(`🔍 Exercise name matches available:`, allExercises.some(ex => ex.name === exercise.exercise_name));
                                   return (
-                                    <div key={index} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3 shadow-sm">
+                                    <div key={index} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-2.5 space-y-2.5 shadow-sm">
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
                                           <span className="text-white font-bold text-xs">{index + 1}</span>
                                         </div>
-                                        <h4 className="font-semibold text-gray-900 dark:text-white">Workout {index + 1}</h4>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white text-sm">Workout {index + 1}</h4>
+                                        {exercise.exercise_name && exercise.logging_category && (
+                                          <Badge 
+                                            variant="secondary" 
+                                            className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
+                                          >
+                                            {WORKOUT_CATEGORIES.find(cat => cat.id === exercise.logging_category)?.displayName || exercise.logging_category}
+                                          </Badge>
+                                        )}
                                       </div>
                                       <Button
-                                        onClick={() => removeExercise(day, index)}
+                                        onClick={() => removeExercise(currentDay, index)}
                                         variant="outline"
                                         size="sm"
-                                        className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+                                        className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 hover:text-red-700 dark:hover:bg-red-900/20 dark:hover:border-red-500 dark:text-red-400 h-10 w-10 p-1 flex items-center justify-center"
                                       >
-                                        <TrashIcon className="h-4 w-4" />
+                                        <TrashIcon className="h-6 w-6" />
                                       </Button>
                                     </div>
                                     
                                     {/* Exercise Details */}
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                       {/* Exercise Name - Full Width */}
                                       <div>
-                                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Exercise Name</Label>
+                                        <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">Exercise Name</Label>
                                         <SearchableDropdown
                                           options={allExercises.map(ex => ({
                                             value: ex.name,
@@ -550,17 +637,46 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                           }))}
                                           value={exercise.exercise_name}
                                           onChange={(option) => {
-                                            console.log('🔍 Exercise selected:', option);
                                             if (option) {
                                               // Find the selected exercise to get its logging category
                                               const selectedExercise = allExercises.find(ex => ex.name === option.value);
                                               if (selectedExercise) {
-                                                updateExercise(day, index, 'exercise_name', option.value);
-                                                updateExercise(day, index, 'logging_category', selectedExercise.logging_category);
+                                                // Update exercise name and category from database
+                                                updateExercise(currentDay, index, 'exercise_name', option.value);
+                                                updateExercise(currentDay, index, 'logging_category', selectedExercise.logging_category);
+                                                
+                                                // Clear all field values when switching exercises
+                                                const newCategory = selectedExercise.logging_category;
+                                                const newFields = getFormFieldsForCategory(newCategory);
+                                                const fieldNames = newFields.map(f => f.name);
+                                                
+                                                // Clear fields that are not in the new category
+                                                const fieldsToClear = ['sets', 'reps', 'weight', 'weight_unit', 'duration', 'distance', 'distance_unit', 'intensity', 'heart_rate', 'difficulty', 'total_reps', 'time', 'pace', 'weight_notes', 'rest_time', 'notes'];
+                                                fieldsToClear.forEach(fieldName => {
+                                                  if (!fieldNames.includes(fieldName)) {
+                                                    updateExercise(currentDay, index, fieldName as keyof Exercise, '');
+                                                  }
+                                                });
+                                                
+                                                // Only set default values for required fields that are empty
+                                                const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === newCategory);
+                                                if (categoryConfig) {
+                                                  categoryConfig.loggingAttributes.required.forEach(reqField => {
+                                                    const currentValue = exercise[reqField.name as keyof Exercise];
+                                                    // Only set default if the field is empty or undefined
+                                                    if (currentValue === undefined || currentValue === '' || currentValue === 0) {
+                                                      if (reqField.type === 'number') {
+                                                        updateExercise(currentDay, index, reqField.name as keyof Exercise, 0);
+                                                      } else {
+                                                        updateExercise(currentDay, index, reqField.name as keyof Exercise, '');
+                                                      }
+                                                    }
+                                                  });
+                                                }
                                               }
                                             } else {
-                                              updateExercise(day, index, 'exercise_name', '');
-                                              updateExercise(day, index, 'logging_category', 'weighted');
+                                              updateExercise(currentDay, index, 'exercise_name', '');
+                                              updateExercise(currentDay, index, 'logging_category', '');
                                             }
                                           }}
                                           placeholder={exercise.exercise_name || "Search and select exercise..."}
@@ -569,29 +685,65 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                       </div>
                                       
                                       {/* Dynamic Fields Based on Exercise Category */}
-                                      {(() => {
-                                        const category = exercise.logging_category || 'weighted';
-                                        const formFields = getFormFieldsForCategory(category);
+                                      {exercise.exercise_name && (() => {
+                                        const category = exercise.logging_category;
+                                        const formFields = getFormFieldsForCategory(category).filter(field => field.name !== 'notes');
                                         
-                                        return (
-                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {formFields.map((field) => {
+                                        // Get category configuration for better field organization
+                                        const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === category);
+                                        
+                                        // Smart field grouping based on category
+                                        const getFieldGroups = (category: string) => {
+                                          switch (category) {
+                                            case 'weighted':
+                                              return {
+                                                primary: ['sets', 'reps', 'weight', 'weight_unit'],
+                                                secondary: []
+                                              };
+                                            case 'bodyweight':
+                                              return {
+                                                primary: ['sets', 'reps'],
+                                                secondary: []
+                                              };
+                                            case 'cardio_duration':
+                                              return {
+                                                primary: ['duration'],
+                                                secondary: ['distance', 'distance_unit', 'intensity', 'heart_rate', 'difficulty']
+                                              };
+                                            case 'distance_based':
+                                              return {
+                                                primary: ['distance', 'time'],
+                                                secondary: ['distance_unit', 'pace']
+                                              };
+                                            default:
+                                              return {
+                                                primary: formFields.slice(0, 4).map(f => f.name),
+                                                secondary: formFields.slice(4).map(f => f.name)
+                                              };
+                                          }
+                                        };
+                                        
+                                        const fieldGroups = getFieldGroups(category);
+                                        const primaryFields = formFields.filter(field => fieldGroups.primary.includes(field.name));
+                                        const secondaryFields = formFields.filter(field => fieldGroups.secondary.includes(field.name));
+                                        
+                                        const renderField = (field: any, isRequired: boolean = false) => {
                                               const fieldName = field.name as keyof Exercise;
                                               const fieldValue = exercise[fieldName];
                                               
                                               return (
-                                                <div key={field.name} className={field.name === 'notes' ? 'sm:col-span-2 lg:col-span-3' : ''}>
-                                                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
+                                            <div key={field.name}>
+                                              <Label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 block">
                                                     {getFieldDisplayName(field.name)}
-                                                    {field.name === 'sets' || field.name === 'reps' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? ' *' : ''}
+                                                {isRequired ? ' *' : ''}
                                                   </Label>
                                                   
                                                   {field.type === 'select' ? (
                                                     <Select
                                                       value={fieldValue as string || ''}
-                                                      onValueChange={(value) => updateExercise(day, index, fieldName, value)}
+                                                  onValueChange={(value) => updateExercise(currentDay, index, fieldName, value)}
                                                     >
-                                                      <SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg">
+                                                  <SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg h-8">
                                                         <SelectValue placeholder={`Select ${getFieldDisplayName(field.name)}`} />
                                                       </SelectTrigger>
                                                       <SelectContent>
@@ -602,28 +754,60 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                                         ))}
                                                       </SelectContent>
                                                     </Select>
-                                                  ) : field.type === 'number' ? (
+                                                  ) : field.type === 'number' && field.name !== 'reps' ? (
                                                     <Input
                                                       type="number"
                                                       min={field.min || 0}
                                                       max={field.max || 9999}
                                                       value={fieldValue as number || ''}
-                                                      onChange={(e) => updateExercise(day, index, fieldName, field.name === 'sets' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? parseInt(e.target.value) || 0 : e.target.value)}
+                                                  onChange={(e) => {
+                                                    const value = field.name === 'sets' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' 
+                                                      ? parseInt(e.target.value) || 0 
+                                                      : e.target.value;
+                                                    updateExercise(currentDay, index, fieldName, value);
+                                                  }}
                                                       placeholder={field.label}
-                                                      className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                                                  className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg h-8"
                                                     />
                                                   ) : (
                                                     <Input
                                                       value={fieldValue as string || ''}
-                                                      onChange={(e) => updateExercise(day, index, fieldName, e.target.value)}
+                                                  onChange={(e) => updateExercise(currentDay, index, fieldName, e.target.value)}
                                                       placeholder={field.label}
                                                       maxLength={field.max_length || undefined}
-                                                      className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                                                  className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg h-8"
                                                     />
                                                   )}
                                                 </div>
                                               );
-                                            })}
+                                        };
+                                        
+                                        return (
+                                          <div className="space-y-3">
+                                            {/* Primary fields - most important for this category */}
+                                            {primaryFields.length > 0 && (
+                                              <div className={`grid gap-3 ${
+                                                primaryFields.length === 1 ? 'grid-cols-1' :
+                                                primaryFields.length === 2 ? 'grid-cols-2' :
+                                                primaryFields.length === 3 ? 'grid-cols-1 sm:grid-cols-3' :
+                                                'grid-cols-2 sm:grid-cols-4'
+                                              }`}>
+                                                {primaryFields.map((field) => {
+                                                  const isRequired = categoryConfig?.loggingAttributes.required.some(req => req.name === field.name) || false;
+                                                  return renderField(field, isRequired);
+                                                })}
+                                              </div>
+                                            )}
+                                            
+                                            {/* Secondary fields - additional options */}
+                                            {secondaryFields.length > 0 && (
+                                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                                {secondaryFields.map((field) => {
+                                                  const isRequired = categoryConfig?.loggingAttributes.required.some(req => req.name === field.name) || false;
+                                                  return renderField(field, isRequired);
+                                                })}
+                                              </div>
+                                            )}
                                           </div>
                                         );
                                       })()}
@@ -636,12 +820,16 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                           </div>
                         </div>
                       );
-                    })}
+                    })()}
+                  </div>
+                </div>
+              </div>
                   </div>
                 </div>
 
-                {/* Actions - Aligned with other containers */}
-                <div className="flex justify-end gap-3 pt-4">
+          {/* Actions - Fixed at bottom */}
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-10 relative">
+            <div className="flex justify-end gap-3">
                   <Button onClick={onClose} variant="outline" disabled={loading} className="px-6 py-2">
                     Cancel
                   </Button>
@@ -655,8 +843,6 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                              : (mode === 'create' ? 'Create Routine' : 'Update Routine')
                            }
                          </Button>
-                </div>
-              </div>
             </div>
           </div>
         </div>

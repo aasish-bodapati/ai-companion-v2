@@ -230,7 +230,7 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
                 {workoutData.exercises.map((exercise, index) => {
                   const logged = loggedExercises[exercise.id] || {};
                   const isLogged = isExerciseLogged(exercise.id);
-                  const formFields = getFormFieldsForCategory(exercise.logging_category || 'weighted');
+                  const formFields = getFormFieldsForCategory(exercise.logging_category);
                   
                   return (
                     <Card key={exercise.id} className={isLogged ? 'border-green-200 bg-green-50 dark:bg-green-900/20' : ''}>

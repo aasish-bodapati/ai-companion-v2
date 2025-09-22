@@ -107,10 +107,6 @@ const ExerciseCategorySelector: React.FC<ExerciseCategorySelectorProps> = ({
         return <HeartIcon className="h-5 w-5" />; // Using HeartIcon as placeholder for weighted
       case 'cardio_duration':
         return <HeartIcon className="h-5 w-5" />;
-      case 'hold_static':
-        return <ClockIcon className="h-5 w-5" />;
-      case 'repetition_only':
-        return <ArrowPathIcon className="h-5 w-5" />;
       case 'distance_based':
         return <MapIcon className="h-5 w-5" />;
       default:
