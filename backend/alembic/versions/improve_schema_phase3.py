@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'improve_schema_phase3'
-down_revision = 'improve_schema_phase2_sqlite'
+down_revision = 'improve_schema_phase2'
 branch_labels = None
 depends_on = None
 

@@ -143,7 +143,9 @@ export function SearchableDropdown({
   }, [isOpen]);
 
   // Display value - show selected option when not typing, show search term when typing
-  const displayValue = searchTerm || (selectedOption ? selectedOption.label : '');
+  // If we have a value but no selectedOption (value doesn't match any options), show the value anyway
+  const displayValue = searchTerm || (selectedOption ? selectedOption.label : (value || ''));
+  const isShowingSelectedValue = !searchTerm && (selectedOption || value);
 
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
@@ -157,7 +159,12 @@ export function SearchableDropdown({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          className={cn(
+            "flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-50",
+            isShowingSelectedValue 
+              ? "text-gray-900 dark:text-white" 
+              : "text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+          )}
           autoComplete="off"
         />
         <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none" />
@@ -166,7 +173,7 @@ export function SearchableDropdown({
       {isOpen && filteredOptions.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute z-[999999] w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl max-h-60 overflow-auto"
+          className="absolute z-[9999999] w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-md shadow-xl max-h-60 overflow-auto"
         >
           {filteredOptions.map((option, index) => (
             <div

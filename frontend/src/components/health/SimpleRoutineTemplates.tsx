@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { simpleRoutineApi, SimpleRoutineWithProgress } from '@/lib/simpleRoutineApi';
-import { CustomRoutineBuilder } from '@/features/health/components/CustomRoutineBuilder';
 import { EditRoutineDialog } from '@/features/health/components/EditRoutineDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
@@ -30,6 +29,7 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
   const [loading, setLoading] = useState<boolean>(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [editingRoutine, setEditingRoutine] = useState<SimpleRoutineWithProgress | null>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   const loadRoutines = useCallback(async () => {
     if (!isAuthenticated) {
@@ -136,10 +136,24 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
     }
   };
 
-  const handleEditRoutine = (routine: SimpleRoutineWithProgress) => {
-    // Find the detailed routine with workout data
-    const detailedRoutine = routinesWithWorkouts.find(r => r.id === routine.id) || routine;
-    setEditingRoutine(detailedRoutine);
+  const handleEditRoutine = async (routine: SimpleRoutineWithProgress) => {
+    try {
+      setActionLoading(routine.id);
+      console.log('🔍 Fetching detailed routine data for editing:', routine.id);
+      
+      // Fetch detailed routine data with workout information
+      const detailedRoutine = await simpleRoutineApi.getRoutine(routine.id);
+      console.log('🔍 Detailed routine data fetched:', detailedRoutine);
+      
+      setEditingRoutine(detailedRoutine);
+    } catch (error) {
+      console.error('Failed to fetch detailed routine data:', error);
+      toast.error('Failed to load routine details for editing');
+      // Fallback to basic routine data
+      setEditingRoutine(routine);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleRoutineUpdated = () => {
@@ -163,11 +177,17 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
     <div className="space-y-6">
       {/* Actions */}
       <div className="flex justify-end">
-        <CustomRoutineBuilder onRoutineCreated={loadRoutines} />
+        <Button 
+          onClick={() => setShowCreateDialog(true)}
+          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          <PlusIcon className="h-4 w-4 mr-2" />
+          Create Custom Routine
+        </Button>
       </div>
 
       {/* Routines Grid */}
-      {routines.length === 0 ? (
+      {routinesWithWorkouts.length === 0 ? (
         <div className="text-center py-8">
           <FireIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600 dark:text-gray-400">No routines created yet</p>
@@ -177,7 +197,7 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {routines.map((routine) => (
+          {routinesWithWorkouts.map((routine) => (
             <Card key={routine.id} className="hover:shadow-lg transition-all duration-300 group">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -238,34 +258,6 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
                           <span className="font-medium">📋 Workout Plan:</span>
                           <span>{totalWorkouts > 0 ? `${totalWorkouts} workout days` : 'No workout details'}</span>
                         </div>
-                        
-                        {/* Show detailed workout schedule if available */}
-                        {workoutSchedule.length > 0 && (
-                          <div className="mt-2 space-y-2">
-                            <div className="text-xs font-medium text-orange-700 dark:text-orange-300">
-                              Workout Schedule:
-                            </div>
-                            <div className="space-y-2">
-                              {workoutSchedule.map((day: any, index: number) => (
-                                <div key={index} className="bg-orange-100 dark:bg-orange-800/30 rounded p-2">
-                                  <div className="text-xs font-medium text-orange-800 dark:text-orange-200">
-                                    {day.day}: {day.workout_name}
-                                  </div>
-                                  {day.exercises && day.exercises.length > 0 && (
-                                    <div className="mt-1 space-y-1">
-                                      {day.exercises.map((exercise: any, exIndex: number) => (
-                                        <div key={exIndex} className="text-xs text-orange-700 dark:text-orange-300 ml-2">
-                                          • {exercise.exercise_name}: {exercise.sets} sets × {exercise.reps} reps
-                                          {exercise.weight_notes && ` (${exercise.weight_notes})`}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                         
                         <div className="text-xs text-orange-600 dark:text-orange-300 mt-2">
                           ✅ Detailed workout plans with exercises and sets/reps tracking!
@@ -352,6 +344,16 @@ export function SimpleRoutineTemplates({ onRoutineSelected }: SimpleRoutineTempl
         isOpen={editingRoutine !== null}
         onClose={() => setEditingRoutine(null)}
         onRoutineUpdated={handleRoutineUpdated}
+        mode="edit"
+      />
+
+      {/* Create Routine Dialog */}
+      <EditRoutineDialog
+        routine={null}
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+        onRoutineUpdated={handleRoutineUpdated}
+        mode="create"
       />
     </div>
   );

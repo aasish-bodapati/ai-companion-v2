@@ -1,57 +1,46 @@
 """
-Food Log Items Model for detailed nutrition tracking.
+Food Log Items model for detailed nutrition tracking.
 """
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, ForeignKey, CheckConstraint, Index
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
 
 
 class FoodLogItem(Base):
-    """Individual food items within a nutrition log entry."""
+    """Food log item for detailed nutrition tracking within nutrition logs."""
 
     __tablename__ = "food_log_items"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nutrition_log_id = Column(Integer, ForeignKey("nutrition_logs.id", ondelete="CASCADE"), nullable=False, index=True)
-    food_id = Column(Integer, ForeignKey("foods.id", ondelete="CASCADE"), nullable=True, index=True)
-    
-    # Food details
+    id = Column(String(36), primary_key=True, index=True)
+    nutrition_log_id = Column(String(36), ForeignKey("nutrition_logs.id", ondelete="CASCADE"), nullable=False, index=True)
+    food_id = Column(String(36), ForeignKey("foods.id", ondelete="CASCADE"), nullable=True, index=True)
     food_name = Column(String(300), nullable=False)
-    quantity_grams = Column(Numeric, nullable=False)
+    quantity_grams = Column(Float, nullable=False)
     
-    # Nutritional information (calculated based on quantity)
-    calories = Column(Numeric, nullable=True)
-    protein_g = Column(Numeric, nullable=True)
-    carbs_g = Column(Numeric, nullable=True)
-    fat_g = Column(Numeric, nullable=True)
-    fiber_g = Column(Numeric, nullable=True)
-    sugar_g = Column(Numeric, nullable=True)
-    sodium_mg = Column(Numeric, nullable=True)
+    # Nutritional values for this specific item
+    calories = Column(Float, nullable=True)
+    protein_g = Column(Float, nullable=True)
+    carbs_g = Column(Float, nullable=True)
+    fat_g = Column(Float, nullable=True)
+    fiber_g = Column(Float, nullable=True)
+    sugar_g = Column(Float, nullable=True)
+    sodium_mg = Column(Float, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    
-    # Relationships
-    nutrition_log = relationship("NutritionLog", back_populates="food_log_items")
-    food = relationship("Food", back_populates="food_log_items")
-    
+
+    # Relationships - commented out to avoid circular import issues
+    # nutrition_log = relationship("NutritionLog", back_populates="food_items")
+    # food = relationship("Food", back_populates="log_items")
+
     # Constraints
     __table_args__ = (
-        CheckConstraint("quantity_grams > 0", name='ck_food_log_items_quantity_positive'),
-        CheckConstraint("calories >= 0", name='ck_food_log_items_calories_positive'),
-        CheckConstraint("protein_g >= 0", name='ck_food_log_items_protein_positive'),
-        CheckConstraint("carbs_g >= 0", name='ck_food_log_items_carbs_positive'),
-        CheckConstraint("fat_g >= 0", name='ck_food_log_items_fat_positive'),
-        CheckConstraint("fiber_g >= 0", name='ck_food_log_items_fiber_positive'),
-        CheckConstraint("sugar_g >= 0", name='ck_food_log_items_sugar_positive'),
-        CheckConstraint("sodium_mg >= 0", name='ck_food_log_items_sodium_positive'),
-        Index('idx_food_log_items_nutrition_log_id', 'nutrition_log_id'),
-        Index('idx_food_log_items_food_id', 'food_id'),
-        Index('idx_food_log_items_created_at', 'created_at'),
+        CheckConstraint('quantity_grams > 0', name='ck_food_log_items_quantity_positive'),
+        CheckConstraint('calories >= 0', name='ck_food_log_items_calories_positive'),
     )
 
     def __repr__(self):
-        return f"<FoodLogItem(id={self.id}, food={self.food_name}, quantity={self.quantity_grams}g)>"
+        return f"<FoodLogItem(id={self.id}, food_name={self.food_name}, quantity={self.quantity_grams}g)>"

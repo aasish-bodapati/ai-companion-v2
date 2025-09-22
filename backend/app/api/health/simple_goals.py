@@ -77,7 +77,7 @@ async def create_health_goal(
         import uuid
         from datetime import datetime
 
-        goal_id = str(uuid.uuid4())
+        id = str(uuid.uuid4())
 
         # Extract data from request
         goal_type = goal_data.get("goal_type", "general")
@@ -99,7 +99,7 @@ async def create_health_goal(
         """
 
         params = {
-            "id": goal_id,
+            "id": id,
             "user_id": current_user.id,
             "goal_type": goal_type,
             "title": title,
@@ -118,14 +118,14 @@ async def create_health_goal(
         db.execute(text(query), params)
         db.commit()
 
-        return {"id": goal_id, "message": "Goal created successfully"}
+        return {"id": id, "message": "Goal created successfully"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create goal: {str(e)}")
 
-@router.put("/goals/{goal_id}")
+@router.put("/goals/{id}")
 async def update_health_goal(
-    goal_id: str,
+    id: str,
     goal_data: dict,
     *,
     db: Session = Depends(get_db),
@@ -136,14 +136,14 @@ async def update_health_goal(
         from datetime import datetime
 
         # Check if goal exists and belongs to user
-        check_query = "SELECT id FROM user_health_goals_simple WHERE id = :goal_id AND user_id = :user_id"
-        result = db.execute(text(check_query), {"goal_id": goal_id, "user_id": current_user.id})
+        check_query = "SELECT id FROM user_health_goals_simple WHERE id = :id AND user_id = :user_id"
+        result = db.execute(text(check_query), {"id": id, "user_id": current_user.id})
         if not result.fetchone():
             raise HTTPException(status_code=404, detail="Goal not found")
 
         # Build update query dynamically
         update_fields = []
-        params = {"goal_id": goal_id, "user_id": current_user.id}
+        params = {"id": id, "user_id": current_user.id}
 
         for field in ["title", "description", "target_value", "current_value", "unit", "target_date", "priority", "status"]:
             if field in goal_data:
@@ -160,7 +160,7 @@ async def update_health_goal(
         update_fields.append("updated_at = :updated_at")
         params["updated_at"] = datetime.now().isoformat()
 
-        query = f"UPDATE user_health_goals_simple SET {', '.join(update_fields)} WHERE id = :goal_id AND user_id = :user_id"
+        query = f"UPDATE user_health_goals_simple SET {', '.join(update_fields)} WHERE id = :id AND user_id = :user_id"
 
         db.execute(text(query), params)
         db.commit()
@@ -172,9 +172,9 @@ async def update_health_goal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to update goal: {str(e)}")
 
-@router.delete("/goals/{goal_id}")
+@router.delete("/goals/{id}")
 async def delete_health_goal(
-    goal_id: str,
+    id: str,
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -182,14 +182,14 @@ async def delete_health_goal(
     """Delete a health goal"""
     try:
         # Check if goal exists and belongs to user
-        check_query = "SELECT id FROM user_health_goals_simple WHERE id = :goal_id AND user_id = :user_id"
-        result = db.execute(text(check_query), {"goal_id": goal_id, "user_id": current_user.id})
+        check_query = "SELECT id FROM user_health_goals_simple WHERE id = :id AND user_id = :user_id"
+        result = db.execute(text(check_query), {"id": id, "user_id": current_user.id})
         if not result.fetchone():
             raise HTTPException(status_code=404, detail="Goal not found")
 
         # Delete goal
-        delete_query = "DELETE FROM user_health_goals_simple WHERE id = :goal_id AND user_id = :user_id"
-        db.execute(text(delete_query), {"goal_id": goal_id, "user_id": current_user.id})
+        delete_query = "DELETE FROM user_health_goals_simple WHERE id = :id AND user_id = :user_id"
+        db.execute(text(delete_query), {"id": id, "user_id": current_user.id})
         db.commit()
 
         return {"message": "Goal deleted successfully"}

@@ -28,10 +28,32 @@ def get_routines(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
     templates_only: bool = Query(False, description="Only return system templates"),
-    user_created_only: bool = Query(False, description="Only return user-created routines")
+    user_created_only: bool = Query(False, description="Only return user-created routines"),
+    active_only: bool = Query(False, description="Show only active routines")
 ):
     """Get routines with optional filtering"""
-    if templates_only:
+    if active_only:
+        print(f"🏋️ [SIMPLE ROUTINES] Getting active routines for user: {current_user.id}")
+        # Get only active routines for the user
+        active_progress = simple_user_routine_progress.get_user_active_routine(
+            db, user_id=current_user.id
+        )
+        print(f"🏋️ [SIMPLE ROUTINES] Active progress found: {active_progress}")
+        
+        if not active_progress:
+            print("🏋️ [SIMPLE ROUTINES] No active progress found, returning empty list")
+            return SimpleRoutineListResponse(
+                routines=[],
+                total=0,
+                page=skip // limit + 1,
+                size=limit
+            )
+        
+        # Get the routine details
+        routine = simple_routine.get(db, id=active_progress.routine_id)
+        print(f"🏋️ [SIMPLE ROUTINES] Routine found: {routine}")
+        routines_list = [routine] if routine else []
+    elif templates_only:
         routines_list = simple_routine.get_templates(db, skip=skip, limit=limit)
     elif user_created_only:
         routines_list = simple_routine.get_user_routines(db, user_id=current_user.id, skip=skip, limit=limit)
@@ -41,7 +63,7 @@ def get_routines(
     # Get user progress and workout details for each routine
     routines_with_progress = []
     for routine_obj in routines_list:
-        progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
+        progress = simple_user_routine_progress.get_by_user_and_routine(db, user_id=current_user.id, routine_id=routine_obj.id)
 
         # Prepare routine data with proper tags handling
         routine_data = routine_obj.__dict__.copy()
@@ -62,7 +84,7 @@ def get_routines(
         routine_data['workout_schedule'] = []  # Empty for now
         routine_data['total_workouts_per_week'] = 0  # Default value
         
-        if progress and progress.routine_id == routine_obj.id:
+        if progress:
             routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=progress)
         else:
             routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=None)
@@ -79,20 +101,20 @@ def get_routines(
         size=limit
     )
 
-@router.get("/{routine_id}", response_model=SimpleRoutineWithProgress)
+@router.get("/{id}", response_model=SimpleRoutineWithProgress)
 def get_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str
+    id: str
 ):
     """Get a specific routine with detailed workout data"""
-    routine_obj = simple_routine.get(db, id=routine_id)
+    routine_obj = simple_routine.get(db, id=id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
 
-    # Get user progress
-    progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
+    # Get user progress for this specific routine
+    progress = simple_user_routine_progress.get_by_user_and_routine(db, user_id=current_user.id, routine_id=int(id))
 
     # Prepare routine data with proper tags handling
     routine_data = routine_obj.__dict__.copy()
@@ -110,7 +132,7 @@ def get_routine(
                 routine_data['tags'] = [routine_data['tags']]
 
     # Load detailed workout data
-    workout_days = routine_workout_day.get_by_routine(db, routine_id=routine_id)
+    workout_days = routine_workout_day.get_by_routine(db, routine_id=int(id))
     workout_schedule = []
 
     for workout_day in workout_days:
@@ -135,7 +157,7 @@ def get_routine(
     routine_data['workout_schedule'] = workout_schedule
     routine_data['total_workouts_per_week'] = len(workout_schedule)
 
-    if progress and progress.routine_id == routine_id:
+    if progress and progress.routine_id == int(id):
         return SimpleRoutineWithProgress(**routine_data, user_progress=progress)
     else:
         return SimpleRoutineWithProgress(**routine_data, user_progress=None)
@@ -161,7 +183,12 @@ def create_routine_with_workout_plan(
     try:
         print(f"🔍 Received request data: {request_data}")
 
-        routine_data = SimpleRoutineCreate(**request_data.get("routine_data", {}))
+        # Filter out tags field since the model doesn't support it
+        routine_data_dict = request_data.get("routine_data", {}).copy()
+        if "tags" in routine_data_dict:
+            del routine_data_dict["tags"]
+        
+        routine_data = SimpleRoutineCreate(**routine_data_dict)
         workout_days = request_data.get("workout_days", [])
 
         print(f"📋 Routine data: {routine_data}")
@@ -177,16 +204,16 @@ def create_routine_with_workout_plan(
         print(f"❌ Error creating routine with workout plan: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to create routine: {str(e)}")
 
-@router.post("/{routine_id}/start", response_model=SimpleUserRoutineProgress)
+@router.post("/{id}/start", response_model=SimpleUserRoutineProgress)
 def start_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str
+    id: str
 ):
     """Start following a routine"""
     # Check if routine exists
-    routine = simple_routine.get(db, id=routine_id)
+    routine = simple_routine.get(db, id=id)
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
 
@@ -196,47 +223,131 @@ def start_routine(
         current_progress.is_active = False
         db.commit()
 
-    # Start new routine
+    # Check if progress record already exists for this user and routine
     from datetime import datetime
     from app.models.health.simple_routine import SimpleUserRoutineProgress
+    
+    existing_progress = simple_user_routine_progress.get_by_user_and_routine(db, user_id=current_user.id, routine_id=int(id))
+    
+    if existing_progress:
+        # Update existing progress record
+        existing_progress.is_active = True
+        existing_progress.started_at = datetime.utcnow()
+        db.add(existing_progress)
+        db.commit()
+        db.refresh(existing_progress)
+        return existing_progress
+    else:
+        # Create new progress record
+        progress = SimpleUserRoutineProgress(
+            routine_id=int(id),
+            user_id=current_user.id,
+            is_active=True,
+            started_at=datetime.utcnow()
+        )
+        db.add(progress)
+        db.commit()
+        db.refresh(progress)
+        return progress
 
-    progress = SimpleUserRoutineProgress(
-        routine_id=routine_id,
-        user_id=current_user.id,
-        is_active=True,
-        started_at=datetime.utcnow()
-    )
-    db.add(progress)
-    db.commit()
-    db.refresh(progress)
-    return progress
-
-@router.post("/{routine_id}/stop")
+@router.post("/{id}/stop")
 def stop_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str
+    id: str
 ):
     """Stop following a routine"""
     progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
-    if progress and progress.routine_id == routine_id:
+    if progress and progress.routine_id == int(id):
         progress.is_active = False
         db.commit()
         return {"message": "Routine stopped successfully"}
     else:
         raise HTTPException(status_code=404, detail="Active routine not found")
 
-@router.post("/{routine_id}/log-workout")
+@router.get("/active/today-workout")
+def get_today_workout(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get today's workout from the active routine"""
+    from datetime import datetime
+    
+    # Get active routine
+    progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="No active routine found")
+    
+    # Get the routine details
+    routine = simple_routine.get(db, id=progress.routine_id)
+    if not routine:
+        raise HTTPException(status_code=404, detail="Routine not found")
+    
+    # Get today's day of week (0=Monday, 6=Sunday)
+    today = datetime.now()
+    day_of_week = today.weekday()  # 0=Monday, 6=Sunday
+    day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    today_name = day_names[day_of_week]
+    
+    # Get today's workout day
+    from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+    workout_day = db.query(RoutineWorkoutDay).filter(
+        RoutineWorkoutDay.routine_id == routine.id,
+        RoutineWorkoutDay.day_name == today_name
+    ).first()
+    
+    if not workout_day:
+        raise HTTPException(status_code=404, detail=f"No workout scheduled for {today_name}")
+    
+    # Get exercises for today
+    exercises = db.query(RoutineExercise).filter(
+        RoutineExercise.workout_day_id == workout_day.id
+    ).order_by(RoutineExercise.order_index).all()
+    
+    return {
+        "routine_id": routine.id,
+        "routine_name": routine.name,
+        "day_name": workout_day.day_name,
+        "workout_name": workout_day.workout_name,
+        "description": workout_day.description,
+        "exercises": [
+            {
+                "id": ex.id,
+                "exercise_name": ex.exercise_name,
+                "logging_category": ex.logging_category,
+                "sets": ex.sets,
+                "reps": ex.reps,
+                "weight": ex.weight,
+                "weight_unit": ex.weight_unit,
+                "duration": ex.duration,
+                "distance": ex.distance,
+                "distance_unit": ex.distance_unit,
+                "intensity": ex.intensity,
+                "heart_rate": ex.heart_rate,
+                "difficulty": ex.difficulty,
+                "total_reps": ex.total_reps,
+                "time": ex.time,
+                "pace": ex.pace,
+                "weight_notes": ex.weight_notes,
+                "rest_time": ex.rest_time,
+                "notes": ex.notes,
+                "order_index": ex.order_index
+            } for ex in exercises
+        ]
+    }
+
+@router.post("/{id}/log-workout")
 def log_workout(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str
+    id: str
 ):
     """Log a workout completion"""
     progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
-    if not progress or progress.routine_id != routine_id:
+    if not progress or progress.routine_id != int(id):
         raise HTTPException(status_code=404, detail="Active routine not found")
 
     progress.workouts_completed += 1
@@ -249,27 +360,32 @@ def log_workout(
         "workouts_completed": progress.workouts_completed
     }
 
-@router.put("/{routine_id}/with-workout-plan", response_model=SimpleRoutine)
+@router.put("/{id}/with-workout-plan", response_model=SimpleRoutine)
 def update_routine_with_workout_plan(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str,
+    id: str,
     request_data: dict
 ):
     """Update a routine with detailed workout plan"""
     try:
-        print(f"🔍 Updating routine {routine_id} with workout plan")
+        print(f"🔍 Updating routine {id} with workout plan")
 
         # Check if routine exists and belongs to user
-        routine = simple_routine.get(db, id=routine_id)
+        routine = simple_routine.get(db, id=id)
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found")
 
         if routine.created_by_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this routine")
 
-        routine_data = SimpleRoutineUpdate(**request_data.get("routine_data", {}))
+        # Filter out tags field since the model doesn't support it
+        routine_data_dict = request_data.get("routine_data", {}).copy()
+        if "tags" in routine_data_dict:
+            del routine_data_dict["tags"]
+        
+        routine_data = SimpleRoutineUpdate(**routine_data_dict)
         workout_days = request_data.get("workout_days", [])
 
         print(f"📋 Routine data: {routine_data}")
@@ -280,11 +396,11 @@ def update_routine_with_workout_plan(
         routine.description = routine_data.description
         routine.difficulty = routine_data.difficulty
         routine.duration_weeks = routine_data.duration_weeks
-        routine.tags = routine_data.tags
+        # Note: tags field not supported in model
 
         # Delete existing workout days and exercises
         from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
-        existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == routine_id).all()
+        existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == int(id)).all()
         for day in existing_workout_days:
             db.query(RoutineExercise).filter(RoutineExercise.workout_day_id == day.id).delete()
             db.delete(day)
@@ -294,7 +410,6 @@ def update_routine_with_workout_plan(
             for day_data in workout_days:
                 print(f"📅 Processing day: {day_data}")
                 workout_day = RoutineWorkoutDay(
-                    id=str(uuid.uuid4()),
                     routine_id=routine.id,
                     day_name=day_data['day'],
                     day_order=day_data.get('day_order', 0),
@@ -306,11 +421,25 @@ def update_routine_with_workout_plan(
 
                 for i, exercise_data in enumerate(day_data.get('workouts', [])):
                     exercise = RoutineExercise(
-                        id=str(uuid.uuid4()),
                         workout_day_id=workout_day.id,
-                        exercise_name=exercise_data.get('activity_name', 'Exercise'),
+                        exercise_name=exercise_data.get('activity_name', exercise_data.get('exercise_name', 'Exercise')),
+                        logging_category=exercise_data.get('logging_category', 'weighted'),
                         sets=exercise_data.get('sets', 3),
                         reps=str(exercise_data.get('reps', 10)),
+                        weight=exercise_data.get('weight'),
+                        weight_unit=exercise_data.get('weight_unit'),
+                        duration=exercise_data.get('duration'),
+                        distance=exercise_data.get('distance'),
+                        distance_unit=exercise_data.get('distance_unit'),
+                        intensity=exercise_data.get('intensity'),
+                        heart_rate=exercise_data.get('heart_rate'),
+                        difficulty=exercise_data.get('difficulty'),
+                        total_reps=exercise_data.get('total_reps'),
+                        time=exercise_data.get('time'),
+                        pace=exercise_data.get('pace'),
+                        weight_notes=exercise_data.get('weight_notes'),
+                        rest_time=exercise_data.get('rest_time'),
+                        notes=exercise_data.get('notes'),
                         order_index=i
                     )
                     db.add(exercise)
@@ -325,16 +454,16 @@ def update_routine_with_workout_plan(
         print(f"❌ Error updating routine with workout plan: {e}")
         raise HTTPException(status_code=422, detail=f"Failed to update routine: {str(e)}")
 
-@router.put("/{routine_id}", response_model=SimpleRoutine)
+@router.put("/{id}", response_model=SimpleRoutine)
 def update_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str,
+    id: str,
     routine_in: SimpleRoutineUpdate
 ):
     """Update a routine"""
-    routine_obj = simple_routine.get(db, id=routine_id)
+    routine_obj = simple_routine.get(db, id=id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
 
@@ -344,15 +473,15 @@ def update_routine(
 
     return simple_routine.update(db, db_obj=routine_obj, obj_in=routine_in)
 
-@router.delete("/{routine_id}")
+@router.delete("/{id}")
 def delete_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    routine_id: str
+    id: str
 ):
     """Delete a routine"""
-    routine_obj = simple_routine.get(db, id=routine_id)
+    routine_obj = simple_routine.get(db, id=id)
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
 
@@ -360,5 +489,5 @@ def delete_routine(
     if routine_obj.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to delete this routine")
 
-    simple_routine.remove(db, id=routine_id)
+    simple_routine.remove(db, id=id)
     return {"message": "Routine deleted successfully"}

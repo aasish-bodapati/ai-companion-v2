@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { HeartIcon, ChartBarIcon, UserIcon, SparklesIcon, ClockIcon, FireIcon, BeakerIcon } from '@heroicons/react/24/outline';
+import { PageLoading } from '@/components/ui/loading-states';
 import { useEffect } from 'react';
 
 export default function Home() {
@@ -19,26 +20,12 @@ export default function Home() {
 
   // Show loading while auth is initializing
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoading className="min-h-[calc(100vh-64px)]" message="Loading..." />;
   }
 
   // If authenticated, show loading while redirecting
   if (isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-gray-600 dark:text-gray-400">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
+    return <PageLoading className="min-h-[calc(100vh-64px)]" message="Redirecting to dashboard..." />;
   }
 
   // Landing page for unauthenticated users

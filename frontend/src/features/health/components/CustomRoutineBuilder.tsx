@@ -283,19 +283,14 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (open) {
-        setIsOpen(true);
-      }
-      // Don't close on click outside - only close via button
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <Button className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200">
           <PlusIcon className="h-4 w-4 mr-2" />
           Create Custom Routine
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl h-[80vh] overflow-hidden p-0 bg-white dark:bg-gray-900 border-0 shadow-2xl flex flex-col">
+      <DialogContent className="max-w-4xl h-[80vh] overflow-hidden p-0 bg-white dark:bg-gray-900 border-0 shadow-2xl flex flex-col [&>button]:absolute [&>button]:top-4 [&>button]:right-4 [&>button]:z-30">
         <div className="flex flex-col h-full min-h-0">
           {/* Clean Header - Fixed at top with proper z-index */}
           <DialogHeader className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-10 relative">

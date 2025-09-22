@@ -18,20 +18,12 @@ from app.schemas.health.nutrition_routine import (
 
 class CRUDNutritionRoutine(CRUDBase[NutritionRoutine, NutritionRoutineCreate, NutritionRoutineUpdate]):
     def create(self, db: Session, *, obj_in: NutritionRoutineCreate) -> NutritionRoutine:
-        """Create a nutrition routine with proper tags handling."""
+        """Create a nutrition routine."""
         obj_in_data = obj_in.dict()
 
-        # Convert tags to JSON string for SQLite
-        if "tags" in obj_in_data and obj_in_data["tags"] is not None:
-            if isinstance(obj_in_data["tags"], list):
-                obj_in_data["tags"] = json.dumps(obj_in_data["tags"])
-            elif isinstance(obj_in_data["tags"], str):
-                # Already a string, keep as is
-                pass
-            else:
-                obj_in_data["tags"] = json.dumps([])
-        else:
-            obj_in_data["tags"] = json.dumps([])
+        # Filter out tags field since the model doesn't support it
+        if "tags" in obj_in_data:
+            del obj_in_data["tags"]
 
         db_obj = NutritionRoutine(**obj_in_data)
         db.add(db_obj)
@@ -40,22 +32,12 @@ class CRUDNutritionRoutine(CRUDBase[NutritionRoutine, NutritionRoutineCreate, Nu
         return db_obj
 
     def update(self, db: Session, *, db_obj: NutritionRoutine, obj_in: NutritionRoutineUpdate) -> NutritionRoutine:
-        """Update a nutrition routine with proper tags handling."""
+        """Update a nutrition routine."""
         update_data = obj_in.dict(exclude_unset=True)
 
-        # Handle tags serialization
-        if "tags" in update_data and update_data["tags"] is not None:
-            if isinstance(update_data["tags"], list):
-                update_data["tags"] = json.dumps(update_data["tags"])
-            elif isinstance(update_data["tags"], str):
-                # Already a string, keep as is
-                pass
-            else:
-                update_data["tags"] = json.dumps([])
-
-        # Ensure existing tags are serialized if they're lists
-        if hasattr(db_obj, 'tags') and isinstance(db_obj.tags, list):
-            db_obj.tags = json.dumps(db_obj.tags)
+        # Filter out tags field since the model doesn't support it
+        if "tags" in update_data:
+            del update_data["tags"]
 
         for field, value in update_data.items():
             setattr(db_obj, field, value)
@@ -65,43 +47,19 @@ class CRUDNutritionRoutine(CRUDBase[NutritionRoutine, NutritionRoutineCreate, Nu
         db.refresh(db_obj)
         return db_obj
 
-    def _deserialize_tags(self, routine: NutritionRoutine) -> NutritionRoutine:
-        """Deserialize tags from JSON string to list."""
-        if routine.tags:
-            if isinstance(routine.tags, str):
-                try:
-                    routine.tags = json.loads(routine.tags)
-                except (json.JSONDecodeError, TypeError):
-                    routine.tags = []
-            elif isinstance(routine.tags, list):
-                # Already deserialized, keep as is
-                pass
-            else:
-                routine.tags = []
-        else:
-            routine.tags = []
-        return routine
-
-    def get(self, db: Session, id: Any) -> Optional[NutritionRoutine]:
-        """Get a single routine by ID with deserialized tags."""
-        routine = super().get(db, id)
-        if routine:
-            return self._deserialize_tags(routine)
-        return routine
-
     def get_user_routines(self, db: Session, *, user_id: str, skip: int = 0, limit: int = 100) -> List[NutritionRoutine]:
         """Get routines created by a specific user."""
         routines = db.query(NutritionRoutine).filter(
             NutritionRoutine.created_by_user_id == user_id
         ).offset(skip).limit(limit).all()
-        return [self._deserialize_tags(routine) for routine in routines]
+        return routines
 
     def get_templates(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[NutritionRoutine]:
         """Get template routines."""
         routines = db.query(NutritionRoutine).filter(
             NutritionRoutine.is_template == True
         ).offset(skip).limit(limit).all()
-        return [self._deserialize_tags(routine) for routine in routines]
+        return routines
 
     def get_user_created_only(self, db: Session, *, user_id: str, skip: int = 0, limit: int = 100) -> List[NutritionRoutine]:
         """Get only user-created routines (no templates)."""
@@ -111,7 +69,7 @@ class CRUDNutritionRoutine(CRUDBase[NutritionRoutine, NutritionRoutineCreate, Nu
                 NutritionRoutine.is_template == False
             )
         ).offset(skip).limit(limit).all()
-        return [self._deserialize_tags(routine) for routine in routines]
+        return routines
 
     def create_with_meal_plans(self, db: Session, *, routine_data: NutritionRoutineCreate,
                               meal_plans_data: List[Dict[str, Any]], user_id: str) -> NutritionRoutine:
@@ -122,23 +80,15 @@ class CRUDNutritionRoutine(CRUDBase[NutritionRoutine, NutritionRoutineCreate, Nu
         routine_dict["is_template"] = False
         routine_dict["meal_plans"] = meal_plans_data  # Store as JSON
 
-        # Convert tags to JSON string for SQLite
-        if "tags" in routine_dict and routine_dict["tags"] is not None:
-            if isinstance(routine_dict["tags"], list):
-                routine_dict["tags"] = json.dumps(routine_dict["tags"])
-            elif isinstance(routine_dict["tags"], str):
-                # Already a string, keep as is
-                pass
-            else:
-                routine_dict["tags"] = json.dumps([])
-        else:
-            routine_dict["tags"] = json.dumps([])
+        # Filter out tags field since the model doesn't support it
+        if "tags" in routine_dict:
+            del routine_dict["tags"]
 
         routine = NutritionRoutine(**routine_dict)
         db.add(routine)
         db.commit()
         db.refresh(routine)
-        return self._deserialize_tags(routine)
+        return routine
 
 class CRUDNutritionUserRoutineProgress(CRUDBase[NutritionUserRoutineProgress, NutritionUserRoutineProgressCreate, NutritionUserRoutineProgressCreate]):
     def get_user_active_routine(self, db: Session, *, user_id: str) -> Optional[NutritionUserRoutineProgress]:
@@ -163,12 +113,7 @@ class CRUDNutritionUserRoutineProgress(CRUDBase[NutritionUserRoutineProgress, Nu
         if current_progress:
             current_progress.is_active = False
 
-        # Fix any routines with deserialized tags before committing
-        # This prevents SQLite errors when updating routines with list-type tags
-        routines_in_session = [obj for obj in db.identity_map.values() if isinstance(obj, NutritionRoutine)]
-        for routine in routines_in_session:
-            if hasattr(routine, 'tags') and isinstance(routine.tags, list):
-                routine.tags = json.dumps(routine.tags)
+        # No tags handling needed since model doesn't support tags
 
         # Create new progress entry
         progress_data = {

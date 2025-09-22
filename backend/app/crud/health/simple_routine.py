@@ -66,7 +66,6 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
             for day_data in workout_days:
                 print(f"📅 Processing day: {day_data}")
                 workout_day = RoutineWorkoutDay(
-                    id=str(uuid.uuid4()),
                     routine_id=routine.id,
                     day_name=day_data['day'],
                     day_order=day_data.get('day_order', 0),
@@ -79,7 +78,6 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
                 # Create exercises for this day
                 for i, exercise_data in enumerate(day_data.get('workouts', [])):
                     exercise = RoutineExercise(
-                        id=str(uuid.uuid4()),
                         workout_day_id=workout_day.id,
                         exercise_name=exercise_data.get('activity_name', 'Exercise'),
                         sets=exercise_data.get('sets', 3),
@@ -104,6 +102,13 @@ class CRUDSimpleUserRoutineProgress(CRUDBase[SimpleUserRoutineProgress, SimpleUs
         return db.query(SimpleUserRoutineProgress).filter(
             SimpleUserRoutineProgress.user_id == user_id,
             SimpleUserRoutineProgress.is_active == True
+        ).first()
+
+    def get_by_user_and_routine(self, db: Session, *, user_id: str, routine_id: int) -> Optional[SimpleUserRoutineProgress]:
+        """Get user's progress for a specific routine"""
+        return db.query(SimpleUserRoutineProgress).filter(
+            SimpleUserRoutineProgress.user_id == user_id,
+            SimpleUserRoutineProgress.routine_id == routine_id
         ).first()
 
     def start_routine(self, db: Session, *, user_id: str, routine_id: str) -> SimpleUserRoutineProgress:

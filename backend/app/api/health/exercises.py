@@ -6,21 +6,18 @@ from app.models.user import User
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.health.exercise_database import Exercise
-from app.models.health.exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum
+from app.models.health.exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum, get_form_schema
 from app.services.wger_api import map_wger_category_to_attributes
 from pydantic import BaseModel
 
 router = APIRouter()
 
 class ExerciseResponse(BaseModel):
-    """Exercise response model for API documentation"""
+    """Simplified exercise response model for API documentation"""
     id: int
     name: str
     logging_category: str
     logging_category_info: dict
-    difficulty: str
-    calories_per_minute: float
-    description: str
 
 class ExerciseSearchResponse(BaseModel):
     """Exercise search response model"""
@@ -80,10 +77,7 @@ async def search_exercises(
 
     # Query the database for exercises matching the search term
     exercises = db.query(Exercise).filter(
-        or_(
-            Exercise.name.ilike(search_term),
-            Exercise.description.ilike(search_term)
-        )
+        Exercise.name.ilike(search_term)
     ).limit(limit).all()
 
     # Convert to response format
@@ -95,11 +89,8 @@ async def search_exercises(
         results.append(ExerciseResponse(
             id=ex.id,
             name=ex.name,
-            logging_category=ex.logging_category.value if ex.logging_category else None,
-            logging_category_info=logging_category_info,
-            difficulty=ex.difficulty_level,
-            calories_per_minute=ex.calories_per_minute,
-            description=ex.description
+            logging_category=ex.logging_category if ex.logging_category else None,
+            logging_category_info=logging_category_info
         ))
 
     return ExerciseSearchResponse(exercises=results)
@@ -138,8 +129,6 @@ async def search_exercises(
 )
 async def get_all_exercises(
     logging_category: Optional[str] = Query(None, description="Filter by logging category (bodyweight, weighted, cardio_duration, hold_static, repetition_only, distance_based)"),
-    muscle_group: Optional[str] = Query(None, description="Filter by muscle group (abs, back, arms, shoulders, chest, legs, cardio, calves)"),
-    difficulty: Optional[str] = Query(None, description="Filter by difficulty level (beginner, intermediate, advanced)"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
@@ -154,14 +143,6 @@ async def get_all_exercises(
         except ValueError:
             raise HTTPException(status_code=400, detail=f"Invalid logging category: {logging_category}")
     
-    # Apply muscle group filter
-    if muscle_group:
-        query = query.filter(Exercise.muscle_group == muscle_group)
-    
-    # Apply difficulty filter
-    if difficulty:
-        query = query.filter(Exercise.difficulty_level == difficulty)
-    
     # Apply limit
     exercises = query.limit(limit).all()
 
@@ -173,11 +154,8 @@ async def get_all_exercises(
         results.append(ExerciseResponse(
             id=ex.id,
             name=ex.name,
-            logging_category=ex.logging_category.value if ex.logging_category else None,
-            logging_category_info=logging_category_info,
-            difficulty=ex.difficulty_level,
-            calories_per_minute=ex.calories_per_minute,
-            description=ex.description
+            logging_category=ex.logging_category if ex.logging_category else None,
+            logging_category_info=logging_category_info
         ))
 
     return ExerciseSearchResponse(exercises=results)
@@ -194,23 +172,23 @@ async def get_exercise_categories(
         results.append({
             "id": category.id,
             "name": category.name,
-            "category": category.category.value,
+            "category": category.name,  # Use name as category value
             "display_name": category.display_name,
             "description": category.description,
-            "logging_attributes": category.logging_attributes,
+            "logging_attributes": get_form_schema(ExerciseLoggingCategoryEnum(category.name)),
             "icon": category.icon,
             "color": category.color
         })
 
     return {"categories": results}
 
-def _get_logging_category_info(logging_category: ExerciseLoggingCategoryEnum, db: Session) -> dict:
+def _get_logging_category_info(logging_category: str, db: Session) -> dict:
     """Get logging category information from database"""
     if not logging_category:
         return {"icon": "🏋️", "display_name": "Unknown", "color": "gray"}
     
     category_record = db.query(ExerciseLoggingCategory).filter(
-        ExerciseLoggingCategory.category == logging_category
+        ExerciseLoggingCategory.name == logging_category
     ).first()
     
     if category_record:
@@ -219,7 +197,7 @@ def _get_logging_category_info(logging_category: ExerciseLoggingCategoryEnum, db
             "name": category_record.name,
             "display_name": category_record.display_name,
             "description": category_record.description,
-            "logging_attributes": category_record.logging_attributes,
+            "logging_attributes": get_form_schema(ExerciseLoggingCategoryEnum(logging_category)) if logging_category in [e.value for e in ExerciseLoggingCategoryEnum] else {},
             "icon": category_record.icon or "🏋️",
             "color": category_record.color or "blue"
         }
@@ -227,6 +205,6 @@ def _get_logging_category_info(logging_category: ExerciseLoggingCategoryEnum, db
     # Fallback for missing category records
     return {
         "icon": "🏋️",
-        "display_name": logging_category.value.replace("_", " ").title(),
+        "display_name": logging_category.replace("_", " ").title(),
         "color": "gray"
     }

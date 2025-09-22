@@ -63,13 +63,13 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
       }
       // In test mode, set up test user
       const testUser = {
-        id: '2c9dcf1b-2e81-4b34-8ead-3292730f0ea6',
+        id: '1', // Use the actual user ID from the database
         email: 'test@example.com',
         full_name: 'Test User',
         is_active: true,
         is_superuser: false
       };
-      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTg4MjczMjMsInN1YiI6IjJjOWRjZjFiLTJlODEtNGIzNC04ZWFkLTMyOTI3MzBmMGVhNiJ9.Oh_3rUXNHD6mqtH75SD_V6GrYlWZaMS7VpQ_d2rsKdk';
+      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4NjYxMzI3fQ.zOUNT-vnZOpjv9iQyzTD7wZGKiOSUL-aKLwXXLTa-wY';
 
       setUser(testUser);
       setToken(testToken);
@@ -121,13 +121,13 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
           const hasLoggedOut = localStorage.getItem('user_logged_out') === 'true';
           if (!hasLoggedOut) {
             const testUser = {
-              id: '2c9dcf1b-2e81-4b34-8ead-3292730f0ea6',
+              id: '1',
               email: 'test@example.com',
               full_name: 'Test User',
               is_active: true,
               is_superuser: false
             };
-            const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTg4MjczMjMsInN1YiI6IjJjOWRjZjFiLTJlODEtNGIzNC04ZWFkLTMyOTI3MzBmMGVhNiJ9.Oh_3rUXNHD6mqtH75SD_V6GrYlWZaMS7VpQ_d2rsKdk';
+            const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4NjYxMzI3fQ.zOUNT-vnZOpjv9iQyzTD7wZGKiOSUL-aKLwXXLTa-wY';
             
             setUser(testUser);
             setToken(testToken);
@@ -292,7 +292,7 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
     }
   };
 
-  const isAuthenticated = !!user;
+  const isAuthenticated = !!user && !!token;
 
   return (
     <AuthContext.Provider

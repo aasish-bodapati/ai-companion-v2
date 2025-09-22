@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 from app import crud, models
 from app.api import deps
 from app.core.config import settings
-from app.core.security import create_access_token
+from app.core.security import create_access_token, get_password_hash
 # Auth cookies removed for Milestone 1 simplicity
-from app.schemas.user import Token, User as UserSchema
+from app.schemas.user import Token, User as UserSchema, UserCreate
 
 router = APIRouter()
 
@@ -48,6 +48,25 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)):
     Test access token
     """
     return current_user
+
+@router.post("/register", response_model=UserSchema)
+def register_user(
+    *,
+    db: Session = Depends(deps.get_db),
+    user_in: UserCreate,
+) -> models.User:
+    """
+    Create new user.
+    """
+    user = crud.user.get_by_email(db, email=user_in.email)
+    if user:
+        raise HTTPException(
+            status_code=400,
+            detail="The user with this email already exists in the system.",
+        )
+    
+    user = crud.user.create(db, obj_in=user_in)
+    return user
 
 @router.post("/logout")
 def logout(response: Response, current_user: models.User = Depends(deps.get_current_active_user)):

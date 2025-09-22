@@ -26,10 +26,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   };
 
   const sizeClasses = {
-    default: 'h-10 px-4 py-2',
-    sm: 'h-9 rounded-md px-3',
-    lg: 'h-11 rounded-md px-8',
-    icon: 'h-10 w-10'
+    default: 'h-11 px-4 py-2 min-h-[44px]', // 44px minimum for mobile touch targets
+    sm: 'h-10 rounded-md px-3 min-h-[40px]', // Still 40px but with min-height
+    lg: 'h-12 rounded-md px-8 min-h-[48px]', // Larger for important actions
+    icon: 'h-11 w-11 min-h-[44px] min-w-[44px]' // 44px minimum for icon buttons
   };
 
   return (

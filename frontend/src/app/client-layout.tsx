@@ -21,12 +21,12 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider>
-      <AuthProvider>
+      <AuthProvider testMode={true}>
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <div className="min-h-screen flex flex-col">
               {isAppPage && <NavBar />}
-              <main className={isAppPage ? 'flex-1 py-0 px-0 w-full pb-16' : 'flex-1'}>
+              <main className={isAppPage ? 'flex-1 py-0 px-0 w-full pb-14' : 'flex-1'}>
                 {/* Sitewide look: always render full-bleed without inner width constraints */}
                 {children}
               </main>

@@ -2,7 +2,7 @@
 Simplified Routine Models - Only what we actually need
 """
 
-from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Boolean, JSON
+from sqlalchemy import Column, String, Integer, Text, DateTime, ForeignKey, Boolean, JSON, Float
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
@@ -90,8 +90,24 @@ class RoutineExercise(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     workout_day_id = Column(Integer, ForeignKey("routine_workout_days.id", ondelete="CASCADE"), nullable=False)
     exercise_name = Column(String(200), nullable=False)  # Seated Machine Chest Press
-    sets = Column(Integer, nullable=False)  # 4
+    logging_category = Column(String(50), nullable=True)  # weighted, bodyweight, cardio_duration, etc.
+    
+    # Dynamic fields based on exercise category
+    sets = Column(Integer, nullable=True)  # 4
     reps = Column(String(50), nullable=True)  # "8-12" or "12-15"
+    weight = Column(Float, nullable=True)  # 135.5
+    weight_unit = Column(String(20), nullable=True)  # "lbs", "kg"
+    duration = Column(Float, nullable=True)  # 30.5 (minutes)
+    distance = Column(Float, nullable=True)  # 5.0
+    distance_unit = Column(String(20), nullable=True)  # "miles", "km"
+    intensity = Column(String(50), nullable=True)  # "moderate", "high", "low"
+    heart_rate = Column(Integer, nullable=True)  # 150 (bpm)
+    difficulty = Column(String(50), nullable=True)  # "easy", "medium", "hard"
+    total_reps = Column(Integer, nullable=True)  # 50
+    time = Column(Float, nullable=True)  # 2.5 (minutes)
+    pace = Column(String(50), nullable=True)  # "8:30/mile"
+    
+    # Legacy fields for backward compatibility
     weight_notes = Column(String(200), nullable=True)  # "moderate weight", "bodyweight", etc.
     rest_time = Column(String(50), nullable=True)  # "60-90 seconds", "2 minutes"
     notes = Column(Text, nullable=True)  # "controlled, within pain-free ROM"

@@ -5,15 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { WorkoutLoggingDialog } from '@/components/health/WorkoutLoggingDialog';
 import { SimpleRoutineTemplates } from '@/components/health/SimpleRoutineTemplates';
-import { SimpleWorkoutLogger } from '@/features/health/components/SimpleWorkoutLogger';
-import { ProgressiveWorkoutLogger } from '@/components/health/ProgressiveWorkoutLogger';
-import { SmartWorkoutLogger } from '@/components/health/SmartWorkoutLogger';
 import FitnessLogsView from '@/components/health/FitnessLogsView';
-import DynamicExerciseLogger from '@/components/health/DynamicExerciseLogger';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { 
   FireIcon, 
   ChartBarIcon, 
@@ -26,18 +24,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSuccessToast, useErrorToast, useWarningToast } from '@/components/ui/toast';
 import { AnimatedButton, AnimatedCard, AnimatedCounter } from '@/components/ui/micro-interactions';
-import { StatsCardSkeleton } from '@/components/ui/loading-states';
+import { PageLoading, CardLoading } from '@/components/ui/loading-states';
+import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 import api from '@/lib/api';
 
 export default function FitnessPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
+  
+  // Use the custom onboarding check hook
+  const { onboardingStatus, isChecking: checkingOnboarding } = useOnboardingCheck({
+    redirectOnIncomplete: false, // Don't redirect from fitness page
+    redirectOnError: false
+  });
   const [activeTab, setActiveTab] = useState('logs');
-  const [showSmartLogger, setShowSmartLogger] = useState(false);
-  const [showExerciseLogger, setShowExerciseLogger] = useState(false);
-  const [selectedExercise, setSelectedExercise] = useState<any>(null);
+  const [showWorkoutLogger, setShowWorkoutLogger] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [todayStats, setTodayStats] = useState({
     workouts: 0,
@@ -53,25 +54,6 @@ export default function FitnessPage() {
   const errorToast = useErrorToast();
   const warningToast = useWarningToast();
 
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      if (!isAuthenticated) {
-        return;
-      }
-
-      try {
-        const response = await api.get('/health/onboarding/status');
-        setOnboardingStatus(response.completed);
-        // Don't redirect to onboarding - let users access fitness page
-      } catch (error) {
-        console.error('Failed to check onboarding status:', error);
-        setOnboardingStatus(false);
-        // Don't show warning toast for background check
-      }
-    };
-
-    checkOnboarding();
-  }, [isAuthenticated]);
 
   const handleLogSuccess = async () => {
     setWorkoutSuccess(true);
@@ -105,35 +87,12 @@ export default function FitnessPage() {
     
     // Trigger refresh of the logs view
     setRefreshTrigger(prev => prev + 1);
-    setShowSmartLogger(false);
+    setShowWorkoutLogger(false);
     
     // Reset success state after animation
     setTimeout(() => setWorkoutSuccess(false), 2000);
   };
 
-  const handleExerciseSelect = (exercise: any) => {
-    setSelectedExercise(exercise);
-    setShowExerciseLogger(true);
-  };
-
-  const handleExerciseLog = async (exerciseData: any) => {
-    try {
-      // Here you would call your API to log the exercise
-      logger.debug('Logging exercise:', exerciseData);
-      successToast('Exercise logged successfully!');
-      setShowExerciseLogger(false);
-      setSelectedExercise(null);
-      setRefreshTrigger(prev => prev + 1);
-    } catch (error) {
-      console.error('Error logging exercise:', error);
-      errorToast('Failed to log exercise');
-    }
-  };
-
-  const handleExerciseCancel = () => {
-    setShowExerciseLogger(false);
-    setSelectedExercise(null);
-  };
 
   useEffect(() => {
     // Load today's stats
@@ -175,12 +134,7 @@ export default function FitnessPage() {
   if (!isAuthenticated) {
     return (
       <ProtectedRoute>
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-          </div>
-        </div>
+        <PageLoading className="min-h-[calc(100vh-4rem)]" message="Loading..." />
       </ProtectedRoute>
     );
   }
@@ -204,7 +158,7 @@ export default function FitnessPage() {
                     </p>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                     <button
-                      onClick={() => setShowSmartLogger(true)}
+                      onClick={() => setShowWorkoutLogger(true)}
                       className={`bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                         workoutSuccess ? 'animate-pulse bg-green-500/20 border-2 border-green-400' : ''
                       }`}
@@ -381,7 +335,7 @@ export default function FitnessPage() {
                 </TabsList>
 
                 <TabsContent value="routines" className="space-y-6">
-                  <SimpleRoutineTemplates onRoutineSelected={handleLogSuccess} />
+                  <SimpleRoutineTemplates />
                 </TabsContent>
 
                 <TabsContent value="log" className="space-y-6">
@@ -416,9 +370,18 @@ export default function FitnessPage() {
                           Step-by-step logging with smart suggestions and exercise database
                         </p>
                       </div>
-                      <ProgressiveWorkoutLogger 
-                        onSuccess={handleLogSuccess}
-                      />
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Use the "Log Workout" button above to start logging your fitness activities.
+                        </p>
+                        <Button 
+                          onClick={() => setShowWorkoutLogger(true)}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          <PlusIcon className="h-4 w-4 mr-2" />
+                          Log Workout
+                        </Button>
+                      </div>
                     </TabsContent>
                     
                     <TabsContent value="simple" className="space-y-6">
@@ -431,7 +394,18 @@ export default function FitnessPage() {
                           Fast logging for users who know exactly what they want to track
                         </p>
                       </div>
-                      <SimpleWorkoutLogger onWorkoutLogged={handleLogSuccess} />
+                      <div className="text-center py-8">
+                        <p className="text-gray-600 dark:text-gray-400 mb-4">
+                          Use the "Log Workout" button above to start logging your fitness activities.
+                        </p>
+                        <Button 
+                          onClick={() => setShowWorkoutLogger(true)}
+                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                        >
+                          <PlusIcon className="h-4 w-4 mr-2" />
+                          Log Workout
+                        </Button>
+                      </div>
                     </TabsContent>
                   </Tabs>
                 </TabsContent>
@@ -502,26 +476,15 @@ export default function FitnessPage() {
           </div>
         </div>
 
-        {/* Smart Workout Logger Modal */}
-        <SmartWorkoutLogger
-          isOpen={showSmartLogger}
-          onClose={() => setShowSmartLogger(false)}
+        {/* Workout Logging Dialog */}
+        <WorkoutLoggingDialog
+          isOpen={showWorkoutLogger}
+          onClose={() => setShowWorkoutLogger(false)}
           onSuccess={handleLogSuccess}
+          onNavigateToRoutines={() => setActiveTab('routines')}
         />
 
 
-        {/* Dynamic Exercise Logger Dialog */}
-        <Dialog open={showExerciseLogger} onOpenChange={setShowExerciseLogger}>
-          <DialogContent className="max-w-2xl">
-            {selectedExercise && (
-              <DynamicExerciseLogger
-                exercise={selectedExercise}
-                onSave={handleExerciseLog}
-                onCancel={handleExerciseCancel}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </div>
       </div>
     </ProtectedRoute>

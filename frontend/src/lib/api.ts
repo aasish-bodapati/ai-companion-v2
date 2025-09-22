@@ -52,6 +52,7 @@ async function apiFetch<T = any>(
     return helper(value);
   };
   const url = new URL(`${API_BASE_URL}${endpoint}`);
+  console.log(`Making API call to: ${url.toString()}`);
   
   // Add query parameters if provided
   if (options.params) {
@@ -88,6 +89,10 @@ async function apiFetch<T = any>(
 
   if (token && !headers.has('Authorization') && !isPublicAuthEndpoint) {
     headers.set('Authorization', `Bearer ${token}`);
+    console.log(`API call to ${endpoint} with token:`, token.substring(0, 20) + '...');
+  } else if (!isPublicAuthEndpoint && typeof window !== 'undefined') {
+    // Debug: Log when token is missing for non-public endpoints
+    console.warn(`API call to ${endpoint} without token. Available token:`, token ? 'Present' : 'Missing');
   }
   
   // Compose abort signals to support both caller-provided signal and timeout
@@ -187,7 +192,10 @@ async function apiFetch<T = any>(
     if (isJson && textBody && textBody.trim().length > 0) {
       try {
         payload = JSON.parse(textBody);
-        // Debug logging removed for production security
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`API response for ${url.toString()}:`, payload);
+        }
       } catch (_) {
         payload = null;
         logger.debug('Failed to parse JSON for:', url.toString());
@@ -218,12 +226,17 @@ async function apiFetch<T = any>(
     if ((response.status === 401 || response.status === 403) && typeof window !== 'undefined') {
       try {
         localStorage.removeItem('token');
+        // Also clear any auth state flags
+        localStorage.removeItem('user_logged_out');
       } catch (_) {
         // ignore
       }
-      // Avoid redirect loop if already on login
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
+      // Avoid redirect loop if already on login or in test mode
+      if (window.location.pathname !== '/login' && !window.location.pathname.includes('test')) {
+        // Use a small delay to prevent rapid redirects
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
       }
     }
 

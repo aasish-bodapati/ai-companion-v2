@@ -1,7 +1,7 @@
 """Create food_log_items table for better nutrition tracking
 
 Revision ID: create_food_log_items
-Revises: improve_schema_phase3_sqlite
+Revises: improve_schema_phase3
 Create Date: 2024-01-01 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'create_food_log_items'
-down_revision = 'improve_schema_phase3_sqlite'
+down_revision = 'improve_schema_phase3'
 branch_labels = None
 depends_on = None
 

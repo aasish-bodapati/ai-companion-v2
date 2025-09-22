@@ -11,12 +11,8 @@ class UserWeightLog(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Weight measurements
+    # Weight measurements - simplified to core tracking only
     weight_kg = Column(Float, nullable=False)
-    body_fat_percent = Column(Float, nullable=True)
-    muscle_mass_kg = Column(Float, nullable=True)
-    waist_circumference_cm = Column(Float, nullable=True)
-    hip_circumference_cm = Column(Float, nullable=True)
 
     # Context
     notes = Column(Text, nullable=True)

@@ -31,7 +31,7 @@ Transform your health journey with intelligent logging and AI-powered insights. 
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL (optional, SQLite for development)
+- PostgreSQL (required)
 
 ### Backend Setup
 ```bash
@@ -114,7 +114,7 @@ npm run test:all
 
 - **Backend**: FastAPI + SQLAlchemy + Pydantic
 - **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Database**: PostgreSQL/SQLite with health-optimized schemas
+- **Database**: PostgreSQL with health-optimized schemas
 - **AI Engine**: Configurable LLM providers (OpenRouter, OpenAI, Anthropic)
 - **Memory System**: FAISS vector store for pattern recognition
 - **Analytics**: Real-time health data processing and insights

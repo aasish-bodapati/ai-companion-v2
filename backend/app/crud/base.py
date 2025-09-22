@@ -32,7 +32,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             The object if found, None otherwise.
         """
-        # Convert UUID to string for SQLite compatibility
+        # Convert UUID to string if needed
         if hasattr(id, "hex"):
             id = str(id)
         return db.query(self.model).filter(self.model.id == id).first()
@@ -79,7 +79,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         """Remove an object."""
-        # Convert UUID to string for SQLite compatibility
+        # Convert UUID to string if needed
         if hasattr(id, "hex"):
             id = str(id)
         # Use a filter-based lookup (like get()) to avoid edge cases with Session.get() on string PKs

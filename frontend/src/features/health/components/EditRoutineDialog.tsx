@@ -7,23 +7,58 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
+import { WORKOUT_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { SimpleRoutineWithProgress } from '@/lib/simpleRoutineApi';
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
 import { logger } from '@/lib/logger';
+import { api } from '@/lib/api';
 
-interface Workout {
-  activity_type: string;
-  activity_name: string;
-  sets: number;
-  reps: number;
+interface Exercise {
+  exercise_name: string;
+  logging_category?: string;
+  // Dynamic attributes based on category
+  sets?: number;
+  reps?: string;
+  weight?: number;
+  weight_unit?: string;
+  duration?: number;
+  distance?: number;
+  distance_unit?: string;
+  intensity?: string;
+  heart_rate?: number;
+  difficulty?: string;
+  total_reps?: number;
+  time?: number;
+  pace?: string;
+  weight_notes?: string;
+  rest_time?: string;
+  notes?: string;
 }
 
-interface DayWorkouts {
-  day: string;
-  workouts: Workout[];
+interface ExerciseOption {
+  id: number;
+  name: string;
+  logging_category: string;
+  logging_category_info: {
+    id: number;
+    name: string;
+    display_name: string;
+  };
+  difficulty: string;
+  calories_per_minute: number;
+  description: string;
+}
+
+interface WorkoutDay {
+  day_name: string;
+  day_order: number;
+  workout_name: string;
+  description?: string;
+  exercises: Exercise[];
 }
 
 interface EditRoutineDialogProps {
@@ -31,366 +66,598 @@ interface EditRoutineDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onRoutineUpdated: () => void;
+  mode?: 'edit' | 'create';
 }
 
 const DAYS_OF_WEEK = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
 ];
 
-const ACTIVITY_TYPES = [
-  'weightlifting', 'cardio', 'yoga', 'pilates', 'swimming', 'running', 
-  'cycling', 'dancing', 'martial_arts', 'sports', 'stretching', 'other'
-];
+// Get form fields based on exercise category
+const getFormFieldsForCategory = (category: string) => {
+  const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === category);
+  if (!categoryConfig) return [];
+  
+  return [
+    ...categoryConfig.loggingAttributes.required,
+    ...categoryConfig.loggingAttributes.optional
+  ];
+};
 
-export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated }: EditRoutineDialogProps) {
+// Get the display name for a field
+const getFieldDisplayName = (fieldName: string): string => {
+  const fieldMap: { [key: string]: string } = {
+    'sets': 'Sets',
+    'reps': 'Reps',
+    'weight': 'Weight',
+    'weight_unit': 'Weight Unit',
+    'duration': 'Duration (min)',
+    'distance': 'Distance',
+    'distance_unit': 'Distance Unit',
+    'intensity': 'Intensity',
+    'heart_rate': 'Heart Rate (bpm)',
+    'difficulty': 'Difficulty',
+    'total_reps': 'Total Reps',
+    'time': 'Time (min)',
+    'pace': 'Pace',
+    'notes': 'Notes'
+  };
+  return fieldMap[fieldName] || fieldName;
+};
+
+export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, mode = 'edit' }: EditRoutineDialogProps) {
   const [routineName, setRoutineName] = useState('');
-  const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>([]);
-  const [dayWorkouts, setDayWorkouts] = useState<DayWorkouts[]>([]);
+  const [routineDescription, setRoutineDescription] = useState('');
+  const [workoutDays, setWorkoutDays] = useState<WorkoutDay[]>([]);
   const [loading, setLoading] = useState(false);
+  const [allExercises, setAllExercises] = useState<ExerciseOption[]>([]);
+  const [loadingExercises, setLoadingExercises] = useState(false);
 
-  // Initialize form data when routine changes
+  // Initialize form data when routine changes or mode changes
   useEffect(() => {
-    if (routine) {
-      logger.debug('🔍 EditRoutineDialog - Routine data received:', routine);
-      logger.debug('🔍 EditRoutineDialog - workout_schedule:', routine.workout_schedule);
+    if (mode === 'create') {
+      // Create mode - initialize with empty data
+      console.log('🔍 EditRoutineDialog - Create mode, initializing empty');
+      setRoutineName('');
+      setRoutineDescription('');
+      setWorkoutDays([]);
+    } else if (routine) {
+      // Edit mode - load existing routine data
+      console.log('🔍 EditRoutineDialog - Edit mode, loading routine data:', routine);
+      console.log('🔍 EditRoutineDialog - workout_days:', routine.workout_days);
+      console.log('🔍 EditRoutineDialog - workout_schedule:', routine.workout_schedule);
       
       setRoutineName(routine.name);
+      setRoutineDescription(routine.description || '');
       
-      // Extract activity types from existing workouts
-      const activityTypes = new Set<string>();
-      if (routine.workout_schedule && Array.isArray(routine.workout_schedule)) {
-        logger.debug('🔍 EditRoutineDialog - Processing workout_schedule with', routine.workout_schedule.length, 'days');
-        routine.workout_schedule.forEach((day: any, dayIndex: number) => {
-          logger.debug(`🔍 EditRoutineDialog - Processing day ${dayIndex}:`, day);
-          if (day.exercises && Array.isArray(day.exercises)) {
-            logger.debug(`🔍 EditRoutineDialog - Day ${day.day} has ${day.exercises.length} exercises`);
-            day.exercises.forEach((exercise: any, exerciseIndex: number) => {
-              logger.debug(`🔍 EditRoutineDialog - Exercise ${exerciseIndex}:`, exercise);
-              // Map exercise names to activity types (simplified mapping)
-              if (exercise.exercise_name.toLowerCase().includes('press') || 
-                  exercise.exercise_name.toLowerCase().includes('squat') ||
-                  exercise.exercise_name.toLowerCase().includes('deadlift')) {
-                activityTypes.add('weightlifting');
-              } else {
-                activityTypes.add('weightlifting'); // Default for now
-              }
-            });
-          }
-        });
+      // Load existing workout days from the routine
+      if (routine.workout_days && Array.isArray(routine.workout_days) && routine.workout_days.length > 0) {
+        console.log('🔍 EditRoutineDialog - Processing workout_days with', routine.workout_days.length, 'days');
+        
+        const loadedWorkoutDays: WorkoutDay[] = routine.workout_days.map((day: any) => ({
+          day_name: day.day_name || day.day,
+          day_order: day.day_order || 0,
+          workout_name: day.workout_name || `${day.day_name || day.day} Workout`,
+          description: day.description,
+          exercises: day.exercises ? day.exercises.map((ex: any) => ({
+            exercise_name: ex.exercise_name || ex.activity_name,
+            logging_category: ex.logging_category || 'weighted',
+            sets: ex.sets || 3,
+            reps: ex.reps || '10',
+            weight: ex.weight,
+            weight_unit: ex.weight_unit,
+            duration: ex.duration,
+            distance: ex.distance,
+            distance_unit: ex.distance_unit,
+            intensity: ex.intensity,
+            heart_rate: ex.heart_rate,
+            difficulty: ex.difficulty,
+            total_reps: ex.total_reps,
+            time: ex.time,
+            pace: ex.pace,
+            weight_notes: ex.weight_notes || '',
+            rest_time: ex.rest_time || '2-3 min',
+            notes: ex.notes || ''
+          })) : []
+        }));
+        
+        console.log('🔍 EditRoutineDialog - Loaded workout days:', loadedWorkoutDays);
+        setWorkoutDays(loadedWorkoutDays);
+      } else if (routine.workout_schedule && Array.isArray(routine.workout_schedule) && routine.workout_schedule.length > 0) {
+        console.log('🔍 EditRoutineDialog - Processing workout_schedule with', routine.workout_schedule.length, 'days');
+        
+        const loadedWorkoutDays: WorkoutDay[] = routine.workout_schedule.map((day: any, index: number) => ({
+          day_name: day.day,
+          day_order: day.day_order || index,
+          workout_name: day.workout_name || `${day.day} Workout`,
+          description: day.description,
+          exercises: day.exercises ? day.exercises.map((ex: any) => ({
+            exercise_name: ex.exercise_name || ex.activity_name,
+            logging_category: ex.logging_category || 'weighted',
+            sets: ex.sets || 3,
+            reps: ex.reps || '10',
+            weight: ex.weight,
+            weight_unit: ex.weight_unit,
+            duration: ex.duration,
+            distance: ex.distance,
+            distance_unit: ex.distance_unit,
+            intensity: ex.intensity,
+            heart_rate: ex.heart_rate,
+            difficulty: ex.difficulty,
+            total_reps: ex.total_reps,
+            time: ex.time,
+            pace: ex.pace,
+            weight_notes: ex.weight_notes || '',
+            rest_time: ex.rest_time || '2-3 min',
+            notes: ex.notes || ''
+          })) : []
+        }));
+        
+        console.log('🔍 EditRoutineDialog - Loaded from workout_schedule:', loadedWorkoutDays);
+        setWorkoutDays(loadedWorkoutDays);
+      } else {
+        console.log('🔍 EditRoutineDialog - No workout data found, initializing empty');
+        setWorkoutDays([]);
       }
-      logger.debug('🔍 EditRoutineDialog - Activity types extracted:', Array.from(activityTypes));
-      setSelectedActivityTypes(Array.from(activityTypes));
-
-      // Convert workout_schedule to dayWorkouts format
-      const convertedDayWorkouts: DayWorkouts[] = DAYS_OF_WEEK.map(day => {
-        const existingDay = routine.workout_schedule?.find((d: any) => d.day === day);
-        logger.debug(`🔍 EditRoutineDialog - Looking for ${day}:`, existingDay);
-        if (existingDay && existingDay.exercises) {
-          logger.debug(`🔍 EditRoutineDialog - Found exercises for ${day}:`, existingDay.exercises);
-          return {
-            day,
-            workouts: existingDay.exercises.map((ex: any) => ({
-              activity_type: 'weightlifting', // Default mapping
-              activity_name: ex.exercise_name,
-              sets: ex.sets,
-              reps: parseInt(ex.reps) || 10
-            }))
-          };
-        }
-        return { day, workouts: [] };
-      });
-      logger.debug('🔍 EditRoutineDialog - Converted dayWorkouts:', convertedDayWorkouts);
-      setDayWorkouts(convertedDayWorkouts);
     }
-  }, [routine]);
+  }, [routine, mode]);
 
-  const toggleActivityType = (activityType: string) => {
-    setSelectedActivityTypes(prev => 
-      prev.includes(activityType) 
-        ? prev.filter(type => type !== activityType)
-        : [...prev, activityType]
-    );
-  };
+  // Debug workoutDays changes
+  useEffect(() => {
+    console.log('🔍 workoutDays state changed:', workoutDays);
+    console.log('🔍 Total exercises:', getTotalExercises());
+  }, [workoutDays]);
 
-  const addWorkoutToDay = (day: string) => {
-    if (selectedActivityTypes.length === 0) return;
+  // Load exercises on component mount
+  useEffect(() => {
+    const loadExercises = async () => {
+      try {
+        setLoadingExercises(true);
+        const response = await api.get('/health/exercises/all');
+        setAllExercises(response.exercises || []);
+        console.log('🔍 Loaded exercises:', response.exercises?.length || 0);
+      } catch (error) {
+        console.error('Failed to load exercises:', error);
+        toast.error('Failed to load exercises');
+      } finally {
+        setLoadingExercises(false);
+      }
+    };
+
+    if (isOpen) {
+      loadExercises();
+    }
+  }, [isOpen]);
+
+  const addExerciseToDay = (dayName: string) => {
+    console.log('🔍 Adding exercise to day:', dayName);
+    console.log('🔍 Current workoutDays:', workoutDays);
     
-    setDayWorkouts(prev => prev.map(dayWorkout => 
-      dayWorkout.day === day 
-        ? {
-            ...dayWorkout,
-            workouts: [
-              ...dayWorkout.workouts,
-              {
-                activity_type: selectedActivityTypes[0],
-                activity_name: 'New Exercise',
-                sets: 3,
-                reps: 10
+    setWorkoutDays(prev => {
+      // Check if the day already exists
+      const existingDay = prev.find(day => day.day_name === dayName);
+      console.log('🔍 Existing day found:', existingDay);
+      
+      if (existingDay) {
+        // Day exists, add exercise to it
+        const updatedDays = prev.map(day => 
+          day.day_name === dayName 
+            ? {
+                ...day,
+                exercises: [
+                  ...day.exercises,
+                  {
+                    exercise_name: '',
+                    logging_category: 'weighted', // Default to weighted for new exercises
+                    sets: 1,
+                    reps: '',
+                    weight_notes: '',
+                    rest_time: '2-3 min',
+                    notes: ''
+                  }
+                ]
               }
-            ]
-          }
-        : dayWorkout
-    ));
+            : day
+        );
+        console.log('🔍 Updated days after adding exercise:', updatedDays);
+        return updatedDays;
+      } else {
+        // Day doesn't exist, create it with the new exercise
+        const newDay: WorkoutDay = {
+          day_name: dayName,
+          day_order: DAYS_OF_WEEK.indexOf(dayName),
+          workout_name: `${dayName} Workout`,
+          description: '',
+          exercises: [{
+            exercise_name: '',
+            logging_category: 'weighted', // Default to weighted for new exercises
+            sets: 1,
+            reps: '',
+            weight_notes: '',
+            rest_time: '2-3 min',
+            notes: ''
+          }]
+        };
+        console.log('🔍 Creating new day:', newDay);
+        const updatedDays = [...prev, newDay];
+        console.log('🔍 Updated days after creating new day:', updatedDays);
+        return updatedDays;
+      }
+    });
   };
 
-  const updateWorkout = (day: string, workoutIndex: number, field: keyof Workout, value: string | number) => {
-    setDayWorkouts(prev => prev.map(dayWorkout => 
-      dayWorkout.day === day 
+  const updateExercise = (dayName: string, exerciseIndex: number, field: keyof Exercise, value: string | number) => {
+    setWorkoutDays(prev => prev.map(day => 
+      day.day_name === dayName 
         ? {
-            ...dayWorkout,
-            workouts: dayWorkout.workouts.map((workout, index) => 
-              index === workoutIndex 
-                ? { ...workout, [field]: value }
-                : workout
+            ...day,
+            exercises: day.exercises.map((exercise, index) => 
+              index === exerciseIndex 
+                ? { ...exercise, [field]: value }
+                : exercise
             )
           }
-        : dayWorkout
+        : day
     ));
   };
 
-  const removeWorkout = (day: string, workoutIndex: number) => {
-    setDayWorkouts(prev => prev.map(dayWorkout => 
-      dayWorkout.day === day 
+  const removeExercise = (dayName: string, exerciseIndex: number) => {
+    setWorkoutDays(prev => prev.map(day => 
+      day.day_name === dayName 
         ? {
-            ...dayWorkout,
-            workouts: dayWorkout.workouts.filter((_, index) => index !== workoutIndex)
+            ...day,
+            exercises: day.exercises.filter((_, index) => index !== exerciseIndex)
           }
-        : dayWorkout
-    ));
+        : day
+    ).filter(day => day.exercises.length > 0)); // Remove days with no exercises
   };
 
-  const getTotalWorkouts = () => {
-    return dayWorkouts.reduce((total, dayWorkout) => total + dayWorkout.workouts.length, 0);
+  const getTotalExercises = () => {
+    return workoutDays.reduce((total, day) => total + day.exercises.length, 0);
   };
 
   const handleSave = async () => {
-    if (!routine) return;
-    
-    if (!routineName.trim()) {
-      toast.error('Please enter a routine name');
-      return;
-    }
+    if (mode === 'create' && !routine) {
+      // Create mode - create new routine
+      if (!routineName.trim()) {
+        toast.error('Please enter a routine name');
+        return;
+      }
 
-    if (selectedActivityTypes.length === 0) {
-      toast.error('Please select at least one activity type');
-      return;
-    }
+      const totalExercises = getTotalExercises();
+      if (totalExercises === 0) {
+        toast.error('Please add at least one exercise');
+        return;
+      }
 
-    const totalWorkouts = getTotalWorkouts();
-    if (totalWorkouts === 0) {
-      toast.error('Please add at least one workout');
-      return;
-    }
+      setLoading(true);
+      try {
+        // Prepare routine data for creation
+        const routineData = {
+          name: routineName.trim(),
+          description: routineDescription.trim() || `Custom routine with ${totalExercises} exercises across ${workoutDays.filter(d => d.exercises.length > 0).length} days`,
+          difficulty: 'intermediate', // Default difficulty for new routines
+          duration_weeks: 4 // Default duration for new routines
+        };
 
-    setLoading(true);
-    try {
-      // Prepare routine data
-      const routineData = {
-        name: routineName.trim(),
-        description: `Custom routine with ${totalWorkouts} workouts across ${dayWorkouts.filter(d => d.workouts.length > 0).length} days`,
-        difficulty: 'intermediate',
-        duration_weeks: 4,
-        tags: ['custom', 'weightlifting']
-      };
+        // Prepare workout days data
+        const workoutDaysData = workoutDays
+          .filter(day => day.exercises.length > 0)
+          .map((day, index) => ({
+            day: day.day_name,
+            day_order: day.day_order || index,
+            workout_name: day.workout_name,
+            description: day.description || `${day.exercises.length} exercises`,
+            workouts: day.exercises.map(exercise => ({
+              activity_name: exercise.exercise_name,
+              sets: exercise.sets,
+              reps: exercise.reps.toString()
+            }))
+          }));
 
-      // Prepare workout days data
-      const workoutDays = dayWorkouts
-        .filter(dayWorkout => dayWorkout.workouts.length > 0)
-        .map((dayWorkout, index) => ({
-          day: dayWorkout.day,
-          day_order: index,
-          workout_name: `${dayWorkout.day} Workout`,
-          description: `${dayWorkout.workouts.length} exercises`,
-          workouts: dayWorkout.workouts.map(workout => ({
-            activity_name: workout.activity_name,
-            sets: workout.sets,
-            reps: workout.reps.toString()
-          }))
-        }));
+        // Create the routine
+        await simpleRoutineApi.createRoutineWithWorkoutPlan({
+          routine_data: routineData,
+          workout_days: workoutDaysData
+        });
 
-      // Update the routine
-      await simpleRoutineApi.updateRoutineWithWorkoutPlan(routine.id, {
-        routine_data: routineData,
-        workout_days: workoutDays
-      });
+        toast.success('Routine created successfully!');
+        onRoutineUpdated();
+        onClose();
+      } catch (error) {
+        console.error('Failed to create routine:', error);
+        toast.error('Failed to create routine. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (mode === 'edit' && routine) {
+      // Edit mode - update existing routine
+      if (!routineName.trim()) {
+        toast.error('Please enter a routine name');
+        return;
+      }
 
-      toast.success('Routine updated successfully!');
-      onRoutineUpdated();
-      onClose();
-    } catch (error) {
-      console.error('Failed to update routine:', error);
-      toast.error('Failed to update routine. Please try again.');
-    } finally {
-      setLoading(false);
+      const totalExercises = getTotalExercises();
+      if (totalExercises === 0) {
+        toast.error('Please add at least one exercise');
+        return;
+      }
+
+      setLoading(true);
+      try {
+        // Prepare routine data
+        const routineData = {
+          name: routineName.trim(),
+          description: routineDescription.trim() || `Custom routine with ${totalExercises} exercises across ${workoutDays.filter(d => d.exercises.length > 0).length} days`,
+          difficulty: routine.difficulty,
+          duration_weeks: routine.duration_weeks
+        };
+
+        // Prepare workout days data
+        const workoutDaysData = workoutDays
+          .filter(day => day.exercises.length > 0)
+          .map((day, index) => ({
+            day: day.day_name,
+            day_order: day.day_order || index,
+            workout_name: day.workout_name,
+            description: day.description || `${day.exercises.length} exercises`,
+            workouts: day.exercises.map(exercise => ({
+              activity_name: exercise.exercise_name,
+              sets: exercise.sets,
+              reps: exercise.reps.toString()
+            }))
+          }));
+
+        // Update the routine
+        await simpleRoutineApi.updateRoutineWithWorkoutPlan(routine.id, {
+          routine_data: routineData,
+          workout_days: workoutDaysData
+        });
+
+        toast.success('Routine updated successfully!');
+        onRoutineUpdated();
+        onClose();
+      } catch (error) {
+        console.error('Failed to update routine:', error);
+        toast.error('Failed to update routine. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  if (!routine) return null;
+  if (mode === 'edit' && !routine) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Routine: {routine.name}</DialogTitle>
-          <DialogDescription>
-            Modify your workout routine by updating the name, activity types, and daily workout plans.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Routine Name */}
-          <div className="space-y-2">
-            <Label htmlFor="routine-name">Routine Name</Label>
-            <Input
-              id="routine-name"
-              value={routineName}
-              onChange={(e) => setRoutineName(e.target.value)}
-              placeholder="Enter routine name"
-            />
-          </div>
-
-          {/* Activity Type Selection */}
-          <div className="space-y-3">
-            <Label>Activity Types</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {ACTIVITY_TYPES.map(activityType => (
-                <label key={activityType} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={selectedActivityTypes.includes(activityType)}
-                    onChange={() => toggleActivityType(activityType)}
-                    className="rounded"
-                  />
-                  <span className="text-sm capitalize">{activityType.replace('_', ' ')}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Weekly Workout Plan */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Weekly Workout Plan</h3>
-            {DAYS_OF_WEEK.map(day => {
-              const dayWorkout = dayWorkouts.find(d => d.day === day);
-              return (
-                <Card key={day} className="border-solid border-gray-200 dark:border-gray-700">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center justify-between">
-                      {day}
-                      <Button
-                        onClick={() => addWorkoutToDay(day)}
-                        disabled={selectedActivityTypes.length === 0}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <PlusIcon className="h-4 w-4 mr-1" />
-                        Add Workout
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {dayWorkout?.workouts.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {selectedActivityTypes.length === 0 
-                          ? 'Select activity types above to add workouts'
-                          : 'No workouts added for this day'
+      <DialogContent className="max-w-4xl h-[80vh] overflow-visible p-0 bg-white dark:bg-gray-900 border-0 shadow-2xl flex flex-col [&>button]:absolute [&>button]:top-4 [&>button]:right-4 [&>button]:z-30">
+        <div className="flex flex-col h-full min-h-0">
+                {/* Clean Header - Fixed at top with proper z-index */}
+                <DialogHeader className="flex-shrink-0 border-b border-gray-200 dark:border-gray-700 px-6 py-4 bg-white dark:bg-gray-900 z-10 relative">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 pr-4">
+                      <DialogTitle className="text-xl font-bold text-gray-900 dark:text-white">
+                        {mode === 'create' ? 'Create Custom Routine' : `Edit Routine: ${routine?.name}`}
+                      </DialogTitle>
+                      <DialogDescription className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                        {mode === 'create' 
+                          ? 'Build a personalized workout routine by selecting exercises and planning workouts for each day of the week.'
+                          : 'Modify your workout routine by updating the name, description, and daily exercise plans.'
                         }
-                      </p>
-                    ) : (
-                      dayWorkout?.workouts.map((workout, workoutIndex) => (
-                        <div key={workoutIndex} className="grid grid-cols-1 md:grid-cols-4 gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div>
-                            <Label className="text-xs">Activity Type</Label>
-                            <Select
-                              value={workout.activity_type}
-                              onValueChange={(value) => updateWorkout(day, workoutIndex, 'activity_type', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {selectedActivityTypes.map(type => (
-                                  <SelectItem key={type} value={type}>
-                                    {type.replace('_', ' ')}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label className="text-xs">Exercise Name</Label>
-                            <Input
-                              value={workout.activity_name}
-                              onChange={(e) => updateWorkout(day, workoutIndex, 'activity_name', e.target.value)}
-                              placeholder="Exercise name"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Sets</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="20"
-                              value={workout.sets || ''}
-                              onChange={(e) => updateWorkout(day, workoutIndex, 'sets', parseInt(e.target.value) || 1)}
-                              placeholder="e.g. 3"
-                              className="placeholder:text-gray-400 placeholder:italic"
-                            />
-                          </div>
-                          <div className="flex items-end gap-1">
-                            <div className="flex-1">
-                              <Label className="text-xs">Reps</Label>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="100"
-                                value={workout.reps || ''}
-                                onChange={(e) => updateWorkout(day, workoutIndex, 'reps', parseInt(e.target.value) || 1)}
-                                placeholder="e.g. 12"
-                                className="placeholder:text-gray-400 placeholder:italic"
-                              />
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
+          
+          {/* Scrollable content area - Allow dropdown to escape */}
+          <div className="flex-1 overflow-y-auto overflow-x-visible min-h-0 relative z-10">
+            <div className="p-4">
+              <div className="space-y-4">
+                {/* Routine Details */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="space-y-2">
+                    <Label htmlFor="routineName" className="text-sm font-semibold text-gray-700 dark:text-gray-300">Routine Name</Label>
+                    <Input
+                      id="routineName"
+                      value={routineName}
+                      onChange={(e) => setRoutineName(e.target.value)}
+                      placeholder="e.g., My Custom Workout"
+                      className="border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                {/* Daily Workout Plan */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">Weekly Workout Plan</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Plan your exercises for each day of the week</p>
+                    </div>
+                    <div className="bg-indigo-100 dark:bg-indigo-900 px-3 py-1.5 rounded-full">
+                      <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                        {getTotalExercises()} total workouts
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {DAYS_OF_WEEK.map(day => {
+                      const dayData = workoutDays.find(d => d.day_name === day);
+                      const exercises = dayData?.exercises || [];
+                      console.log(`🔍 Rendering ${day}:`, { dayData, exercises: exercises.length });
+                      
+                      return (
+                        <div key={day} className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
+                          <div className="p-4 pb-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white font-bold text-xs">{day.charAt(0)}</span>
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900 dark:text-white">{day}</h3>
+                              </div>
+                              <Button 
+                                onClick={() => addExerciseToDay(day)} 
+                                size="sm"
+                                className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3 py-1.5 h-auto"
+                              >
+                                <PlusIcon className="h-3 w-3 mr-1" />
+                                Add Workout
+                              </Button>
                             </div>
-                            <Button
-                              onClick={() => removeWorkout(day, workoutIndex)}
-                              size="sm"
-                              variant="outline"
-                              className="px-2 text-red-600 hover:text-red-700"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
+                          </div>
+                          <div className="px-4 pb-4">
+                            {exercises.length === 0 ? (
+                              <div className="text-center py-2 text-gray-500 text-sm">
+                                <p>No workouts planned for {day}</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {exercises.map((exercise, index) => {
+                                  console.log(`🔍 Rendering exercise ${index} for ${day}:`, exercise);
+                                  console.log(`🔍 Current exercise name: "${exercise.exercise_name}"`);
+                                  console.log(`🔍 Available exercises:`, allExercises.slice(0, 5).map(ex => ex.name));
+                                  console.log(`🔍 Exercise name matches available:`, allExercises.some(ex => ex.name === exercise.exercise_name));
+                                  return (
+                                    <div key={index} className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 space-y-3 shadow-sm">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
+                                          <span className="text-white font-bold text-xs">{index + 1}</span>
+                                        </div>
+                                        <h4 className="font-semibold text-gray-900 dark:text-white">Workout {index + 1}</h4>
+                                      </div>
+                                      <Button
+                                        onClick={() => removeExercise(day, index)}
+                                        variant="outline"
+                                        size="sm"
+                                        className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 hover:text-red-700"
+                                      >
+                                        <TrashIcon className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                    
+                                    {/* Exercise Details */}
+                                    <div className="space-y-4">
+                                      {/* Exercise Name - Full Width */}
+                                      <div>
+                                        <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">Exercise Name</Label>
+                                        <SearchableDropdown
+                                          options={allExercises.map(ex => ({
+                                            value: ex.name,
+                                            label: ex.name
+                                          }))}
+                                          value={exercise.exercise_name}
+                                          onChange={(option) => {
+                                            console.log('🔍 Exercise selected:', option);
+                                            if (option) {
+                                              // Find the selected exercise to get its logging category
+                                              const selectedExercise = allExercises.find(ex => ex.name === option.value);
+                                              if (selectedExercise) {
+                                                updateExercise(day, index, 'exercise_name', option.value);
+                                                updateExercise(day, index, 'logging_category', selectedExercise.logging_category);
+                                              }
+                                            } else {
+                                              updateExercise(day, index, 'exercise_name', '');
+                                              updateExercise(day, index, 'logging_category', 'weighted');
+                                            }
+                                          }}
+                                          placeholder={exercise.exercise_name || "Search and select exercise..."}
+                                          className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                                        />
+                                      </div>
+                                      
+                                      {/* Dynamic Fields Based on Exercise Category */}
+                                      {(() => {
+                                        const category = exercise.logging_category || 'weighted';
+                                        const formFields = getFormFieldsForCategory(category);
+                                        
+                                        return (
+                                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {formFields.map((field) => {
+                                              const fieldName = field.name as keyof Exercise;
+                                              const fieldValue = exercise[fieldName];
+                                              
+                                              return (
+                                                <div key={field.name} className={field.name === 'notes' ? 'sm:col-span-2 lg:col-span-3' : ''}>
+                                                  <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
+                                                    {getFieldDisplayName(field.name)}
+                                                    {field.name === 'sets' || field.name === 'reps' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? ' *' : ''}
+                                                  </Label>
+                                                  
+                                                  {field.type === 'select' ? (
+                                                    <Select
+                                                      value={fieldValue as string || ''}
+                                                      onValueChange={(value) => updateExercise(day, index, fieldName, value)}
+                                                    >
+                                                      <SelectTrigger className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg">
+                                                        <SelectValue placeholder={`Select ${getFieldDisplayName(field.name)}`} />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        {field.options?.map((option) => (
+                                                          <SelectItem key={option} value={option}>
+                                                            {option}
+                                                          </SelectItem>
+                                                        ))}
+                                                      </SelectContent>
+                                                    </Select>
+                                                  ) : field.type === 'number' ? (
+                                                    <Input
+                                                      type="number"
+                                                      min={field.min || 0}
+                                                      max={field.max || 9999}
+                                                      value={fieldValue as number || ''}
+                                                      onChange={(e) => updateExercise(day, index, fieldName, field.name === 'sets' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? parseInt(e.target.value) || 0 : e.target.value)}
+                                                      placeholder={field.label}
+                                                      className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                                                    />
+                                                  ) : (
+                                                    <Input
+                                                      value={fieldValue as string || ''}
+                                                      onChange={(e) => updateExercise(day, index, fieldName, e.target.value)}
+                                                      placeholder={field.label}
+                                                      maxLength={field.max_length || undefined}
+                                                      className="w-full border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                                                    />
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
-                      ))
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-          {/* Summary */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-            <div className="text-sm text-blue-800 dark:text-blue-200">
-              <div className="font-medium mb-2">Routine Summary:</div>
-              <div>• Name: {routineName || 'Untitled'}</div>
-              <div>• Activity Types: {selectedActivityTypes.length}</div>
-              <div>• Total Workouts: {getTotalWorkouts()}</div>
-              <div>• Active Days: {dayWorkouts.filter(d => d.workouts.length > 0).length}</div>
+                {/* Actions - Aligned with other containers */}
+                <div className="flex justify-end gap-3 pt-4">
+                  <Button onClick={onClose} variant="outline" disabled={loading} className="px-6 py-2">
+                    Cancel
+                  </Button>
+                         <Button 
+                           onClick={handleSave} 
+                           disabled={loading || !routineName.trim() || getTotalExercises() === 0}
+                           className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2"
+                         >
+                           {loading 
+                             ? (mode === 'create' ? 'Creating...' : 'Updating...') 
+                             : (mode === 'create' ? 'Create Routine' : 'Update Routine')
+                           }
+                         </Button>
+                </div>
+              </div>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-3">
-            <Button onClick={onClose} variant="outline" disabled={loading}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={loading || !routineName.trim() || selectedActivityTypes.length === 0 || getTotalWorkouts() === 0}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {loading ? 'Updating...' : 'Update Routine'}
-            </Button>
           </div>
         </div>
       </DialogContent>

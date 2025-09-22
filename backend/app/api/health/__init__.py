@@ -11,7 +11,7 @@ from . import (
     foods,
     contextual_logging,
     insights,
-    fitness_logs,
+    fitness_logs_generated as fitness_logs,
     nutrition_logs,
     profile,
     analytics

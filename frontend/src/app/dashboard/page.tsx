@@ -24,6 +24,8 @@ import {
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
 import { nutritionRoutineApi } from '@/lib/nutritionRoutineApi';
 import { QuickRoutineLogger } from '@/components/health/QuickRoutineLogger';
+import { DashboardLoading, PageLoading } from '@/components/ui/loading-states';
+import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 import api from '@/lib/api';
 
 interface ActiveRoutine {
@@ -77,9 +79,13 @@ export default function DashboardPage() {
   });
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [loading, setLoading] = useState(false);
-  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  
+  // Use the custom onboarding check hook
+  const { onboardingStatus, isChecking: checkingOnboarding } = useOnboardingCheck({
+    redirectOnIncomplete: true,
+    redirectOnError: true
+  });
 
   // Update time every minute
   useEffect(() => {
@@ -307,45 +313,25 @@ export default function DashboardPage() {
     return 'breakfast'; // Tomorrow's breakfast
   };
 
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      if (!isAuthenticated) {
-        return;
-      }
-
-      try {
-        const response = await api.get('/health/onboarding/status');
-        setOnboardingStatus(response.completed);
-        if (!response.completed) {
-          router.push('/onboarding');
-        }
-      } catch (error) {
-        console.error('Failed to check onboarding status:', error);
-        setOnboardingStatus(false);
-        router.push('/onboarding');
-      }
-    };
-
-    checkOnboarding();
-  }, [isAuthenticated, router]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      loadDashboardData();
+      // Small delay to ensure token is available in localStorage
+      const timer = setTimeout(() => {
+        loadDashboardData();
+      }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [isAuthenticated, loadDashboardData]);
 
   if (!isAuthenticated || onboardingStatus === false) {
     return (
       <ProtectedRoute>
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              {!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
-            </p>
-          </div>
-        </div>
+        <PageLoading 
+          message={!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
+          className="min-h-[calc(100vh-4rem)]"
+        />
       </ProtectedRoute>
     );
   }
@@ -353,13 +339,10 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <ProtectedRoute>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading your data...</p>
-              </div>
+            <div className="max-w-4xl mx-auto">
+              <DashboardLoading />
             </div>
           </div>
         </div>
@@ -385,6 +368,22 @@ export default function DashboardPage() {
                     <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
                       Welcome back! Track your health journey and stay on top of your fitness and nutrition goals.
                     </p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
+                      <button
+                        onClick={() => router.push('/fitness')}
+                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      >
+                        <FireIcon className="h-5 w-5" />
+                        <span>Go to Fitness</span>
+                      </button>
+                      <button
+                        onClick={() => router.push('/nutrition')}
+                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
+                      >
+                        <HeartIcon className="h-5 w-5" />
+                        <span>Go to Nutrition</span>
+                      </button>
+                    </div>
                     <div className="flex flex-wrap items-center gap-3 text-white/80">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
@@ -399,13 +398,6 @@ export default function DashboardPage() {
                         <span className="text-sm">Smart Insights</span>
                       </div>
                     </div>
-                  <div className="mt-4 text-white/70">
-                    {currentTime.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </div>
                 </div>
                 <div className="hidden md:block">
                   <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">

@@ -72,12 +72,12 @@ class Settings(BaseSettings):
         """Validate database URI format."""
         if not v:
             raise ValueError("SQLALCHEMY_DATABASE_URI must be set")
-        if not v.startswith(("postgresql://", "sqlite:///")):
-            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL or SQLite URI")
+        if not v.startswith("postgresql://"):
+            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL URI")
         return v
 
     # Database settings - PostgreSQL only
-    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/ai_companion_powerbi"
+    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/healthlog_db"
 
     # User management
     FIRST_SUPERUSER: str = "admin@example.com"

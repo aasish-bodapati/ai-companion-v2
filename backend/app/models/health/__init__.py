@@ -8,7 +8,7 @@ from .simple_routine import SimpleRoutine, SimpleUserRoutineProgress
 from .nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress
 from .workout_categories import WorkoutCategory
 from .weight_logs import UserWeightLog
-from .exercise_database import Exercise, UserExerciseHistory
+# from .exercise_database import Exercise, UserExerciseHistory
 from .exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum
 __all__ = [
     "FitnessLog",
@@ -21,8 +21,8 @@ __all__ = [
     "NutritionUserRoutineProgress",
     "WorkoutCategory",
     "UserWeightLog",
-    "Exercise",
-    "UserExerciseHistory",
+    # "Exercise",
+    # "UserExerciseHistory",
     "ExerciseLoggingCategory",
     "ExerciseLoggingCategoryEnum",
 ]

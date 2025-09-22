@@ -1,7 +1,13 @@
 from sqlalchemy import Boolean, Column, String, Integer
 from sqlalchemy.orm import relationship
+from typing import TYPE_CHECKING
 
 from app.db.base_class import Base
+
+if TYPE_CHECKING:
+    from app.models.health.user_goal import UserGoal
+    from app.models.health.exercise_database import UserExerciseHistory
+    from app.models.health.food_database import UserFoodHistory
 
 class User(Base):
     """User model for authentication and authorization."""
@@ -65,17 +71,24 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
-    # New relationships for exercise and food databases
-    exercise_history = relationship(
-        "UserExerciseHistory",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
-    food_history = relationship(
-        "UserFoodHistory",
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
+    # Exercise database relationship - commented out to avoid circular import issues
+    # exercise_history = relationship(
+    #     "UserExerciseHistory",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    # )
+    # Food database relationship - commented out to avoid circular import issues
+    # food_history = relationship(
+    #     "UserFoodHistory",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    # )
+    # User goals relationship - commented out to avoid circular import issues
+    # goals = relationship(
+    #     "UserGoal",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan",
+    # )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}'>"

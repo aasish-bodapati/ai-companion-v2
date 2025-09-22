@@ -73,14 +73,12 @@ def get_fitness_logs(
         # Convert logs to response format
         logs_data = []
         for log in logs:
-            # Create exercise details from individual workout fields
+            # Create exercise details - simplified to core tracking only
             exercises = []
-            if log.weight_kg is not None or log.reps is not None or log.sets is not None:
+            if log.activity_name:
                 exercise_detail = {
-                    "exercise_name": log.activity_name or log.activity_type,
-                    "sets": log.sets,
-                    "reps": str(log.reps) if log.reps else "0",
-                    "weight_used": log.weight_kg,
+                    "exercise_name": log.activity_name,
+                    "activity_type": log.activity_type,
                     "notes": log.notes
                 }
                 exercises.append(exercise_detail)
@@ -123,26 +121,24 @@ def get_fitness_logs(
         print(f"Error getting fitness logs: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve fitness logs")
 
-@router.get("/{log_id}", response_model=dict)
+@router.get("/{id}", response_model=dict)
 def get_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    log_id: str
+    id: str
 ):
     """Get a specific fitness log by ID."""
-    log = fitness_log.get(db, id=log_id)
+    log = fitness_log.get(db, id=id)
     if not log or log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Fitness log not found")
 
-    # Create exercise details from individual workout fields
+    # Create exercise details - simplified to core tracking only
     exercises = []
-    if log.weight_kg is not None or log.reps is not None or log.sets is not None:
+    if log.activity_name:
         exercise_detail = {
-            "exercise_name": log.activity_name or log.activity_type,
-            "sets": log.sets,
-            "reps": str(log.reps) if log.reps else "0",
-            "weight_used": log.weight_kg,
+            "exercise_name": log.activity_name,
+            "activity_type": log.activity_type,
             "notes": log.notes
         }
         exercises.append(exercise_detail)
@@ -215,16 +211,16 @@ def create_fitness_log(
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to create fitness log")
 
-@router.put("/{log_id}", response_model=dict)
+@router.put("/{id}", response_model=dict)
 def update_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    log_id: str,
+    id: str,
     log_data: FitnessLogUpdate
 ):
     """Update an existing fitness log."""
-    log = fitness_log.get(db, id=log_id)
+    log = fitness_log.get(db, id=id)
     if not log or log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Fitness log not found")
 
@@ -253,20 +249,20 @@ def update_fitness_log(
         print(f"Error updating fitness log: {e}")
         raise HTTPException(status_code=500, detail="Failed to update fitness log")
 
-@router.delete("/{log_id}")
+@router.delete("/{id}")
 def delete_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    log_id: str
+    id: str
 ):
     """Delete a fitness log."""
-    log = fitness_log.get(db, id=log_id)
+    log = fitness_log.get(db, id=id)
     if not log or log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Fitness log not found")
 
     try:
-        fitness_log.remove(db, id=log_id)
+        fitness_log.remove(db, id=id)
         return {"message": "Fitness log deleted successfully"}
     except Exception as e:
         print(f"Error deleting fitness log: {e}")

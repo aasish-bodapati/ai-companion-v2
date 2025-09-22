@@ -5,11 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { SimpleNutritionLogForm } from '@/features/health/components/SimpleNutritionLogForm';
-import { ProgressiveNutritionLogger } from '@/components/health/ProgressiveNutritionLogger';
-import { NutritionRoutineManager } from '@/features/health/components/NutritionRoutineManager';
-import { SmartMealLogger } from '@/components/health/SmartMealLogger';
-import NutritionLogsView from '@/components/health/NutritionLogsViewFitness';
+import { UnifiedLogger } from '@/components/health/UnifiedLogger';
+import { NutritionRoutineTemplates } from '@/components/health/NutritionRoutineTemplates';
+import NutritionLogsView from '@/components/health/NutritionLogsView';
 import { 
   HeartIcon, 
   ChartBarIcon, 
@@ -23,15 +21,24 @@ import {
 } from '@heroicons/react/24/outline';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageLoading, CardLoading } from '@/components/ui/loading-states';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { AnimatedCard } from '@/components/ui/micro-interactions';
+import { useOnboardingCheck } from '@/hooks/useOnboardingCheck';
 import api from '@/lib/api';
 
 export default function NutritionPage() {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
-  const [onboardingStatus, setOnboardingStatus] = useState<boolean | null>(null);
-  const [checkingOnboarding, setCheckingOnboarding] = useState(false);
+  
+  // Use the custom onboarding check hook
+  const { onboardingStatus, isChecking: checkingOnboarding } = useOnboardingCheck({
+    redirectOnIncomplete: true,
+    redirectOnError: true
+  });
   const [activeTab, setActiveTab] = useState('logs');
-  const [showSmartLogger, setShowSmartLogger] = useState(false);
+  const [showUnifiedLogger, setShowUnifiedLogger] = useState(false);
   const [mealSuccess, setMealSuccess] = useState(false);
   const [todayStats, setTodayStats] = useState({
     meals: 0,
@@ -41,29 +48,6 @@ export default function NutritionPage() {
     fat: 0
   });
 
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      if (!isAuthenticated) {
-        return;
-      }
-
-      try {
-        const response = await api.get('/health/onboarding/status');
-        setOnboardingStatus(response.completed);
-        if (!response.completed) {
-          router.push('/onboarding');
-        }
-      } catch (error) {
-        console.error('Failed to check onboarding status:', error);
-        setOnboardingStatus(false);
-        router.push('/onboarding');
-      }
-    };
-
-    if (isAuthenticated !== null) {
-      checkOnboarding();
-    }
-  }, [isAuthenticated, router]);
 
   const handleLogSuccess = useCallback(async () => {
     // Refresh real data from API
@@ -130,14 +114,10 @@ export default function NutritionPage() {
   if (!isAuthenticated || onboardingStatus === false) {
     return (
       <ProtectedRoute>
-        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-          <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">
-              {!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
-            </p>
-          </div>
-        </div>
+        <PageLoading 
+          message={!isAuthenticated ? 'Loading...' : 'Redirecting to onboarding...'}
+          className="min-h-[calc(100vh-4rem)]"
+        />
       </ProtectedRoute>
     );
   }
@@ -162,7 +142,7 @@ export default function NutritionPage() {
                       </p>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                       <button
-                        onClick={() => setShowSmartLogger(true)}
+                        onClick={() => setShowUnifiedLogger(true)}
                         className={`bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                           mealSuccess ? 'animate-pulse bg-green-500/20 border-2 border-green-400' : ''
                         }`}
@@ -172,7 +152,7 @@ export default function NutritionPage() {
                       </button>
                       <button
                         onClick={() => setActiveTab('routines')}
-                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 transition-all duration-200 backdrop-blur-sm"
+                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
                       >
                         <ChartBarIcon className="h-5 w-5" />
                         View Routines
@@ -203,56 +183,62 @@ export default function NutritionPage() {
             </div>
 
             {/* Today's Nutrition Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-              <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm font-medium">Meals Today</p>
-                    <p className="text-3xl font-bold">{todayStats.meals}</p>
-                  </div>
-                  <HeartIcon className="h-8 w-8 text-green-200" />
-                </div>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100 text-sm font-medium">Meals Today</p>
+                        <p className="text-3xl font-bold">{todayStats.meals}</p>
+                      </div>
+                      <HeartIcon className="h-8 w-8 text-green-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm font-medium">Calories</p>
-                    <p className="text-3xl font-bold">{todayStats.calories}</p>
-                  </div>
-                  <FireIcon className="h-8 w-8 text-blue-200" />
-                </div>
-              </div>
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm font-medium">Calories</p>
+                        <p className="text-3xl font-bold">{todayStats.calories}</p>
+                      </div>
+                      <FireIcon className="h-8 w-8 text-blue-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-purple-100 text-sm font-medium">Protein (g)</p>
-                    <p className="text-3xl font-bold">{todayStats.protein}</p>
-                  </div>
-                  <TrophyIcon className="h-8 w-8 text-purple-200" />
-                </div>
-              </div>
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white" data-testid="stats-card">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm font-medium">Protein (g)</p>
+                        <p className="text-3xl font-bold">{todayStats.protein}</p>
+                      </div>
+                      <TrophyIcon className="h-8 w-8 text-purple-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
 
-              <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm font-medium">Carbs (g)</p>
-                    <p className="text-3xl font-bold">{todayStats.carbs}</p>
-                  </div>
-                  <ChartBarIcon className="h-8 w-8 text-orange-200" />
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-2xl p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-red-100 text-sm font-medium">Fat (g)</p>
-                    <p className="text-3xl font-bold">{todayStats.fat}</p>
-                  </div>
-                  <ClockIcon className="h-8 w-8 text-red-200" />
-                </div>
-              </div>
+              <AnimatedCard hover={true} onClick={() => setShowUnifiedLogger(true)}>
+                <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-200 cursor-pointer">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm font-medium">Quick Log</p>
+                        <p className="text-lg font-bold">Log Meal</p>
+                      </div>
+                      <BoltIcon className="h-8 w-8 text-orange-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </AnimatedCard>
             </div>
 
             {/* Main Content */}
@@ -286,7 +272,7 @@ export default function NutritionPage() {
                   </TabsContent>
 
                   <TabsContent value="routines" className="space-y-6">
-                    <NutritionRoutineManager />
+                    <NutritionRoutineTemplates onRoutineSelected={() => setMealSuccess(true)} />
                   </TabsContent>
 
                   <TabsContent value="log" className="space-y-6">
@@ -321,9 +307,18 @@ export default function NutritionPage() {
                             Step-by-step meal logging with food search and nutrition calculation
                           </p>
                         </div>
-                        <ProgressiveNutritionLogger 
-                          onSuccess={handleLogSuccess}
-                        />
+                        <div className="text-center py-8">
+                          <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            Use the "Log Meal" button above to start logging your nutrition.
+                          </p>
+                          <Button 
+                            onClick={() => setShowUnifiedLogger(true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Log Meal
+                          </Button>
+                        </div>
                       </TabsContent>
                       
                       <TabsContent value="simple" className="space-y-6">
@@ -336,7 +331,18 @@ export default function NutritionPage() {
                             Quick manual nutrition entry for experienced users
                           </p>
                         </div>
-                        <SimpleNutritionLogForm onSuccess={handleLogSuccess} />
+                        <div className="text-center py-8">
+                          <p className="text-gray-600 dark:text-gray-400 mb-4">
+                            Use the "Log Meal" button above to start logging your nutrition.
+                          </p>
+                          <Button 
+                            onClick={() => setShowUnifiedLogger(true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <PlusIcon className="h-4 w-4 mr-2" />
+                            Log Meal
+                          </Button>
+                        </div>
                       </TabsContent>
                     </Tabs>
                   </TabsContent>
@@ -430,11 +436,12 @@ export default function NutritionPage() {
           </div>
         </div>
 
-        {/* Smart Meal Logger Modal */}
-        <SmartMealLogger
-          isOpen={showSmartLogger}
-          onClose={() => setShowSmartLogger(false)}
+        {/* Unified Logger Modal */}
+        <UnifiedLogger
+          isOpen={showUnifiedLogger}
+          onClose={() => setShowUnifiedLogger(false)}
           onSuccess={handleLogSuccess}
+          type="nutrition"
         />
       </div>
       </ProtectedRoute>

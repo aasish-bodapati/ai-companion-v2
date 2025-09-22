@@ -13,6 +13,7 @@ from app.models.health import (
 from app.models.health.exercise_database import Exercise, UserExerciseHistory
 from app.models.health.food_database import Food, UserFoodHistory
 from app.models.health.food_log_items import FoodLogItem
+from app.models.health.user_goal import UserGoal
 
 # This will make all models available for SQLAlchemy to discover
 __all__ = [
@@ -30,6 +31,7 @@ __all__ = [
     "Exercise",
     "UserExerciseHistory",
     "Food",
-    "UserFoodHistory", 
+    "UserFoodHistory",
     "FoodLogItem",
+    "UserGoal",
 ]

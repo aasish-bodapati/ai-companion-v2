@@ -204,3 +204,89 @@
 - **Performance:** Better code splitting and optimization
 - **Developer Experience:** Cleaner code structure
 - **Scalability:** Easier to add new features
+
+## Recent Improvements (Completed)
+
+### Database Data Import
+**File:** `backend/import_wger_simple.py`
+**Improvement:** Created simplified wger.de data import script that only imports necessary columns
+**Details:**
+- Only imports `name` and `logging_category` columns to match our simplified schema
+- Successfully imported 654 exercises from wger.de API
+- Categories: 604 weighted, 40 cardio_duration, 10 hold_static
+- Resolved CORS and 500 errors by populating empty database tables
+- API endpoints now return data instead of empty arrays
+
+**Benefits:**
+- Database now has real exercise data for testing and development
+- API endpoints are fully functional
+- Simplified import process focuses only on required fields
+- Proper error handling and batch processing for large imports
+
+### 6-Day PPL Routine Seeding
+**File:** `backend/create_ppl_routine.sql`
+**Improvement:** Created comprehensive 6-day Push/Pull/Legs routine for test@example.com
+**Details:**
+- Created complete PPL routine with 6 workout days (Monday-Saturday)
+- Each day contains 6 exercises with sets, reps, weight notes, rest times, and notes
+- Routine includes: 2 Push days, 2 Pull days, 2 Leg days
+- Total: 36 exercises across 6 workout days
+- Difficulty: Intermediate, Duration: 8 weeks
+- Successfully tested API endpoints returning routine data
+
+**Benefits:**
+- Test user now has a complete workout routine for testing
+- Demonstrates full routine structure with exercises and progression
+- API endpoints return real routine data instead of empty arrays
+- Provides realistic test data for frontend development
+
+### View Routine Button Addition
+**File:** `frontend/src/components/health/SimpleRoutineTemplates.tsx`
+**Improvement:** Added "View Routine" button to routine cards for better user experience
+**Details:**
+- Added green "View Routine" button with eye icon to all routine cards
+- Button displays routine details including workout schedule and exercise counts
+- Available for all routines (both user-created and templates)
+- Positioned between "Set as Active" and "Edit/Delete" buttons for logical flow
+- Uses consistent styling with other action buttons
+
+**Benefits:**
+- Users can quickly preview routine details without editing
+- Better UX for routine selection and comparison
+- Consistent button layout and visual hierarchy
+- Easy access to routine information before committing to a routine
+
+### Professional Routine View Modal
+**File:** `frontend/src/components/health/RoutineViewModal.tsx`
+**Improvement:** Replaced basic alert with professional modal component matching app design system
+**Details:**
+- Created dedicated modal component with proper Dialog, Card, and Badge components
+- Added gradient header with fire icon and routine name
+- Color-coded difficulty badges (green/yellow/red for beginner/intermediate/advanced)
+- Status indicator showing if routine is currently active
+- Action buttons for Set Active/Inactive, Edit, and Delete
+- Responsive design with proper dark mode support
+- Consistent styling with other modals in the application
+
+**Benefits:**
+- Professional appearance matching app design system
+- Better user experience with proper modal interaction
+- All routine actions available directly from view modal
+- Responsive design works on all screen sizes
+- Consistent with other components in the application
+
+### Routine API Bug Fixes
+**File:** `backend/app/api/health/simple_routines.py`
+**Improvement:** Fixed critical bugs in routine start/stop/log-workout endpoints
+**Details:**
+- Fixed `start_routine` endpoint: Changed `id=id` to `routine_id=int(id)` in SimpleUserRoutineProgress creation
+- Fixed `stop_routine` endpoint: Changed `progress.id == id` to `progress.routine_id == int(id)`
+- Fixed `log_workout` endpoint: Changed `progress.id != id` to `progress.routine_id != int(id)`
+- All endpoints now work correctly with proper foreign key relationships
+
+**Benefits:**
+- "Set as Active" button now works without CORS/500 errors
+- "Set as Inactive" button functions properly
+- Workout logging will work when implemented
+- Proper database relationships maintained
+- All routine management features now functional

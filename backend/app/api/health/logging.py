@@ -85,8 +85,9 @@ async def get_fitness_today(
         total_calories = sum(log.calories_burned or 0 for log in logs)
 
         # Convert intensity strings to numbers for average calculation
+        # Note: intensity field doesn't exist in current FitnessLog model
         intensity_map = {'low': 3, 'medium': 6, 'high': 9}
-        intensity_values = [intensity_map.get(log.intensity, 0) for log in logs if log.intensity]
+        intensity_values = [intensity_map.get(getattr(log, 'intensity', None), 0) for log in logs if hasattr(log, 'intensity') and getattr(log, 'intensity', None)]
         avg_intensity = sum(intensity_values) / len(intensity_values) if intensity_values else 0
 
         return {
@@ -355,16 +356,16 @@ async def get_fitness_logs(
         logger.error(f"Error getting fitness logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get fitness logs")
 
-@router.get("/fitness/{fitness_log_id}", response_model=FitnessLog)
+@router.get("/fitness/{id}", response_model=FitnessLog)
 async def get_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    fitness_log_id: UUID
+    id: UUID
 ):
     """Get a specific fitness log by ID."""
     try:
-        fitness_log_entry = fitness_log.get(db, id=str(fitness_log_id))
+        fitness_log_entry = fitness_log.get(db, id=str(id))
         if not fitness_log_entry or fitness_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Fitness log not found")
         return fitness_log_entry
@@ -374,17 +375,17 @@ async def get_fitness_log(
         logger.error(f"Error getting fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get fitness log")
 
-@router.put("/fitness/{fitness_log_id}", response_model=FitnessLog)
+@router.put("/fitness/{id}", response_model=FitnessLog)
 async def update_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    fitness_log_id: UUID,
+    id: UUID,
     fitness_log_in: FitnessLogUpdate
 ):
     """Update a fitness log entry."""
     try:
-        fitness_log_entry = fitness_log.get(db, id=str(fitness_log_id))
+        fitness_log_entry = fitness_log.get(db, id=str(id))
         if not fitness_log_entry or fitness_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Fitness log not found")
 
@@ -398,20 +399,20 @@ async def update_fitness_log(
         logger.error(f"Error updating fitness log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update fitness log")
 
-@router.delete("/fitness/{fitness_log_id}")
+@router.delete("/fitness/{id}")
 async def delete_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    fitness_log_id: UUID
+    id: UUID
 ):
     """Delete a fitness log entry."""
     try:
-        fitness_log_entry = fitness_log.get(db, id=str(fitness_log_id))
+        fitness_log_entry = fitness_log.get(db, id=str(id))
         if not fitness_log_entry or fitness_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Fitness log not found")
 
-        fitness_log.remove(db, id=str(fitness_log_id))
+        fitness_log.remove(db, id=str(id))
         return {"message": "Fitness log deleted successfully"}
     except HTTPException:
         raise
@@ -435,6 +436,9 @@ async def create_nutrition_log(
         nutrition_log_entry = nutrition_log.create_with_user(
             db, obj_in=nutrition_log_in, user_id=current_user.id
         )
+        # Convert IDs to strings to match the schema
+        nutrition_log_entry.id = str(nutrition_log_entry.id)
+        nutrition_log_entry.user_id = str(nutrition_log_entry.user_id)
         return nutrition_log_entry
     except Exception as e:
         logger.error(f"Error creating nutrition log: {str(e)}")
@@ -460,23 +464,30 @@ async def get_nutrition_logs(
             start_date=start_date,
             end_date=end_date
         )
+        # Convert IDs to strings to match the schema
+        for log in logs:
+            log.id = str(log.id)
+            log.user_id = str(log.user_id)
         return logs
     except Exception as e:
         logger.error(f"Error getting nutrition logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get nutrition logs")
 
-@router.get("/nutrition/{nutrition_log_id}", response_model=NutritionLog)
+@router.get("/nutrition/{id}", response_model=NutritionLog)
 async def get_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    nutrition_log_id: UUID
+    id: UUID
 ):
     """Get a specific nutrition log by ID."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(nutrition_log_id))
+        nutrition_log_entry = nutrition_log.get(db, id=str(id))
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
+        # Convert IDs to strings to match the schema
+        nutrition_log_entry.id = str(nutrition_log_entry.id)
+        nutrition_log_entry.user_id = str(nutrition_log_entry.user_id)
         return nutrition_log_entry
     except HTTPException:
         raise
@@ -484,23 +495,26 @@ async def get_nutrition_log(
         logger.error(f"Error getting nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get nutrition log")
 
-@router.put("/nutrition/{nutrition_log_id}", response_model=NutritionLog)
+@router.put("/nutrition/{id}", response_model=NutritionLog)
 async def update_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    nutrition_log_id: UUID,
+    id: UUID,
     nutrition_log_in: NutritionLogUpdate
 ):
     """Update a nutrition log entry."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(nutrition_log_id))
+        nutrition_log_entry = nutrition_log.get(db, id=str(id))
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
 
         updated_log = nutrition_log.update(
             db, db_obj=nutrition_log_entry, obj_in=nutrition_log_in
         )
+        # Convert IDs to strings to match the schema
+        updated_log.id = str(updated_log.id)
+        updated_log.user_id = str(updated_log.user_id)
         return updated_log
     except HTTPException:
         raise
@@ -508,20 +522,20 @@ async def update_nutrition_log(
         logger.error(f"Error updating nutrition log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update nutrition log")
 
-@router.delete("/nutrition/{nutrition_log_id}")
+@router.delete("/nutrition/{id}")
 async def delete_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    nutrition_log_id: UUID
+    id: UUID
 ):
     """Delete a nutrition log entry."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(nutrition_log_id))
+        nutrition_log_entry = nutrition_log.get(db, id=str(id))
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
 
-        nutrition_log.remove(db, id=str(nutrition_log_id))
+        nutrition_log.remove(db, id=str(id))
         return {"message": "Nutrition log deleted successfully"}
     except HTTPException:
         raise
@@ -575,16 +589,16 @@ async def get_mood_logs(
         logger.error(f"Error getting mood logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get mood logs")
 
-@router.get("/mood/{mood_log_id}", response_model=MoodLog)
+@router.get("/mood/{id}", response_model=MoodLog)
 async def get_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    mood_log_id: UUID
+    id: UUID
 ):
     """Get a specific mood log by ID."""
     try:
-        mood_log_entry = mood_log.get(db, id=str(mood_log_id))
+        mood_log_entry = mood_log.get(db, id=str(id))
         if not mood_log_entry or mood_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Mood log not found")
         return mood_log_entry
@@ -594,17 +608,17 @@ async def get_mood_log(
         logger.error(f"Error getting mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get mood log")
 
-@router.put("/mood/{mood_log_id}", response_model=MoodLog)
+@router.put("/mood/{id}", response_model=MoodLog)
 async def update_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    mood_log_id: UUID,
+    id: UUID,
     mood_log_in: MoodLogUpdate
 ):
     """Update a mood log entry."""
     try:
-        mood_log_entry = mood_log.get(db, id=str(mood_log_id))
+        mood_log_entry = mood_log.get(db, id=str(id))
         if not mood_log_entry or mood_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Mood log not found")
 
@@ -618,20 +632,20 @@ async def update_mood_log(
         logger.error(f"Error updating mood log: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to update mood log")
 
-@router.delete("/mood/{mood_log_id}")
+@router.delete("/mood/{id}")
 async def delete_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    mood_log_id: UUID
+    id: UUID
 ):
     """Delete a mood log entry."""
     try:
-        mood_log_entry = mood_log.get(db, id=str(mood_log_id))
+        mood_log_entry = mood_log.get(db, id=str(id))
         if not mood_log_entry or mood_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Mood log not found")
 
-        mood_log.remove(db, id=str(mood_log_id))
+        mood_log.remove(db, id=str(id))
         return {"message": "Mood log deleted successfully"}
     except HTTPException:
         raise
@@ -640,7 +654,7 @@ async def delete_mood_log(
         raise HTTPException(status_code=500, detail="Failed to delete mood log")
 
 # Daily summary endpoint (alias for analytics/daily)
-@router.get("/daily-summary")
+@router.get("/analytics/daily-summary")
 async def get_daily_summary(
     *,
     db: Session = Depends(get_db),
