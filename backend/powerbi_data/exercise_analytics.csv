@@ -1,9 +1,0 @@
-category,exercise_type,difficulty_level,exercise_count,avg_calories_per_minute,total_usage,popular_count
-abs,Strength,beginner,91,5.0,0,82
-arms,Strength,beginner,121,5.0,0,100
-back,Strength,beginner,127,5.0,0,89
-calves,Flexibility,beginner,10,5.0,0,8
-cardio,Cardio,beginner,39,5.0,0,23
-chest,Strength,beginner,70,5.0,0,63
-legs,Strength,beginner,126,5.0,0,98
-shoulders,Strength,beginner,69,5.0,0,56

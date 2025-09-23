@@ -12,7 +12,6 @@ pydantic==2.9.2
 python-dotenv==1.0.0
 pydantic-settings==2.6.1
 email-validator==2.2.0
-APScheduler==3.10.4
 python-dateutil==2.9.0.post0
 
 # HTTP client for API calls
@@ -22,34 +21,13 @@ httpx>=0.25.1,<0.28.0
 numpy>=1.26.0
 pandas>=2.0.0
 
-# Database: PostgreSQL client (binary wheels for local dev)
-psycopg2-binary==2.9.9
+# Database: SQLite (default for MVP)
+# No additional database client needed for SQLite
 
 # Migrations
 alembic==1.13.2
-
-# Image OCR (for uploads)
-Pillow==10.3.0
-pytesseract==0.3.10
-
-# Document extraction
-pdfminer.six==20240706
-PyPDF2==3.0.1
-python-docx==1.1.2
-
-# Redis client (optional features: idempotency, rate limiting)
-redis==5.0.8
-
-# Observability: OpenTelemetry (optional)
-opentelemetry-sdk==1.26.0
-opentelemetry-exporter-otlp==1.26.0
-opentelemetry-instrumentation-fastapi==0.47b0
-opentelemetry-instrumentation-asgi==0.47b0
-opentelemetry-instrumentation-httpx==0.47b0
-opentelemetry-instrumentation-sqlalchemy==0.47b0
 
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
-httpx==0.25.2
