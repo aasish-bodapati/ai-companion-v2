@@ -133,44 +133,15 @@ async def rate_limiting_middleware(request: Request, call_next):
     """Apply rate limiting to all requests."""
     return await rate_limit_middleware(request, call_next)
 
-# Set up CORS FIRST (before other middleware)
-if settings.BACKEND_CORS_ORIGINS:
-    # Process origins for CORS middleware
-    try:
-        origins_value = settings.BACKEND_CORS_ORIGINS
-        if isinstance(origins_value, (list, tuple)):
-            processed_origins = [str(origin).rstrip("/") for origin in origins_value]
-        else:
-            processed_origins = [str(origins_value).rstrip("/")]
-    except Exception as e:
-        logger.warning("Failed to process CORS origins: %s", e)
-        processed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-
-    # Setting up CORS middleware
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=processed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    logger.info("CORS middleware configured with origins: %s", processed_origins)
-    # CORS middleware configured
-else:
-    # Fallback: enable permissive CORS for local dev if not configured
-    dev_origins = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
-    logger.info("BACKEND_CORS_ORIGINS not set; applying dev CORS fallback: %s", dev_origins)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=dev_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-    logger.info("Dev CORS fallback configured")
+# Set up CORS FIRST (before other middleware) - TEMPORARILY ALLOW ALL ORIGINS FOR DEBUGGING
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for debugging
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+logger.info("CORS middleware configured to allow all origins for debugging")
 
 # Initialize lightweight metrics store in app state
 app.state.metrics = {

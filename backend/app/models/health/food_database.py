@@ -49,6 +49,9 @@ class Food(Base):
     # Usage tracking
     is_popular = Column(Boolean, default=False, nullable=False)
     usage_count = Column(Integer, default=0, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    external_id = Column(String(100), nullable=True, index=True)
+    source = Column(String(50), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

@@ -27,6 +27,11 @@ const nextConfig = {
   // Performance optimizations
   poweredByHeader: false,
   generateEtags: false,
+  
+  // Force cache busting for mobile development
+  generateBuildId: () => {
+    return `build-${Date.now()}`;
+  },
 
   // Bundle splitting optimizations
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {

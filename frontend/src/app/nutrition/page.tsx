@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { UnifiedLogger } from '@/components/health/UnifiedLogger';
+import { EnhancedMealLogger } from '@/components/health/EnhancedMealLogger';
+import { QuickNutritionLogger } from '@/components/health/QuickNutritionLogger';
 import { NutritionRoutineTemplates } from '@/components/health/NutritionRoutineTemplates';
 import NutritionLogsView from '@/components/health/NutritionLogsView';
 import { 
@@ -39,6 +41,7 @@ export default function NutritionPage() {
   });
   const [activeTab, setActiveTab] = useState('logs');
   const [showUnifiedLogger, setShowUnifiedLogger] = useState(false);
+  const [showEnhancedLogger, setShowEnhancedLogger] = useState(false);
   const [mealSuccess, setMealSuccess] = useState(false);
   const [todayStats, setTodayStats] = useState({
     meals: 0,
@@ -142,7 +145,7 @@ export default function NutritionPage() {
                       </p>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
                       <button
-                        onClick={() => setShowUnifiedLogger(true)}
+                        onClick={() => setActiveTab('log')}
                         className={`bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 ${
                           mealSuccess ? 'animate-pulse bg-green-500/20 border-2 border-green-400' : ''
                         }`}
@@ -226,7 +229,7 @@ export default function NutritionPage() {
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard hover={true} onClick={() => setShowUnifiedLogger(true)}>
+              <AnimatedCard hover={true} onClick={() => setActiveTab('log')}>
                 <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 transition-all duration-200 cursor-pointer">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -276,75 +279,7 @@ export default function NutritionPage() {
                   </TabsContent>
 
                   <TabsContent value="log" className="space-y-6">
-                    <div className="text-center mb-6">
-                      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                        Log Your Meal
-                      </h2>
-                      <p className="text-lg text-gray-600 dark:text-gray-400">
-                        Choose your preferred nutrition logging experience
-                      </p>
-                    </div>
-                    
-                    <Tabs defaultValue="progressive" className="w-full">
-                      <TabsList className="grid w-full grid-cols-2 mb-6">
-                        <TabsTrigger value="progressive" className="flex items-center gap-2">
-                          <BoltIcon className="h-4 w-4" />
-                          ✨ Guided Logger
-                        </TabsTrigger>
-                        <TabsTrigger value="simple" className="flex items-center gap-2">
-                          <ClockIcon className="h-4 w-4" />
-                          Quick Logger
-                        </TabsTrigger>
-                      </TabsList>
-                      
-                      <TabsContent value="progressive" className="space-y-6">
-                        <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg mb-4">
-                          <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
-                            <BoltIcon className="h-5 w-5" />
-                            <span className="font-medium">Smart Food Database</span>
-                          </div>
-                          <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                            Step-by-step meal logging with food search and nutrition calculation
-                          </p>
-                        </div>
-                        <div className="text-center py-8">
-                          <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Use the "Log Meal" button above to start logging your nutrition.
-                          </p>
-                          <Button 
-                            onClick={() => setShowUnifiedLogger(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            Log Meal
-                          </Button>
-                        </div>
-                      </TabsContent>
-                      
-                      <TabsContent value="simple" className="space-y-6">
-                        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-4">
-                          <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                            <ClockIcon className="h-5 w-5" />
-                            <span className="font-medium">Manual Entry</span>
-                          </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            Quick manual nutrition entry for experienced users
-                          </p>
-                        </div>
-                        <div className="text-center py-8">
-                          <p className="text-gray-600 dark:text-gray-400 mb-4">
-                            Use the "Log Meal" button above to start logging your nutrition.
-                          </p>
-                          <Button 
-                            onClick={() => setShowUnifiedLogger(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                          >
-                            <PlusIcon className="h-4 w-4 mr-2" />
-                            Log Meal
-                          </Button>
-                        </div>
-                      </TabsContent>
-                    </Tabs>
+                    <QuickNutritionLogger onSuccess={handleLogSuccess} />
                   </TabsContent>
 
                   <TabsContent value="progress" className="space-y-6">
@@ -435,6 +370,13 @@ export default function NutritionPage() {
             </div>
           </div>
         </div>
+
+        {/* Enhanced Meal Logger Modal */}
+        <EnhancedMealLogger
+          isOpen={showEnhancedLogger}
+          onClose={() => setShowEnhancedLogger(false)}
+          onSuccess={handleLogSuccess}
+        />
 
         {/* Unified Logger Modal */}
         <UnifiedLogger

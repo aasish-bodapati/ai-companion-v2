@@ -53,6 +53,8 @@ async function apiFetch<T = any>(
   };
   const url = new URL(`${API_BASE_URL}${endpoint}`);
   console.log(`Making API call to: ${url.toString()}`);
+  console.log(`API_BASE_URL: ${API_BASE_URL}`);
+  console.log(`RAW_API_BASE: ${RAW_API_BASE}`);
   
   // Add query parameters if provided
   if (options.params) {

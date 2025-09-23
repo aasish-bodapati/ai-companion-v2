@@ -106,24 +106,48 @@ class NutritionLoggerService {
   }
 
   /**
-   * Search for foods by query
+   * Search for foods by query using local database
    */
   async searchFoods(query: string, limit: number = 10): Promise<Food[]> {
     try {
-      logger.debug('Searching foods...', { query, limit });
+      logger.debug('Searching foods with local database...', { query, limit });
       
       if (!query.trim()) {
         return [];
       }
 
-      const response = await api.get(`/health/foods/search?query=${encodeURIComponent(query)}&limit=${limit}`);
-      const foods = response.foods || [];
+      // Use public search endpoint (no authentication required for MVP)
+      const response = await api.get(`/health/foods/public-search?query=${encodeURIComponent(query)}&limit=${limit}`);
+      const foods = response || [];
       
       logger.debug('Food search completed:', { query, count: foods.length });
       return foods;
     } catch (error) {
       logger.error('Failed to search foods:', error);
       throw new Error('Failed to search foods');
+    }
+  }
+
+
+  /**
+   * Search for foods using only local database (fallback)
+   */
+  async searchFoodsLocal(query: string, limit: number = 10): Promise<Food[]> {
+    try {
+      logger.debug('Searching foods in local database...', { query, limit });
+      
+      if (!query.trim()) {
+        return [];
+      }
+
+      const response = await api.get(`/health/foods/public-search?query=${encodeURIComponent(query)}&limit=${limit}`);
+      const foods = response.foods || [];
+      
+      logger.debug('Local food search completed:', { query, count: foods.length });
+      return foods;
+    } catch (error) {
+      logger.error('Failed to search local foods:', error);
+      throw new Error('Failed to search local foods');
     }
   }
 
@@ -134,41 +158,49 @@ class NutritionLoggerService {
     try {
       logger.debug('Logging meal...', { mealData, routineContext });
       
-      const logData: NutritionLogData = {
+      const logData = {
         meal_type: mealData.meal_type,
         meal_name: mealData.meal_name,
         total_calories: Math.round(mealData.total_calories),
-        protein_g: Math.round(mealData.protein_g * 10) / 10,
-        carbs_g: Math.round(mealData.carbs_g * 10) / 10,
-        fat_g: Math.round(mealData.fat_g * 10) / 10,
-        fiber_g: Math.round(mealData.fiber_g * 10) / 10,
-        sugar_g: Math.round(mealData.sugar_g * 10) / 10,
-        sodium_mg: Math.round(mealData.sodium_mg),
-        food_items: JSON.stringify(mealData.food_items.map(item => ({
-          name: item.food.name,
-          brand: item.food.brand,
-          serving_grams: item.serving_grams,
-          calories: item.calories,
-          protein_g: item.protein_g,
-          carbs_g: item.carbs_g,
-          fat_g: item.fat_g
-        }))),
-        food_ids: mealData.food_items.map(item => item.food.id),
-        routine_id: mealData.routineId || routineContext?.id,
-        notes: mealData.notes,
-        mood_before: mealData.mood_before,
-        mood_after: mealData.mood_after,
-        meal_date: new Date().toISOString(),
-        use_smart_defaults: true
+        notes: mealData.notes || undefined,
+        meal_date: new Date().toISOString()
       };
 
-      const response = await api.post('/health/contextual-logging/meal/smart', logData);
+      const response = await api.post('/health/logging/nutrition', logData);
       
-      logger.debug('Meal logged successfully:', { logId: response.log_id });
-      return response;
+      logger.debug('Meal logged successfully:', { response });
+      return { log_id: response.id || response.log_id || 'success' };
     } catch (error) {
       logger.error('Failed to log meal:', error);
       throw new Error('Failed to log meal');
+    }
+  }
+
+  /**
+   * Get nutrition data for a food using local database
+   */
+  async getFoodNutrition(foodId: string, servingGrams: number = 100): Promise<{
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    fiber_g: number;
+    sugar_g: number;
+    sodium_mg: number;
+    protein_percent: number;
+    carbs_percent: number;
+    fat_percent: number;
+  }> {
+    try {
+      logger.debug('Getting food nutrition...', { foodId, servingGrams });
+      
+      const response = await api.get(`/health/foods/public-nutrition/${foodId}?serving_grams=${servingGrams}`);
+      
+      logger.debug('Food nutrition retrieved:', { foodId, nutrition: response });
+      return response;
+    } catch (error) {
+      logger.error('Failed to get food nutrition:', error);
+      throw new Error('Failed to get food nutrition');
     }
   }
 
@@ -259,6 +291,25 @@ class NutritionLoggerService {
         time: 'Anytime'
       }
     ];
+  }
+
+  /**
+   * Get recent foods for quick access
+   */
+  async getRecentFoods(limit: number = 5): Promise<Food[]> {
+    try {
+      logger.debug('Loading recent foods...', { limit });
+      
+      const response = await api.get(`/health/foods/recent?limit=${limit}`);
+      const foods = response.foods || [];
+      
+      logger.debug('Recent foods loaded:', { count: foods.length });
+      return foods;
+    } catch (error) {
+      logger.error('Failed to load recent foods:', error);
+      // Return empty array for now - this endpoint might not exist yet
+      return [];
+    }
   }
 
   /**

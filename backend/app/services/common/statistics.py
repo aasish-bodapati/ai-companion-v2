@@ -106,7 +106,7 @@ class HealthStatisticsCalculator:
         
         aggregates = HealthStatisticsCalculator.calculate_aggregates(
             logs,
-            fields_to_sum=["total_calories", "protein_g", "carbs_g", "fat_g", "fiber_g", "sugar_g", "sodium_mg"],
+            fields_to_sum=["total_calories"],
             count_field="meal_type"
         )
         
@@ -120,12 +120,12 @@ class HealthStatisticsCalculator:
         return {
             "totalMeals": aggregates["count"],
             "totalCalories": aggregates["total_calories"],
-            "totalProtein": round(aggregates["total_protein_g"], 1),
-            "totalCarbs": round(aggregates["total_carbs_g"], 1),
-            "totalFat": round(aggregates["total_fat_g"], 1),
-            "totalFiber": round(aggregates["total_fiber_g"], 1),
-            "totalSugar": round(aggregates["total_sugar_g"], 1),
-            "totalSodium": round(aggregates["total_sodium_mg"], 1),
+            "totalProtein": 0,  # Not available in current model
+            "totalCarbs": 0,    # Not available in current model
+            "totalFat": 0,      # Not available in current model
+            "totalFiber": 0,    # Not available in current model
+            "totalSugar": 0,    # Not available in current model
+            "totalSodium": 0,   # Not available in current model
             "avgCaloriesPerMeal": round(avg_calories_per_meal, 1),
             "currentStreak": current_streak
         }

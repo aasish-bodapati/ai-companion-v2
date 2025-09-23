@@ -365,25 +365,9 @@ export default function DashboardPage() {
                     <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
                       Dashboard
                     </h1>
-                    <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
+                    <p className="text-lg md:text-xl text-white/90 mb-6 max-w-2xl">
                       Welcome back! Track your health journey and stay on top of your fitness and nutrition goals.
                     </p>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-                      <button
-                        onClick={() => router.push('/fitness')}
-                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
-                      >
-                        <FireIcon className="h-5 w-5" />
-                        <span>Go to Fitness</span>
-                      </button>
-                      <button
-                        onClick={() => router.push('/nutrition')}
-                        className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
-                      >
-                        <HeartIcon className="h-5 w-5" />
-                        <span>Go to Nutrition</span>
-                      </button>
-                    </div>
                     <div className="flex flex-wrap items-center gap-3 text-white/80">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
@@ -523,36 +507,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Additional Actions */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  Quick Actions
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Access your most important features
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button 
-                  onClick={() => router.push('/profile')}
-                  variant="outline"
-                  className="h-12 px-6"
-                >
-                  <ChartBarIcon className="h-5 w-5 mr-2" />
-                  View Progress
-                </Button>
-                {activeRoutines.length === 0 && (
-                  <Button 
-                    onClick={() => router.push('/fitness')}
-                    className="h-12 px-6 bg-orange-600 hover:bg-orange-700"
-                  >
-                    <PlusIcon className="h-5 w-5 mr-2" />
-                    Create Routine
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>

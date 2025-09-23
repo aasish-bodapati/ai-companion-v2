@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 2  # 2 days (reduced from 8 days for security)
 
-    # CORS settings
+    # CORS settings - Allow all 192.168.x.x for mobile testing
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = [
         "http://localhost:3000",
         "http://localhost:3001",
@@ -32,6 +32,11 @@ class Settings(BaseSettings):
         "https://localhost:3001",
         "https://localhost:8000",
         "https://localhost:8001",
+        "http://192.168.1.5:3000",  # Mobile access
+        "http://192.168.1.5:8000",  # Mobile access
+        "http://192.168.1.8:3000",  # Mobile access (actual IP)
+        "http://192.168.1.8:8000",  # Mobile access (actual IP)
+        "http://192.168.0.0/16",    # Allow all 192.168.x.x for mobile testing
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
@@ -98,6 +103,7 @@ class Settings(BaseSettings):
     # Security settings
     RATE_LIMITING_ENABLED: bool = True
     REDIS_URL: Optional[str] = None  # Redis URL for rate limiting and caching
+
 
     model_config = {
         "case_sensitive": True,

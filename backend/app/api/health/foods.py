@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.crud.health import food_database
+from app.services.hybrid_food_service import local_food_service
 from app.schemas.health.food_database import (
     Food, FoodWithUserData, FoodSearchRequest, FoodSearchResponse,
     FoodSuggestion, FoodSuggestionsResponse, MealTemplate,
@@ -22,6 +23,69 @@ import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+@router.get("/public-search", response_model=List[Dict[str, Any]])
+async def public_search_foods(
+    *,
+    db: Session = Depends(get_db),
+    query: str = Query(..., description="Search query"),
+    limit: int = Query(20, ge=1, le=50, description="Result limit")
+):
+    """
+    Public food search endpoint for MVP (no authentication required).
+    
+    This endpoint provides food search from the local database without requiring authentication.
+    """
+    try:
+        logger.info(f"Public food search: '{query}'")
+        
+        # Use local service to search
+        results = await local_food_service.search_foods(
+            db=db,
+            query=query,
+            max_results=limit
+        )
+        
+        logger.info(f"Public search found {len(results)} foods for query: {query}")
+        return results
+        
+    except Exception as e:
+        logger.error(f"Error in public food search: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to search foods")
+
+@router.get("/public-nutrition/{food_id}", response_model=Dict[str, Any])
+async def public_get_food_nutrition(
+    *,
+    db: Session = Depends(get_db),
+    food_id: str,
+    serving_grams: float = Query(100, ge=1, description="Serving size in grams")
+):
+    """
+    Public nutrition endpoint for MVP (no authentication required).
+    
+    This endpoint provides nutrition data from the local database without requiring authentication.
+    """
+    try:
+        logger.info(f"Public nutrition request: food_id={food_id}, serving_grams={serving_grams}")
+        
+        # Use local service to get nutrition
+        nutrition = await local_food_service.get_food_nutrition(
+            db=db,
+            food_id=food_id,
+            serving_grams=serving_grams
+        )
+        
+        if not nutrition:
+            raise HTTPException(status_code=404, detail="Food not found or nutrition data unavailable")
+        
+        logger.info(f"Public nutrition retrieved for food {food_id}")
+        return nutrition.dict()
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in public nutrition: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to get nutritional profile")
 
 @router.get("/search", response_model=FoodSearchResponse)
 async def search_foods(
@@ -530,46 +594,32 @@ async def get_meal_templates(
 async def get_nutritional_profile(
     *,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     food_id: str,
     serving_grams: float = Query(100, ge=1, description="Serving size in grams")
 ):
-    """Get detailed nutritional profile for a specific serving size."""
+    """
+    Get nutritional profile from local database.
+    """
     try:
-        food = food_database.food.get(db, id=food_id)
-        if not food:
-            raise HTTPException(status_code=404, detail="Food not found")
-
-        # Calculate nutrition for serving size
-        multiplier = serving_grams / 100
-
-        calories = food.calories_per_100g * multiplier
-        protein_g = (food.protein_per_100g or 0) * multiplier
-        carbs_g = (food.carbs_per_100g or 0) * multiplier
-        fat_g = (food.fat_per_100g or 0) * multiplier
-
-        # Calculate macronutrient percentages
-        total_macro_calories = (protein_g * 4) + (carbs_g * 4) + (fat_g * 9)
-
-        protein_percent = (protein_g * 4 / total_macro_calories * 100) if total_macro_calories > 0 else 0
-        carbs_percent = (carbs_g * 4 / total_macro_calories * 100) if total_macro_calories > 0 else 0
-        fat_percent = (fat_g * 9 / total_macro_calories * 100) if total_macro_calories > 0 else 0
-
-        return NutritionalProfile(
-            serving_grams=serving_grams,
-            calories=round(calories, 1),
-            protein_g=round(protein_g, 1),
-            carbs_g=round(carbs_g, 1),
-            fat_g=round(fat_g, 1),
-            fiber_g=round((food.fiber_per_100g or 0) * multiplier, 1),
-            sugar_g=round((food.sugar_per_100g or 0) * multiplier, 1),
-            sodium_mg=round((food.sodium_per_100g or 0) * multiplier, 1),
-            protein_percent=round(protein_percent, 1),
-            carbs_percent=round(carbs_percent, 1),
-            fat_percent=round(fat_percent, 1)
+        logger.info(f"Getting nutrition for food {food_id}, serving {serving_grams}g")
+        
+        # Use local service to get nutrition
+        nutrition = await local_food_service.get_food_nutrition(
+            db=db,
+            food_id=food_id,
+            serving_grams=serving_grams
         )
-
+        
+        if not nutrition:
+            raise HTTPException(status_code=404, detail="Food not found or nutrition data unavailable")
+        
+        logger.info(f"Retrieved nutrition for food {food_id}")
+        return nutrition
+        
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting nutritional profile: {str(e)}")
+        logger.error(f"Error getting nutrition: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get nutritional profile")
+

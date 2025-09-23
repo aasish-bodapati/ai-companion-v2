@@ -13,6 +13,7 @@ from app.schemas.onboarding import (
     SimpleOnboardingData, OnboardingResponse
 )
 from app.crud.onboarding import onboarding_profile
+from app.crud.health.user_goals import user_health_profile
 from app.models.health.user_goals import UserHealthProfile
 from app.schemas.health_profile import HealthProfileCreate
 import logging
@@ -29,11 +30,15 @@ async def get_onboarding_status(
 ):
     """Check if user has completed onboarding."""
     try:
-        # Check if user has completed onboarding profile
-        profile = onboarding_profile.get_by_user(db, user_id=current_user.id)
-        completed = bool(profile and profile.completed)
+        # Check if user has completed onboarding by checking health profile
+        # This is the actual data that matters for onboarding completion
+        health_profile = user_health_profile.get_by_user(db=db, user_id=current_user.id)
+        has_completed = health_profile is not None
 
-        return {"completed": completed}
+        return {
+            "completed": has_completed,
+            "has_health_profile": has_completed
+        }
     except Exception as e:
         logger.error(f"Error checking onboarding status: {str(e)}")
         return {"completed": False}

@@ -98,21 +98,34 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
   const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/health/nutrition-logs/', {
+      const response = await api.get('/health/logging/nutrition', {
         params: {
           period: period,
           page: currentPage,
-          page_size: pageSize,
-          search: searchTerm,
+          size: pageSize,
           meal_type: mealTypeFilter !== 'all' ? mealTypeFilter : undefined,
-          date: format(selectedDate, 'yyyy-MM-dd')
+          start_date: format(selectedDate, 'yyyy-MM-dd'),
+          end_date: format(selectedDate, 'yyyy-MM-dd')
         }
       });
 
-      if (response.data) {
-        setLogs(response.data);
-        setTotalLogs(response.total || response.data.length);
-        setTotalPages(response.total_pages || 1);
+      console.log('Nutrition logs API response:', response);
+      
+      if (response.logs) {
+        console.log('Setting logs from response.logs:', response.logs);
+        setLogs(response.logs);
+        setTotalLogs(response.pagination?.total || response.logs.length);
+        setTotalPages(response.pagination?.total_pages || 1);
+        calculateStats(response.logs);
+      } else if (Array.isArray(response)) {
+        console.log('Setting logs from direct array:', response);
+        setLogs(response);
+        setTotalLogs(response.length);
+        setTotalPages(1);
+        calculateStats(response);
+      } else {
+        console.log('No logs found in response');
+        calculateStats([]);
       }
     } catch (error) {
       console.error('Failed to load nutrition logs:', error);
@@ -122,39 +135,44 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
     }
   }, [period, currentPage, pageSize, searchTerm, mealTypeFilter, selectedDate, errorToast]);
 
-  // Load stats
-  const loadStats = useCallback(async () => {
-    try {
-      const response = await api.get('/health/nutrition-logs/stats/', {
-        params: {
-          period: period,
-          date: format(selectedDate, 'yyyy-MM-dd')
-        }
-      });
-
-      if (response.data) {
-        setStats(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to load nutrition stats:', error);
-    }
-  }, [period, selectedDate]);
+  // Calculate stats from logs
+  const calculateStats = useCallback((logsData: NutritionLog[]) => {
+    const totalMeals = logsData.length;
+    const totalCalories = logsData.reduce((sum, log) => sum + (log.total_calories || 0), 0);
+    const avgCaloriesPerMeal = totalMeals > 0 ? totalCalories / totalMeals : 0;
+    
+    // Calculate current streak (simplified - count consecutive days with meals)
+    const mealDates = logsData.map(log => new Date(log.meal_date).toDateString()).sort();
+    const uniqueDates = [...new Set(mealDates)];
+    const currentStreak = uniqueDates.length; // Simplified streak calculation
+    
+    setStats({
+      totalMeals,
+      totalCalories,
+      totalProtein: 0,  // Not available in current model
+      totalCarbs: 0,    // Not available in current model
+      totalFat: 0,      // Not available in current model
+      totalFiber: 0,    // Not available in current model
+      totalSugar: 0,    // Not available in current model
+      totalSodium: 0,   // Not available in current model
+      avgCaloriesPerMeal: Math.round(avgCaloriesPerMeal),
+      currentStreak
+    });
+  }, []);
 
   // Load data when component mounts or dependencies change
   useEffect(() => {
     if (isActive) {
       loadLogs();
-      loadStats();
     }
-  }, [isActive, loadLogs, loadStats]);
+  }, [isActive, loadLogs]);
 
   // Refresh when trigger changes
   useEffect(() => {
     if (refreshTrigger) {
       loadLogs();
-      loadStats();
     }
-  }, [refreshTrigger, loadLogs, loadStats]);
+  }, [refreshTrigger, loadLogs]);
 
   // Convert stats to StatItem format for StatsGrid
   const mainStatsItems: StatItem[] = [
@@ -294,7 +312,6 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
     setShowSmartLogger(false);
     setEditingLog(null);
     loadLogs();
-    loadStats();
   };
 
   const toggleLogSelection = (logId: string) => {
@@ -332,7 +349,7 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
   const filteredLogs = logs.filter(log => {
     const matchesSearch = !searchTerm || 
       log.meal_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.food_items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      (log.food_items && log.food_items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase())));
     
     const matchesMealType = mealTypeFilter === 'all' || log.meal_type === mealTypeFilter;
     
@@ -401,46 +418,62 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
 
 
 
-      {/* Meals List - Ultra compact like fitness logs */}
-      <div className="space-y-1" data-testid="meals-list">
+      {/* Meals Grid - Ultra compact format */}
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2" data-testid="meals-list">
         {filteredLogs.map((log) => (
-          <div key={log.id} className="flex items-center justify-between p-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-            <div className="flex items-center gap-2 flex-1">
-              <Badge variant="outline" className="capitalize text-xs px-1 py-0.5">
-                {log.meal_type}
-              </Badge>
-              {log.meal_name && (
-                <span className="font-medium text-xs truncate">{log.meal_name}</span>
-              )}
-              <span className="text-xs text-gray-500">
-                {format(parseISO(log.meal_date), 'h:mm a')}
-              </span>
-              
-              <div className="flex items-center gap-2 ml-auto">
-                <span className="text-xs font-bold text-orange-600">{log.total_calories}cal</span>
-                <span className="text-xs font-bold text-red-600">{log.protein_g?.toFixed(0) || 0}p</span>
-                <span className="text-xs font-bold text-blue-600">{log.carbs_g?.toFixed(0) || 0}c</span>
-                <span className="text-xs font-bold text-yellow-600">{log.fat_g?.toFixed(0) || 0}f</span>
+          <div key={log.id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded p-2 hover:shadow-sm dark:hover:bg-gray-750 transition-all duration-200">
+            {/* Card Header */}
+            <div className="flex items-center justify-end mb-1">
+              <div className="flex items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleEditLog(log)}
+                  className="h-3 w-3 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <PencilIcon className="h-1.5 w-1.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteLog(log.id)}
+                  className="h-3 w-3 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                >
+                  <TrashIcon className="h-1.5 w-1.5" />
+                </Button>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 ml-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditLog(log)}
-                className="h-5 w-5 p-0"
-              >
-                <PencilIcon className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleDeleteLog(log.id)}
-                className="h-5 w-5 p-0"
-              >
-                <TrashIcon className="h-3 w-3" />
-              </Button>
+            {/* Card Content */}
+            <div className="space-y-1">
+              <div>
+                <h3 className="font-medium text-xs text-gray-900 dark:text-white truncate">
+                  {log.meal_name || `${log.meal_type} meal`}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {format(parseISO(log.meal_date), 'h:mm a')}
+                </p>
+              </div>
+
+              {/* Nutrition Info Grid */}
+              <div className="grid grid-cols-2 gap-1 pt-1 border-t border-gray-100 dark:border-gray-700">
+                <div className="text-center">
+                  <div className="text-xs font-bold text-orange-600">{log.total_calories}</div>
+                  <div className="text-xs text-gray-500">cal</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs font-bold text-red-600">{log.protein_g?.toFixed(0) || 0}</div>
+                  <div className="text-xs text-gray-500">p</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs font-bold text-blue-600">{log.carbs_g?.toFixed(0) || 0}</div>
+                  <div className="text-xs text-gray-500">c</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs font-bold text-yellow-600">{log.fat_g?.toFixed(0) || 0}</div>
+                  <div className="text-xs text-gray-500">f</div>
+                </div>
+              </div>
             </div>
           </div>
         ))}
