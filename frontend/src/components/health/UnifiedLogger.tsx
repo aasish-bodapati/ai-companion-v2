@@ -419,10 +419,11 @@ export function UnifiedLogger({ isOpen, onClose, onSuccess, type, initialData }:
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-emerald-500"
+              <div
+                className="cursor-pointer hover:shadow-lg transition-all duration-200"
                 onClick={() => handleTypeSelect('nutrition')}
               >
+                <Card className="border-2 hover:border-emerald-500">
                 <CardContent className="p-6 text-center">
                   <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <HeartIcon className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
@@ -432,12 +433,14 @@ export function UnifiedLogger({ isOpen, onClose, onSuccess, type, initialData }:
                     Log meals, track calories, and monitor nutrition
                   </p>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
 
-              <Card
-                className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-orange-500"
+              <div
+                className="cursor-pointer hover:shadow-lg transition-all duration-200"
                 onClick={() => handleTypeSelect('fitness')}
               >
+                <Card className="border-2 hover:border-orange-500">
                 <CardContent className="p-6 text-center">
                   <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                     <FireIcon className="h-6 w-6 text-orange-600 dark:text-orange-400" />
@@ -447,7 +450,8 @@ export function UnifiedLogger({ isOpen, onClose, onSuccess, type, initialData }:
                     Log workouts, track exercises, and monitor progress
                   </p>
                 </CardContent>
-              </Card>
+                </Card>
+              </div>
             </div>
           </motion.div>
         );
@@ -474,11 +478,12 @@ export function UnifiedLogger({ isOpen, onClose, onSuccess, type, initialData }:
               {modes.map((mode) => {
                 const Icon = mode.icon;
                 return (
-                  <Card
+                  <div
                     key={mode.id}
-                    className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-500"
+                    className="cursor-pointer hover:shadow-lg transition-all duration-200"
                     onClick={() => handleModeSelect(mode)}
                   >
+                    <Card className="border-2 hover:border-blue-500">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4">
                         <div className={`w-12 h-12 bg-${mode.color}-100 dark:bg-${mode.color}-900/30 rounded-full flex items-center justify-center`}>
@@ -493,7 +498,8 @@ export function UnifiedLogger({ isOpen, onClose, onSuccess, type, initialData }:
                         </Badge>
                       </div>
                     </CardContent>
-                  </Card>
+                    </Card>
+                  </div>
                 );
               })}
             </div>

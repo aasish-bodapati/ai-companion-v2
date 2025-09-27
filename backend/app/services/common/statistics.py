@@ -111,7 +111,7 @@ class HealthStatisticsCalculator:
         )
         
         # Calculate average calories per meal
-        avg_calories_per_meal = aggregates["total_calories"] / aggregates["count"] if aggregates["count"] > 0 else 0
+        avg_calories_per_meal = aggregates["total_total_calories"] / aggregates["count"] if aggregates["count"] > 0 else 0
         
         # Calculate current streak
         from app.utils.date_helpers import StreakCalculator
@@ -119,7 +119,7 @@ class HealthStatisticsCalculator:
         
         return {
             "totalMeals": aggregates["count"],
-            "totalCalories": aggregates["total_calories"],
+            "totalCalories": aggregates["total_total_calories"],
             "totalProtein": 0,  # Not available in current model
             "totalCarbs": 0,    # Not available in current model
             "totalFat": 0,      # Not available in current model

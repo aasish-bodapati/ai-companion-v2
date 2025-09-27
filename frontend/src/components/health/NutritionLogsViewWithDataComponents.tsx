@@ -13,7 +13,7 @@ import { ClockIcon, FireIcon, HeartIcon, ChartBarIcon, PencilIcon, TrashIcon, Tr
 import { format, parseISO } from 'date-fns';
 import { useSuccessToast, useErrorToast, useWarningToast } from '@/components/ui/toast';
 import { AnimatedButton, AnimatedCard, AnimatedCounter } from '@/components/ui/micro-interactions';
-import { LoadingOverlay, StatsCardSkeleton } from '@/components/ui/loading-states';
+import { PageLoading, StatsCardSkeleton } from '@/components/ui/loading-states';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { DataViewContainer } from '@/components/ui/data-view-container';
 import { StatsGrid, StatItem } from '@/components/ui/stats-grid';
@@ -278,7 +278,7 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
       await api.delete(`/health/nutrition-logs/${logToDelete}/`);
       successToast('Meal deleted successfully!');
       setLogs(prev => prev.filter(log => log.id !== logToDelete));
-      loadStats();
+      calculateStats(logs.filter(log => log.id !== logToDelete));
     } catch (error) {
       console.error('Failed to delete meal:', error);
       errorToast('Failed to delete meal', 'Please try again.');
@@ -299,7 +299,7 @@ function NutritionLogsViewWithDataComponents({ className = '', refreshTrigger, i
       successToast(`${logIds.length} meals deleted successfully!`);
       setLogs(prev => prev.filter(log => !selectedLogs.has(log.id)));
       setSelectedLogs(new Set());
-      loadStats();
+      calculateStats(logs.filter(log => !selectedLogs.has(log.id)));
     } catch (error) {
       console.error('Failed to delete meals:', error);
       errorToast('Failed to delete meals', 'Please try again.');

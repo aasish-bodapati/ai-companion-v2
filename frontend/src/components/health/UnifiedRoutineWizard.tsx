@@ -22,7 +22,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { MobileOptimizedButton } from '@/components/ui/mobile-optimized-button';
@@ -232,7 +231,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
         description: routineDescription || `Custom ${routineType} routine`,
         difficulty,
         duration_weeks: durationWeeks,
-        target_calories: routineType === 'nutrition' ? targetCalories : undefined
+        target_calories: routineType === 'nutrition' ? targetCalories : 0
       };
 
       let savedRoutine;
@@ -257,9 +256,9 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
             description: `Nutrition plan for ${days[i]}`,
             daily_calories: targetCalories,
             meals: [
-              { meal_type: 'breakfast', meal_name: 'Breakfast', description: 'Healthy breakfast', order_index: 0, target_calories: targetCalories * 0.3, food_items: [] },
-              { meal_type: 'lunch', meal_name: 'Lunch', description: 'Balanced lunch', order_index: 1, target_calories: targetCalories * 0.4, food_items: [] },
-              { meal_type: 'dinner', meal_name: 'Dinner', description: 'Light dinner', order_index: 2, target_calories: targetCalories * 0.3, food_items: [] }
+              { meal_type: 'breakfast' as const, meal_name: 'Breakfast', description: 'Healthy breakfast', order_index: 0, target_calories: targetCalories * 0.3, food_items: [] },
+              { meal_type: 'lunch' as const, meal_name: 'Lunch', description: 'Balanced lunch', order_index: 1, target_calories: targetCalories * 0.4, food_items: [] },
+              { meal_type: 'dinner' as const, meal_name: 'Dinner', description: 'Light dinner', order_index: 2, target_calories: targetCalories * 0.3, food_items: [] }
             ]
           };
         });
@@ -405,7 +404,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
           {
             name: 'routineName',
             label: 'Routine Name',
-            type: 'text',
+            type: 'text' as const,
             placeholder: 'Enter routine name',
             required: true,
             maxLength: 50,
@@ -415,7 +414,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
           {
             name: 'routineDescription',
             label: 'Description',
-            type: 'textarea',
+            type: 'textarea' as const,
             placeholder: 'Describe your routine',
             rows: 3,
             maxLength: 200,
@@ -425,7 +424,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
           {
             name: 'difficulty',
             label: 'Difficulty Level',
-            type: 'select',
+            type: 'select' as const,
             required: true,
             options: DIFFICULTY_LEVELS.map(level => ({
               value: level.value,
@@ -436,7 +435,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
           {
             name: 'durationWeeks',
             label: 'Duration',
-            type: 'select',
+            type: 'select' as const,
             required: true,
             options: DURATION_OPTIONS.map(option => ({
               value: option.value.toString(),
@@ -447,7 +446,7 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
           ...(routineType === 'nutrition' ? [{
             name: 'targetCalories',
             label: 'Target Daily Calories',
-            type: 'number',
+            type: 'number' as const,
             required: true,
             min: 1000,
             max: 5000,
@@ -499,7 +498,9 @@ export function UnifiedRoutineWizard({ isOpen, onClose, onSuccess }: UnifiedRout
                   required: true,
                   min: 1000,
                   max: 5000
-                } : undefined
+                } : {
+                  required: false
+                }
               }}
             />
           </div>

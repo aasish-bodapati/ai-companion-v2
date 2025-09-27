@@ -55,6 +55,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
+    water_logs = relationship(
+        "WaterLog",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
     weight_logs = relationship(
         "UserWeightLog",
         back_populates="user",

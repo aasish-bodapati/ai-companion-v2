@@ -49,12 +49,14 @@ export function useOnboardingCheck(options: UseOnboardingCheckOptions = {}) {
       // Don't retry on auth errors - let the auth system handle it
       if (error?.status === 401 || error?.status === 403) {
         setOnboardingStatus(null);
+        // Don't redirect on auth errors - let the auth system handle it
         return;
       }
       
       setOnboardingStatus(false);
       
-      if (redirectOnError) {
+      // Only redirect on non-auth errors and only if redirectOnError is true
+      if (redirectOnError && error?.status !== 401 && error?.status !== 403) {
         // Use window.location for redirect to avoid hook issues
         if (typeof window !== 'undefined') {
           window.location.href = '/onboarding';

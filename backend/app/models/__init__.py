@@ -10,6 +10,7 @@ from app.models.health import (
     SimpleRoutine, SimpleUserRoutineProgress,
     WorkoutCategory, UserWeightLog
 )
+from app.models.health.water_log import WaterLog
 from app.models.health.exercise_database import Exercise, UserExerciseHistory
 from app.models.health.food_database import Food, UserFoodHistory
 from app.models.health.food_log_items import FoodLogItem
@@ -28,6 +29,7 @@ __all__ = [
     "SimpleUserRoutineProgress",
     "WorkoutCategory",
     "UserWeightLog",
+    "WaterLog",
     "Exercise",
     "UserExerciseHistory",
     "Food",

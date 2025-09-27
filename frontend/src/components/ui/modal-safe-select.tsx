@@ -152,7 +152,8 @@ export function ModalSafeSelect({
           const searchTerm = inputValue.toLowerCase();
           return (
             option.label.toLowerCase().includes(searchTerm) ||
-            (option.data.description && option.data.description.toLowerCase().includes(searchTerm))
+            (option.data.description && option.data.description.toLowerCase().includes(searchTerm)) ||
+            false
           );
         }}
         // Prevent menu from closing on scroll

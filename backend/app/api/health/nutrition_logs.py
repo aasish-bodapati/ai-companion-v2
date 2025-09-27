@@ -37,7 +37,6 @@ def get_nutrition_logs(
     meal_type: Optional[str] = Query(None, description="Filter by meal type")
 ):
     """Get nutrition logs with optional filtering and pagination."""
-    print(f"🍎 [NUTRITION LOGS] Request received - period: {period}, page: {page}, size: {size}, user: {current_user.id}")
     
     try:
         # Use stable date utilities (same as fitness)
@@ -57,7 +56,6 @@ def get_nutrition_logs(
         start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(
             period, custom_start, custom_end
         )
-        print(f"🍎 [NUTRITION LOGS] Date range: {start_date_obj} to {end_date_obj}")
 
         # Get logs from database
         logs = nutrition_log.get_user_logs(
@@ -68,7 +66,6 @@ def get_nutrition_logs(
             skip=(page - 1) * size,
             limit=size
         )
-        print(f"🍎 [NUTRITION LOGS] Found {len(logs)} logs for pagination")
 
         # Calculate statistics using stable utilities (same as fitness)
         all_logs = nutrition_log.get_user_logs(
@@ -77,17 +74,14 @@ def get_nutrition_logs(
             start_date=start_date_obj,
             end_date=end_date_obj
         )
-        print(f"🍎 [NUTRITION LOGS] Found {len(all_logs)} total logs for stats")
 
         # Apply meal type filter if specified
         if meal_type and meal_type != 'all':
             all_logs = [log for log in all_logs if log.meal_type == meal_type]
             logs = [log for log in logs if log.meal_type == meal_type]
-            print(f"🍎 [NUTRITION LOGS] Filtered by meal_type: {meal_type}")
 
         # Use stable statistics calculator (same as fitness)
         stats = HealthStatisticsCalculator.calculate_nutrition_stats(all_logs)
-        print(f"🍎 [NUTRITION LOGS] Calculated stats: {stats}")
 
         # Convert logs to response format using stable formatter (same as fitness)
         logs_data = [LoggingResponseFormatter.format_nutrition_log(log) for log in logs]
@@ -97,13 +91,11 @@ def get_nutrition_logs(
             page, size, len(all_logs)
         )
 
-        print(f"🍎 [NUTRITION LOGS] Returning {len(logs_data)} logs with pagination: {pagination}")
         return LoggingResponseFormatter.format_logs_response(
             logs_data, stats, pagination, "logs"
         )
 
     except Exception as e:
-        print(f"❌ [NUTRITION LOGS] Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to retrieve nutrition logs")
@@ -154,7 +146,6 @@ def create_nutrition_log(
 
         return LoggingResponseFormatter.format_nutrition_log(log)
     except Exception as e:
-        print(f"Error creating nutrition log: {e}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to create nutrition log")
@@ -181,7 +172,6 @@ def update_nutrition_log(
 
         return LoggingResponseFormatter.format_nutrition_log(updated_log)
     except Exception as e:
-        print(f"Error updating nutrition log: {e}")
         raise HTTPException(status_code=500, detail="Failed to update nutrition log")
 
 @router.delete("/{id}")
@@ -200,7 +190,6 @@ def delete_nutrition_log(
         nutrition_log.remove(db, id=id)
         return {"message": "Nutrition log deleted successfully"}
     except Exception as e:
-        print(f"Error deleting nutrition log: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete nutrition log")
 
 @router.get("/stats", response_model=dict)
@@ -212,12 +201,10 @@ def get_nutrition_stats(
     period: str = Query("week", description="Filter by period: week, month, all")
 ):
     """Get nutrition statistics."""
-    print(f"🍎 [NUTRITION STATS] Request received - period: {period}, user: {current_user.id}")
     
     try:
         # Use stable date utilities (same as fitness)
         start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
-        print(f"🍎 [NUTRITION STATS] Date range: {start_date_obj} to {end_date_obj}")
 
         # Get logs from database
         logs = nutrition_log.get_user_logs(
@@ -226,16 +213,13 @@ def get_nutrition_stats(
             start_date=start_date_obj,
             end_date=end_date_obj
         )
-        print(f"🍎 [NUTRITION STATS] Found {len(logs)} logs")
 
         # Use stable statistics calculator (same as fitness)
         stats = HealthStatisticsCalculator.calculate_nutrition_stats(logs)
-        print(f"🍎 [NUTRITION STATS] Calculated stats: {stats}")
 
         return LoggingResponseFormatter.format_stats_response(stats)
 
     except Exception as e:
-        print(f"❌ [NUTRITION STATS] Error: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to retrieve nutrition statistics")
@@ -263,7 +247,6 @@ def get_recent_meals(
         return [LoggingResponseFormatter.format_nutrition_log(log) for log in logs]
 
     except Exception as e:
-        print(f"Error getting recent meals: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve recent meals")
 
 @router.get("/streak", response_model=dict)
@@ -295,5 +278,4 @@ def get_meal_streak(
         }
 
     except Exception as e:
-        print(f"Error getting meal streak: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve meal streak")

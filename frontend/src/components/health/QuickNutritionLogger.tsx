@@ -24,6 +24,7 @@ interface Food {
   id: string;
   name: string;
   brand?: string;
+  category: string;
   calories_per_100g: number;
   protein_per_100g?: number;
   carbs_per_100g?: number;
@@ -124,7 +125,10 @@ export function QuickNutritionLogger({ onSuccess }: QuickNutritionLoggerProps) {
         meal_type: selectedMealType,
         meal_name: food.name,
         food_items: [{
-          food,
+          food: {
+            ...food,
+            category: food.category || 'General'
+          },
           serving_grams: servingGrams,
           calories: nutrition.calories,
           protein_g: nutrition.protein_g,

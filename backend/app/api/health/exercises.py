@@ -129,7 +129,7 @@ async def search_exercises(
 )
 async def get_all_exercises(
     logging_category: Optional[str] = Query(None, description="Filter by logging category (bodyweight, weighted, cardio_duration, hold_static, repetition_only, distance_based)"),
-    limit: int = Query(100, ge=1, le=500, description="Maximum number of results to return"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     # Build query with filters

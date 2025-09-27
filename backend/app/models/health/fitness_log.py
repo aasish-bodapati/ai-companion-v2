@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Float, CheckConstraint
+from sqlalchemy import Column, String, Integer, DateTime, Text, ForeignKey, Float, CheckConstraint, JSON
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
@@ -18,6 +18,8 @@ class FitnessLog(Base):
     calories_burned = Column(Integer, nullable=True)
 
     # Additional metrics - simplified to core tracking only
+    exercises = Column(Text, nullable=True)  # JSON string containing exercise data
+    unit = Column(String(10), nullable=True)  # Unit for weight measurements (kg, lbs)
 
     # Context and notes
     notes = Column(Text, nullable=True)
@@ -53,9 +55,13 @@ class NutritionLog(Base):
 
     # Nutritional information - simplified to core tracking only
     total_calories = Column(Integer, nullable=False)
+    protein_g = Column(Float, nullable=True)
+    carbs_g = Column(Float, nullable=True)
+    fat_g = Column(Float, nullable=True)
 
     # Context and notes
     notes = Column(Text, nullable=True)
+    food_items = Column(JSON, nullable=True)  # Store food items as JSON for now
 
     # Timestamps
     meal_date = Column(DateTime(timezone=True), nullable=False)
@@ -85,6 +91,8 @@ class MoodLog(Base):
 
     # Mood details - simplified to core tracking only
     mood_rating = Column(Integer, nullable=False)  # 1-10 scale
+    mood_label = Column(String(50), nullable=True)  # e.g., "Happy", "Tired", "Excited"
+    mood_emoji = Column(String(10), nullable=True)  # e.g., "😊", "😴", "🤩"
 
     # Context and notes
     notes = Column(Text, nullable=True)

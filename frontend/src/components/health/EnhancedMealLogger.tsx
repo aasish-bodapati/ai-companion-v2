@@ -33,8 +33,9 @@ interface Food {
   name: string;
   brand?: string;
   description?: string;
-  source: 'local';
-  calories_per_100g?: number;
+  source?: 'local';
+  category: string;
+  calories_per_100g: number;
   protein_per_100g?: number;
   carbs_per_100g?: number;
   fat_per_100g?: number;
@@ -141,8 +142,19 @@ export function EnhancedMealLogger({ isOpen, onClose, onSuccess }: EnhancedMealL
       
       logger.debug('Nutrition data received:', nutrition);
       
+      // Ensure food has required properties
+      const foodWithDefaults = {
+        ...food,
+        category: food.category || 'General',
+        source: food.source || 'local',
+        calories_per_100g: food.calories_per_100g || 0,
+        protein_per_100g: food.protein_per_100g || 0,
+        carbs_per_100g: food.carbs_per_100g || 0,
+        fat_per_100g: food.fat_per_100g || 0
+      };
+      
       const foodItem: FoodItem = {
-        food,
+        food: foodWithDefaults,
         serving_grams: 100,
         calories: nutrition.calories,
         protein_g: nutrition.protein_g,

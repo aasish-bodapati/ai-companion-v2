@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { WorkoutLoggingDialog } from '@/components/health/WorkoutLoggingDialog';
 import { SimpleRoutineTemplates } from '@/components/health/SimpleRoutineTemplates';
-import FitnessLogsView from '@/components/health/FitnessLogsView';
+import { SimpleFitnessLogsView } from '@/components/health/SimpleFitnessLogsView';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -43,7 +43,8 @@ export default function FitnessPage() {
   const [todayStats, setTodayStats] = useState({
     workouts: 0,
     totalMinutes: 0,
-    caloriesBurned: 0
+    caloriesBurned: 0,
+    currentStreak: 0
   });
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -59,16 +60,17 @@ export default function FitnessPage() {
     setWorkoutSuccess(true);
     successToast('Workout Logged!', 'Your workout has been successfully recorded.');
     
-    // Refresh real data from API
-    try {
-      setIsLoadingStats(true);
-      setStatsError(null);
-      const fitnessToday = await api.get('/health/logging/fitness/today');
-      setTodayStats({
-        workouts: fitnessToday.workouts || 0,
-        totalMinutes: fitnessToday.totalMinutes || 0,
-        caloriesBurned: fitnessToday.caloriesBurned || 0
-      });
+      // Refresh real data from API
+      try {
+        setIsLoadingStats(true);
+        setStatsError(null);
+        const fitnessToday = await api.get('/health/logging/fitness/today');
+        setTodayStats({
+          workouts: fitnessToday.workouts || 0,
+          totalMinutes: fitnessToday.totalMinutes || 0,
+          caloriesBurned: fitnessToday.caloriesBurned || 0,
+          currentStreak: 0  // Streak not available in today endpoint
+        });
     } catch (error) {
       console.error('Failed to refresh fitness stats:', error);
       setStatsError('Failed to refresh stats');
@@ -79,7 +81,8 @@ export default function FitnessPage() {
         ...prev,
         workouts: prev.workouts + 1,
         totalMinutes: prev.totalMinutes + 30,
-        caloriesBurned: prev.caloriesBurned + 250
+        caloriesBurned: prev.caloriesBurned + 250,
+        currentStreak: prev.currentStreak + 1
       }));
     } finally {
       setIsLoadingStats(false);
@@ -101,13 +104,13 @@ export default function FitnessPage() {
       
       try {
         setStatsError(null);
-        // Load today's fitness data with timezone offset
-        const timezoneOffset = new Date().getTimezoneOffset();
-        const fitnessToday = await api.get(`/health/logging/fitness/today?timezone_offset=${timezoneOffset}`);
+        // Load today's fitness stats
+        const fitnessToday = await api.get('/health/logging/fitness/today');
         setTodayStats({
           workouts: fitnessToday.workouts || 0,
           totalMinutes: fitnessToday.totalMinutes || 0,
-          caloriesBurned: fitnessToday.caloriesBurned || 0
+          caloriesBurned: fitnessToday.caloriesBurned || 0,
+          currentStreak: 0  // Streak not available in today endpoint
         });
       } catch (error) {
         console.error('Failed to load today stats:', error);
@@ -118,7 +121,8 @@ export default function FitnessPage() {
         setTodayStats({
           workouts: Math.floor(Math.random() * 3),
           totalMinutes: Math.floor(Math.random() * 120),
-          caloriesBurned: Math.floor(Math.random() * 500)
+          caloriesBurned: Math.floor(Math.random() * 500),
+          currentStreak: Math.floor(Math.random() * 7)
         });
       } finally {
         // Add a small delay to make the loading feel more natural
@@ -156,24 +160,6 @@ export default function FitnessPage() {
                     <p className="text-lg md:text-xl text-white/90 mb-4 max-w-2xl">
                       Track your workouts, monitor your progress, and optimize your fitness journey with AI-powered insights.
                     </p>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-                    <button
-                      onClick={() => setShowWorkoutLogger(true)}
-                      className={`bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50 ${
-                        workoutSuccess ? 'animate-pulse bg-green-500/20 border-2 border-green-400' : ''
-                      }`}
-                    >
-                      <BoltIcon className="h-5 w-5" />
-                      <span>Log Today&apos;s Workout</span>
-                    </button>
-                    <button
-                      onClick={() => setActiveTab('routines')}
-                      className="bg-white/20 text-white hover:bg-white/30 px-6 py-3 rounded-xl font-semibold text-lg flex items-center gap-2 backdrop-blur-sm border-0 transition-all duration-200 hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-white/50"
-                    >
-                      <ChartBarIcon className="h-5 w-5" />
-                      <span>View Routines</span>
-                    </button>
-                  </div>
                   <div className="flex items-center gap-4 text-white/80">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
@@ -296,16 +282,29 @@ export default function FitnessPage() {
                 </Card>
               </AnimatedCard>
 
-              <AnimatedCard hover={true} onClick={() => setActiveTab('log')}>
-                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 transition-all duration-200 cursor-pointer">
+              <AnimatedCard hover={false}>
+                <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white" data-testid="stats-card">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-green-100 text-sm font-medium">Quick Log</p>
-                        <p className="text-lg font-bold">Log Workout</p>
+                        <p className="text-green-100 text-sm font-medium">Workout Streak</p>
+                        {isLoadingStats ? (
+                          <div className="h-8 w-16 bg-green-400/30 rounded animate-pulse"></div>
+                        ) : (
+                          <AnimatedCounter 
+                            value={todayStats.currentStreak} 
+                            className="text-3xl font-bold"
+                            duration={0.8}
+                          />
+                        )}
                       </div>
-                      <BoltIcon className="h-8 w-8 text-green-200" />
+                      <TrophyIcon className="h-8 w-8 text-green-200" />
                     </div>
+                    {statsError && (
+                      <div className="mt-2 text-xs text-green-200 opacity-75">
+                        ⚠️ {statsError}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </AnimatedCard>
@@ -411,7 +410,7 @@ export default function FitnessPage() {
                 </TabsContent>
 
                 <TabsContent value="logs" className="space-y-6">
-                  <FitnessLogsView refreshTrigger={refreshTrigger} />
+                  <SimpleFitnessLogsView refreshTrigger={refreshTrigger} />
                 </TabsContent>
 
                 <TabsContent value="progress" className="space-y-6">

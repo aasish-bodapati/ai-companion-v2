@@ -82,10 +82,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         # Convert UUID to string if needed
         if hasattr(id, "hex"):
             id = str(id)
-        # Use a filter-based lookup (like get()) to avoid edge cases with Session.get() on string PKs
-        q = db.query(self.model).filter(self.model.id == id)
-        obj = q.first()
-        # Perform bulk delete to avoid identity map/staleness issues across requests
-        q.delete(synchronize_session=False)
-        db.commit()
+        # Get the object first
+        obj = db.query(self.model).filter(self.model.id == id).first()
+        if obj:
+            # Delete the specific object
+            db.delete(obj)
+            db.commit()
         return obj

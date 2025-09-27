@@ -279,10 +279,10 @@ export function CustomNutritionRoutineBuilder({ onRoutineCreated }: CustomNutrit
       food_name: '',
       quantity: '',
       order_index: 0,
-      calories: '',
-      protein_g: '',
-      carbs_g: '',
-      fat_g: ''
+      calories: 0,
+      protein_g: 0,
+      carbs_g: 0,
+      fat_g: 0
     };
 
     setDayMeals(prev => prev.map(dayMeal => 

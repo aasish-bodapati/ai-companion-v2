@@ -6,7 +6,7 @@ import {
   InformationCircleIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
-  SaveIcon
+  CheckIcon
 } from '@heroicons/react/24/outline';
 import { EnhancedFormContainer } from './enhanced-form-container';
 import { EnhancedFormField } from './enhanced-form-field';
@@ -134,10 +134,6 @@ export function SmartForm({
       
       if (field.max !== undefined) {
         rules[field.name].max = field.max;
-      }
-      
-      if (field.minLength !== undefined) {
-        rules[field.name].minLength = field.minLength;
       }
       
       if (field.maxLength !== undefined) {
@@ -296,7 +292,7 @@ export function SmartForm({
             placeholder={field.placeholder}
             required={field.required}
             disabled={disabled || field.disabled}
-            error={getFieldError(field.name)}
+            error={getFieldError(field.name) || undefined}
             helpText={field.helpText}
             min={field.min}
             max={field.max}

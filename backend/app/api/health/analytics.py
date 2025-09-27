@@ -5,7 +5,7 @@ Analytics API endpoints for health data insights.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.db.session import get_db
 from app.api.deps import get_current_user
@@ -76,12 +76,11 @@ async def get_dashboard_data(
         recommendations = await analytics_service.get_personalized_recommendations(current_user.id)
         
         # Calculate summary stats
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=7)
         
         # Get recent activity counts
-        from app.models.health.fitness_log import FitnessLog
-        from app.models.health.nutrition_log import NutritionLog
+        from app.models.health.fitness_log import FitnessLog, NutritionLog
         
         recent_workouts = db.query(FitnessLog).filter(
             FitnessLog.user_id == current_user.id,

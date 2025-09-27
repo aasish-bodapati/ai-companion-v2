@@ -212,6 +212,11 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 
 # ===========================================
+# Frontend Directory (Excluded from Git)
+# ===========================================
+frontend/
+
+# ===========================================
 # Scripts & Utilities (generated files)
 # ===========================================
 frontend/scripts/

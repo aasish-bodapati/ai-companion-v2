@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -45,6 +45,8 @@ class FitnessLogBase(BaseModel):
     calories_burned: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
     activity_date: Optional[datetime] = None
+    exercises: Optional[str] = Field(None, description="JSON string containing exercise data")
+    unit: Optional[str] = Field(None, description="Unit for weight measurements")
 
 class FitnessLogCreate(FitnessLogBase):
     timezone_offset: Optional[int] = Field(None, description="Timezone offset in minutes from UTC")
@@ -56,6 +58,8 @@ class FitnessLogUpdate(BaseModel):
     calories_burned: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
     activity_date: Optional[datetime] = None
+    exercises: Optional[str] = Field(None, description="JSON string containing exercise data")
+    unit: Optional[str] = Field(None, description="Unit for weight measurements")
 
 class FitnessLog(FitnessLogBase):
     id: str
@@ -84,6 +88,7 @@ class NutritionLogBase(BaseModel):
     total_calories: int = Field(..., ge=0)
     notes: Optional[str] = None
     meal_date: datetime
+    food_items: Optional[Union[list, str]] = None
 
 class NutritionLogCreate(NutritionLogBase):
     pass
@@ -94,6 +99,7 @@ class NutritionLogUpdate(BaseModel):
     total_calories: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
     meal_date: Optional[datetime] = None
+    food_items: Optional[Union[list, str]] = None
 
 class NutritionLog(NutritionLogBase):
     id: str
@@ -107,6 +113,8 @@ class NutritionLog(NutritionLogBase):
 # Mood schemas
 class MoodLogBase(BaseModel):
     mood_rating: int = Field(..., ge=1, le=10)
+    mood_label: Optional[str] = Field(None, max_length=50)
+    mood_emoji: Optional[str] = Field(None, max_length=10)
     notes: Optional[str] = None
     log_date: datetime
 
@@ -115,12 +123,14 @@ class MoodLogCreate(MoodLogBase):
 
 class MoodLogUpdate(BaseModel):
     mood_rating: Optional[int] = Field(None, ge=1, le=10)
+    mood_label: Optional[str] = Field(None, max_length=50)
+    mood_emoji: Optional[str] = Field(None, max_length=10)
     notes: Optional[str] = None
     log_date: Optional[datetime] = None
 
 class MoodLog(MoodLogBase):
-    id: str
-    user_id: str
+    id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
 

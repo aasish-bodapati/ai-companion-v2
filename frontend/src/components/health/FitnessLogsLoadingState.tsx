@@ -1,5 +1,5 @@
 import React from 'react';
-import { StatsCardSkeleton, WorkoutCardSkeleton, CalendarSkeleton } from '@/components/ui/loading-states';
+import { StatsCardSkeleton, CardLoading } from '@/components/ui/loading-states';
 
 interface FitnessLogsLoadingStateProps {
   viewMode: 'day' | 'month';
@@ -21,11 +21,11 @@ export function FitnessLogsLoadingState({ viewMode, className = '' }: FitnessLog
         {viewMode === 'day' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {[...Array(6)].map((_, i) => (
-              <WorkoutCardSkeleton key={i} />
+              <CardLoading key={i} />
             ))}
           </div>
         ) : (
-          <CalendarSkeleton />
+          <CardLoading />
         )}
       </div>
     </div>

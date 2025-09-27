@@ -21,6 +21,7 @@ export interface WorkoutLog {
   logged_at?: string;
   activity_date?: string;
   created_at: string;
+  unit?: string;
 }
 
 export interface FitnessStats {
@@ -40,17 +41,33 @@ export interface CreateWorkoutLogData {
   activity_name: string;
   duration_minutes: number;
   calories_burned: number;
-  notes: string;
+  notes?: string;
   activity_type: string;
   activity_date?: string;
+  exercises?: Array<{
+    exercise_name: string;
+    sets: number;
+    reps: number;
+    weight_used?: number;
+    notes?: string;
+  }>;
+  unit?: string;
 }
 
 export interface UpdateWorkoutLogData {
   activity_name: string;
   duration_minutes: number;
   calories_burned: number;
-  notes: string;
+  notes?: string;
   activity_type: string;
+  exercises?: Array<{
+    exercise_name: string;
+    sets: number;
+    reps: number;
+    weight_used?: number;
+    notes?: string;
+  }>;
+  unit?: string;
 }
 
 class FitnessLogsService {
@@ -96,7 +113,7 @@ class FitnessLogsService {
     try {
       logger.debug('Creating workout log...', logData);
       
-      const response = await api.post('/health/logging/fitness', logData);
+      const response = await api.post('/health/fitness-logs/', logData);
       
       logger.debug('Workout log created successfully:', response);
       return response;
@@ -113,7 +130,7 @@ class FitnessLogsService {
     try {
       logger.debug('Updating workout log...', { logId, updateData });
       
-      const response = await api.put(`/health/logging/fitness/${logId}`, updateData);
+      const response = await api.put(`/health/fitness-logs/${logId}`, updateData);
       
       logger.debug('Workout log updated successfully:', response);
       return response;
@@ -130,7 +147,7 @@ class FitnessLogsService {
     try {
       logger.debug('Deleting workout log...', { logId });
       
-      await api.delete(`/health/logging/fitness/${logId}`);
+      await api.delete(`/health/fitness-logs/${logId}`);
       
       logger.debug('Workout log deleted successfully');
     } catch (error) {

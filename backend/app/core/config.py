@@ -81,8 +81,8 @@ class Settings(BaseSettings):
             raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid SQLite or PostgreSQL URI")
         return v
 
-    # Database settings - SQLite for MVP, PostgreSQL for production
-    SQLALCHEMY_DATABASE_URI: Optional[str] = "sqlite:///./healthlog.db"
+    # Database settings - PostgreSQL for production
+    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/healthlog_db"
 
     # User management
     FIRST_SUPERUSER: str = "admin@example.com"

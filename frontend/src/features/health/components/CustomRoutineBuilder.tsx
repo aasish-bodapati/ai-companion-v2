@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { simpleRoutineApi } from '@/lib/simpleRoutineApi';
 import { api } from '@/lib/api';
 import { logger } from '@/lib/logger';
-import { WORKOUT_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
+import { ROUTINE_CREATION_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
 import { WorkoutInputComponents } from '@/components/health/WorkoutInputComponents';
 
 interface Exercise {
@@ -33,11 +33,7 @@ interface Workout {
   id: string;
   activity_type: string;
   selectedExercise?: Exercise; // Selected exercise from database
-  sets: number;
-  reps: number;
-  // Flexible attributes based on exercise type
-  weight?: number;
-  weight_unit?: 'lbs' | 'kg';
+  // Flexible attributes based on exercise type (no sets/reps/weight for routine planning)
   equipment_type?: 'dumbbell' | 'barbell' | 'machine' | 'bodyweight';
   duration?: number; // for cardio
   distance?: number; // for running
@@ -53,6 +49,7 @@ interface Workout {
 
 interface DayWorkouts {
   day: string;
+  workoutName: string; // Custom workout name for this day
   workouts: Workout[];
 }
 
@@ -78,7 +75,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
     const loadExercises = async () => {
       try {
         setLoadingExercises(true);
-        const response = await api.get('/health/exercises/all');
+        const response = await api.get('/health/exercises/all?limit=500');
         setAllExercises(response.exercises || []);
       } catch (error) {
         console.error('Failed to load exercises:', error);
@@ -162,9 +159,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
     const workoutId = Date.now().toString();
     const newWorkout: Workout = {
       id: workoutId,
-      activity_type: '',
-      sets: 3,
-      reps: 10
+      activity_type: ''
     };
 
     // Initialize empty search value for the new workout
@@ -182,7 +177,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
             : d
         );
       } else {
-        return [...prev, { day, workouts: [newWorkout] }];
+        return [...prev, { day, workoutName: `${day} Workout`, workouts: [newWorkout] }];
       }
     });
   };
@@ -198,6 +193,17 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
             return workout;
           });
           return { ...dayWorkout, workouts: updatedWorkouts };
+        }
+        return dayWorkout;
+      });
+    });
+  };
+
+  const updateWorkoutName = (day: string, workoutName: string) => {
+    setDayWorkouts(prev => {
+      return prev.map(dayWorkout => {
+        if (dayWorkout.day === day) {
+          return { ...dayWorkout, workoutName };
         }
         return dayWorkout;
       });
@@ -262,8 +268,31 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
         workout_days: dayWorkouts
       });
       
+      // Transform dayWorkouts to include workout_name for each day
+      const workoutDaysForAPI = dayWorkouts.map(dayWorkout => ({
+        day: dayWorkout.day,
+        day_order: DAYS.indexOf(dayWorkout.day),
+        workout_name: dayWorkout.workoutName || `${dayWorkout.day} Workout`,
+        description: '',
+        workouts: dayWorkout.workouts.map(workout => ({
+          activity_name: workout.selectedExercise?.name || 'Unknown Exercise',
+          duration: workout.duration,
+          distance: workout.distance,
+          distance_unit: workout.distance_unit,
+          intensity: workout.intensity,
+          heart_rate: workout.heart_rate,
+          difficulty: workout.difficulty,
+          total_reps: workout.total_reps,
+          time: workout.time,
+          pace: workout.pace,
+          weight_notes: workout.weight_notes,
+          rest_time: workout.rest_time,
+          notes: workout.notes
+        }))
+      }));
+
       // Use the new API endpoint for detailed workout plans
-      const savedRoutine = await simpleRoutineApi.createRoutineWithWorkoutPlan(routineToSave, dayWorkouts);
+      const savedRoutine = await simpleRoutineApi.createRoutineWithWorkoutPlan(routineToSave, workoutDaysForAPI);
       logger.info('Routine with workout plan saved successfully:', savedRoutine);
       logger.debug('Database routine ID:', savedRoutine.id);
       
@@ -342,7 +371,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
                     return (
                       <div key={day} className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
                         <div className="p-4 pb-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center">
                                 <span className="text-white font-bold text-xs">{day.charAt(0)}</span>
@@ -357,6 +386,18 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
                               <PlusIcon className="h-3 w-3 mr-1" />
                               Add Workout
                             </Button>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`workout-name-${day}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                              Day Name
+                            </Label>
+                            <Input
+                              id={`workout-name-${day}`}
+                              value={dayData?.workoutName || `${day} Workout`}
+                              onChange={(e) => updateWorkoutName(day, e.target.value)}
+                              placeholder={`e.g., ${day} Workout`}
+                              className="border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                            />
                           </div>
                         </div>
                         <div className="px-4 pb-4">
@@ -420,7 +461,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
                                     }
                                     
                                     console.log('🎨 Rendering form for exercise:', workout.selectedExercise);
-                                    const category = WORKOUT_CATEGORIES.find(cat => cat.id === workout.selectedExercise?.logging_category);
+                                    const category = ROUTINE_CREATION_CATEGORIES.find(cat => cat.id === workout.selectedExercise?.logging_category);
                                     const categoryData = workoutCategoryData[`${day}-${workout.id}`] || {};
                                     
                                     console.log('📋 Category found:', category);
@@ -434,7 +475,7 @@ function CustomRoutineBuilder({ onRoutineCreated }: CustomRoutineBuilderProps) {
                                             Category not found for: {workout.selectedExercise.logging_category}
                                           </p>
                                           <p className="text-sm text-red-500 dark:text-red-300 mt-2">
-                                            Available categories: {WORKOUT_CATEGORIES.map(cat => cat.id).join(', ')}
+                                            Available categories: {ROUTINE_CREATION_CATEGORIES.map(cat => cat.id).join(', ')}
                                           </p>
                                         </div>
                                       );

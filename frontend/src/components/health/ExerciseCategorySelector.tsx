@@ -88,7 +88,7 @@ const ExerciseCategorySelector: React.FC<ExerciseCategorySelectorProps> = ({
 
   const loadExercises = async (categoryId: string) => {
     try {
-      const response = await api.get(`/health/exercises/all`);
+      const response = await api.get(`/health/exercises/all?limit=500`);
       const allExercises = response.data.exercises;
       const filteredExercises = allExercises.filter((ex: Exercise) => 
         ex.logging_category === categoryId

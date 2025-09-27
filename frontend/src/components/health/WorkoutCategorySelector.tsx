@@ -39,6 +39,7 @@ export interface WorkoutCategory {
   };
 }
 
+// Categories for workout logging (with sets/reps/weight)
 export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
   {
     id: 'bodyweight',
@@ -53,7 +54,7 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
         { name: 'reps', type: 'number', label: 'Reps', min: 1, max: 1000 }
       ],
       optional: [
-        { name: 'total_reps', type: 'number', label: 'Total Reps', min: 1, max: 10000 },
+        { name: 'total_reps', type: 'number', label: 'Total Reps' },
         { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
       ]
     }
@@ -72,7 +73,6 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
         { name: 'weight', type: 'number', label: 'Weight', min: 0, max: 1000 }
       ],
       optional: [
-        { name: 'weight_unit', type: 'select', label: 'Weight Unit', options: ['lbs', 'kg'] },
         { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
       ]
     }
@@ -89,10 +89,10 @@ export const WORKOUT_CATEGORIES: WorkoutCategory[] = [
         { name: 'duration', type: 'number', label: 'Duration (minutes)', min: 1, max: 600 }
       ],
       optional: [
-        { name: 'distance', type: 'number', label: 'Distance', min: 0, max: 1000 },
+        { name: 'distance', type: 'number', label: 'Distance' },
         { name: 'distance_unit', type: 'select', label: 'Distance Unit', options: ['miles', 'km', 'meters'] },
         { name: 'intensity', type: 'select', label: 'Intensity', options: ['low', 'medium', 'high'] },
-        { name: 'heart_rate', type: 'number', label: 'Heart Rate (bpm)', min: 40, max: 220 },
+        { name: 'heart_rate', type: 'number', label: 'Heart Rate (bpm)' },
         { name: 'difficulty', type: 'select', label: 'Difficulty', options: ['beginner', 'intermediate', 'advanced'] },
         { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
       ]
@@ -162,7 +162,7 @@ export function WorkoutCategorySelector({
       try {
         setLoadingExercises(true);
         // Use backend filtering instead of client-side filtering
-        const response = await api.get(`/health/exercises/all?logging_category=${selectedCategory}`);
+        const response = await api.get(`/health/exercises/all?logging_category=${selectedCategory}&limit=500`);
         const exercises = response.exercises || [];
         
         setExercises(exercises);
@@ -345,4 +345,64 @@ export function WorkoutCategorySelector({
     </div>
   );
 }
+
+// Categories for routine creation (without sets/reps/weight - just exercise selection)
+export const ROUTINE_CREATION_CATEGORIES: WorkoutCategory[] = [
+  {
+    id: 'bodyweight',
+    name: 'bodyweight',
+    displayName: 'Bodyweight Exercises',
+    description: 'Exercises using only your body weight and repetition-based exercises',
+    icon: UserIcon,
+    color: 'blue',
+    loggingAttributes: {
+      required: [],
+      optional: [
+        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
+      ]
+    }
+  },
+  {
+    id: 'weighted',
+    name: 'weighted',
+    displayName: 'Weighted Exercises',
+    description: 'Exercises with external weights',
+    icon: WrenchScrewdriverIcon,
+    color: 'red',
+    loggingAttributes: {
+      required: [],
+      optional: [
+        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
+      ]
+    }
+  },
+  {
+    id: 'cardio_duration',
+    name: 'cardio_duration',
+    displayName: 'Cardio & Duration',
+    description: 'Cardiovascular exercises and static holds tracked by time',
+    icon: HeartIcon,
+    color: 'green',
+    loggingAttributes: {
+      required: [],
+      optional: [
+        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
+      ]
+    }
+  },
+  {
+    id: 'distance_based',
+    name: 'distance_based',
+    displayName: 'Distance-Based',
+    description: 'Running, cycling, and other distance-based activities',
+    icon: MapIcon,
+    color: 'purple',
+    loggingAttributes: {
+      required: [],
+      optional: [
+        { name: 'notes', type: 'text', label: 'Notes', max_length: 500 }
+      ]
+    }
+  }
+];
 

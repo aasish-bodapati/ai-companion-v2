@@ -134,7 +134,6 @@ class LoggingEndpointsMixin:
                 )
                 
             except Exception as e:
-                print(f"Error getting {log_type} logs: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} logs")
         
         @router.get("/{id}", response_model=dict)
@@ -163,7 +162,6 @@ class LoggingEndpointsMixin:
                 log = crud_service.create_with_user(db, obj_in=log_data, user_id=current_user.id)
                 return response_formatter(log)
             except Exception as e:
-                print(f"Error creating {log_type} log: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to create {log_type} log")
         
         @router.put("/{id}", response_model=dict)
@@ -183,7 +181,6 @@ class LoggingEndpointsMixin:
                 updated_log = crud_service.update(db, db_obj=log, obj_in=log_data)
                 return response_formatter(updated_log)
             except Exception as e:
-                print(f"Error updating {log_type} log: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to update {log_type} log")
         
         @router.delete("/{id}")
@@ -202,7 +199,6 @@ class LoggingEndpointsMixin:
                 crud_service.remove(db, id=id)
                 return {"message": f"{log_type.title()} log deleted successfully"}
             except Exception as e:
-                print(f"Error deleting {log_type} log: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to delete {log_type} log")
         
         @router.get("/stats", response_model=dict)
@@ -227,7 +223,6 @@ class LoggingEndpointsMixin:
                 return LoggingResponseFormatter.format_stats_response(stats)
                 
             except Exception as e:
-                print(f"Error getting {log_type} stats: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} statistics")
         
         @router.get("/recent", response_model=List[dict])
@@ -251,7 +246,6 @@ class LoggingEndpointsMixin:
                 return [response_formatter(log) for log in logs]
                 
             except Exception as e:
-                print(f"Error getting recent {log_type} logs: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve recent {log_type} logs")
         
         @router.get("/streak", response_model=dict)
@@ -281,7 +275,6 @@ class LoggingEndpointsMixin:
                 }
                 
             except Exception as e:
-                print(f"Error getting {log_type} streak: {e}")
                 raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} streak")
         
         return router

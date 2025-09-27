@@ -20,9 +20,9 @@ from fastapi.exceptions import RequestValidationError
 from app.core.config import settings
 from app.core.rate_limiting import rate_limit_middleware
 
-# Configure logging for all cases to ensure debug logs are visible
+# Configure logging to reduce verbosity
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     stream=sys.stdout,
 )
@@ -425,3 +425,4 @@ async def metrics():
         return JSONResponse(content="", media_type="text/plain; version=0.0.4; charset=utf-8")
 
 # (Removed deprecated on_event startup handlers; handled in lifespan)
+# Hot reload trigger

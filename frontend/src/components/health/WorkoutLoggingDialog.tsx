@@ -32,7 +32,6 @@ interface Exercise {
   pace?: string;
   weight_notes?: string;
   rest_time?: string;
-  notes?: string;
   order_index: number;
 }
 
@@ -68,8 +67,7 @@ const getFieldDisplayName = (fieldName: string): string => {
   const fieldMap: { [key: string]: string } = {
     'sets': 'Sets',
     'reps': 'Reps',
-    'weight': 'Weight',
-    'weight_unit': 'Weight Unit',
+    'weight': 'Weight (kg)',
     'duration': 'Duration (min)',
     'distance': 'Distance',
     'distance_unit': 'Distance Unit',
@@ -78,8 +76,7 @@ const getFieldDisplayName = (fieldName: string): string => {
     'difficulty': 'Difficulty',
     'total_reps': 'Total Reps',
     'time': 'Time (min)',
-    'pace': 'Pace',
-    'notes': 'Notes'
+    'pace': 'Pace'
   };
   return fieldMap[fieldName] || fieldName;
 };
@@ -89,10 +86,12 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
   const [loggedExercises, setLoggedExercises] = useState<{ [key: number]: any }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isLogging, setIsLogging] = useState(false);
+  const [skippedExercises, setSkippedExercises] = useState<{ [key: number]: boolean }>({});
 
   // Load today's workout when dialog opens
   useEffect(() => {
     if (isOpen) {
+      setSkippedExercises({}); // Reset skipped exercises when dialog opens
       loadTodayWorkout();
     }
   }, [isOpen]);
@@ -100,13 +99,37 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
   const loadTodayWorkout = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/health/simple-routines/active/today-workout');
+      const response = await api.get('/health/simple-routines/active/previous-week-workout');
       setWorkoutData(response);
       
-      // Initialize logged exercises with empty values
+      // Initialize logged exercises with previous week's data
       const initialLogged: { [key: number]: any } = {};
       response.exercises.forEach((exercise: Exercise) => {
-        initialLogged[exercise.id] = {};
+        const previousData = (exercise as any).previous_data || {};
+        console.log('Exercise data:', exercise);
+        console.log('Previous data:', previousData);
+        console.log('Previous data weight:', previousData.weight);
+        console.log('Previous data weight_used:', previousData.weight_used);
+        
+        initialLogged[exercise.id] = {
+          sets: previousData.sets !== undefined ? previousData.sets : (exercise.sets || ''),
+          reps: previousData.reps !== undefined ? previousData.reps : (exercise.reps || ''),
+          weight: previousData.weight !== undefined ? previousData.weight : (previousData.weight_used !== undefined ? previousData.weight_used : (exercise.weight || '')),
+          weight_unit: 'kg', // Default to kg
+          duration: previousData.duration !== undefined ? previousData.duration : (exercise.duration || ''),
+          distance: previousData.distance !== undefined ? previousData.distance : (exercise.distance || ''),
+          distance_unit: previousData.distance_unit !== undefined ? previousData.distance_unit : (exercise.distance_unit || ''),
+          intensity: previousData.intensity !== undefined ? previousData.intensity : (exercise.intensity || ''),
+          heart_rate: previousData.heart_rate !== undefined ? previousData.heart_rate : (exercise.heart_rate || ''),
+          difficulty: previousData.difficulty !== undefined ? previousData.difficulty : (exercise.difficulty || ''),
+          total_reps: previousData.total_reps !== undefined ? previousData.total_reps : (exercise.total_reps || ''),
+          time: previousData.time !== undefined ? previousData.time : (exercise.time || ''),
+          pace: previousData.pace !== undefined ? previousData.pace : (exercise.pace || ''),
+          weight_notes: previousData.weight_notes !== undefined ? previousData.weight_notes : (exercise.weight_notes || ''),
+          rest_time: previousData.rest_time || exercise.rest_time || ''
+        };
+        
+        console.log('Initialized data for exercise', exercise.id, ':', initialLogged[exercise.id]);
       });
       setLoggedExercises(initialLogged);
     } catch (error: any) {
@@ -135,21 +158,45 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
     }));
   };
 
+  const toggleExerciseSkipped = (exerciseId: number) => {
+    setSkippedExercises(prev => ({
+      ...prev,
+      [exerciseId]: !prev[exerciseId]
+    }));
+  };
+
   const logWorkout = async () => {
     if (!workoutData) return;
 
     try {
       setIsLogging(true);
       
-      // Log the workout completion
-      await api.post(`/health/simple-routines/${workoutData.routine_id}/log-workout`);
+      // Count skipped vs completed exercises
+      const skippedCount = Object.values(skippedExercises).filter(Boolean).length;
+      const completedCount = workoutData.exercises.length - skippedCount;
       
-      // TODO: Save individual exercise logs if needed
-      // For now, we just log the workout completion
-      
-      toast.success('Workout logged successfully!', {
-        description: `Great job completing your ${workoutData.workout_name}!`
-      });
+      if (skippedCount > 0) {
+        // Any exercises skipped - mark entire workout as skipped
+        await api.post(`/health/simple-routines/${workoutData.routine_id}/skip-workout`);
+        
+        const message = skippedCount === workoutData.exercises.length
+          ? `Your ${workoutData.workout_name} has been marked as skipped.`
+          : `Workout marked as skipped. ${completedCount} exercises completed, ${skippedCount} skipped.`;
+        
+        toast.success('Workout marked as skipped', {
+          description: message
+        });
+      } else {
+        // All exercises completed - log the workout completion
+        await api.post(`/health/simple-routines/${workoutData.routine_id}/log-workout`);
+        
+        // TODO: Save individual exercise logs if needed
+        // For now, we just log the workout completion
+        
+        toast.success('Workout logged successfully!', {
+          description: `Great job completing your ${workoutData.workout_name}!`
+        });
+      }
       
       onSuccess();
       onClose();
@@ -164,6 +211,9 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
   };
 
   const isExerciseLogged = (exerciseId: number) => {
+    // If exercise is skipped, consider it "logged" for UI purposes
+    if (skippedExercises[exerciseId]) return true;
+    
     const logged = loggedExercises[exerciseId];
     if (!logged) return false;
     
@@ -182,6 +232,11 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
   const allExercisesLogged = () => {
     if (!workoutData) return false;
     return workoutData.exercises.every(exercise => isExerciseLogged(exercise.id));
+  };
+
+  const canSubmit = () => {
+    if (!workoutData) return false;
+    return allExercisesLogged();
   };
 
   if (!isOpen) return null;
@@ -230,7 +285,12 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
                 {workoutData.exercises.map((exercise, index) => {
                   const logged = loggedExercises[exercise.id] || {};
                   const isLogged = isExerciseLogged(exercise.id);
-                  const formFields = getFormFieldsForCategory(exercise.logging_category);
+                  const formFields = getFormFieldsForCategory(exercise.logging_category || 'bodyweight');
+                  
+                  console.log(`Exercise ${exercise.exercise_name}:`);
+                  console.log(`  logging_category: ${exercise.logging_category}`);
+                  console.log(`  formFields:`, formFields);
+                  console.log(`  logged data:`, logged);
                   
                   return (
                     <Card key={exercise.id} className={isLogged ? 'border-green-200 bg-green-50 dark:bg-green-900/20' : ''}>
@@ -243,20 +303,40 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
                               <CheckIcon className="h-4 w-4 text-green-500" />
                             )}
                           </CardTitle>
-                          <Badge variant={isLogged ? 'default' : 'secondary'}>
-                            {isLogged ? 'Logged' : 'Not Logged'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`skip-exercise-${exercise.id}`}
+                                checked={skippedExercises[exercise.id] || false}
+                                onChange={() => toggleExerciseSkipped(exercise.id)}
+                                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                              />
+                              <label htmlFor={`skip-exercise-${exercise.id}`} className="text-xs text-gray-600 dark:text-gray-400">
+                                Skip
+                              </label>
+                            </div>
+                            <Badge 
+                              variant={isLogged ? 'default' : 'secondary'}
+                              className={isLogged 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' 
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
+                              }
+                            >
+                              {skippedExercises[exercise.id] ? 'Skipped' : (isLogged ? 'Logged' : 'Not Logged')}
+                            </Badge>
+                          </div>
                         </div>
                       </CardHeader>
                       
                       <CardContent>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {formFields.map((field) => {
+                          {formFields.filter(field => field.name !== 'notes' && field.name !== 'weight_unit').map((field) => {
                             const fieldName = field.name as keyof Exercise;
                             const fieldValue = logged[field.name] || '';
                             
                             return (
-                              <div key={field.name} className={field.name === 'notes' ? 'sm:col-span-2 lg:col-span-3' : ''}>
+                              <div key={field.name}>
                                 <Label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 block">
                                   {getFieldDisplayName(field.name)}
                                   {field.name === 'sets' || field.name === 'reps' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? ' *' : ''}
@@ -281,10 +361,10 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
                                 ) : field.type === 'number' ? (
                                   <Input
                                     type="number"
-                                    min={field.min || 0}
-                                    max={field.max || 9999}
-                                    value={fieldValue as number || ''}
-                                    onChange={(e) => updateLoggedExercise(exercise.id, field.name, field.name === 'sets' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? parseInt(e.target.value) || 0 : e.target.value)}
+                                    min={'min' in field ? field.min || 0 : 0}
+                                    max={'max' in field ? field.max || 9999 : 9999}
+                                    value={fieldValue || ''}
+                                    onChange={(e) => updateLoggedExercise(exercise.id, field.name, field.name === 'sets' || field.name === 'reps' || field.name === 'weight' || field.name === 'duration' || field.name === 'total_reps' || field.name === 'time' || field.name === 'heart_rate' ? parseInt(e.target.value) || 0 : e.target.value)}
                                     placeholder={field.label}
                                     className="w-full border border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
                                   />
@@ -293,7 +373,7 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
                                     value={fieldValue as string || ''}
                                     onChange={(e) => updateLoggedExercise(exercise.id, field.name, e.target.value)}
                                     placeholder={field.label}
-                                    maxLength={field.max_length || undefined}
+                                    maxLength={'max_length' in field ? field.max_length || undefined : undefined}
                                     className="w-full border border-gray-300 dark:border-gray-600 focus:border-orange-500 focus:ring-orange-500 rounded-lg"
                                   />
                                 )}
@@ -339,7 +419,19 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
             <div className="text-sm text-gray-600 dark:text-gray-400">
               {workoutData && (
                 <span>
-                  {workoutData.exercises.filter(ex => isExerciseLogged(ex.id)).length} / {workoutData.exercises.length} exercises logged
+                  {(() => {
+                    const loggedCount = workoutData.exercises.filter(ex => isExerciseLogged(ex.id)).length;
+                    const skippedCount = Object.values(skippedExercises).filter(Boolean).length;
+                    const completedCount = loggedCount - skippedCount;
+                    
+                    if (skippedCount === workoutData.exercises.length) {
+                      return 'All exercises will be skipped - workout will be marked as skipped';
+                    } else if (skippedCount > 0) {
+                      return `${completedCount} completed, ${skippedCount} skipped - workout will be marked as skipped`;
+                    } else {
+                      return `${loggedCount} / ${workoutData.exercises.length} exercises logged - workout will be completed`;
+                    }
+                  })()}
                 </span>
               )}
             </div>
@@ -353,10 +445,10 @@ export function WorkoutLoggingDialog({ isOpen, onClose, onSuccess, onNavigateToR
               </Button>
               <Button
                 onClick={logWorkout}
-                disabled={!allExercisesLogged() || isLogging}
+                disabled={!canSubmit() || isLogging}
                 className="bg-orange-600 hover:bg-orange-700 text-white"
               >
-                {isLogging ? 'Logging...' : 'Log Workout'}
+                {isLogging ? 'Saving...' : 'Save Workout'}
               </Button>
             </div>
           </div>

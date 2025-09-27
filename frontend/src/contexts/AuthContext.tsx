@@ -69,7 +69,7 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
         is_active: true,
         is_superuser: false
       };
-      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4NjYxMzI3fQ.zOUNT-vnZOpjv9iQyzTD7wZGKiOSUL-aKLwXXLTa-wY';
+      const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4ODcxMTU3fQ.HTrD2iID2rpMwpYvRgUhEHH1vjBa77NGt5S6lCxSbmg';
 
       setUser(testUser);
       setToken(testToken);
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children, initialUser, testMode = false }: AuthPr
               is_active: true,
               is_superuser: false
             };
-            const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4NjYxMzI3fQ.zOUNT-vnZOpjv9iQyzTD7wZGKiOSUL-aKLwXXLTa-wY';
+            const testToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4ODcxMTU3fQ.HTrD2iID2rpMwpYvRgUhEHH1vjBa77NGt5S6lCxSbmg';
             
             setUser(testUser);
             setToken(testToken);

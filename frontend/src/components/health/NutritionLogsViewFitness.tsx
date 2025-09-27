@@ -12,7 +12,7 @@ import { CalendarIcon, ClockIcon, FireIcon, HeartIcon, ChartBarIcon, ChevronLeft
 import { format, parseISO, addDays, subDays } from 'date-fns';
 import { useSuccessToast, useErrorToast, useWarningToast } from '@/components/ui/toast';
 import { AnimatedButton, AnimatedCard, AnimatedCounter } from '@/components/ui/micro-interactions';
-import { LoadingOverlay, StatsCardSkeleton } from '@/components/ui/loading-states';
+import { PageLoading, StatsCardSkeleton } from '@/components/ui/loading-states';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import api from '@/lib/api';
 import { SmartMealLogger } from './SmartMealLogger';

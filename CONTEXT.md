@@ -1,0 +1,1 @@
+We are building a fitness and nutrition logging app. We are working on the mobile interfce and backend for now. We are using psql not sqllite. Dont ever try to stop or restart servers, asssume, they are always running in dev mode.

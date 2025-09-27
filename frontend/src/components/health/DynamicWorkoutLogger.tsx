@@ -29,6 +29,16 @@ interface DynamicWorkoutLoggerProps {
       reps: string;
       weight_used?: number;
       notes?: string;
+      duration?: number;
+      distance?: number;
+      intensity?: string;
+      heart_rate?: number;
+      difficulty?: string;
+      total_reps?: number;
+      time?: string;
+      pace?: string;
+      weight_notes?: string;
+      rest_time?: number;
     }>;
   };
 }
@@ -147,7 +157,7 @@ export function DynamicWorkoutLogger({
     setLoading(true);
     try {
       // Create exercise entry based on category
-      const exercise = {
+      const exercise: any = {
         exercise_name: workoutData.workout_name,
         sets: exerciseData.sets || 1,
         reps: String(exerciseData.reps || 1),

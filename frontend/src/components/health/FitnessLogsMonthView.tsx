@@ -202,7 +202,7 @@ export function FitnessLogsMonthView({
                               {log.exercises!.slice(0, 2).map((exercise, index) => (
                                 <div key={index} className="truncate">
                                   {exercise.exercise_name}: {exercise.sets}×{exercise.reps}
-                                  {exercise.weight_used && ` @ ${exercise.weight_used}kg`}
+                                  {exercise.weight_used && ` @ ${exercise.weight_used}${log.unit || 'kg'}`}
                                 </div>
                               ))}
                               {log.exercises!.length > 2 && (
@@ -247,7 +247,7 @@ export function FitnessLogsMonthView({
                               </span>
                               <span className="text-gray-600 dark:text-gray-400 ml-1">
                                 ({exercise.sets}×{exercise.reps}
-                                {exercise.weight_used && ` @ ${exercise.weight_used}kg`})
+                                {exercise.weight_used && ` @ ${exercise.weight_used}${log.unit || 'kg'}`})
                               </span>
                             </div>
                           ))}

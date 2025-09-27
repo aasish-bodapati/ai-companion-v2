@@ -5,14 +5,20 @@ from app.core.config import settings
 
 db_url = settings.SQLALCHEMY_DATABASE_URI
 
-# PostgreSQL connection settings
-engine_kwargs = {
-    "pool_pre_ping": True,
-    "pool_timeout": 30,  # 30 seconds timeout for getting connection from pool
-    "pool_recycle": 3600,  # Recycle connections after 1 hour
-    "pool_size": 10,  # PostgreSQL connection pool size
-    "max_overflow": 20,  # Additional connections beyond pool_size
-}
+# Database connection settings - SQLite for development
+if db_url.startswith("sqlite"):
+    engine_kwargs = {
+        "connect_args": {"check_same_thread": False},
+    }
+else:
+    # PostgreSQL connection settings
+    engine_kwargs = {
+        "pool_pre_ping": True,
+        "pool_timeout": 30,  # 30 seconds timeout for getting connection from pool
+        "pool_recycle": 3600,  # Recycle connections after 1 hour
+        "pool_size": 10,  # PostgreSQL connection pool size
+        "max_overflow": 20,  # Additional connections beyond pool_size
+    }
 
 engine = create_engine(db_url, **engine_kwargs)
 

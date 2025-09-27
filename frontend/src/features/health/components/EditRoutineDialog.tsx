@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchableDropdown } from '@/components/ui/searchable-dropdown';
-import { WORKOUT_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
+import { ROUTINE_CREATION_CATEGORIES } from '@/components/health/WorkoutCategorySelector';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { XMarkIcon, PlusIcon, TrashIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
@@ -20,11 +20,7 @@ import { api } from '@/lib/api';
 interface Exercise {
   exercise_name: string;
   logging_category?: string;
-  // Dynamic attributes based on category
-  sets?: number;
-  reps?: string;
-  weight?: number;
-  weight_unit?: string;
+  // Dynamic attributes based on category (no sets/reps/weight for routine planning)
   duration?: number;
   distance?: number;
   distance_unit?: string;
@@ -75,7 +71,7 @@ const DAYS_OF_WEEK = [
 
 // Get form fields based on exercise category
 const getFormFieldsForCategory = (category: string) => {
-  const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === category);
+  const categoryConfig = ROUTINE_CREATION_CATEGORIES.find(cat => cat.id === category);
   if (!categoryConfig) return [];
   
   return [
@@ -230,7 +226,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
     const loadExercises = async () => {
       try {
         setLoadingExercises(true);
-        const response = await api.get('/health/exercises/all');
+        const response = await api.get('/health/exercises/all?limit=500');
         setAllExercises(response.exercises || []);
         console.log('🔍 Loaded exercises:', response.exercises?.length || 0);
       } catch (error) {
@@ -310,6 +306,14 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                 : exercise
             )
           }
+        : day
+    ));
+  };
+
+  const updateWorkoutName = (dayName: string, workoutName: string) => {
+    setWorkoutDays(prev => prev.map(day => 
+      day.day_name === dayName 
+        ? { ...day, workout_name: workoutName }
         : day
     ));
   };
@@ -568,7 +572,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                       return (
                         <div className="border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-sm rounded-lg relative z-0">
                           <div className="p-3">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-2">
                                 <div className="w-5 h-5 bg-indigo-500 rounded-full flex items-center justify-center">
                                   <span className="text-white font-bold text-xs">{currentDay.charAt(0)}</span>
@@ -583,6 +587,18 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                 <PlusIcon className="h-3 w-3 mr-1" />
                                 Add Workout
                               </Button>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`workout-name-${currentDay}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Day Name
+                              </Label>
+                              <Input
+                                id={`workout-name-${currentDay}`}
+                                value={dayData?.workout_name || `${currentDay} Workout`}
+                                onChange={(e) => updateWorkoutName(currentDay, e.target.value)}
+                                placeholder={`e.g., ${currentDay} Workout`}
+                                className="border border-gray-300 dark:border-gray-600 focus:border-indigo-500 focus:ring-indigo-500 rounded-lg"
+                              />
                             </div>
                           </div>
                           <div className="px-3 pb-3">
@@ -611,7 +627,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                             variant="secondary" 
                                             className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300"
                                           >
-                                            {WORKOUT_CATEGORIES.find(cat => cat.id === exercise.logging_category)?.displayName || exercise.logging_category}
+                                            {ROUTINE_CREATION_CATEGORIES.find(cat => cat.id === exercise.logging_category)?.displayName || exercise.logging_category}
                                           </Badge>
                                         )}
                                       </div>
@@ -659,7 +675,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                                 });
                                                 
                                                 // Only set default values for required fields that are empty
-                                                const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === newCategory);
+                                                const categoryConfig = ROUTINE_CREATION_CATEGORIES.find(cat => cat.id === newCategory);
                                                 if (categoryConfig) {
                                                   categoryConfig.loggingAttributes.required.forEach(reqField => {
                                                     const currentValue = exercise[reqField.name as keyof Exercise];
@@ -690,7 +706,7 @@ export function EditRoutineDialog({ routine, isOpen, onClose, onRoutineUpdated, 
                                         const formFields = getFormFieldsForCategory(category).filter(field => field.name !== 'notes');
                                         
                                         // Get category configuration for better field organization
-                                        const categoryConfig = WORKOUT_CATEGORIES.find(cat => cat.id === category);
+                                        const categoryConfig = ROUTINE_CREATION_CATEGORIES.find(cat => cat.id === category);
                                         
                                         // Smart field grouping based on category
                                         const getFieldGroups = (category: string) => {

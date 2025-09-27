@@ -11,8 +11,9 @@ from . import (
     foods,
     contextual_logging,
     insights,
-    fitness_logs_generated as fitness_logs,
+    fitness_logs,
     nutrition_logs,
+    water_logs,
     profile,
     analytics
 )
@@ -34,5 +35,6 @@ router.include_router(contextual_logging.router, prefix="/contextual-logging", t
 router.include_router(insights.router, prefix="/insights", tags=["insights"])
 router.include_router(fitness_logs.router, prefix="/fitness-logs", tags=["fitness-logs"])
 router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nutrition-logs"])
+router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs"])
 router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
 router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])

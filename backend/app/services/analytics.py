@@ -3,7 +3,7 @@ Analytics service for health data insights and trends.
 """
 
 from typing import Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, desc
 from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
@@ -18,7 +18,7 @@ class HealthAnalyticsService:
     
     async def get_weekly_trends(self, user_id: str, weeks: int = 4) -> Dict[str, any]:
         """Get weekly trends for fitness and nutrition."""
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(weeks=weeks)
         
         # Fitness trends
@@ -47,12 +47,12 @@ class HealthAnalyticsService:
             "fitness": fitness_trends,
             "nutrition": nutrition_trends,
             "period": f"Last {weeks} weeks",
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
     
     async def get_correlation_insights(self, user_id: str, days: int = 30) -> Dict[str, any]:
         """Find correlations between mood, nutrition, and fitness."""
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=days)
         
         # Get all logs for the period
@@ -86,13 +86,13 @@ class HealthAnalyticsService:
         return {
             "correlations": correlations,
             "period": f"Last {days} days",
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
     
     async def get_personalized_recommendations(self, user_id: str) -> Dict[str, any]:
         """Generate personalized recommendations based on user data."""
         # Get recent data (last 30 days)
-        end_date = datetime.now()
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=30)
         
         fitness_logs = self.db.query(FitnessLog).filter(
@@ -117,7 +117,7 @@ class HealthAnalyticsService:
         return {
             "recommendations": recommendations,
             "based_on": "Last 30 days of data",
-            "generated_at": datetime.now().isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat()
         }
     
     def _calculate_fitness_trends(self, logs: List[FitnessLog]) -> Dict[str, any]:
@@ -267,7 +267,7 @@ class HealthAnalyticsService:
         
         # Fitness recommendations
         if fitness_logs:
-            recent_workouts = [log for log in fitness_logs if log.activity_date >= datetime.now() - timedelta(days=7)]
+            recent_workouts = [log for log in fitness_logs if log.activity_date >= datetime.now(timezone.utc) - timedelta(days=7)]
             
             if len(recent_workouts) < 3:
                 recommendations.append({
@@ -291,7 +291,7 @@ class HealthAnalyticsService:
         
         # Nutrition recommendations
         if nutrition_logs:
-            recent_meals = [log for log in nutrition_logs if log.meal_date >= datetime.now() - timedelta(days=7)]
+            recent_meals = [log for log in nutrition_logs if log.meal_date >= datetime.now(timezone.utc) - timedelta(days=7)]
             
             if recent_meals:
                 avg_calories = sum(log.total_calories for log in recent_meals) / len(recent_meals)

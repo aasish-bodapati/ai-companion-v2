@@ -151,7 +151,7 @@ export function WorkoutCard({
                   <div className="text-center bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600">
                     <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Weight</div>
                     <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                      {exercise.weight_used ? `${exercise.weight_used}kg` : 'N/A'}
+                      {exercise.weight_used ? `${exercise.weight_used}${log.unit || 'kg'}` : 'N/A'}
                     </div>
                   </div>
                 </div>

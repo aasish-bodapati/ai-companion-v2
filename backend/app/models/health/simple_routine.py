@@ -48,6 +48,7 @@ class SimpleUserRoutineProgress(Base):
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
     workouts_completed = Column(Integer, default=0, nullable=False)
+    workouts_skipped = Column(Integer, default=0, nullable=False)
     last_workout_date = Column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
@@ -92,11 +93,7 @@ class RoutineExercise(Base):
     exercise_name = Column(String(200), nullable=False)  # Seated Machine Chest Press
     logging_category = Column(String(50), nullable=True)  # weighted, bodyweight, cardio_duration, etc.
     
-    # Dynamic fields based on exercise category
-    sets = Column(Integer, nullable=True)  # 4
-    reps = Column(String(50), nullable=True)  # "8-12" or "12-15"
-    weight = Column(Float, nullable=True)  # 135.5
-    weight_unit = Column(String(20), nullable=True)  # "lbs", "kg"
+    # Exercise category and basic info only - sets/reps/weight are for workout logging, not routine planning
     duration = Column(Float, nullable=True)  # 30.5 (minutes)
     distance = Column(Float, nullable=True)  # 5.0
     distance_unit = Column(String(20), nullable=True)  # "miles", "km"
@@ -106,6 +103,12 @@ class RoutineExercise(Base):
     total_reps = Column(Integer, nullable=True)  # 50
     time = Column(Float, nullable=True)  # 2.5 (minutes)
     pace = Column(String(50), nullable=True)  # "8:30/mile"
+    
+    # Required fields for routine exercises
+    sets = Column(Integer, nullable=False, default=0)  # Number of sets
+    reps = Column(String(50), nullable=True)  # "10-12", "8-10", "AMRAP"
+    weight = Column(Float, nullable=True)  # Weight used
+    weight_unit = Column(String(20), nullable=True)  # "lbs", "kg"
     
     # Legacy fields for backward compatibility
     weight_notes = Column(String(200), nullable=True)  # "moderate weight", "bodyweight", etc.

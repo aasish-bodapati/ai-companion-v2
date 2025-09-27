@@ -122,8 +122,8 @@ export function formatExerciseDetails(exercise: {
   sets: number;
   reps: string;
   weight_used?: number;
-}): string {
-  const weightText = exercise.weight_used ? ` @ ${exercise.weight_used}kg` : '';
+}, log: { unit?: string }): string {
+  const weightText = exercise.weight_used ? ` @ ${exercise.weight_used}${log.unit || 'kg'}` : '';
   return `${exercise.exercise_name}: ${exercise.sets}×${exercise.reps}${weightText}`;
 }
 

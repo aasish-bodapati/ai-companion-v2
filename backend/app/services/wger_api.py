@@ -34,7 +34,6 @@ class WgerApiClient:
 
             return response.json()
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error fetching from wger.de API: {e}")
             return {}
 
     def get_exercises(self, limit: int = 100, offset: int = 0) -> List[Dict]:
@@ -61,7 +60,6 @@ class WgerApiClient:
             all_exercises.extend(exercises)
             offset += limit
 
-            print(f"📥 Fetched {len(exercises)} exercises (total: {len(all_exercises)})")
 
             # Safety break to prevent infinite loops
             if len(exercises) < limit:

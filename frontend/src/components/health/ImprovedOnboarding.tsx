@@ -509,7 +509,7 @@ export function ImprovedOnboarding({ onComplete }: ImprovedOnboardingProps) {
             >
               {loading ? (
                 <>
-                  <LoadingSpinner size="sm" color="border-white" />
+                  <LoadingSpinner size="sm" />
                   Finishing Setup...
                 </>
               ) : (

@@ -49,7 +49,6 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
 
     def create_with_workout_plan(self, db: Session, *, routine_data: SimpleRoutineCreate, workout_days: List[dict], user_id: str) -> SimpleRoutine:
         """Create a routine with detailed workout plan"""
-        print(f"🔍 Creating routine with {len(workout_days)} workout days")
 
         # Create the routine
         routine = SimpleRoutine(
@@ -59,12 +58,10 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
         )
         db.add(routine)
         db.flush()  # Get the routine ID
-        print(f"✅ Created routine: {routine.id}")
 
         # Create workout days and exercises (only if workout_days is not empty)
         if workout_days and len(workout_days) > 0:
             for day_data in workout_days:
-                print(f"📅 Processing day: {day_data}")
                 workout_day = RoutineWorkoutDay(
                     routine_id=routine.id,
                     day_name=day_data['day'],
@@ -77,21 +74,26 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
 
                 # Create exercises for this day
                 for i, exercise_data in enumerate(day_data.get('workouts', [])):
+                    exercise_name = exercise_data.get('activity_name', 'Exercise')
+                    
+                    # Lookup category from exercises table
+                    from app.models.health.exercise_database import Exercise
+                    exercise_lookup = db.query(Exercise).filter(Exercise.name == exercise_name).first()
+                    logging_category = exercise_lookup.logging_category if exercise_lookup else 'weighted'  # Default fallback
+                    
                     exercise = RoutineExercise(
                         workout_day_id=workout_day.id,
-                        exercise_name=exercise_data.get('activity_name', 'Exercise'),
-                        sets=exercise_data.get('sets', 3),
-                        reps=str(exercise_data.get('reps', 10)),
+                        exercise_name=exercise_name,
+                        logging_category=logging_category,
+                        sets=0,  # Default sets for routine planning
                         order_index=i
                     )
                     db.add(exercise)
-                    print(f"💪 Added exercise: {exercise.exercise_name}")
         else:
-            print("⚠️ No workout days provided, creating routine without detailed workout plan")
+            pass  # No exercises to add
 
         db.commit()
         db.refresh(routine)
-        print(f"✅ Routine created successfully: {routine.name}")
         return routine
 
 class CRUDSimpleUserRoutineProgress(CRUDBase[SimpleUserRoutineProgress, SimpleUserRoutineProgressCreate, SimpleUserRoutineProgressUpdate]):

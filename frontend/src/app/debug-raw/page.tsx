@@ -14,7 +14,7 @@ export default function DebugRawPage() {
     fetch('http://192.168.1.5:8000/api/v1/health/onboarding/status', {
       method: 'GET',
       headers: {
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4NjYxMzI3fQ.zOUNT-vnZOpjv9iQyzTD7wZGKiOSUL-aKLwXXLTa-wY',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzU4ODcxMTU3fQ.HTrD2iID2rpMwpYvRgUhEHH1vjBa77NGt5S6lCxSbmg',
         'Content-Type': 'application/json'
       },
       mode: 'cors',
