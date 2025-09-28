@@ -9,6 +9,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +19,9 @@ import { fitnessService, ExerciseData as FitnessServiceExerciseData } from '../.
 import DynamicExerciseForm, { ExerciseData } from './DynamicExerciseForm';
 import ExerciseDropdown from './ExerciseDropdown';
 import CalendarComponent from '../common/CalendarComponent';
+import DateSelector from '../ui/DateSelector';
+import { hapticFeedback } from '../../utils/haptics';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
 interface WorkoutData {
   activity_type: string;
@@ -37,50 +43,89 @@ export default function LogWorkoutModal({
   onWorkoutLogged,
   todaysWorkout,
 }: LogWorkoutModalProps) {
-  const [exercises, setExercises] = useState<ExerciseData[]>([
-    {
-      exercise_name: '',
-      sets: 1,
-      reps: '10',
-      weight_used: 0,
-      weight_unit: 'kg',
-      distance_unit: 'km',
-      category: 'weighted'
-    }
-  ]);
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [saving, setSaving] = useState(false);
   const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState<{ [key: number]: string }>({});
   const [selectedExercises, setSelectedExercises] = useState<Set<number>>(new Set());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showCalendar, setShowCalendar] = useState(false);
+  const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
+  // Load exercise database for category lookup
+  const loadExerciseDatabase = async () => {
+    try {
+      const exercises = await fitnessService.getAllExercises(700);
+      setExerciseDatabase(exercises);
+      console.log('🔍 LogWorkoutModal - Loaded exercise database:', exercises.length, 'exercises');
+    } catch (error) {
+      console.error('Failed to load exercise database:', error);
+    }
+  };
+
+  // Look up exercise category from database
+  const getExerciseCategory = (exerciseName: string) => {
+    const exercise = exerciseDatabase.find(ex => 
+      ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    return exercise?.logging_category || 'GENERAL';
+  };
+
+  // Keyboard event listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+      setKeyboardVisible(true);
+      setKeyboardHeight(e.endCoordinates.height);
+      // Scroll to show search area when keyboard opens
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: 50, animated: true });
+      }, 100);
+    });
+    
+    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardVisible(false);
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (visible) {
+      loadExerciseDatabase();
       if (todaysWorkout) {
         // Pre-populate with today's workout data
         setExercises(todaysWorkout.exercises || []);
         // Mark all pre-populated exercises as selected
         setSelectedExercises(new Set(todaysWorkout.exercises?.map((_: any, index: number) => index) || []));
       } else {
-        // Reset form with one default exercise
-        setExercises([{
-          exercise_name: '',
-          sets: 1,
-          reps: '10',
-          weight_used: 0,
-          weight_unit: 'kg',
-          distance_unit: 'km',
-          category: 'weighted'
-        }]);
+        // Start with empty exercises array
+        setExercises([]);
         // Clear selected exercises
         setSelectedExercises(new Set());
       }
+      // Clear other state when opening
+      setSearchQuery({});
+      setOpenDropdownIndex(null);
+      setSelectedDate(new Date());
+    } else {
+      // Clear all state when modal closes
+      setExercises([]);
+      setSelectedExercises(new Set());
+      setSearchQuery({});
+      setOpenDropdownIndex(null);
+      setSelectedDate(new Date());
     }
   }, [visible, todaysWorkout]);
 
   const addExercise = () => {
+    hapticFeedback.light();
     const newExercise: ExerciseData = {
       exercise_name: '',
       sets: 1,
@@ -91,6 +136,24 @@ export default function LogWorkoutModal({
       category: 'weighted' // Default to weighted exercises
     };
     setExercises(prev => [...prev, newExercise]);
+  };
+
+  const addExerciseAfter = (index: number) => {
+    hapticFeedback.light();
+    const newExercise: ExerciseData = {
+      exercise_name: '',
+      sets: 0,
+      reps: '',
+      weight_used: 0,
+      weight_unit: 'kg',
+      distance_unit: 'km',
+      category: 'weighted'
+    };
+    setExercises(prev => {
+      const newExercises = [...prev];
+      newExercises.splice(index + 1, 0, newExercise);
+      return newExercises;
+    });
   };
 
   const updateExercise = (index: number, field: keyof ExerciseData, value: any) => {
@@ -108,7 +171,7 @@ export default function LogWorkoutModal({
   };
 
   const handleExerciseFieldChange = (index: number, value: string) => {
-    updateExercise(index, 'exercise_name', value);
+    // Only update search query, don't update exercise name until selected
     setSearchQuery(prev => ({ ...prev, [index]: value }));
     // Keep dropdown open when typing
     if (!openDropdownIndex || openDropdownIndex !== index) {
@@ -137,6 +200,8 @@ export default function LogWorkoutModal({
   const removeExercise = (index: number) => {
     // Don't allow removing the last exercise
     if (exercises.length <= 1) return;
+    
+    hapticFeedback.light();
     setExercises(prev => prev.filter((_, i) => i !== index));
     // Remove from selected exercises set
     setSelectedExercises(prev => {
@@ -156,40 +221,9 @@ export default function LogWorkoutModal({
   };
 
   const isFormValid = () => {
-    return exercises.length > 0 && exercises.some(ex => ex.exercise_name.trim());
+    return exercises.length > 0 && exercises.every(ex => ex.exercise_name.trim());
   };
 
-  const formatDateForDisplay = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: '2-digit',
-      year: 'numeric'
-    });
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
-  };
-
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const newDate = new Date(selectedDate);
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    setSelectedDate(newDate);
-  };
-
-  const goToToday = () => {
-    setSelectedDate(new Date());
-  };
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
 
   const handleSaveWorkout = async () => {
     if (!isFormValid()) {
@@ -212,6 +246,7 @@ export default function LogWorkoutModal({
           duration: typeof ex.duration === 'string' ? parseFloat(ex.duration) || 0 : (ex.duration || 0),
           distance: typeof ex.distance === 'string' ? parseFloat(ex.distance) || 0 : (ex.distance || 0),
           distance_unit: ex.distance_unit || 'km',
+          category: ex.category || ex.logging_category || 'weighted',
         }));
 
       const workoutData: WorkoutData = {
@@ -223,6 +258,7 @@ export default function LogWorkoutModal({
 
       console.log('🔍 DEBUG: LogWorkoutModal - Sending workout data:', JSON.stringify(workoutData, null, 2));
       console.log('🔍 DEBUG: LogWorkoutModal - Converted exercises:', convertedExercises);
+      console.log('🔍 DEBUG: LogWorkoutModal - Exercise categories:', convertedExercises.map(ex => ({ name: ex.exercise_name, category: ex.category })));
 
       await fitnessService.logWorkout(workoutData);
 
@@ -251,7 +287,18 @@ export default function LogWorkoutModal({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <BlurView intensity={20} style={styles.overlay}>
-        <View style={styles.modal}>
+        <KeyboardAvoidingView 
+          style={[
+            styles.keyboardAvoidingView,
+            keyboardVisible ? styles.keyboardAvoidingViewWithKeyboard : null
+          ]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? -20 : 0}
+        >
+          <View style={[
+            styles.modal,
+            keyboardVisible ? styles.modalWithKeyboard : null
+          ]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerContent}>
@@ -266,53 +313,23 @@ export default function LogWorkoutModal({
           </View>
 
           <ScrollView 
+            ref={scrollViewRef}
             style={styles.content} 
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
+            contentContainerStyle={[
+              styles.scrollContent,
+              keyboardVisible && styles.scrollContentWithKeyboard
+            ]}
           >
             {/* Date Selection */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Workout Date</Text>
-              <View style={styles.dateSelectorContainer}>
-                <TouchableOpacity 
-                  style={styles.dateNavButton}
-                  onPress={() => navigateDate('prev')}
-                >
-                  <Ionicons name="chevron-back" size={16} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.dateSelector}
-                  onPress={() => setShowCalendar(true)}
-                >
-                  <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-                  <Text style={styles.dateSelectorText}>
-                    {formatDateForDisplay(selectedDate)}
-                  </Text>
-                  <Ionicons name="chevron-down" size={14} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.dateNavButton}
-                  onPress={() => navigateDate('next')}
-                >
-                  <Ionicons name="chevron-forward" size={16} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.todayButton,
-                    isToday(selectedDate) && styles.todayButtonActive
-                  ]}
-                  onPress={goToToday}
-                >
-                  <Text style={[
-                    styles.todayButtonText,
-                    isToday(selectedDate) && styles.todayButtonTextActive
-                  ]}>Today</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <DateSelector
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              label="Workout Date"
+              calendarModalTitle="Select Workout Date"
+              showLogsIndicator={false}
+            />
 
             {/* Exercises */}
             <TouchableOpacity 
@@ -328,81 +345,139 @@ export default function LogWorkoutModal({
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Exercises</Text>
-                <TouchableOpacity
-                  style={styles.addButton}
-                  onPress={addExercise}
-                >
-                  <Ionicons name="add" size={20} color="#3b82f6" />
-                  <Text style={styles.addButtonText}>Add Exercise</Text>
-                </TouchableOpacity>
+                <Text style={styles.exerciseCount}>
+                  {exercises.length} exercise{exercises.length !== 1 ? 's' : ''}
+                </Text>
               </View>
 
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
+                <View style={styles.searchInputContainer}>
+                  <Ionicons name="search-outline" size={20} color={COLORS.text.secondary} style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.searchInput}
+                    value={searchQuery[0] || ''}
+                    onChangeText={(text) => handleExerciseFieldChange(0, text)}
+                    onFocus={() => handleExerciseFieldFocus(0)}
+                    placeholder="Search exercises..."
+                    placeholderTextColor={COLORS.text.tertiary}
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                  />
+                  {searchQuery[0] && (
+                    <TouchableOpacity
+                      style={styles.clearSearchButton}
+                      onPress={() => {
+                        setSearchQuery(prev => ({ ...prev, [0]: '' }));
+                        setOpenDropdownIndex(null);
+                      }}
+                    >
+                      <Ionicons name="close-circle" size={20} color={COLORS.text.tertiary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Exercise Dropdown - Positioned after search bar */}
+              {openDropdownIndex === 0 && searchQuery[0] && searchQuery[0].length > 0 && (
+                <View style={[
+                  styles.dropdownContainer,
+                  keyboardVisible && styles.dropdownContainerWithKeyboard
+                ]}>
+                  <ExerciseDropdown
+                    visible={true}
+                    onClose={() => setOpenDropdownIndex(null)}
+                    onExerciseSelected={(exercise) => {
+                      console.log('🔍 Selected exercise from dropdown:', exercise);
+                      console.log('🔍 Exercise logging_category:', exercise.logging_category);
+                      // Add the selected exercise to the list
+                      const newExercise: ExerciseData = {
+                        exercise_name: exercise.name,
+                        sets: 0,
+                        reps: '',
+                        weight_used: 0,
+                        weight_unit: 'kg',
+                        distance_unit: 'km',
+                        category: exercise.logging_category || 'weighted'
+                      };
+                      console.log('🔍 Adding new exercise to list:', newExercise);
+                      setExercises(prev => {
+                        const updated = [...prev, newExercise];
+                        console.log('🔍 Updated exercises list:', updated);
+                        return updated;
+                      });
+                      setSelectedExercises(prev => new Set([...prev, exercises.length]));
+                      // Clear search and close dropdown
+                      setSearchQuery(prev => ({ ...prev, [0]: '' }));
+                      setOpenDropdownIndex(null);
+                    }}
+                    searchQuery={searchQuery[0] || ''}
+                  />
+                </View>
+              )}
+
               <View style={styles.exercisesList}>
+                {/* Selected Exercises */}
                 {exercises.map((exercise, index) => (
                   <View key={index} style={styles.exerciseItemContainer}>
-                    {/* Exercise Name Input */}
+                    {/* Exercise Display */}
                     <View style={styles.exerciseItem}>
-                      <View style={styles.exerciseInputContainer}>
-                        <TextInput
-                          style={styles.exerciseInput}
-                          value={exercise.exercise_name}
-                          onChangeText={(text) => handleExerciseFieldChange(index, text)}
-                          onFocus={() => handleExerciseFieldFocus(index)}
-                          onBlur={handleExerciseFieldBlur}
-                          placeholder="Select exercise..."
-                          placeholderTextColor="#9ca3af"
-                        />
+                      <View style={styles.exerciseNumberContainer}>
+                        <Text style={styles.exerciseNumber}>{index + 1}</Text>
+                      </View>
+                      <Text style={styles.exerciseName}>
+                        {exercise.exercise_name}
+                      </Text>
+                      
+                      <View style={styles.exerciseActionsGroup}>
+                        <View style={styles.exerciseCategoryBadge}>
+                          <Ionicons 
+                            name="barbell-outline" 
+                            size={10} 
+                            color={COLORS.background.primary}
+                            style={styles.badgeIcon}
+                          />
+                          <Text style={styles.exerciseCategoryText}>
+                            {getExerciseCategory(exercise.exercise_name).toUpperCase()}
+                          </Text>
+                        </View>
+                        
+                        {/* Add Exercise Button */}
                         <TouchableOpacity
-                          onPress={() => handleExerciseFieldFocus(index)}
-                          style={styles.chevronButton}
+                          style={styles.addExerciseButton}
+                          onPress={() => addExerciseAfter(index)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="add-circle-outline" size={20} color={COLORS.primary} />
+                        </TouchableOpacity>
+                        
+                        {/* Remove Exercise Button */}
+                        <TouchableOpacity
+                          style={styles.removeExerciseButton}
+                          onPress={() => removeExercise(index)}
+                          activeOpacity={0.7}
                         >
                           <Ionicons 
-                            name={openDropdownIndex === index ? "chevron-up" : "chevron-down"} 
-                            size={20} 
-                            color="#6b7280" 
-                            style={styles.chevronIcon}
+                            name="trash-outline" 
+                            size={18} 
+                            color={COLORS.danger} 
                           />
                         </TouchableOpacity>
                       </View>
-                      <TouchableOpacity
-                        style={styles.removeExerciseButton}
-                        onPress={() => removeExercise(index)}
-                        disabled={exercises.length === 1}
-                      >
-                        <Ionicons 
-                          name="trash-outline" 
-                          size={20} 
-                          color={exercises.length === 1 ? "#d1d5db" : "#ef4444"} 
-                        />
-                      </TouchableOpacity>
                     </View>
-                    
-                    {/* Exercise Dropdown */}
-                    <TouchableOpacity
-                      activeOpacity={1}
-                      onPress={(e) => e.stopPropagation()}
-                    >
-                      <ExerciseDropdown
-                        visible={openDropdownIndex === index}
-                        onClose={() => setOpenDropdownIndex(null)}
-                        onExerciseSelected={handleExerciseSelected}
-                        searchQuery={searchQuery[index] || ''}
-                      />
-                    </TouchableOpacity>
 
-                    {/* Dynamic Form Fields - Only show if exercise is selected from dropdown */}
-                    {selectedExercises.has(index) && (
-                      <DynamicExerciseForm
-                        exercise={exercise}
-                        index={index}
-                        onUpdate={updateExercise}
-                        onRemove={removeExercise}
-                        activityType="weightlifting"
-                        showRemove={false} // We'll handle removal with the main remove button
-                      />
-                    )}
+                    {/* Dynamic Form Fields */}
+                    <DynamicExerciseForm
+                      exercise={exercise}
+                      index={index}
+                      onUpdate={updateExercise}
+                      onRemove={removeExercise}
+                      activityType="weightlifting"
+                      showRemove={false}
+                    />
                   </View>
                 ))}
+
               </View>
 
             </View>
@@ -435,50 +510,8 @@ export default function LogWorkoutModal({
             </View>
           </View>
         </View>
+        </KeyboardAvoidingView>
       </BlurView>
-
-      {/* Calendar Modal */}
-      <Modal
-        visible={showCalendar}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCalendar(false)}
-      >
-        <View style={styles.calendarModalOverlay}>
-          <View style={styles.calendarModal}>
-            <View style={styles.calendarModalHeader}>
-              <Text style={styles.calendarModalTitle}>Select Workout Date</Text>
-              <TouchableOpacity
-                style={styles.calendarCloseButton}
-                onPress={() => setShowCalendar(false)}
-              >
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.calendarModalBody}
-              activeOpacity={1}
-              onPress={() => {
-                // Close calendar when clicking outside
-                setShowCalendar(false);
-              }}
-            >
-              <TouchableOpacity 
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <CalendarComponent
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  showLogsIndicator={false}
-                />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
     </Modal>
   );
 }
@@ -488,6 +521,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  keyboardAvoidingView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  keyboardAvoidingViewWithKeyboard: {
+    justifyContent: 'flex-start',
+    paddingTop: 30,
   },
   modal: {
     backgroundColor: '#ffffff',
@@ -504,6 +547,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 8,
+  },
+  modalWithKeyboard: {
+    height: '92%',
+    maxHeight: '92%',
+    marginTop: 20,
+    marginBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -534,6 +583,12 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     minHeight: 0, // Allow content to shrink
   },
+  scrollContent: {
+    paddingBottom: 100, // Extra padding to prevent dropdown clipping
+  },
+  scrollContentWithKeyboard: {
+    paddingBottom: 200, // Extra padding when keyboard is open
+  },
   section: {
     marginBottom: 12,
   },
@@ -541,13 +596,56 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.md,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 0,
+    color: COLORS.text.primary,
+  },
+  exerciseCount: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+  },
+  
+  // Search Bar Styles
+  searchContainer: {
+    marginBottom: SPACING.lg,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border.light,
+  },
+  searchIcon: {
+    marginRight: SPACING.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.primary,
+  },
+  clearSearchButton: {
+    marginLeft: SPACING.sm,
+    padding: SPACING.xs,
+  },
+  
+  // Dropdown Container
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1000,
+    marginBottom: SPACING.lg,
+    marginTop: -SPACING.sm, // Pull up slightly to align with search bar
+    paddingBottom: SPACING.xl, // Extra space to prevent clipping
+  },
+  dropdownContainerWithKeyboard: {
+    marginBottom: SPACING.xl,
+    paddingBottom: SPACING.xxl, // Extra space when keyboard is open
   },
   activityTypeScroll: {
     paddingVertical: 4,
@@ -622,24 +720,37 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.lg,
+    ...SHADOWS.small,
   },
   addButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: SPACING.xs,
   },
   emptyExercises: {
     alignItems: 'center',
-    paddingVertical: 32,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
+    paddingVertical: SPACING.xxxl,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.border.light,
+    borderStyle: 'dashed',
+  },
+  emptyExercisesText: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '600',
+    color: COLORS.text.secondary,
+    marginTop: SPACING.md,
+  },
+  emptyExercisesSubtext: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.tertiary,
+    marginTop: SPACING.xs,
   },
   emptyText: {
     fontSize: 16,
@@ -659,12 +770,6 @@ const styles = StyleSheet.create({
     flexGrow: 1, // Allow list to grow with content
     flexShrink: 1, // Allow list to shrink when needed
   },
-  exerciseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
-    marginBottom: 6,
-  },
   exerciseNameInput: {
     flex: 1,
     fontSize: 16,
@@ -677,12 +782,107 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   removeExerciseButton: {
-    marginLeft: 12,
-    padding: 4,
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.background.secondary,
+  },
+  removeExerciseButtonDisabled: {
+    opacity: 0.5,
   },
   exerciseItemContainer: {
-    position: 'relative',
-    marginBottom: 6,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.sm,
+    marginBottom: SPACING.xs,
+    borderWidth: 1,
+    borderColor: COLORS.border.light,
+    ...SHADOWS.small,
+  },
+  exerciseItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    justifyContent: 'space-between',
+  },
+  exerciseInfo: {
+    flex: 1,
+  },
+  exerciseNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  exerciseNumberContainer: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.xs,
+  },
+  exerciseNumber: {
+    color: COLORS.background.primary,
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '700',
+  },
+  exerciseIcon: {
+    marginRight: SPACING.sm,
+  },
+  exerciseName: {
+    fontSize: FONT_SIZE.sm,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    flex: 1,
+    marginRight: SPACING.xs,
+  },
+  exerciseActionsGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  exerciseCategoryBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  badgeIcon: {
+    marginRight: 2,
+  },
+  exerciseCategoryText: {
+    fontSize: 9,
+    fontWeight: '600',
+    color: COLORS.background.primary,
+    textTransform: 'uppercase',
+  },
+  exerciseNamePlaceholder: {
+    color: COLORS.text.tertiary,
+    fontStyle: 'italic',
+  },
+  exerciseDetails: {
+    marginLeft: 28, // Align with text after icon
+  },
+  exerciseDetailText: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+  },
+  exerciseActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  addExerciseButton: {
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.background.secondary,
+  },
+  searchHintIcon: {
+    marginLeft: SPACING.sm,
   },
   exerciseInputContainer: {
     flex: 1,
@@ -708,10 +908,6 @@ const styles = StyleSheet.create({
   },
   exercisesSection: {
     flex: 1,
-  },
-  exerciseDetails: {
-    flexDirection: 'row',
-    gap: 12,
   },
   exerciseDetailItem: {
     flex: 1,
@@ -777,99 +973,5 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: '#9CA3AF',
-  },
-  // Date Selector Styles
-  dateSelectorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 8,
-    flexWrap: 'wrap',
-  },
-  dateNavButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 6,
-    minWidth: 160,
-    maxWidth: 180,
-  },
-  dateSelectorText: {
-    fontSize: 14,
-    color: '#1f2937',
-    fontWeight: '500',
-  },
-  todayButton: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    height: 32,
-    justifyContent: 'center',
-  },
-  todayButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  todayButtonText: {
-    color: '#6b7280',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  todayButtonTextActive: {
-    color: '#ffffff',
-  },
-  // Calendar Modal Styles
-  calendarModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  calendarModal: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '70%',
-  },
-  calendarModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  calendarModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  calendarCloseButton: {
-    padding: 4,
-  },
-  calendarModalBody: {
-    padding: 0,
-    alignItems: 'center',
   },
 });

@@ -4,3 +4,4 @@
 # Explicitly allow .env files (override gitignore restrictions)
 !.env
 !.env.*
+frontend/

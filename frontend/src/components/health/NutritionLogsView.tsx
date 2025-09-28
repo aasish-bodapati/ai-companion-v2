@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { NutritionLogsViewWithDataComponents } from './NutritionLogsViewWithDataComponents';
+import { UnifiedHealthLoggingView } from './UnifiedHealthLoggingView';
 
 interface NutritionLogsViewProps {
   className?: string;
@@ -10,12 +10,13 @@ interface NutritionLogsViewProps {
 }
 
 /**
- * Main NutritionLogsView component - now uses the new reusable data display components
- * This maintains backward compatibility while using the new modular architecture
+ * Main NutritionLogsView component - now uses the unified health logging architecture
+ * This maintains backward compatibility while using the new consolidated pattern
  */
 function NutritionLogsView({ className = '', refreshTrigger, isActive = true }: NutritionLogsViewProps) {
   return (
-    <NutritionLogsViewWithDataComponents 
+    <UnifiedHealthLoggingView 
+      type="nutrition"
       className={className} 
       refreshTrigger={refreshTrigger}
       isActive={isActive}

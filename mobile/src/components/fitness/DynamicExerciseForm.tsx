@@ -91,11 +91,11 @@ export default function DynamicExerciseForm({
     switch (field) {
       case 'sets':
         return (
-          <View style={containerStyle}>
-            <Text style={styles.fieldLabel}>Sets</Text>
+          <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Sets</Text>
             <TextInput
-              style={styles.fieldInput}
-              value={exercise.sets?.toString() || ''}
+              style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
+              value={exercise.sets && exercise.sets > 0 ? exercise.sets.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -109,10 +109,10 @@ export default function DynamicExerciseForm({
 
       case 'reps':
         return (
-          <View style={containerStyle}>
-            <Text style={styles.fieldLabel}>Reps</Text>
+          <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Reps</Text>
             <TextInput
-              style={styles.fieldInput}
+              style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
               value={exercise.reps?.toString() || ''}
               onChangeText={(text) => {
                 // Only allow integers
@@ -127,11 +127,14 @@ export default function DynamicExerciseForm({
 
       case 'weight_used':
         return (
-          <View style={containerStyle}>
-            <Text style={styles.fieldLabel}>Weight (kg)</Text>
+          <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Weight (kg)</Text>
             <TextInput
-              style={styles.fieldInput}
-              value={(exercise.weight_used || exercise.weight)?.toString() || ''}
+              style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
+              value={(() => {
+                const weight = exercise.weight_used || exercise.weight;
+                return weight && weight > 0 ? weight.toString() : '';
+              })()}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
                 const numericValue = text.replace(/[^0-9.]/g, '');
@@ -147,11 +150,11 @@ export default function DynamicExerciseForm({
 
       case 'duration':
         return (
-          <View style={containerStyle}>
-            <Text style={styles.fieldLabel}>Duration (min)</Text>
+          <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dur (min)</Text>
             <TextInput
-              style={styles.fieldInput}
-              value={exercise.duration?.toString() || ''}
+              style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
+              value={exercise.duration && exercise.duration > 0 ? exercise.duration.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -165,11 +168,11 @@ export default function DynamicExerciseForm({
 
       case 'distance':
         return (
-          <View style={containerStyle}>
-            <Text style={styles.fieldLabel}>Distance (km)</Text>
+          <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dist (km)</Text>
             <TextInput
-              style={styles.fieldInput}
-              value={exercise.distance?.toString() || ''}
+              style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
+              value={exercise.distance && exercise.distance > 0 ? exercise.distance.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
                 const numericValue = text.replace(/[^0-9.]/g, '');
@@ -204,61 +207,58 @@ export default function DynamicExerciseForm({
       )}
 
       <View style={styles.fieldsContainer}>
-        {/* Horizontal row for sets, reps, weight */}
-        {(category === 'weighted' || category === 'bodyweight') && (
-          <View style={styles.horizontalFieldsRow}>
-            {categoryConfig.fields.includes('sets') && (
-              <View style={styles.horizontalField}>
-                {renderField('sets', true)}
-              </View>
+        {/* Standardized 3-field layout for all exercise types */}
+        <View style={styles.horizontalFieldsRow}>
+          {/* Field 1: Sets (for bodyweight/weighted) or Distance (for distance_based) or Duration (for cardio_duration) */}
+          <View style={styles.horizontalField}>
+            {category === 'bodyweight' || category === 'weighted' ? (
+              renderField('sets', true)
+            ) : category === 'distance_based' ? (
+              renderField('distance', true)
+            ) : category === 'cardio_duration' ? (
+              renderField('duration', true)
+            ) : (
+              renderField('sets', true)
             )}
-            {categoryConfig.fields.includes('reps') && (
-              <View style={styles.horizontalField}>
-                {renderField('reps', true)}
+          </View>
+          
+          {/* Field 2: Reps (for bodyweight/weighted) or Duration (for distance_based) or empty (for cardio_duration) */}
+          <View style={styles.horizontalField}>
+            {category === 'bodyweight' || category === 'weighted' ? (
+              renderField('reps', true)
+            ) : category === 'distance_based' ? (
+              renderField('duration', true)
+            ) : category === 'cardio_duration' ? (
+              <View style={[styles.disabledField, { opacity: 0 }]}>
+                <Text style={styles.disabledFieldLabel}>Reps</Text>
+                <TextInput
+                  style={styles.disabledFieldInput}
+                  value=""
+                  editable={false}
+                  placeholder="-"
+                />
               </View>
+            ) : (
+              renderField('reps', true)
             )}
-            {categoryConfig.fields.includes('weight_used') && (
-              <View style={styles.horizontalField}>
-                {renderField('weight_used', true)}
+          </View>
+          
+          {/* Field 3: Weight (for weighted) or empty (for others) */}
+          <View style={styles.horizontalField}>
+            {category === 'weighted' ? (
+              renderField('weight_used', true)
+            ) : (
+              <View style={[styles.disabledField, { opacity: 0 }]}>
+                <Text style={styles.disabledFieldLabel}>Weight</Text>
+                <TextInput
+                  style={styles.disabledFieldInput}
+                  value=""
+                  editable={false}
+                  placeholder="-"
+                />
               </View>
             )}
           </View>
-        )}
-        
-        {/* Horizontal row for distance and duration for cardio */}
-        {category === 'distance_based' && (
-          <View style={styles.horizontalFieldsRow}>
-            {categoryConfig.fields.includes('distance') && (
-              <View style={styles.horizontalField}>
-                {renderField('distance', true)}
-              </View>
-            )}
-            {categoryConfig.fields.includes('duration') && (
-              <View style={styles.horizontalField}>
-                {renderField('duration', true)}
-              </View>
-            )}
-          </View>
-        )}
-        
-        {/* Other fields in grid layout */}
-        <View style={styles.fieldsGrid}>
-          {categoryConfig.fields
-            .filter(field => {
-              // Exclude fields that are in horizontal rows
-              if (category === 'weighted' || category === 'bodyweight') {
-                return !['sets', 'reps', 'weight_used'].includes(field);
-              }
-              if (category === 'distance_based') {
-                return !['distance', 'duration'].includes(field);
-              }
-              return true;
-            })
-            .map((field) => (
-              <View key={field} style={styles.fieldWrapper}>
-                {renderField(field)}
-              </View>
-            ))}
         </View>
       </View>
     </View>
@@ -297,9 +297,12 @@ const styles = StyleSheet.create({
   horizontalFieldsRow: {
     flexDirection: 'row',
     gap: 6,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   horizontalField: {
-    flex: 1,
+    width: '30%',
+    minHeight: 40,
   },
   fieldsGrid: {
     flexDirection: 'row',
@@ -330,5 +333,48 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     fontSize: 14,
     backgroundColor: '#ffffff',
+  },
+  inlineFieldContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  inlineFieldLabel: {
+    marginBottom: 0,
+    width: 35,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  inlineFieldInput: {
+    width: 60,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+    fontSize: 11,
+  },
+  disabledField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    width: '100%',
+  },
+  disabledFieldLabel: {
+    marginBottom: 0,
+    width: 35,
+    fontSize: 10,
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  disabledFieldInput: {
+    width: 60,
+    paddingHorizontal: 4,
+    paddingVertical: 3,
+    fontSize: 11,
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 4,
+    color: '#9ca3af',
+    textAlign: 'center',
   },
 });

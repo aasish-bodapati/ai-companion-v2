@@ -8,7 +8,7 @@ import {
   ArrowLeftIcon,
   CheckIcon
 } from '@heroicons/react/24/outline';
-import { EnhancedFormContainer } from './enhanced-form-container';
+import { SmartFormContainer } from './smart-form-container';
 import { EnhancedFormField } from './enhanced-form-field';
 import { useFormValidation, ValidationRules } from '@/hooks/useFormValidation';
 import { cn } from '@/lib/utils';
@@ -252,7 +252,7 @@ export function SmartForm({
   };
 
   return (
-    <EnhancedFormContainer
+    <SmartFormContainer
       title={title}
       description={description}
       onSubmit={handleSubmit}
@@ -262,7 +262,7 @@ export function SmartForm({
       loading={loading || isSubmitting}
       disabled={disabled}
       className={className}
-      variant={variant}
+      variant={variant === 'minimal' ? 'basic' : 'enhanced'}
       showActions={showActions}
       showProgress={showProgress}
       currentStep={currentStep}
@@ -315,6 +315,6 @@ export function SmartForm({
           />
         ))}
       </div>
-    </EnhancedFormContainer>
+    </SmartFormContainer>
   );
 }

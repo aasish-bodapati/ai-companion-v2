@@ -4,6 +4,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { SmartFormContainer } from '@/components/ui/smart-form-container';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -49,53 +53,28 @@ export default function LoginForm() {
 
   return (
     <div className="w-full">
-      {error && (
-        <div data-testid="error-message" className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 p-4 rounded-lg mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-500 dark:text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-300">
-                {error}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {isSuccess && (
-        <div className="bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 dark:border-green-400 p-4 rounded-lg mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-500 dark:text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-green-700 dark:text-green-300">
-                Login successful! Redirecting...
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <form className="space-y-6" onSubmit={handleSubmit}>
+      <SmartFormContainer
+        title="Sign in to your account"
+        description="Enter your credentials to access your health dashboard"
+        onSubmit={handleSubmit}
+        submitLabel="Sign in"
+        loading={isLoading}
+        disabled={isLoading}
+        variant="auto"
+        showSuccessMessage={isSuccess}
+        successMessage="Login successful! Redirecting..."
+        validationErrors={error ? { general: error } : {}}
+        className="space-y-6"
+      >
         <div className="space-y-4">
           <div>
-            <label htmlFor="email-address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email Address
-            </label>
-            <input
+            <Label htmlFor="email-address">Email Address</Label>
+            <Input
               id="email-address"
               name="email"
               type="email"
               autoComplete="email"
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -104,48 +83,35 @@ export default function LoginForm() {
           
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Password
-              </label>
+              <Label htmlFor="password">Password</Label>
               <a href="#" className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors">
                 Forgot password?
               </a>
             </div>
-            <input
+            <Input
               id="password"
               name="password"
               type="password"
               autoComplete="current-password"
               required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all mb-4"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
-            <div className="flex items-center">
+            <div className="flex items-center mt-2">
               <input
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
                 className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+              <Label htmlFor="remember-me" className="ml-2">
                 Remember me
-              </label>
+              </Label>
             </div>
           </div>
         </div>
-
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors ${
-            isLoading ? 'opacity-75 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? 'Signing in...' : 'Sign in'}
-        </button>
         
         <div className="relative mt-6">
           <div className="absolute inset-0 flex items-center" aria-hidden="true">
@@ -159,15 +125,16 @@ export default function LoginForm() {
         </div>
         
         <div className="mt-6">
-          <button
+          <Button
             type="button"
-            className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            variant="outline"
+            className="w-full"
           >
-            <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-2" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" />
             </svg>
-            <span className="ml-2">Sign in with Google</span>
-          </button>
+            Sign in with Google
+          </Button>
         </div>
 
         <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
@@ -176,7 +143,7 @@ export default function LoginForm() {
             Create an account
           </Link>
         </div>
-      </form>
+      </SmartFormContainer>
     </div>
   );
 }

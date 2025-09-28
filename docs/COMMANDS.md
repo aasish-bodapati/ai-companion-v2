@@ -70,7 +70,7 @@ npm run test:all
 - **Main App**: `backend/app/main.py`
 - **API Routes**: `backend/app/api/`
 - **Models**: `backend/app/models/`
-- **Database**: PostgreSQL (`ai_companion_powerbi`)
+- **Database**: PostgreSQL (`healthlog_db`)
 
 ### Frontend (Next.js)
 - **App Router**: `frontend/src/app/`

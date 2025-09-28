@@ -31,6 +31,7 @@ export interface ExerciseData {
   distance?: number;
   distance_unit?: string;
   notes?: string;
+  category?: string;
 }
 
 export interface WorkoutStats {

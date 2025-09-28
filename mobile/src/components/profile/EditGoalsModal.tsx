@@ -6,9 +6,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MobileOptimizedModal from '../ui/MobileOptimizedModal';
+import FormModal from '../ui/FormModal';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
-import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { onboardingService } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
@@ -348,13 +347,28 @@ export default function EditGoalsModal({
   };
 
   return (
-    <MobileOptimizedModal
+    <FormModal
       visible={visible}
       onClose={onClose}
       title="Edit Health Goals"
+      subtitle="Select your primary health and fitness goals"
       variant="bottomSheet"
       size="full"
-      hapticFeedback={true}
+      showCloseButton={true}
+      closeOnBackdrop={true}
+      primaryAction={{
+        label: "Save Goals",
+        onPress: handleSave,
+        variant: "primary",
+        disabled: selectedGoals.length === 0,
+        loading: loading,
+      }}
+      secondaryAction={{
+        label: "Cancel",
+        onPress: onClose,
+        variant: "outline",
+      }}
+      isFormValid={selectedGoals.length > 0}
     >
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         {/* Category Filter */}
@@ -365,29 +379,8 @@ export default function EditGoalsModal({
 
         {/* Goals Grid */}
         {renderGoalsGrid()}
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchOptimizedButton
-            title="Cancel"
-            onPress={onClose}
-            variant="outline"
-            size="large"
-            hapticFeedback="light"
-            style={styles.cancelButton}
-          />
-          <TouchOptimizedButton
-            title="Save Goals"
-            onPress={handleSave}
-            variant="primary"
-            size="large"
-            hapticFeedback="success"
-            loading={loading}
-            style={styles.saveButton}
-          />
-        </View>
       </ScrollView>
-    </MobileOptimizedModal>
+    </FormModal>
   );
 }
 
@@ -471,17 +464,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  cancelButton: {
-    flex: 1,
-  },
-  saveButton: {
-    flex: 1,
   },
 });

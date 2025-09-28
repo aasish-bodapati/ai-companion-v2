@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService } from '../../services/routineService';
+import { fitnessService } from '../../services/fitnessService';
 import CalendarComponent from '../common/CalendarComponent';
 
 interface WorkoutLog {
@@ -48,6 +49,26 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
+  const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
+
+  // Load exercise database for category lookup
+  const loadExerciseDatabase = async () => {
+    try {
+      const exercises = await fitnessService.getAllExercises(700);
+      setExerciseDatabase(exercises);
+      console.log('🔍 Loaded exercise database:', exercises.length, 'exercises');
+    } catch (error) {
+      console.error('Failed to load exercise database:', error);
+    }
+  };
+
+  // Look up exercise category from database
+  const getExerciseCategory = (exerciseName: string) => {
+    const exercise = exerciseDatabase.find(ex => 
+      ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
+    );
+    return exercise?.logging_category || 'GENERAL';
+  };
 
   const loadLogs = async (date?: Date) => {
     try {
@@ -55,17 +76,22 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const targetDate = date || selectedDate;
       
       // Load all logs for the month first
-      const response = await routineService.getWorkoutLogs({
-        period: 'month',
+      const response = await fitnessService.getWorkoutLogs({
+        start_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString(),
+        end_date: new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).toISOString(),
         page: 1,
         size: 50
       });
       
       // Filter logs by the target date
-      const allLogs = response.logs || [];
+      console.log('🔍 Fitness logs response:', response);
+      console.log('🔍 Response type:', typeof response);
+      console.log('🔍 Response keys:', response ? Object.keys(response) : 'No response');
+      const allLogs = response?.logs || response || [];
+      console.log('🔍 All logs:', allLogs);
       const targetDateStr = targetDate.toISOString().split('T')[0]; // Get YYYY-MM-DD format
       
-      const filteredLogs = allLogs.filter(log => {
+      const filteredLogs = Array.isArray(allLogs) ? allLogs.filter(log => {
         // Try both activity_date and logged_at fields
         const dateField = log.activity_date || log.logged_at;
         if (!dateField) return false;
@@ -85,7 +111,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         } catch (error) {
           return false;
         }
-      });
+      }) : [];
       
       // Parse exercises from JSON string if needed
       const processedLogs = filteredLogs.map(log => {
@@ -357,6 +383,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   };
 
   useEffect(() => {
+    loadExerciseDatabase();
     loadLogs();
   }, []);
 
@@ -513,21 +540,46 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
           </View>
         ) : (
           logs.map((log, logIndex) => (
-            <View key={log.id || logIndex}>
-              <Text style={styles.workoutTitle}>
-                {log.workout_name || log.routine_name || 'Workout'}
-              </Text>
-              {Array.isArray(log.exercises) && log.exercises.map((exercise: any, exerciseIndex: number) => (
+            <View key={log.id || logIndex} style={styles.workoutLogContainer}>
+              {(() => {
+                // Parse exercises from JSON string if needed
+                let exercises = log.exercises;
+                if (typeof exercises === 'string') {
+                  try {
+                    exercises = JSON.parse(exercises);
+                  } catch (error) {
+                    console.error('Failed to parse exercises JSON:', error);
+                    exercises = [];
+                  }
+                }
+                return Array.isArray(exercises) ? exercises : [];
+              })().map((exercise: any, exerciseIndex: number) => (
                 <View key={`${log.id}-${exerciseIndex}`} style={styles.exerciseCard}>
-                  <Text style={styles.exerciseTitle}>
-                    {exercise.exercise_name || 'Unknown Exercise'}
-                  </Text>
+                  <View style={styles.exerciseHeader}>
+                    <View style={styles.exerciseNumberContainer}>
+                      <Text style={styles.exerciseNumber}>{exerciseIndex + 1}</Text>
+                    </View>
+                    <Text style={styles.exerciseTitle}>
+                      {exercise.exercise_name || 'Unknown Exercise'}
+                    </Text>
+                    <View style={styles.exerciseCategoryBadge}>
+                      <Ionicons 
+                        name="barbell-outline" 
+                        size={12} 
+                        color="#ffffff"
+                        style={styles.badgeIcon}
+                      />
+                      <Text style={styles.exerciseCategoryText}>
+                        {getExerciseCategory(exercise.exercise_name).toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={styles.exerciseStatText}>
-                    {exercise.sets || 0} sets x {exercise.reps || 0} reps
+                    {String(exercise.sets || 0)} sets x {String(exercise.reps || 0)} reps
                   </Text>
-                  {exercise.weight_used && exercise.weight_used > 0 && (
+                  {exercise.weight_used && Number(exercise.weight_used) > 0 && (
                     <Text style={styles.exerciseStatText}>
-                      {exercise.weight_used}kg
+                      {String(exercise.weight_used)}kg
                     </Text>
                   )}
                 </View>
@@ -998,19 +1050,53 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  exerciseNumberContainer: {
+    backgroundColor: '#10b981',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8,
+  },
+  exerciseNumber: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   exerciseTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: 2,
+    flex: 1,
   },
-  workoutTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 12,
-    marginTop: 8,
-    marginHorizontal: 20, // Match the header padding
+  exerciseCategoryBadge: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    marginLeft: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+  },
+  badgeIcon: {
+    marginRight: 4,
+  },
+  exerciseCategoryText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+  },
+  workoutLogContainer: {
+    marginBottom: 20,
   },
   exerciseDate: {
     fontSize: 12,

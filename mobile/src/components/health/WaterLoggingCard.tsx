@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { waterService, WaterLogStats } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
+import StatsCard from '../ui/StatsCard';
+import { COLORS, SPACING } from '../../theme/constants';
 
 interface WaterLoggingCardProps {
   // No props needed - component manages its own state
@@ -46,7 +48,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
             total_ml_today: prevStats.total_ml_today + amount_ml,
             total_oz_today: prevStats.total_oz_today + (amount_ml * 0.033814),
             logs_today: prevStats.logs_today + 1,
-            progress_percentage: Math.min(((prevStats.total_ml_today + amount_ml) / prevStats.daily_goal_ml) * 100, 100),
+            progress_percentage: Math.min(((prevStats.total_ml_today + amount_ml) / prevStats.goal_ml) * 100, 100),
           };
         });
       }
@@ -93,7 +95,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
             total_ml_today: Math.max(0, prevStats.total_ml_today - removedAmount),
             total_oz_today: Math.max(0, prevStats.total_oz_today - (removedAmount * 0.033814)),
             logs_today: Math.max(0, prevStats.logs_today - 1),
-            progress_percentage: Math.max(0, ((prevStats.total_ml_today - removedAmount) / prevStats.daily_goal_ml) * 100),
+            progress_percentage: Math.max(0, ((prevStats.total_ml_today - removedAmount) / prevStats.goal_ml) * 100),
           };
         });
       }
@@ -113,22 +115,71 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     total_ml_today: 0,
     total_oz_today: 0,
     logs_today: 0,
-    daily_goal_ml: 2000,
-    daily_goal_oz: 67.63,
+    goal_ml: 2000,
+    goal_oz: 67.63,
     progress_percentage: 0,
     average_per_log: 250,
   };
 
-  const progressPercentage = Math.min(displayStats.progress_percentage, 100);
+  // Calculate progress percentage dynamically
+  const progressPercentage = Math.min((displayStats.total_ml_today / displayStats.goal_ml) * 100, 100);
   const isGoalAchieved = progressPercentage >= 100;
+  
+  // Debug logging
+  console.log('🔍 WaterLoggingCard - Progress Debug:', {
+    total_ml_today: displayStats.total_ml_today,
+    goal_ml: displayStats.goal_ml,
+    progress_percentage: progressPercentage,
+    isGoalAchieved
+  });
+
+  const statsData = [
+    {
+      label: 'ML Today',
+      value: displayStats.total_ml_today,
+      unit: 'ml',
+      color: COLORS.primary,
+    },
+    {
+      label: 'OZ Today',
+      value: displayStats.total_oz_today.toFixed(1),
+      unit: 'oz',
+      color: COLORS.primary,
+    },
+    {
+      label: 'Logs',
+      value: displayStats.logs_today,
+      color: COLORS.success,
+    },
+  ];
+
+  const progressData = {
+    current: displayStats.total_ml_today,
+    target: displayStats.goal_ml,
+    label: 'Daily Goal',
+    color: isGoalAchieved ? COLORS.success : COLORS.primary,
+  };
+
+  const achievementData = isGoalAchieved ? {
+    reached: true,
+    message: 'Goal Achieved! 🎉',
+    icon: 'trophy',
+  } : undefined;
 
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View style={styles.titleContainer}>
-          <Ionicons name="water" size={20} color="#3b82f6" />
-          <Text style={styles.title}>Water Intake</Text>
-        </View>
+    <View style={styles.container}>
+      <StatsCard
+        title="Water Intake"
+        icon="water"
+        iconColor={COLORS.primary}
+        stats={statsData}
+        progress={progressData}
+        achievement={achievementData}
+        style={styles.card}
+      />
+      
+      {/* Action Buttons */}
+      <View style={styles.actionContainer}>
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
@@ -150,23 +201,6 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
             <Ionicons name="add" size={16} color="#ffffff" />
           </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.statsRow}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{displayStats.total_ml_today}ml</Text>
-            <Text style={styles.statLabel}>Today</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{displayStats.total_oz_today.toFixed(1)}oz</Text>
-            <Text style={styles.statLabel}>Today</Text>
-          </View>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>{displayStats.logs_today}</Text>
-            <Text style={styles.statLabel}>Logs</Text>
-          </View>
-        </View>
         
         <View style={styles.quickLogInfo}>
           <Text style={styles.quickLogText}>Tap + to add 250ml, - to remove last log</Text>
@@ -174,77 +208,39 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
             {displayStats.logs_today > 0 ? `${displayStats.logs_today} logs today` : 'Tap multiple times for more'}
           </Text>
         </View>
-
-        <View style={styles.progressContainer}>
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Daily Goal</Text>
-            <Text style={styles.progressText}>
-              {displayStats.total_ml_today}ml / {displayStats.daily_goal_ml}ml
-            </Text>
-          </View>
-          <View style={styles.progressBar}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${progressPercentage}%`,
-                  backgroundColor: isGoalAchieved ? '#10b981' : '#3b82f6',
-                },
-              ]}
-            />
-          </View>
-          <Text style={styles.progressPercentage}>
-            {progressPercentage.toFixed(0)}% Complete
-          </Text>
-        </View>
-
-        {isGoalAchieved && (
-          <View style={styles.achievementContainer}>
-            <Ionicons name="trophy" size={16} color="#10b981" />
-            <Text style={styles.achievementText}>Goal Achieved! 🎉</Text>
-          </View>
-        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: SPACING.lg,
+  },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginHorizontal: 0, // Override default margin since container handles it
+    marginBottom: 0,
+  },
+  actionContainer: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: 12,
+    padding: SPACING.lg,
+    marginTop: SPACING.sm,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginLeft: 8,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   buttonContainer: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
   },
   logButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
     borderRadius: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -252,96 +248,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   plusButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: COLORS.success,
   },
   minusButton: {
-    backgroundColor: '#ef4444',
+    backgroundColor: COLORS.danger,
   },
   disabledButton: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: COLORS.gray[400],
     opacity: 0.5,
-  },
-  content: {
-    gap: 16,
   },
   quickLogInfo: {
     alignItems: 'center',
-    paddingVertical: 8,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    marginVertical: 4,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: SPACING.sm,
   },
   quickLogText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#3b82f6',
+    color: COLORS.primary,
     marginBottom: 2,
   },
   quickLogSubtext: {
     fontSize: 12,
-    color: '#6b7280',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1f2937',
-  },
-  statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  progressContainer: {
-    gap: 8,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  progressLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  progressPercentage: {
-    fontSize: 12,
-    color: '#6b7280',
-    textAlign: 'center',
-  },
-  achievementContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#d1fae5',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
-  achievementText: {
-    color: '#065f46',
-    fontWeight: '600',
-    marginLeft: 4,
+    color: COLORS.text.secondary,
   },
 });

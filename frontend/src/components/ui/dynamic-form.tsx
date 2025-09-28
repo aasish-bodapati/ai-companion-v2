@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormField, FormFieldProps } from './form-field';
 import { FormSection } from './form-section';
-import { FormContainer } from './form-container';
+import { SmartFormContainer } from './smart-form-container';
 import { cn } from '@/lib/utils';
 
 export interface FormAttribute {
@@ -116,7 +116,7 @@ export function DynamicForm({
   };
 
   return (
-    <FormContainer
+    <SmartFormContainer
       title={title}
       description={description}
       onSubmit={handleSubmit}
@@ -126,11 +126,11 @@ export function DynamicForm({
       loading={loading}
       disabled={disabled}
       className={className}
-      variant={variant}
+      variant={variant === 'minimal' ? 'basic' : 'auto'}
       showActions={showActions}
       actions={actions}
     >
       {sections.map(renderSection)}
-    </FormContainer>
+    </SmartFormContainer>
   );
 }

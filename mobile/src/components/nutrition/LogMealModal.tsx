@@ -14,6 +14,7 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService, FoodItem } from '../../services/nutritionService';
 import CalendarComponent from '../common/CalendarComponent';
+import DateSelector from '../ui/DateSelector';
 
 interface MealData {
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -88,52 +89,6 @@ export default function LogMealModal({
     };
   }, []);
 
-  // Date handling functions
-  const formatDateForDisplay = (date: Date) => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow';
-    } else {
-      return date.toLocaleDateString('en-US', { 
-        weekday: 'short', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    setShowCalendar(false);
-  };
-
-  const navigateDate = (direction: 'prev' | 'next') => {
-    const newDate = new Date(selectedDate);
-    if (direction === 'prev') {
-      newDate.setDate(newDate.getDate() - 1);
-    } else {
-      newDate.setDate(newDate.getDate() + 1);
-    }
-    setSelectedDate(newDate);
-  };
-
-  const goToToday = () => {
-    setSelectedDate(new Date());
-  };
-
-  const isToday = (date: Date) => {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  };
 
   const searchFoods = async (query: string) => {
     if (!query.trim()) {
@@ -280,48 +235,13 @@ export default function LogMealModal({
             keyboardShouldPersistTaps="handled"
           >
             {/* Date Selection */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Meal Date</Text>
-              <View style={styles.dateSelectorContainer}>
-                <TouchableOpacity 
-                  style={styles.dateNavButton}
-                  onPress={() => navigateDate('prev')}
-                >
-                  <Ionicons name="chevron-back" size={16} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.dateSelector}
-                  onPress={() => setShowCalendar(true)}
-                >
-                  <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-                  <Text style={styles.dateSelectorText}>
-                    {formatDateForDisplay(selectedDate)}
-                  </Text>
-                  <Ionicons name="chevron-down" size={14} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={styles.dateNavButton}
-                  onPress={() => navigateDate('next')}
-                >
-                  <Ionicons name="chevron-forward" size={16} color="#6b7280" />
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[
-                    styles.todayButton,
-                    isToday(selectedDate) && styles.todayButtonActive
-                  ]}
-                  onPress={goToToday}
-                >
-                  <Text style={[
-                    styles.todayButtonText,
-                    isToday(selectedDate) && styles.todayButtonTextActive
-                  ]}>Today</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            <DateSelector
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+              label="Meal Date"
+              calendarModalTitle="Select Meal Date"
+              showLogsIndicator={false}
+            />
             {/* Meal Type Selection */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Meal Type</Text>
@@ -522,47 +442,6 @@ export default function LogMealModal({
         </View>
       </BlurView>
 
-      {/* Calendar Modal */}
-      <Modal
-        visible={showCalendar}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowCalendar(false)}
-      >
-        <View style={styles.calendarModalOverlay}>
-          <View style={styles.calendarModal}>
-            <View style={styles.calendarModalHeader}>
-              <Text style={styles.calendarModalTitle}>Select Meal Date</Text>
-              <TouchableOpacity
-                style={styles.calendarCloseButton}
-                onPress={() => setShowCalendar(false)}
-              >
-                <Ionicons name="close" size={24} color="#6b7280" />
-              </TouchableOpacity>
-            </View>
-            
-            <TouchableOpacity 
-              style={styles.calendarModalBody}
-              activeOpacity={1}
-              onPress={() => {
-                // Close calendar when clicking outside
-                setShowCalendar(false);
-              }}
-            >
-              <TouchableOpacity 
-                activeOpacity={1}
-                onPress={(e) => e.stopPropagation()}
-              >
-                <CalendarComponent
-                  selectedDate={selectedDate}
-                  onDateSelect={handleDateSelect}
-                  showLogsIndicator={false}
-                />
-              </TouchableOpacity>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
     </Modal>
   );
@@ -676,65 +555,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
-  // Date Selector Styles
-  dateSelectorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    marginBottom: 6,
-    flexWrap: 'wrap',
-  },
-  dateNavButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dateSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 4,
-    minWidth: 140,
-    maxWidth: 160,
-  },
-  dateSelectorText: {
-    fontSize: 13,
-    color: '#1f2937',
-    fontWeight: '500',
-  },
-  todayButton: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    height: 28,
-    justifyContent: 'center',
-  },
-  todayButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  todayButtonText: {
-    color: '#6b7280',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  todayButtonTextActive: {
-    color: '#ffffff',
-  },
   // Food Section Styles
   foodSection: {
     flex: 1,
@@ -823,37 +643,6 @@ const styles = StyleSheet.create({
   searchResultCalories: {
     fontSize: 11,
     color: '#9ca3af',
-  },
-  // Calendar Modal Styles
-  calendarModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  calendarModal: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  calendarModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  calendarModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  calendarCloseButton: {
-    padding: 4,
-  },
-  calendarModalBody: {
-    padding: 20,
   },
   emptyFoodItems: {
     alignItems: 'center',
