@@ -77,11 +77,11 @@ class Settings(BaseSettings):
         """Validate database URI format."""
         if not v:
             raise ValueError("SQLALCHEMY_DATABASE_URI must be set")
-        if not (v.startswith("sqlite:///") or v.startswith("postgresql://")):
-            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid SQLite or PostgreSQL URI")
+        if not v.startswith("postgresql://"):
+            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL URI")
         return v
 
-    # Database settings - PostgreSQL for production
+    # Database settings - PostgreSQL
     SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/healthlog_db"
 
     # User management

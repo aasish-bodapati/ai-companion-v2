@@ -21,8 +21,8 @@ httpx>=0.25.1,<0.28.0
 numpy>=1.26.0
 pandas>=2.0.0
 
-# Database: SQLite (default for MVP)
-# No additional database client needed for SQLite
+# Database: PostgreSQL
+psycopg2-binary==2.9.9
 
 # Migrations
 alembic==1.13.2
