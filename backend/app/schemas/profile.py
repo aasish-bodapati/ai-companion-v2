@@ -11,6 +11,9 @@ class HealthProfile(BaseModel):
     weight: Optional[str] = None
     gender: Optional[str] = None
     activity_level: Optional[str] = None
+    smm: Optional[str] = None  # Skeletal Muscle Mass
+    body_fat_percentage: Optional[str] = None  # Body Fat Percentage
+    workout_days_per_week: Optional[str] = None  # Workout days per week
 
 class UserProfile(BaseModel):
     user_id: int
@@ -18,6 +21,6 @@ class UserProfile(BaseModel):
     full_name: Optional[str] = None
     timezone: Optional[str] = None
     health_data: Optional[HealthProfile] = None
-    goals: List[str] = []
+    bodyTypeGoal: Optional[str] = None
     preferences: Dict[str, Any] = {}
     onboarding_completed: bool = False

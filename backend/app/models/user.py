@@ -91,12 +91,12 @@ class User(Base):
     #     back_populates="user",
     #     cascade="all, delete-orphan",
     # )
-    # User goals relationship - commented out to avoid circular import issues
-    # goals = relationship(
-    #     "UserGoal",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan",
-    # )
+    # User goals relationship
+    goals = relationship(
+        "UserGoal",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email='{self.email}'>"

@@ -26,6 +26,11 @@ class UserHealthProfile(Base):
 
     # Current Health Metrics (simplified)
     current_weight_kg = Column(Float, nullable=True)
+    
+    # Additional Health Metrics
+    smm_kg = Column(Float, nullable=True)  # Skeletal Muscle Mass in kg
+    body_fat_percentage = Column(Float, nullable=True)  # Body Fat Percentage
+    workout_days_per_week = Column(Integer, nullable=True)  # Number of workout days per week
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

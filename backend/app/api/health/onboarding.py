@@ -57,20 +57,40 @@ async def complete_onboarding(
 
         if existing_profile:
             # Update existing profile
+            profile_data = onboarding_data.model_dump()
+            # Handle bodyTypeGoal separately since it's not in the base schema
+            body_type_goal = profile_data.pop('bodyTypeGoal', None)
             profile = onboarding_profile.update_by_user(
                 db, user_id=current_user.id, obj_in=OnboardingProfileUpdate(
-                    **onboarding_data.model_dump(),
+                    **profile_data,
                     completed=True
                 )
             )
+            # Update body_type_goal directly on the model
+            if body_type_goal and profile:
+                print(f"🔍 Onboarding Debug - Updating existing profile for user {current_user.id}:")
+                print(f"  - body_type_goal: {body_type_goal}")
+                profile.body_type_goal = body_type_goal
+                db.commit()
+                print(f"  - Updated profile.body_type_goal: {profile.body_type_goal}")
         else:
             # Create new profile
+            profile_data = onboarding_data.model_dump()
+            # Handle bodyTypeGoal separately since it's not in the base schema
+            body_type_goal = profile_data.pop('bodyTypeGoal', None)
             profile = onboarding_profile.create_with_user(
                 db, obj_in=OnboardingProfileCreate(
-                    **onboarding_data.model_dump(),
+                    **profile_data,
                     completed=True
                 ), user_id=current_user.id
             )
+            # Set body_type_goal directly on the model
+            if body_type_goal and profile:
+                print(f"🔍 Onboarding Debug - Creating new profile for user {current_user.id}:")
+                print(f"  - body_type_goal: {body_type_goal}")
+                profile.body_type_goal = body_type_goal
+                db.commit()
+                print(f"  - Set profile.body_type_goal: {profile.body_type_goal}")
 
         if not profile:
             raise HTTPException(status_code=500, detail="Failed to create onboarding data")
@@ -90,7 +110,10 @@ async def complete_onboarding(
                     gender=onboarding_data.gender,
                     height_cm=onboarding_data.height_cm,
                     current_weight_kg=onboarding_data.current_weight_kg,
-                    activity_level=onboarding_data.activity_level
+                    activity_level=onboarding_data.activity_level,
+                    smm_kg=onboarding_data.smm,
+                    body_fat_percentage=onboarding_data.body_fat_percentage,
+                    workout_days_per_week=onboarding_data.workout_days
                 )
                 db.add(health_profile)
                 db.commit()
@@ -102,6 +125,9 @@ async def complete_onboarding(
                 existing_health_profile.height_cm = onboarding_data.height_cm
                 existing_health_profile.current_weight_kg = onboarding_data.current_weight_kg
                 existing_health_profile.activity_level = onboarding_data.activity_level
+                existing_health_profile.smm_kg = onboarding_data.smm
+                existing_health_profile.body_fat_percentage = onboarding_data.body_fat_percentage
+                existing_health_profile.workout_days_per_week = onboarding_data.workout_days
                 db.commit()
                 logger.info(f"Health profile updated for user {current_user.id}")
         except Exception as e:

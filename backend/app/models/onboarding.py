@@ -17,6 +17,7 @@ class OnboardingProfile(Base):
 
     # Common fields
     completed = Column(Boolean(), nullable=True)
+    body_type_goal = Column(String(50), nullable=True)
     updated_at = Column(DateTime(), nullable=True, default=datetime.utcnow)
 
     # Relationships

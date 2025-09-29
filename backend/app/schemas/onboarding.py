@@ -51,6 +51,10 @@ class SimpleOnboardingData(BaseModel):
     height_cm: Optional[float] = None
     current_weight_kg: Optional[float] = None
     activity_level: Optional[str] = None
+    smm: Optional[float] = None  # Skeletal Muscle Mass
+    body_fat_percentage: Optional[float] = None  # Body Fat Percentage
+    workout_days: Optional[int] = None  # Number of workout days per week
+    bodyTypeGoal: Optional[str] = None
 
 class OnboardingResponse(BaseModel):
     """Response schema for onboarding completion"""
