@@ -3,17 +3,18 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import OnboardingContainer from '../../components/onboarding/OnboardingContainer';
 import OnboardingStep from '../../components/onboarding/OnboardingStep';
 import HealthDataStep from '../../components/onboarding/HealthDataStep';
-import HealthGoalsStep from '../../components/onboarding/HealthGoalsStep';
+import BodyTypeGoalsStep from '../../components/onboarding/BodyTypeGoalsStep';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import { profileService } from '../../services/profileService';
 
 interface HealthData {
   age: string;
@@ -21,11 +22,14 @@ interface HealthData {
   weight: string;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  smm?: string; // Skeletal Muscle Mass (optional)
+  bodyFat?: string; // Body Fat Percentage (optional)
 }
 
 interface OnboardingData {
   healthData: HealthData;
-  goals: string[];
+  bodyTypeGoal: string;
+  editedBodyTypeGoal?: any; // Store the edited goal data
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -36,26 +40,26 @@ interface OnboardingData {
 const ONBOARDING_STEPS = [
   {
     id: 'welcome',
-    title: 'Welcome to AI Companion',
-    subtitle: 'Your Personal Health Assistant',
-    description: 'Track your fitness, nutrition, and wellness journey with AI-powered insights and personalized recommendations. Monitor workouts, log meals, track mood, and analyze patterns. Our AI analyzes your data to provide personalized recommendations and help you make informed health decisions.',
-    icon: 'sparkles-outline',
+    title: 'Update Your Profile',
+    subtitle: 'Edit Your Health Data and Goals',
+    description: 'Review and update your health information, body type goals, and preferences. Your existing data has been pre-filled for easy editing.',
+    icon: 'create-outline',
     variant: 'centered' as const,
   },
   {
     id: 'health_data',
-    title: 'Tell Us About Yourself',
-    subtitle: 'Help Us Personalize Your Experience',
-    description: 'Share your basic health information so we can provide accurate recommendations and track your progress effectively.',
+    title: 'Update Your Health Info',
+    subtitle: 'Review and Edit Your Health Data',
+    description: 'Review and update your health information. Your existing data has been pre-filled for easy editing.',
     icon: 'person-outline',
     variant: 'minimal' as const,
   },
   {
-    id: 'goals',
-    title: 'Set Your Health Goals',
-    subtitle: 'What Do You Want to Achieve?',
-    description: 'Choose your health and wellness goals. We\'ll create a personalized plan to help you achieve them.',
-    icon: 'flag-outline',
+    id: 'body_type_goal',
+    title: 'Update Your Body Type Goal',
+    subtitle: 'Review and Edit Your Body Type Goal',
+    description: 'Review and update your body type goal. Your current selection has been pre-filled for easy editing.',
+    icon: 'body-outline',
     variant: 'minimal' as const,
   },
   {
@@ -69,7 +73,6 @@ const ONBOARDING_STEPS = [
 ];
 
 export default function EnhancedOnboardingScreen() {
-  console.log('🚀 EnhancedOnboardingScreen mounted/re-rendered');
   const [currentStep, setCurrentStep] = useState(0);
   const [hasCompleted, setHasCompleted] = useState(false);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
@@ -79,8 +82,10 @@ export default function EnhancedOnboardingScreen() {
       weight: '',
       gender: 'male',
       activityLevel: 'moderate',
+      smm: '',
+      bodyFat: '',
     },
-    goals: [],
+    bodyTypeGoal: '',
     preferences: {
       notifications: true,
       reminders: true,
@@ -89,21 +94,44 @@ export default function EnhancedOnboardingScreen() {
   });
   const [loading, setLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
   const { completeOnboarding } = useAuth();
   const completionRef = useRef(false);
 
+  // Load existing profile data to pre-populate onboarding
+  const loadExistingProfileData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      const profileData = await profileService.getUserProfile();
+      
+      if (profileData) {
+        // Convert backend data to onboarding format
+        const existingData = profileService.convertToOnboardingData(profileData);
+        
+        // Pre-populate the form with existing data
+        setOnboardingData(existingData);
+      }
+    } catch (error) {
+      // Keep default values if no existing data
+    } finally {
+      setLoading(false);
+      setDataLoaded(true);
+    }
+  }, []);
+
   // Reset state when component mounts (for rerun onboarding)
   useEffect(() => {
-    console.log('🔄 EnhancedOnboardingScreen mounted - resetting state');
     if (!completionRef.current) {
       setHasCompleted(false);
       setIsCompleting(false);
-      setLoading(false);
       setCurrentStep(0);
+      // Load existing data to pre-populate the form
+      loadExistingProfileData();
     } else {
       console.log('🔄 Component mounted but completion already in progress, preventing reset');
     }
-  }, []);
+  }, [loadExistingProfileData]);
 
   // Check if we should prevent rendering (but don't return early to avoid hooks violation)
   const shouldPreventRender = hasCompleted || isCompleting || completionRef.current || 
@@ -208,13 +236,13 @@ export default function EnhancedOnboardingScreen() {
         gender: onboardingData.healthData.gender,
         height_cm: parseInt(onboardingData.healthData.height) || 175,
         current_weight_kg: parseInt(onboardingData.healthData.weight) || 70,
-        activity_level: onboardingData.healthData.activityLevel
+        activity_level: onboardingData.healthData.activityLevel,
+        smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : null,
+        body_fat_percentage: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : null,
+        workout_days: onboardingData.healthData.workoutDays ? parseInt(onboardingData.healthData.workoutDays) : null,
+        bodyTypeGoal: onboardingData.bodyTypeGoal
       };
       
-      console.log('Onboarding data:', onboardingData);
-      console.log('Backend data:', backendData);
-      
-      console.log('🎯 Calling completeOnboarding from AuthContext');
       await completeOnboarding(backendData);
       
       showToast.success('Welcome!', 'Your profile has been set up successfully');
@@ -259,8 +287,13 @@ export default function EnhancedOnboardingScreen() {
     setOnboardingData(prev => ({ ...prev, healthData }));
   }, []);
 
-  const handleGoalsChange = useCallback((goals: string[]) => {
-    setOnboardingData(prev => ({ ...prev, goals }));
+  const handleBodyTypeChange = useCallback((bodyTypeGoal: string, editedGoal?: any) => {
+    console.log('🔍 handleBodyTypeChange called with:', { bodyTypeGoal, editedGoal });
+    setOnboardingData(prev => ({ 
+      ...prev, 
+      bodyTypeGoal,
+      editedBodyTypeGoal: editedGoal // Store the edited goal if provided
+    }));
   }, []);
 
   const canGoNext = () => {
@@ -268,8 +301,8 @@ export default function EnhancedOnboardingScreen() {
       case 'health_data':
         const { age, height, weight } = onboardingData.healthData;
         return age && height && weight && !isNaN(Number(age)) && !isNaN(Number(height)) && !isNaN(Number(weight));
-      case 'goals':
-        return onboardingData.goals.length > 0;
+      case 'body_type_goal':
+        return onboardingData.bodyTypeGoal.length > 0;
       default:
         return true;
     }
@@ -282,13 +315,22 @@ export default function EnhancedOnboardingScreen() {
           <HealthDataStep
             onDataChange={handleHealthDataChange}
             initialData={onboardingData.healthData}
+            isPrePopulated={dataLoaded}
           />
         );
-      case 'goals':
+      case 'body_type_goal':
         return (
-          <HealthGoalsStep
-            onGoalsChange={handleGoalsChange}
-            initialGoals={onboardingData.goals}
+          <BodyTypeGoalsStep
+            onBodyTypeChange={handleBodyTypeChange}
+            initialBodyType={onboardingData.bodyTypeGoal}
+            userData={{
+              age: parseInt(onboardingData.healthData.age) || 25,
+              height: parseInt(onboardingData.healthData.height) || 175,
+              weight: parseInt(onboardingData.healthData.weight) || 70,
+              gender: onboardingData.healthData.gender,
+              activityLevel: onboardingData.healthData.activityLevel,
+            }}
+            isPrePopulated={dataLoaded}
           />
         );
       default:
@@ -311,6 +353,18 @@ export default function EnhancedOnboardingScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Setting up your profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading while data is being loaded
+  if (loading && !dataLoaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading your data...</Text>
         </View>
       </SafeAreaView>
     );

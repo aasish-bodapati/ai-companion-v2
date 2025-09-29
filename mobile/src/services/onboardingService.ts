@@ -11,7 +11,7 @@ export interface HealthData {
 
 export interface OnboardingData {
   healthData: HealthData;
-  goals: string[];
+  bodyTypeGoal: string;
   preferences: {
     notifications: boolean;
     reminders: boolean;

@@ -36,7 +36,20 @@ export default function NutritionScreen() {
       console.log('🍎 Loading nutrition week stats...');
       const stats = await nutritionService.getNutritionStats('week');
       console.log('✅ Nutrition week stats data:', stats);
-      setWeekStats(stats);
+      
+      // Transform the stats to match the expected format
+      setWeekStats({
+        total_meals: stats.meals_count || 0,
+        total_calories: stats.total_calories || 0,
+        average_daily_calories: stats.avg_calories_per_meal || 0,
+        macro_breakdown: {
+          protein: stats.protein_g || 0,
+          carbs: stats.carbs_g || 0,
+          fat: stats.fat_g || 0,
+        },
+        streak: 0, // Will be calculated separately
+        weekly_goal_progress: 0, // Will be calculated separately
+      });
     } catch (error) {
       console.error('❌ Failed to load week stats:', error);
       // Set fallback stats
@@ -58,9 +71,43 @@ export default function NutritionScreen() {
   const loadWeeklyActivityData = async () => {
     try {
       console.log('📊 Loading nutrition weekly activity data...');
-      const data = await nutritionService.getWeeklyNutritionActivityData();
-      console.log('✅ Nutrition weekly activity data:', data);
-      setWeeklyActivityData(data);
+      // Get recent meals for the week
+      const response = await nutritionService.getNutritionLogs({ period: 'week' });
+      console.log('✅ Nutrition weekly meals data:', response);
+      
+      // Extract meals array from response
+      const meals = response?.meals || response || [];
+      console.log('✅ Extracted meals array:', meals);
+      
+      // Group meals by day of week
+      const weeklyData = {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
+      
+      if (Array.isArray(meals)) {
+        meals.forEach(meal => {
+        const date = new Date(meal.meal_date);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        switch (dayOfWeek) {
+          case 0: weeklyData.sunday++; break;
+          case 1: weeklyData.monday++; break;
+          case 2: weeklyData.tuesday++; break;
+          case 3: weeklyData.wednesday++; break;
+          case 4: weeklyData.thursday++; break;
+          case 5: weeklyData.friday++; break;
+          case 6: weeklyData.saturday++; break;
+        }
+        });
+      }
+      
+      setWeeklyActivityData(weeklyData);
     } catch (error) {
       console.error('❌ Failed to load weekly activity data:', error);
       // Set fallback data

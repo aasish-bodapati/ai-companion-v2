@@ -148,8 +148,8 @@ export default function SimpleChart({
   };
 
   const renderDonutChart = () => {
-    const radius = 60;
-    const strokeWidth = 20;
+    const radius = 150;
+    const strokeWidth = 40;
     const circumference = 2 * Math.PI * radius;
     
     // Check if all values are zero
@@ -268,10 +268,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   chartContainer: {
     justifyContent: 'center',
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
   },
   barWrapper: {
-    height: '80%',
+    height: '85%',
     justifyContent: 'flex-end',
     width: '100%',
   },
@@ -301,13 +301,13 @@ const styles = StyleSheet.create({
     minHeight: 4,
   },
   barLabel: {
-    fontSize: 10,
+    fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
     marginTop: 4,
   },
   barValue: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
     marginTop: 2,
@@ -329,10 +329,10 @@ const styles = StyleSheet.create({
   },
   dataPoint: {
     position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 3,
     borderColor: '#ffffff',
   },
   lineLabels: {
@@ -373,12 +373,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   donutCenterText: {
-    fontSize: 20,
+    fontSize: 40,
     fontWeight: 'bold',
     color: '#1f2937',
   },
   donutCenterLabel: {
-    fontSize: 12,
+    fontSize: 18,
     color: '#6b7280',
   },
   donutEmptyRing: {

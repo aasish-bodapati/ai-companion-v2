@@ -19,6 +19,7 @@ interface WaterLoggingCardProps {
 
 export default function WaterLoggingCard({}: WaterLoggingCardProps) {
   const [stats, setStats] = useState<WaterLogStats | null>(null);
+  const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
 
   const loadStats = async () => {
     try {
@@ -29,8 +30,49 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     }
   };
 
+  const loadWaterGoal = async () => {
+    try {
+      // Get user profile to determine gender-based water goal
+      const { profileService } = await import('../../services/profileService');
+      const profile = await profileService.getUserProfile();
+      
+      if (profile?.health_data?.gender) {
+        const gender = profile.health_data.gender;
+        let waterGoalMl = 3000; // Default 3L
+        
+        if (gender === 'female') {
+          waterGoalMl = 2700; // 2.7L for females
+        } else if (gender === 'male') {
+          waterGoalMl = 3700; // 3.7L for males
+        } else {
+          waterGoalMl = 3000; // Default 3L for other
+        }
+        
+        setWaterGoal(waterGoalMl);
+      } else {
+        setWaterGoal(3000);
+      }
+    } catch (error) {
+      console.error('Failed to load water goal from profile:', error);
+      setWaterGoal(3000); // Fallback to default
+    }
+  };
+
   useEffect(() => {
     loadStats();
+    loadWaterGoal();
+  }, []);
+
+  // Refresh water goal when component mounts or when screen comes into focus
+  useEffect(() => {
+    const refreshWaterGoal = () => {
+      loadWaterGoal();
+    };
+
+    // Refresh every 5 seconds to catch any updates
+    const interval = setInterval(refreshWaterGoal, 5000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const handleQuickLog = async (amount_ml: number) => {
@@ -110,13 +152,17 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     }
   };
 
-  // Use default values if stats haven't loaded yet
-  const displayStats = stats || {
+  // Use default values if stats haven't loaded yet, but use dynamic water goal
+  const displayStats = stats ? {
+    ...stats,
+    goal_ml: waterGoal, // Override with numerical goal
+    goal_oz: waterGoal * 0.033814, // Convert to oz
+  } : {
     total_ml_today: 0,
     total_oz_today: 0,
     logs_today: 0,
-    goal_ml: 2000,
-    goal_oz: 67.63,
+    goal_ml: waterGoal, // Use dynamic goal
+    goal_oz: waterGoal * 0.033814, // Convert to oz
     progress_percentage: 0,
     average_per_log: 250,
   };
@@ -125,13 +171,6 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
   const progressPercentage = Math.min((displayStats.total_ml_today / displayStats.goal_ml) * 100, 100);
   const isGoalAchieved = progressPercentage >= 100;
   
-  // Debug logging
-  console.log('🔍 WaterLoggingCard - Progress Debug:', {
-    total_ml_today: displayStats.total_ml_today,
-    goal_ml: displayStats.goal_ml,
-    progress_percentage: progressPercentage,
-    isGoalAchieved
-  });
 
   const statsData = [
     {

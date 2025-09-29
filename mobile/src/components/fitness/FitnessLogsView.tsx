@@ -63,7 +63,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   // Load exercise database for category lookup
   const loadExerciseDatabase = async () => {
     try {
-      const exercises = await fitnessService.getAllExercises(700);
+      const exercises = await fitnessService.getExerciseTypes();
       setExerciseDatabase(exercises);
       console.log('🔍 Loaded exercise database:', exercises.length, 'exercises');
     } catch (error) {
@@ -116,7 +116,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       // Use backend date filtering instead of client-side filtering
       const targetDateStr = targetDate.toISOString().split('T')[0];
       
-      const response = await fitnessService.getWorkoutLogs({
+      const response = await fitnessService.getFitnessLogs({
         start_date: targetDateStr,
         end_date: targetDateStr,
         page: 1,
@@ -124,7 +124,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       console.log('🔍 Fitness logs response:', response);
-      const filteredLogs = response?.logs || [];
+      const filteredLogs = response || [];
       console.log('🔍 Backend filtered logs count:', filteredLogs.length);
       console.log('🔍 Backend filtered logs:', filteredLogs);
       
@@ -161,17 +161,17 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     try {
       setNavigating(true);
       // Load all logs for the month first
-      const response = await routineService.getWorkoutLogs({
+      const response = await fitnessService.getFitnessLogs({
         period: 'month',
         page: 1,
         size: 50
       });
       
       // Filter logs by the selected date
-      const allLogs = response.logs || [];
+      const allLogs = response || [];
       const selectedDateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
       
-      const filteredLogs = allLogs.filter(log => {
+      const filteredLogs = allLogs.filter((log: any) => {
         // Try both activity_date and logged_at fields
         const dateField = log.activity_date || log.logged_at;
         if (!dateField) return false;
@@ -194,7 +194,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       // Parse exercises from JSON string if needed
-      const processedLogs = filteredLogs.map(log => {
+      const processedLogs = filteredLogs.map((log: any) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
@@ -285,7 +285,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
           onPress: async () => {
             try {
               setDeletingLogId(logId);
-              await fitnessService.deleteWorkoutLog(logId);
+              await fitnessService.deleteWorkout(logId);
               await loadLogs(); // Refresh the logs
               Alert.alert('Success', 'Workout deleted successfully');
             } catch (error) {
@@ -385,7 +385,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       
       // If no exercises left, delete the entire log
       if (updatedExercises.length === 0) {
-        await routineService.deleteWorkoutLog(logId);
+        await fitnessService.deleteWorkout(logId);
         setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
         Alert.alert('Success', 'Exercise deleted. Workout log removed as it had no remaining exercises.');
       } else {
@@ -419,7 +419,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setDeletingLogId(logId);
       
       // Call the API to delete the log
-      await routineService.deleteWorkoutLog(logId);
+      await fitnessService.deleteWorkout(logId);
       
       // Remove from logs array
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));

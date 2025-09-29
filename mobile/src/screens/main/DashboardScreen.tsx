@@ -49,6 +49,8 @@ export default function DashboardScreen() {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
       
+      console.log('📊 Dashboard: Loading dashboard data...');
+      
       // Load dashboard summary and quick stats in parallel
       const [summaryResponse, quickStatsResponse] = await Promise.allSettled([
         dashboardService.getDashboardSummary(),
@@ -58,60 +60,69 @@ export default function DashboardScreen() {
       let summary = summaryResponse.status === 'fulfilled' ? summaryResponse.value : null;
       let quickStats = quickStatsResponse.status === 'fulfilled' ? quickStatsResponse.value : null;
 
-      // If dashboard API fails, try to get some real data from fitness service
+      console.log('📊 Dashboard: Summary response:', summaryResponse.status);
+      console.log('📊 Dashboard: Quick stats response:', quickStatsResponse.status);
+
+      // If dashboard API fails, try to get some real data from individual services
       if (!summary || !quickStats) {
+        console.log('📊 Dashboard: Primary APIs failed, trying fallback...');
         try {
-          const [recentWorkouts, todayWorkoutSummary] = await Promise.allSettled([
+          const [recentWorkouts, todayWorkoutSummary, recentMeals, todayNutritionSummary] = await Promise.allSettled([
             fitnessService.getRecentWorkouts(5),
             fitnessService.getTodayWorkoutSummary(),
+            nutritionService.getRecentMeals(5),
+            nutritionService.getTodayNutritionSummary(),
           ]);
 
           // Create fallback summary with real data if available
-          if (recentWorkouts.status === 'fulfilled' && todayWorkoutSummary.status === 'fulfilled') {
-            const workouts = recentWorkouts.value || [];
-            const todayData = todayWorkoutSummary.value || {};
-            
-            summary = {
-              today_stats: {
-                workouts: todayData.workouts || 0,
-                meals: 0,
-                calories_burned: todayData.calories_burned || 0,
-                calories_consumed: 0,
-                total_minutes: todayData.total_duration || 0,
-                protein_g: 0,
-                carbs_g: 0,
-                fat_g: 0,
-                net_calories: 0,
-              },
-              weekly_progress: {
-                workouts_completed: workouts.length,
-                workouts_target: 5,
-                workout_progress: Math.min((workouts.length / 5) * 100, 100),
-                meals_logged: 0,
-                meals_target: 21,
-                meal_progress: 0,
-                overall_progress: Math.min((workouts.length / 5) * 100, 100),
-                days_in_week: 7,
-                total_minutes_this_week: workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
-                avg_calories_per_day: 0,
-              },
-              active_routines: [],
-              smart_suggestions: [],
-              quick_actions: [],
-              streak: workouts.length > 0 ? 1 : 0,
-              last_updated: new Date().toISOString(),
-              cache_duration: 60,
-            };
+          const workouts = recentWorkouts.status === 'fulfilled' ? recentWorkouts.value || [] : [];
+          const todayWorkoutData = todayWorkoutSummary.status === 'fulfilled' ? todayWorkoutSummary.value || {} : {};
+          const meals = recentMeals.status === 'fulfilled' ? recentMeals.value || [] : [];
+          const todayNutritionData = todayNutritionSummary.status === 'fulfilled' ? todayNutritionSummary.value || {} : {};
+          
+          summary = {
+            today_stats: {
+              workouts: todayWorkoutData.workouts || 0,
+              meals: todayNutritionData.meals_count || 0,
+              water_ml: 0, // Will be updated when water logging is implemented
+              calories_burned: todayWorkoutData.calories_burned || 0,
+              calories_consumed: todayNutritionData.total_calories || 0,
+              total_minutes: todayWorkoutData.total_duration || 0,
+              protein_g: todayNutritionData.protein_g || 0,
+              carbs_g: todayNutritionData.carbs_g || 0,
+              fat_g: todayNutritionData.fat_g || 0,
+              net_calories: (todayNutritionData.total_calories || 0) - (todayWorkoutData.calories_burned || 0),
+            },
+            weekly_progress: {
+              workouts_completed: workouts.length,
+              workouts_target: 5,
+              workout_progress: Math.min((workouts.length / 5) * 100, 100),
+              meals_logged: meals.length,
+              meals_target: 21,
+              meal_progress: Math.min((meals.length / 21) * 100, 100),
+              overall_progress: Math.min(((workouts.length / 5) + (meals.length / 21)) * 50, 100),
+              days_in_week: 7,
+              total_minutes_this_week: workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
+              avg_calories_per_day: todayNutritionData.avg_calories_per_meal || 0,
+            },
+            active_routines: [],
+            smart_suggestions: [],
+            quick_actions: [],
+            streak: workouts.length > 0 || meals.length > 0 ? 1 : 0,
+            last_updated: new Date().toISOString(),
+            cache_duration: 60,
+          };
 
-            quickStats = {
-              total_workouts: workouts.length,
-              total_meals: 0,
-              current_streak: workouts.length > 0 ? 1 : 0,
-              weekly_goal_progress: Math.min((workouts.length / 5) * 100, 100),
-            };
-          }
+          quickStats = {
+            total_workouts: workouts.length,
+            total_meals: meals.length,
+            current_streak: workouts.length > 0 || meals.length > 0 ? 1 : 0,
+            weekly_goal_progress: Math.min(((workouts.length / 5) + (meals.length / 21)) * 50, 100),
+          };
+
+          console.log('📊 Dashboard: Fallback data created:', { summary, quickStats });
         } catch (fallbackError) {
-          console.error('Failed to load fallback data:', fallbackError);
+          console.error('📊 Dashboard: Failed to load fallback data:', fallbackError);
         }
       }
 
@@ -121,8 +132,10 @@ export default function DashboardScreen() {
         loading: false,
         error: null,
       });
+      
+      console.log('📊 Dashboard: Data loaded successfully');
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('📊 Dashboard: Failed to load dashboard data:', error);
       // Don't set error state, just show fallback data
       setData(prev => ({
         ...prev,

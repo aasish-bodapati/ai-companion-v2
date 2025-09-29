@@ -25,17 +25,11 @@ apiClient.interceptors.request.use(
         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
         const token = await AsyncStorage.getItem('token');
         
-        console.log('🔐 API Client: Token retrieved:', token ? 'YES' : 'NO');
-        console.log('🔐 API Client: Making request to:', config.url);
-        
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔐 API Client: Authorization header added');
-        } else {
-          console.log('🔐 API Client: No token or authorization already present');
         }
       } catch (error) {
-        console.error('🔐 API Client: Error retrieving token:', error);
+        console.error('API Client: Error retrieving token:', error);
       }
     }
     

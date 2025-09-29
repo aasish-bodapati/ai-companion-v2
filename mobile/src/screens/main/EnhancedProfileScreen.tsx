@@ -9,34 +9,147 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import MobileOptimizedCard from '../../components/ui/MobileOptimizedCard';
 import TouchOptimizedButton from '../../components/ui/TouchOptimizedButton';
-import EditGoalsModal from '../../components/profile/EditGoalsModal';
 import EditPreferencesModal from '../../components/profile/EditPreferencesModal';
 import TimezoneSelector from '../../components/profile/TimezoneSelector';
 import { onboardingService, OnboardingData, HealthData } from '../../services/onboardingService';
 import { profileService, UserProfile } from '../../services/profileService';
+import { numericalGoalsService, GoalProgress } from '../../services/numericalGoalsService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
+
+// Body Type Goals Display Component
+const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData }: { bodyTypeGoal: string; userData: any }) => {
+  const [goalData, setGoalData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadGoalData = async () => {
+      try {
+        // Import the body type goals service
+        const { BODY_TYPE_GOALS } = await import('../../services/bodyTypeGoals');
+        const goal = BODY_TYPE_GOALS.find(bt => bt.id === bodyTypeGoal);
+        
+        if (goal) {
+          // Calculate target weight based on user's height and goal BMI
+          const targetWeight = Math.round((userData?.height ? parseFloat(userData.height) / 100 : 1.75) ** 2 * goal.targetBMI);
+          
+          // Calculate water goal based on user's gender
+          const waterGoal = userData?.gender === 'male' ? 3700 : userData?.gender === 'female' ? 2700 : 3200;
+          
+          setGoalData({
+            ...goal,
+            calculatedTargetWeight: targetWeight,
+            calculatedWaterGoal: waterGoal
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load goal data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadGoalData();
+  }, [bodyTypeGoal, userData]);
+
+  if (loading) {
+    return (
+      <View style={styles.goalsLoading}>
+        <Text style={styles.goalsLoadingText}>Loading goals...</Text>
+      </View>
+    );
+  }
+
+  if (!goalData) {
+    return null;
+  }
+
+  return (
+    <View style={styles.goalsDisplay}>
+      {/* Target Values Section */}
+      <View style={styles.goalsSection}>
+        <Text style={styles.goalsSectionTitle}>Target Values</Text>
+        <View style={styles.goalsGrid}>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Target Weight</Text>
+            <Text style={styles.goalValue}>{goalData.calculatedTargetWeight}kg</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Goal BMI</Text>
+            <Text style={styles.goalValue}>{goalData.targetBMI}</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Body Fat %</Text>
+            <Text style={styles.goalValue}>{goalData.targetBodyFat}%</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Target Attributes Section */}
+      <View style={styles.goalsSection}>
+        <Text style={styles.goalsSectionTitle}>Target Attributes</Text>
+        <View style={styles.goalsGrid}>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Protein Target</Text>
+            <Text style={styles.goalValue}>{goalData.targetAttributes.proteinTarget}g/kg</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Workout Frequency</Text>
+            <Text style={styles.goalValue}>{goalData.targetAttributes.workout_frequency} days/week</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Cardio Minutes</Text>
+            <Text style={styles.goalValue}>{goalData.targetAttributes.cardio_minutes} min/week</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Water Goal</Text>
+            <Text style={styles.goalValue}>{goalData.calculatedWaterGoal}ml/day</Text>
+          </View>
+          <View style={styles.goalRow}>
+            <Text style={styles.goalLabel}>Timeline</Text>
+            <Text style={styles.goalValue}>{goalData.targetAttributes.timeline} weeks</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 export default function EnhancedProfileScreen() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, logout, updateUser, rerunOnboarding } = useAuth();
+  const navigation = useNavigation();
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showGoalsModal, setShowGoalsModal] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [showNumericalGoalsModal, setShowNumericalGoalsModal] = useState(false);
+  const [numericalGoals, setNumericalGoals] = useState<GoalProgress[]>([]);
+  const [goalsLoading, setGoalsLoading] = useState(false);
+
+  const loadNumericalGoals = useCallback(async () => {
+    try {
+      setGoalsLoading(true);
+      const goals = await numericalGoalsService.calculateProgress();
+      setNumericalGoals(goals);
+      console.log('🎯 Loaded numerical goals:', goals.length);
+    } catch (error) {
+      console.error('Failed to load numerical goals:', error);
+    } finally {
+      setGoalsLoading(false);
+    }
+  }, []);
 
   const loadOnboardingData = useCallback(async () => {
     try {
-      console.log('📝 ProfileScreen: Loading profile data from backend...');
-      
       // First try to get data from backend
       const profileData = await profileService.getUserProfile();
       
       if (profileData) {
-        console.log('📝 ProfileScreen: Got profile data from backend:', profileData);
         const onboardingData = profileService.convertToOnboardingData(profileData);
         setOnboardingData(onboardingData);
         
@@ -44,11 +157,9 @@ export default function EnhancedProfileScreen() {
         await onboardingService.saveOnboardingData(onboardingData);
       } else {
         // Fallback to local data
-        console.log('📝 ProfileScreen: No backend data, trying local storage...');
         let data = await onboardingService.loadOnboardingData();
         
         if (!data) {
-          console.log('📝 ProfileScreen: No local data either, creating sample data...');
           data = {
             healthData: {
               age: '25',
@@ -57,7 +168,7 @@ export default function EnhancedProfileScreen() {
               gender: 'male',
               activityLevel: 'moderate',
             },
-            goals: ['Weight Loss', 'Better Health', 'Improved Fitness'],
+            bodyTypeGoal: 'Athletic',
             preferences: {
               notifications: true,
               reminders: true,
@@ -69,27 +180,29 @@ export default function EnhancedProfileScreen() {
         
         setOnboardingData(data);
       }
+      
+      // Load numerical goals after onboarding data is loaded
+      await loadNumericalGoals();
     } catch (error) {
       console.error('Failed to load profile data:', error);
       showToast.error('Error', 'Failed to load profile data');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, []); // Remove loadNumericalGoals dependency to prevent infinite loop
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     hapticFeedback.light();
     await loadOnboardingData();
     setRefreshing(false);
-  }, [loadOnboardingData]);
+  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
 
   useEffect(() => {
     loadOnboardingData();
-  }, [loadOnboardingData]);
+  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
 
   useEffect(() => {
-    console.log('🔍 ProfileScreen user data:', user);
   }, [user]);
 
   const handleLogout = () => {
@@ -106,14 +219,9 @@ export default function EnhancedProfileScreen() {
 
   const handleEditHealthData = () => {
     hapticFeedback.medium();
-    console.log('📝 ProfileScreen: Opening preferences modal with data:', onboardingData);
     setShowPreferencesModal(true);
   };
 
-  const handleEditGoals = () => {
-    hapticFeedback.medium();
-    setShowGoalsModal(true);
-  };
 
   const handleEditPreferences = () => {
     hapticFeedback.medium();
@@ -121,11 +229,51 @@ export default function EnhancedProfileScreen() {
     showToast.info('Coming Soon', 'Preferences editing will be available soon');
   };
 
-
-  const handleGoalsSave = (goals: string[]) => {
-    setOnboardingData(prev => prev ? { ...prev, goals } : null);
-    setShowGoalsModal(false);
+  const handleRerunOnboarding = () => {
+    hapticFeedback.medium();
+    Alert.alert(
+      'Rerun Onboarding',
+      'This will take you through the setup process again to choose a new body type goal. Your current data will be preserved.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Rerun',
+          style: 'default',
+          onPress: async () => {
+            console.log('🎯 Rerunning onboarding...');
+            try {
+              await rerunOnboarding();
+              showToast.success('Rerun Onboarding', 'Taking you back to setup...');
+            } catch (error) {
+              console.error('Failed to rerun onboarding:', error);
+              showToast.error('Error', 'Failed to restart onboarding');
+            }
+          },
+        },
+      ]
+    );
   };
+
+  const handleOpenNumericalGoals = () => {
+    hapticFeedback.medium();
+    setShowNumericalGoalsModal(true);
+  };
+
+  const handleSaveNumericalGoals = async (goals: any[]) => {
+    try {
+      await numericalGoalsService.setGoals(goals);
+      await loadNumericalGoals();
+      showToast.success('Success', 'Goals updated successfully');
+    } catch (error) {
+      console.error('Failed to save numerical goals:', error);
+      showToast.error('Error', 'Failed to save goals');
+    }
+  };
+
+
 
   const handlePreferencesSave = async (data: OnboardingData) => {
     try {
@@ -138,10 +286,8 @@ export default function EnhancedProfileScreen() {
       const updatedProfile = await profileService.updateUserProfile(profileData);
       
       if (updatedProfile) {
-        console.log('📝 ProfileScreen: Successfully updated backend profile');
         showToast.success('Success', 'Preferences updated successfully');
       } else {
-        console.log('📝 ProfileScreen: Failed to update backend, but local data saved');
         showToast.info('Info', 'Preferences saved locally (offline)');
       }
       
@@ -151,6 +297,7 @@ export default function EnhancedProfileScreen() {
       showToast.error('Error', 'Failed to save preferences');
     }
   };
+
 
 
   const ProfileItem = ({ 
@@ -196,6 +343,14 @@ export default function EnhancedProfileScreen() {
 
     const { age, height, weight, gender, activityLevel } = onboardingData.healthData;
     const hasData = age && height && weight;
+    const bodyTypeGoal = onboardingData.bodyTypeGoal || '';
+    const hasBodyTypeGoal = bodyTypeGoal.length > 0;
+    
+    console.log('🎯 HealthDataCard Debug:');
+    console.log('  - onboardingData:', onboardingData);
+    console.log('  - bodyTypeGoal:', bodyTypeGoal);
+    console.log('  - hasBodyTypeGoal:', hasBodyTypeGoal);
+    console.log('  - hasData:', hasData);
 
     return (
       <MobileOptimizedCard
@@ -239,6 +394,151 @@ export default function EnhancedProfileScreen() {
                 {activityLevel.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
               </Text>
             </View>
+            
+            {/* Goals Section - Redesigned to integrate both body type and numerical goals */}
+            <View style={styles.goalsSection}>
+              <View style={styles.goalsSectionHeader}>
+                <Ionicons name="flag-outline" size={18} color="#3b82f6" />
+                <Text style={styles.goalsSectionTitle}>Your Goals</Text>
+                <View style={styles.goalsActionButtons}>
+                  <TouchableOpacity onPress={handleOpenNumericalGoals} style={styles.editGoalsButton}>
+                    <Ionicons name="add-circle-outline" size={16} color="#6b7280" />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleRerunOnboarding} style={styles.editGoalsButton}>
+                    <Ionicons name="pencil" size={16} color="#6b7280" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              {hasBodyTypeGoal ? (
+                <View style={styles.goalsContent}>
+                  {/* Body Type Goal Card */}
+                  <MobileOptimizedCard
+                    variant="elevated"
+                    style={styles.bodyTypeGoalCard}
+                  >
+                    <View style={styles.bodyTypeGoalHeader}>
+                      <View style={styles.bodyTypeGoalIconContainer}>
+                        <Ionicons name="body-outline" size={24} color="#3b82f6" />
+                      </View>
+                      <View style={styles.bodyTypeGoalInfo}>
+                        <Text style={styles.bodyTypeGoalTitle}>{bodyTypeGoal}</Text>
+                        <Text style={styles.bodyTypeGoalDescription}>
+                          Your personalized body type goal with calculated targets
+                        </Text>
+                      </View>
+                      <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                    </View>
+                    
+                    {/* Target Values Display */}
+                    <BodyTypeGoalsDisplay 
+                      bodyTypeGoal={bodyTypeGoal}
+                      userData={onboardingData.healthData}
+                    />
+                  </MobileOptimizedCard>
+                  
+                  {/* Numerical Goals Section */}
+                  {numericalGoals.length > 0 && (
+                    <View style={styles.numericalGoalsSection}>
+                      <View style={styles.numericalGoalsHeader}>
+                        <Text style={styles.numericalGoalsTitle}>Trackable Goals</Text>
+                        <TouchableOpacity onPress={handleOpenNumericalGoals}>
+                          <Text style={styles.manageGoalsText}>Manage</Text>
+                        </TouchableOpacity>
+                      </View>
+                      
+                      {goalsLoading ? (
+                        <View style={styles.goalsLoading}>
+                          <Text style={styles.goalsLoadingText}>Loading goals...</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.numericalGoalsList}>
+                          {numericalGoals.slice(0, 3).map((goal) => (
+                            <View key={goal.goalId} style={styles.numericalGoalItem}>
+                              <View style={styles.goalItemInfo}>
+                                <Text style={styles.goalItemName}>{goal.goalName}</Text>
+                                <Text style={styles.goalItemProgress}>
+                                  {goal.currentValue.toFixed(1)} / {goal.targetValue} {goal.unit}
+                                </Text>
+                              </View>
+                              <View style={styles.goalItemProgressBar}>
+                                <View 
+                                  style={[
+                                    styles.goalItemProgressFill, 
+                                    { 
+                                      width: `${Math.min(goal.progressPercentage, 100)}%`,
+                                      backgroundColor: goal.color 
+                                    }
+                                  ]} 
+                                />
+                              </View>
+                            </View>
+                          ))}
+                          
+                          {numericalGoals.length > 3 && (
+                            <TouchableOpacity 
+                              style={styles.viewAllGoalsButton}
+                              onPress={handleOpenNumericalGoals}
+                            >
+                              <Text style={styles.viewAllGoalsText}>
+                                View all {numericalGoals.length} goals
+                              </Text>
+                              <Ionicons name="chevron-forward" size={16} color="#3b82f6" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  
+                  {/* Goal Progress Summary */}
+                  <View style={styles.goalProgressSummary}>
+                    <Text style={styles.progressSummaryTitle}>Goal Progress</Text>
+                    <View style={styles.progressStats}>
+                      <View style={styles.progressStat}>
+                        <Text style={styles.progressStatValue}>
+                          {numericalGoals.length > 0 ? numericalGoals.length : '0'}
+                        </Text>
+                        <Text style={styles.progressStatLabel}>Active Goals</Text>
+                      </View>
+                      <View style={styles.progressStat}>
+                        <Text style={styles.progressStatValue}>
+                          {numericalGoals.length > 0 
+                            ? Math.round(numericalGoals.reduce((sum, goal) => sum + goal.progressPercentage, 0) / numericalGoals.length)
+                            : 0}%
+                        </Text>
+                        <Text style={styles.progressStatLabel}>Avg Progress</Text>
+                      </View>
+                      <View style={styles.progressStat}>
+                        <Text style={styles.progressStatValue}>
+                          {numericalGoals.filter(goal => goal.progressPercentage >= 100).length}
+                        </Text>
+                        <Text style={styles.progressStatLabel}>Completed</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.goalsEmpty}>
+                  <Ionicons name="flag-outline" size={48} color="#9ca3af" />
+                  <Text style={styles.goalsEmptyText}>No goals set yet</Text>
+                  <Text style={styles.goalsEmptySubtext}>
+                    {onboardingData?.healthData ? 
+                      'You have health data but no body type goal. Complete onboarding to set your goals.' :
+                      'Complete onboarding to set your body type goal'
+                    }
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.setGoalsButton}
+                    onPress={handleRerunOnboarding}
+                  >
+                    <Text style={styles.setGoalsButtonText}>
+                      {onboardingData?.healthData ? 'Complete Goal Setup' : 'Set Your Goals'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </View>
         ) : (
           <View style={styles.healthDataEmpty}>
@@ -250,51 +550,6 @@ export default function EnhancedProfileScreen() {
     );
   };
 
-  const GoalsCard = () => {
-    if (!onboardingData?.goals) return null;
-
-    const goals = onboardingData.goals;
-    const hasGoals = goals.length > 0;
-
-    return (
-      <MobileOptimizedCard
-        variant="elevated"
-        style={styles.goalsCard}
-        onPress={handleEditGoals}
-        hapticFeedback="medium"
-      >
-        <View style={styles.goalsHeader}>
-          <Ionicons name="flag-outline" size={24} color="#f59e0b" />
-          <Text style={styles.goalsTitle}>Health Goals</Text>
-          <TouchableOpacity onPress={handleEditGoals}>
-            <Ionicons name="pencil" size={20} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
-        
-        {hasGoals ? (
-          <View style={styles.goalsContent}>
-            <Text style={styles.goalsCount}>{goals.length} goal{goals.length !== 1 ? 's' : ''} selected</Text>
-            <View style={styles.goalsList}>
-              {goals.slice(0, 3).map((goal, index) => (
-                <View key={index} style={styles.goalItem}>
-                  <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                  <Text style={styles.goalText}>{goal.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</Text>
-                </View>
-              ))}
-              {goals.length > 3 && (
-                <Text style={styles.moreGoalsText}>+{goals.length - 3} more</Text>
-              )}
-            </View>
-          </View>
-        ) : (
-          <View style={styles.goalsEmpty}>
-            <Text style={styles.goalsEmptyText}>No goals set</Text>
-            <Text style={styles.goalsEmptySubtext}>Tap to set your health goals</Text>
-          </View>
-        )}
-      </MobileOptimizedCard>
-    );
-  };
 
   const TimezoneCard = () => {
     return (
@@ -397,11 +652,23 @@ export default function EnhancedProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Rerun Onboarding - Prominent Button */}
+      <View style={styles.section}>
+        <View style={styles.prominentButton}>
+          <ProfileItem
+            icon="refresh-outline"
+            title="Rerun Onboarding"
+            subtitle="Choose a new body type goal"
+            onPress={handleRerunOnboarding}
+            color="#3b82f6"
+          />
+        </View>
+      </View>
+
       {/* Onboarding Data Cards */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Health Profile</Text>
         <HealthDataCard />
-        <GoalsCard />
         <TimezoneCard />
         <PreferencesCard />
       </View>
@@ -468,18 +735,24 @@ export default function EnhancedProfileScreen() {
       <View style={styles.bottomSpacing} />
 
       {/* Modals */}
-      <EditGoalsModal
-        visible={showGoalsModal}
-        onClose={() => setShowGoalsModal(false)}
-        onSave={handleGoalsSave}
-        initialGoals={onboardingData?.goals}
-      />
-
       <EditPreferencesModal
         visible={showPreferencesModal}
         onClose={() => setShowPreferencesModal(false)}
         onSave={handlePreferencesSave}
         initialData={onboardingData}
+      />
+      <NumericalGoalsModal
+        visible={showNumericalGoalsModal}
+        onClose={() => setShowNumericalGoalsModal(false)}
+        onSave={handleSaveNumericalGoals}
+        healthGoals={[]} // Will be populated based on body type goal
+        userData={onboardingData?.healthData ? {
+          age: parseInt(onboardingData.healthData.age) || 25,
+          weight: parseInt(onboardingData.healthData.weight) || 70,
+          height: parseInt(onboardingData.healthData.height) || 175,
+          gender: onboardingData.healthData.gender,
+          activityLevel: onboardingData.healthData.activityLevel,
+        } : undefined}
       />
     </ScrollView>
   );
@@ -633,58 +906,241 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#9ca3af',
   },
-  goalsCard: {
-    marginBottom: 12,
+  goalsSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
   },
-  goalsHeader: {
+  goalsSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'space-between',
+    marginBottom: 12,
   },
-  goalsTitle: {
-    fontSize: 18,
+  goalsSectionTitle: {
+    fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    marginLeft: 12,
+    marginLeft: 8,
     flex: 1,
+  },
+  editGoalsButton: {
+    padding: 4,
+  },
+  goalsActionButtons: {
+    flexDirection: 'row',
+    gap: 8,
   },
   goalsContent: {
     gap: 12,
   },
-  goalsCount: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
+  bodyTypeGoalCard: {
+    marginBottom: 0,
   },
-  goalsList: {
-    gap: 8,
-  },
-  goalItem: {
+  bodyTypeGoalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  goalText: {
-    fontSize: 14,
+  bodyTypeGoalIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e0e7ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  bodyTypeGoalInfo: {
+    flex: 1,
+  },
+  bodyTypeGoalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#1f2937',
-    marginLeft: 8,
+    marginBottom: 4,
+  },
+  bodyTypeGoalDescription: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
+  goalProgressSummary: {
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  progressSummaryTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+  },
+  progressStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  progressStat: {
+    alignItems: 'center',
+  },
+  progressStatValue: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  progressStatLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  goalsDisplay: {
+    marginTop: 12,
+  },
+  goalsGrid: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    gap: 12,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  goalLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    flex: 1,
+  },
+  goalValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    textAlign: 'right',
   },
   moreGoalsText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     fontStyle: 'italic',
   },
   goalsEmpty: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   goalsEmptyText: {
     fontSize: 16,
+    fontWeight: '600',
     color: '#6b7280',
+    marginTop: 12,
     marginBottom: 4,
   },
   goalsEmptySubtext: {
     fontSize: 14,
     color: '#9ca3af',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  setGoalsButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  setGoalsButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  numericalGoalsSection: {
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  numericalGoalsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  numericalGoalsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  manageGoalsText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  goalsLoading: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  goalsLoadingText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontStyle: 'italic',
+  },
+  numericalGoalsList: {
+    gap: 12,
+  },
+  numericalGoalItem: {
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  goalItemInfo: {
+    marginBottom: 8,
+  },
+  goalItemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  goalItemProgress: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  goalItemProgressBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  goalItemProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  viewAllGoalsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginTop: 4,
+  },
+  viewAllGoalsText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+    marginRight: 4,
   },
   preferencesCard: {
     marginBottom: 12,
@@ -715,5 +1171,18 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  prominentButton: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 12,
+    marginHorizontal: 0,
+    shadowColor: '#3b82f6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });

@@ -1,352 +1,273 @@
 import { apiClient } from './api';
 
+export interface NutritionLog {
+  id: string;
+  user_id: string;
+  meal_type: string;
+  meal_name?: string;
+  total_calories: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+  food_items: string;
+  notes?: string;
+  mood_before?: string;
+  mood_after?: string;
+  meal_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FoodItem {
   id: number;
   name: string;
   brand?: string;
-  barcode?: string;
-  calories_per_100g: number;
-  protein_per_100g: number;
-  carbs_per_100g: number;
-  fat_per_100g: number;
-  fiber_per_100g?: number;
-  sugar_per_100g?: number;
-  sodium_per_100g?: number;
   category: string;
-  description?: string;
-  source?: string;
-  is_favorite?: boolean;
-  last_used?: string;
-}
-
-export interface MealLog {
-  id: number;
-  food_id: number;
-  food_name: string;
-  quantity: number;
-  unit: string;
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  logged_at: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  notes?: string;
+  calories_per_100g: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  serving_size_g: number;
+  barcode?: string;
 }
 
 export interface NutritionStats {
-  total_meals: number;
   total_calories: number;
-  average_daily_calories: number;
-  macro_breakdown: {
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
-  streak: number;
-  weekly_goal_progress: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  meals_count: number;
+  avg_calories_per_meal: number;
 }
 
-export interface NutritionGoal {
-  id: number;
-  title: string;
-  target_calories: number;
-  target_protein: number;
-  target_carbs: number;
-  target_fat: number;
-  is_active: boolean;
-  created_at: string;
-  deadline?: string;
+export interface MealPlan {
+  id: string;
+  name: string;
+  description?: string;
+  difficulty: string;
+  duration_weeks: number;
+  meals: MealPlanMeal[];
+}
+
+export interface MealPlanMeal {
+  id: string;
+  meal_type: string;
+  meal_name: string;
+  total_calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  foods: MealPlanFood[];
+}
+
+export interface MealPlanFood {
+  id: string;
+  food_name: string;
+  quantity: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
 }
 
 export const nutritionService = {
-  // Food Search and Management
-  async searchFoods(query: string, limit: number = 20) {
-    try {
-      const response = await apiClient.get(`/health/foods/public-search?query=${encodeURIComponent(query)}&limit=${limit}`);
-      return { foods: response.data };
-    } catch (error) {
-      console.error('Failed to search foods:', error);
-      throw error;
-    }
-  },
-
-  async getFoodById(foodId: string) {
-    try {
-      const response = await apiClient.get(`/health/foods/nutrition/${foodId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get food details:', error);
-      throw error;
-    }
-  },
-
-  async searchByBarcode(barcode: string) {
-    try {
-      const response = await apiClient.get(`/health/foods/barcode/${barcode}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to search by barcode:', error);
-      throw error;
-    }
-  },
-
-  async getPopularFoods() {
-    try {
-      const response = await apiClient.get('/health/foods/popular');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get popular foods:', error);
-      throw error;
-    }
-  },
-
-  async getRecentFoods() {
-    try {
-      const response = await apiClient.get('/health/foods/recent');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get recent foods:', error);
-      throw error;
-    }
-  },
-
-  async getFavoriteFoods() {
-    try {
-      const response = await apiClient.get('/health/foods/favorites');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get favorite foods:', error);
-      throw error;
-    }
-  },
-
-  // Meal Logging
-  async logMeal(mealData: {
-    meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-    total_calories: number;
-    food_items: Array<{
-      food_id: number;
-      food_name: string;
-      quantity_grams: number;
-      calories: number;
-      protein_g: number;
-      carbs_g: number;
-      fat_g: number;
-    }>;
-    meal_date?: string;
-  }) {
-    try {
-      const response = await apiClient.post('/health/nutrition-logs/', mealData);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to log meal:', error);
-      throw error;
-    }
-  },
-
-  async getMealLogs(params?: {
-    period?: 'week' | 'month' | 'all';
+  async getNutritionLogs(params?: {
+    period?: string;
     page?: number;
     size?: number;
-    meal_type?: string;
-  }) {
+    start_date?: string;
+    end_date?: string;
+  }): Promise<NutritionLog[]> {
     try {
-      const queryParams = new URLSearchParams();
-      if (params?.period) queryParams.append('period', params.period);
-      if (params?.page) queryParams.append('page', params.page.toString());
-      if (params?.size) queryParams.append('size', params.size.toString());
-      if (params?.meal_type) queryParams.append('meal_type', params.meal_type);
-
-      const response = await apiClient.get(`/health/nutrition-logs/?${queryParams.toString()}`);
+      const response = await apiClient.get('/health/nutrition-logs/', { params });
       return response.data;
     } catch (error) {
-      console.error('Failed to get meal logs:', error);
+      console.error('Nutrition Service: Error fetching logs:', error);
       throw error;
     }
   },
 
-  async updateMealLog(logId: number, updateData: {
-    quantity?: number;
-    unit?: string;
-    meal_type?: string;
+  async getRecentMeals(limit: number = 5): Promise<NutritionLog[]> {
+    try {
+      const response = await apiClient.get('/health/logging/nutrition', {
+        params: { size: limit, page: 1 }
+      });
+      
+      // Extract meals array from response
+      const meals = response.data?.meals || response.data || [];
+      
+      // Ensure it's an array
+      if (!Array.isArray(meals)) {
+        console.warn('Nutrition Service: Expected array but got:', typeof meals);
+        return [];
+      }
+      
+      return meals;
+    } catch (error) {
+      console.error('Nutrition Service: Error fetching recent meals:', error);
+      throw error;
+    }
+  },
+
+  async getTodayNutritionSummary(): Promise<NutritionStats> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const response = await apiClient.get('/health/logging/nutrition', {
+        params: { start_date: today, end_date: today }
+      });
+      
+      const logs = response.data || [];
+      const summary: NutritionStats = {
+        total_calories: logs.reduce((sum: number, log: NutritionLog) => sum + (log.total_calories || 0), 0),
+        protein_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.protein_g || 0), 0),
+        carbs_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.carbs_g || 0), 0),
+        fat_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.fat_g || 0), 0),
+        fiber_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.fiber_g || 0), 0),
+        sugar_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.sugar_g || 0), 0),
+        sodium_mg: logs.reduce((sum: number, log: NutritionLog) => sum + (log.sodium_mg || 0), 0),
+        meals_count: logs.length,
+        avg_calories_per_meal: logs.length > 0 ? 
+          logs.reduce((sum: number, log: NutritionLog) => sum + (log.total_calories || 0), 0) / logs.length : 0
+      };
+      
+      return summary;
+    } catch (error) {
+      console.error('Nutrition Service: Error fetching today\'s summary:', error);
+      return {
+        total_calories: 0,
+        protein_g: 0,
+        carbs_g: 0,
+        fat_g: 0,
+        fiber_g: 0,
+        sugar_g: 0,
+        sodium_mg: 0,
+        meals_count: 0,
+        avg_calories_per_meal: 0
+      };
+    }
+  },
+
+  async logMeal(mealData: {
+    meal_type: string;
+    meal_name?: string;
+    total_calories: number;
+    protein_g?: number;
+    carbs_g?: number;
+    fat_g?: number;
+    fiber_g?: number;
+    sugar_g?: number;
+    sodium_mg?: number;
+    food_items: string;
     notes?: string;
-  }) {
+    mood_before?: string;
+    mood_after?: string;
+    meal_date?: string;
+  }): Promise<NutritionLog> {
     try {
-      const response = await apiClient.put(`/health/nutrition-logs/${logId}`, updateData);
+      console.log('🍎 Nutrition Service: Logging meal...', mealData);
+      const response = await apiClient.post('/health/logging/nutrition', mealData);
+      console.log('🍎 Nutrition Service: Meal logged:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to update meal log:', error);
+      console.error('🍎 Nutrition Service: Error logging meal:', error);
       throw error;
     }
   },
 
-  async deleteMealLog(logId: number) {
+  async updateMeal(id: string, mealData: Partial<NutritionLog>): Promise<NutritionLog> {
     try {
-      await apiClient.delete(`/health/nutrition-logs/${logId}`);
-    } catch (error) {
-      console.error('Failed to delete meal log:', error);
-      throw error;
-    }
-  },
-
-  // Statistics and Analytics
-  async getNutritionStats(period: 'week' | 'month' | 'all' = 'week') {
-    try {
-      // Use the working nutrition logs endpoint and transform the data
-      const response = await apiClient.get('/health/nutrition-logs/');
-      const data = response.data;
-      const stats = data.stats || {};
-      
-      // Transform backend response to match frontend interface
-      return {
-        total_meals: stats.totalMeals || 0,
-        total_calories: stats.totalCalories || 0,
-        average_daily_calories: stats.avgCaloriesPerMeal || 0,
-        macro_breakdown: {
-          protein: stats.totalProtein || 0,
-          carbs: stats.totalCarbs || 0,
-          fat: stats.totalFat || 0,
-        },
-        streak: stats.currentStreak || 0,
-        weekly_goal_progress: 0, // Not available in current data
-      };
-    } catch (error) {
-      console.error('Failed to get nutrition stats:', error);
-      throw error;
-    }
-  },
-
-  async getTodayNutrition() {
-    try {
-      const response = await apiClient.get('/health/logging/nutrition/today');
+      console.log('🍎 Nutrition Service: Updating meal...', id, mealData);
+      const response = await apiClient.put(`/health/logging/nutrition/${id}`, mealData);
+      console.log('🍎 Nutrition Service: Meal updated:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to get today\'s nutrition:', error);
+      console.error('🍎 Nutrition Service: Error updating meal:', error);
       throw error;
     }
   },
 
-  async getWeeklyNutrition() {
+  async deleteMeal(id: string): Promise<void> {
     try {
-      const response = await apiClient.get('/health/logging/nutrition/weekly');
-      return response.data;
+      console.log('🍎 Nutrition Service: Deleting meal...', id);
+      await apiClient.delete(`/health/logging/nutrition/${id}`);
+      console.log('🍎 Nutrition Service: Meal deleted');
     } catch (error) {
-      console.error('Failed to get weekly nutrition:', error);
+      console.error('🍎 Nutrition Service: Error deleting meal:', error);
       throw error;
     }
   },
 
-  // Get weekly nutrition activity data for chart
-  async getWeeklyNutritionActivityData(): Promise<{
-    monday: number;
-    tuesday: number;
-    wednesday: number;
-    thursday: number;
-    friday: number;
-    saturday: number;
-    sunday: number;
-  }> {
+  async searchFoods(query: string): Promise<FoodItem[]> {
     try {
-      const response = await apiClient.get('/health/nutrition-logs/');
-      const data = response.data;
-      const logs = data.logs || [];
-      
-      // Initialize weekly data
-      const weeklyData = {
-        monday: 0,
-        tuesday: 0,
-        wednesday: 0,
-        thursday: 0,
-        friday: 0,
-        saturday: 0,
-        sunday: 0,
-      };
-      
-      // Process each log
-      logs.forEach((log: any, index: number) => {
-        const date = new Date(log.logged_at || log.created_at);
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        
-        // Convert to our format (Monday = 0, Sunday = 6)
-        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-        const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        
-        if (dayKeys[dayIndex]) {
-          weeklyData[dayKeys[dayIndex] as keyof typeof weeklyData]++;
-          console.log(`🍎 Log ${index + 1}: ${log.logged_at || log.created_at} -> ${dayKeys[dayIndex]} (getDay: ${dayOfWeek}, dayIndex: ${dayIndex})`);
-        }
+      console.log('🍎 Nutrition Service: Searching foods...', query);
+      const response = await apiClient.get('/health/foods/search', {
+        params: { q: query }
       });
-      
-      return weeklyData;
-    } catch (error) {
-      console.error('Failed to fetch weekly nutrition activity data:', error);
-      // Return empty data on error
-      return {
-        monday: 0,
-        tuesday: 0,
-        wednesday: 0,
-        thursday: 0,
-        friday: 0,
-        saturday: 0,
-        sunday: 0,
-      };
-    }
-  },
-
-  // Goals Management
-  async getNutritionGoals() {
-    try {
-      const response = await apiClient.get('/health/simple-goals/goals');
+      console.log('🍎 Nutrition Service: Search results:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to get nutrition goals:', error);
+      console.error('🍎 Nutrition Service: Error searching foods:', error);
       throw error;
     }
   },
 
-  async createNutritionGoal(goalData: {
-    title: string;
-    target_calories: number;
-    target_protein?: number;
-    target_carbs?: number;
-    target_fat?: number;
-    deadline?: string;
-  }) {
+  async getFoodById(id: number): Promise<FoodItem> {
     try {
-      const response = await apiClient.post('/health/simple-goals/goals', {
-        ...goalData,
-        goal_type: 'nutrition'
+      console.log('🍎 Nutrition Service: Fetching food by ID...', id);
+      const response = await apiClient.get(`/health/foods/${id}`);
+      console.log('🍎 Nutrition Service: Food received:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('🍎 Nutrition Service: Error fetching food:', error);
+      throw error;
+    }
+  },
+
+  async getFoodByBarcode(barcode: string): Promise<FoodItem> {
+    try {
+      console.log('🍎 Nutrition Service: Fetching food by barcode...', barcode);
+      const response = await apiClient.get('/health/foods/barcode', {
+        params: { barcode }
       });
+      console.log('🍎 Nutrition Service: Food received:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to create nutrition goal:', error);
+      console.error('🍎 Nutrition Service: Error fetching food by barcode:', error);
       throw error;
     }
   },
 
-  async updateNutritionGoal(goalId: string, updateData: {
-    title?: string;
-    target_calories?: number;
-    target_protein?: number;
-    target_carbs?: number;
-    target_fat?: number;
-    deadline?: string;
-  }) {
+  async getNutritionStats(period: string = 'week'): Promise<NutritionStats> {
     try {
-      const response = await apiClient.put(`/health/simple-goals/goals/${goalId}`, updateData);
+      console.log('🍎 Nutrition Service: Fetching nutrition stats...', period);
+      const response = await apiClient.get('/health/logging/nutrition/stats', {
+        params: { period }
+      });
+      console.log('🍎 Nutrition Service: Stats received:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Failed to update nutrition goal:', error);
+      console.error('🍎 Nutrition Service: Error fetching stats:', error);
       throw error;
     }
   },
 
-  async deleteNutritionGoal(goalId: string) {
+  async getMealPlans(): Promise<MealPlan[]> {
     try {
-      await apiClient.delete(`/health/simple-goals/goals/${goalId}`);
+      console.log('🍎 Nutrition Service: Fetching meal plans...');
+      const response = await apiClient.get('/health/nutrition-routines');
+      console.log('🍎 Nutrition Service: Meal plans received:', response.data);
+      return response.data;
     } catch (error) {
-      console.error('Failed to delete nutrition goal:', error);
+      console.error('🍎 Nutrition Service: Error fetching meal plans:', error);
       throw error;
     }
   }

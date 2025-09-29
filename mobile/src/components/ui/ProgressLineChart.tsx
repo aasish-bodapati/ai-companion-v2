@@ -31,6 +31,8 @@ export default function ProgressLineChart({
   size = 'medium',
   data = [],
 }: ProgressLineChartProps) {
+  console.log(`📊 ProgressLineChart ${title}:`, { current, goal, unit });
+  
   const progress = Math.min(current / goal, 1);
   const percentage = Math.round(progress * 100);
 
@@ -46,11 +48,11 @@ export default function ProgressLineChart({
         };
       case 'large':
         return {
-          padding: 20,
-          height: 160,
-          titleSize: 16,
-          valueSize: 24,
-          iconSize: 24,
+          padding: 28,
+          height: 350,
+          titleSize: 20,
+          valueSize: 32,
+          iconSize: 32,
         };
       default: // medium
         return {
@@ -95,8 +97,8 @@ export default function ProgressLineChart({
   });
 
   const maxValue = Math.max(...chartData, goal);
-  const chartHeight = 60;
-  const chartWidth = 120;
+  const chartHeight = 160;
+  const chartWidth = 280;
 
   const sizeStyles = getSizeStyles();
 

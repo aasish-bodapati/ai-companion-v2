@@ -18,51 +18,17 @@ interface HealthData {
   height: string;
   weight: string;
   gender: 'male' | 'female' | 'other';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  workoutDays: string;
+  smm?: string; // Skeletal Muscle Mass (optional)
+  bodyFat?: string; // Body Fat Percentage (optional)
 }
 
 interface HealthDataStepProps {
   onDataChange: (data: HealthData) => void;
   initialData?: Partial<HealthData>;
+  isPrePopulated?: boolean;
 }
 
-const ACTIVITY_LEVELS = [
-  {
-    id: 'sedentary',
-    title: 'Sedentary',
-    description: 'Little to no exercise',
-    icon: 'desktop-outline',
-    color: '#6b7280',
-  },
-  {
-    id: 'light',
-    title: 'Light Activity',
-    description: 'Light exercise 1-3 days/week',
-    icon: 'walk-outline',
-    color: '#3b82f6',
-  },
-  {
-    id: 'moderate',
-    title: 'Moderate Activity',
-    description: 'Moderate exercise 3-5 days/week',
-    icon: 'bicycle-outline',
-    color: '#10b981',
-  },
-  {
-    id: 'active',
-    title: 'Active',
-    description: 'Heavy exercise 6-7 days/week',
-    icon: 'fitness-outline',
-    color: '#f59e0b',
-  },
-  {
-    id: 'very_active',
-    title: 'Very Active',
-    description: 'Very heavy exercise, physical job',
-    icon: 'flame-outline',
-    color: '#ef4444',
-  },
-];
 
 const GENDER_OPTIONS = [
   { id: 'male', label: 'Male', icon: 'male-outline' },
@@ -73,13 +39,16 @@ const GENDER_OPTIONS = [
 export default function HealthDataStep({ 
   onDataChange, 
   initialData = {},
+  isPrePopulated = false,
 }: HealthDataStepProps) {
   const [data, setData] = useState<HealthData>({
     age: '',
     height: '',
     weight: '',
     gender: 'male',
-    activityLevel: 'moderate',
+    workoutDays: '',
+    smm: '',
+    bodyFat: '',
     ...initialData,
   });
 
@@ -113,6 +82,19 @@ export default function HealthDataStep({
       newErrors.weight = 'Please enter a valid weight (30-300 kg)';
     }
 
+    if (!data.workoutDays || isNaN(Number(data.workoutDays)) || Number(data.workoutDays) < 0 || Number(data.workoutDays) > 7) {
+      newErrors.workoutDays = 'Please enter valid workout days (0-7)';
+    }
+
+    // Optional field validation - only validate if provided
+    if (data.smm && (isNaN(Number(data.smm)) || Number(data.smm) < 10 || Number(data.smm) > 100)) {
+      newErrors.smm = 'Please enter a valid SMM (10-100 kg)';
+    }
+
+    if (data.bodyFat && (isNaN(Number(data.bodyFat)) || Number(data.bodyFat) < 3 || Number(data.bodyFat) > 50)) {
+      newErrors.bodyFat = 'Please enter a valid body fat percentage (3-50%)';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -122,10 +104,6 @@ export default function HealthDataStep({
     setData(prev => ({ ...prev, gender }));
   };
 
-  const handleActivityLevelSelect = (activityLevel: HealthData['activityLevel']) => {
-    hapticFeedback.selection();
-    setData(prev => ({ ...prev, activityLevel }));
-  };
 
   const calculateBMI = () => {
     const height = Number(data.height) / 100; // Convert cm to m
@@ -174,42 +152,6 @@ export default function HealthDataStep({
     </View>
   );
 
-  const renderActivityLevelSelector = () => (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Activity Level</Text>
-      <View style={styles.activityGrid}>
-        {ACTIVITY_LEVELS.map((level) => (
-          <MobileOptimizedCard
-            key={level.id}
-            onPress={() => handleActivityLevelSelect(level.id as HealthData['activityLevel'])}
-            variant={data.activityLevel === level.id ? 'elevated' : 'outlined'}
-            style={StyleSheet.flatten([
-              styles.activityCard,
-              data.activityLevel === level.id ? { borderColor: level.color } : {},
-            ])}
-            hapticFeedback="selection"
-          >
-            <View style={styles.activityContent}>
-              <Ionicons
-                name={level.icon as any}
-                size={18}
-                color={data.activityLevel === level.id ? level.color : '#6b7280'}
-              />
-              <Text style={[
-                styles.activityTitle,
-                data.activityLevel === level.id && { color: level.color }
-              ]}>
-                {level.title}
-              </Text>
-              <Text style={styles.activityDescription}>
-                {level.description}
-              </Text>
-            </View>
-          </MobileOptimizedCard>
-        ))}
-      </View>
-    </View>
-  );
 
   const renderBMIPreview = () => {
     if (!data.height || !data.weight) return null;
@@ -240,54 +182,131 @@ export default function HealthDataStep({
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Pre-populated indicator */}
+        {isPrePopulated && (
+          <View style={styles.prePopulatedIndicator}>
+            <Ionicons name="information-circle-outline" size={16} color="#3b82f6" />
+            <Text style={styles.prePopulatedText}>Your existing data has been pre-filled</Text>
+          </View>
+        )}
+        
         {/* Basic Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
           
-          <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Age</Text>
-            <TextInput
-              value={data.age}
-              onChangeText={(text) => updateData('age', text)}
-              placeholder="25"
-              keyboardType="numeric"
-              style={[styles.input, errors.age && styles.inputError]}
-              blurOnSubmit={true}
-              returnKeyType="next"
-              onFocus={() => hapticFeedback.light()}
-            />
-            {errors.age && <Text style={styles.errorText}>{errors.age}</Text>}
+          {/* Row 1: Age, Height, Weight */}
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>Age</Text>
+              <TextInput
+                value={data.age}
+                onChangeText={(text) => updateData('age', text)}
+                placeholder="25"
+                keyboardType="numeric"
+                style={[styles.input, errors.age && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+              />
+              {errors.age && <Text style={styles.errorText}>{errors.age}</Text>}
+            </View>
+
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>Height (cm)</Text>
+              <TextInput
+                value={data.height}
+                onChangeText={(text) => updateData('height', text)}
+                placeholder="175"
+                keyboardType="numeric"
+                style={[styles.input, errors.height && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+              />
+              {errors.height && <Text style={styles.errorText}>{errors.height}</Text>}
+            </View>
+
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>Weight (kg)</Text>
+              <TextInput
+                value={data.weight}
+                onChangeText={(text) => updateData('weight', text)}
+                placeholder="70"
+                keyboardType="numeric"
+                style={[styles.input, errors.weight && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+              />
+              {errors.weight && <Text style={styles.errorText}>{errors.weight}</Text>}
+            </View>
           </View>
 
-          <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Height (cm)</Text>
-            <TextInput
-              value={data.height}
-              onChangeText={(text) => updateData('height', text)}
-              placeholder="175"
-              keyboardType="numeric"
-              style={[styles.input, errors.height && styles.inputError]}
-              blurOnSubmit={true}
-              returnKeyType="next"
-              onFocus={() => hapticFeedback.light()}
-            />
-            {errors.height && <Text style={styles.errorText}>{errors.height}</Text>}
-          </View>
+          {/* Row 2: SMM, Body Fat, Workout Days */}
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>
+                SMM (kg)
+              </Text>
+              <Text style={styles.optionalLabel}>(Optional)</Text>
+              <TextInput
+                value={data.smm || ''}
+                onChangeText={(text) => updateData('smm', text)}
+                placeholder="35.5"
+                keyboardType="numeric"
+                style={[styles.input, errors.smm && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+              />
+              <View style={styles.errorContainer}>
+                {errors.smm && <Text style={styles.errorText}>{errors.smm}</Text>}
+              </View>
+            </View>
 
-          <View style={styles.inputRow}>
-            <Text style={styles.inputLabel}>Weight (kg)</Text>
-            <TextInput
-              value={data.weight}
-              onChangeText={(text) => updateData('weight', text)}
-              placeholder="70"
-              keyboardType="numeric"
-              style={[styles.input, errors.weight && styles.inputError]}
-              blurOnSubmit={true}
-              returnKeyType="done"
-              onFocus={() => hapticFeedback.light()}
-            />
-            {errors.weight && <Text style={styles.errorText}>{errors.weight}</Text>}
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>
+                Body Fat (%)
+              </Text>
+              <Text style={styles.optionalLabel}>(Optional)</Text>
+              <TextInput
+                value={data.bodyFat || ''}
+                onChangeText={(text) => updateData('bodyFat', text)}
+                placeholder="15.5"
+                keyboardType="numeric"
+                style={[styles.input, errors.bodyFat && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+              />
+              <View style={styles.errorContainer}>
+                {errors.bodyFat && <Text style={styles.errorText}>{errors.bodyFat}</Text>}
+              </View>
+            </View>
+
+            <View style={styles.fieldColumn}>
+              <Text style={styles.inputLabel}>Workout Days</Text>
+              <Text style={styles.optionalLabel}></Text>
+              <TextInput
+                value={data.workoutDays || ''}
+                onChangeText={(text) => updateData('workoutDays', text)}
+                placeholder="3"
+                keyboardType="numeric"
+                style={[styles.input, errors.workoutDays && styles.inputError]}
+                blurOnSubmit={true}
+                returnKeyType="next"
+                onFocus={() => hapticFeedback.light()}
+                maxLength={1}
+              />
+              <View style={styles.errorContainer}>
+                {errors.workoutDays && <Text style={styles.errorText}>{errors.workoutDays}</Text>}
+              </View>
+            </View>
           </View>
         </View>
 
@@ -297,9 +316,7 @@ export default function HealthDataStep({
         {/* Gender Selector */}
         {renderGenderSelector()}
 
-        {/* Activity Level Selector */}
-        {renderActivityLevelSelector()}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -311,6 +328,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
     paddingBottom: 20,
   },
@@ -325,6 +344,14 @@ const styles = StyleSheet.create({
   },
   inputRow: {
     marginBottom: 6,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 12,
+  },
+  fieldColumn: {
+    flex: 1,
   },
   input: {
     width: '100%',
@@ -345,6 +372,9 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#ef4444',
+  },
+  errorContainer: {
+    minHeight: 20,
   },
   errorText: {
     fontSize: 12,
@@ -383,34 +413,6 @@ const styles = StyleSheet.create({
   optionButtonTextUnselected: {
     color: '#3b82f6',
   },
-  activityGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  activityCard: {
-    width: '48%',
-    marginBottom: 4,
-  },
-  activityContent: {
-    alignItems: 'center',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-  },
-  activityTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginTop: 2,
-    marginBottom: 1,
-    textAlign: 'center',
-  },
-  activityDescription: {
-    fontSize: 9,
-    color: '#6b7280',
-    textAlign: 'center',
-    lineHeight: 11,
-  },
   bmiCard: {
     marginBottom: 8,
   },
@@ -439,5 +441,36 @@ const styles = StyleSheet.create({
   bmiCategory: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  prePopulatedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+  },
+  prePopulatedText: {
+    fontSize: 14,
+    color: '#1e40af',
+    marginLeft: 6,
+    fontWeight: '500',
+  },
+  optionalLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '400',
+    height: 16,
+    lineHeight: 16,
+  },
+  helpText: {
+    fontSize: 11,
+    color: '#6b7280',
+    marginTop: 8,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });

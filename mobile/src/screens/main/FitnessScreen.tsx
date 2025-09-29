@@ -48,10 +48,46 @@ export default function FitnessScreen() {
 
   const loadWeekStats = async () => {
     try {
-      const stats = await fitnessService.getWorkoutStats('week');
-      setWeekStats(stats);
+      console.log('🏃 Loading fitness week stats...');
+      // Get recent workouts for the week
+      const workouts = await fitnessService.getFitnessLogs({ period: 'week' });
+      console.log('✅ Fitness week workouts data:', workouts);
+      
+      // Calculate stats from the workouts
+      const totalWorkouts = workouts.length;
+      const totalDuration = workouts.reduce((sum, workout) => sum + (workout.duration_minutes || 0), 0);
+      const totalCalories = workouts.reduce((sum, workout) => sum + (workout.calories_burned || 0), 0);
+      const averageDuration = totalWorkouts > 0 ? totalDuration / totalWorkouts : 0;
+      const averageCalories = totalWorkouts > 0 ? totalCalories / totalWorkouts : 0;
+      
+      // Find most common activity
+      const activityCounts: { [key: string]: number } = {};
+      workouts.forEach(workout => {
+        const activity = workout.activity_type || 'Unknown';
+        activityCounts[activity] = (activityCounts[activity] || 0) + 1;
+      });
+      const mostCommonActivity = Object.keys(activityCounts).reduce((a, b) => 
+        activityCounts[a] > activityCounts[b] ? a : b, 'No data'
+      );
+      
+      // Find longest workout
+      const longestWorkout = workouts.reduce((max, workout) => 
+        Math.max(max, workout.duration_minutes || 0), 0
+      );
+      
+      setWeekStats({
+        total_workouts: totalWorkouts,
+        total_duration: totalDuration,
+        total_calories_burned: totalCalories,
+        average_duration: Math.round(averageDuration),
+        average_calories: Math.round(averageCalories),
+        most_common_activity: mostCommonActivity,
+        longest_workout: longestWorkout,
+        this_week_workouts: totalWorkouts,
+        this_month_workouts: totalWorkouts, // Simplified for now
+      });
     } catch (error) {
-      console.error('Failed to load week stats:', error);
+      console.error('❌ Failed to load week stats:', error);
       // Set fallback stats
       setWeekStats({
         total_workouts: 0,
@@ -69,10 +105,46 @@ export default function FitnessScreen() {
 
   const loadWeeklyActivityData = async () => {
     try {
-      const data = await fitnessService.getWeeklyActivityData();
-      setWeeklyActivityData(data);
+      console.log('📊 Loading fitness weekly activity data...');
+      // Get recent workouts for the week
+      const response = await fitnessService.getFitnessLogs({ period: 'week' });
+      console.log('✅ Fitness weekly workouts data:', response);
+      
+      // Extract workouts array from response
+      const workouts = response?.workouts || response || [];
+      console.log('✅ Extracted workouts array:', workouts);
+      
+      // Group workouts by day of week
+      const weeklyData = {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
+      
+      if (Array.isArray(workouts)) {
+        workouts.forEach(workout => {
+        const date = new Date(workout.activity_date);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        switch (dayOfWeek) {
+          case 0: weeklyData.sunday++; break;
+          case 1: weeklyData.monday++; break;
+          case 2: weeklyData.tuesday++; break;
+          case 3: weeklyData.wednesday++; break;
+          case 4: weeklyData.thursday++; break;
+          case 5: weeklyData.friday++; break;
+          case 6: weeklyData.saturday++; break;
+        }
+        });
+      }
+      
+      setWeeklyActivityData(weeklyData);
     } catch (error) {
-      console.error('Failed to load weekly activity data:', error);
+      console.error('❌ Failed to load weekly activity data:', error);
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,

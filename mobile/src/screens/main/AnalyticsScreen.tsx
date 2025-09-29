@@ -13,10 +13,10 @@ import { hapticFeedback } from '../../utils/haptics';
 import { dashboardService } from '../../services/dashboardService';
 import { fitnessService } from '../../services/fitnessService';
 import { nutritionService } from '../../services/nutritionService';
-import { waterService } from '../../services/waterService';
-import { moodService } from '../../services/moodService';
+import { healthService } from '../../services/healthService';
 import ProgressLineChart from '../../components/ui/ProgressLineChart';
 import SimpleChart from '../../components/ui/SimpleChart';
+import GoalProgressCard from '../../components/analytics/GoalProgressCard';
 
 interface RealTimeData {
   todayStats: any;
@@ -32,10 +32,45 @@ export default function AnalyticsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<RealTimeData | null>(null);
+  const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
+
+  const loadWaterGoal = async () => {
+    try {
+      // Get user profile to determine gender-based water goal
+      const { profileService } = await import('../../services/profileService');
+      const profile = await profileService.getUserProfile();
+      
+      if (profile?.health_data?.gender) {
+        const gender = profile.health_data.gender;
+        let waterGoalMl = 3000; // Default 3L
+        
+        if (gender === 'female') {
+          waterGoalMl = 2700; // 2.7L for females
+          console.log('💧 AnalyticsScreen: Set water goal for female:', waterGoalMl, 'ml');
+        } else if (gender === 'male') {
+          waterGoalMl = 3700; // 3.7L for males
+          console.log('💧 AnalyticsScreen: Set water goal for male:', waterGoalMl, 'ml');
+        } else {
+          console.log('💧 AnalyticsScreen: Unknown gender, using default 3L:', gender);
+        }
+        
+        setWaterGoal(waterGoalMl);
+      } else {
+        console.log('💧 AnalyticsScreen: No gender found in profile, using default 3L');
+        setWaterGoal(3000);
+      }
+    } catch (error) {
+      console.error('Failed to load water goal from profile:', error);
+      setWaterGoal(3000); // Fallback to default
+    }
+  };
 
   const loadRealTimeData = async () => {
     try {
       setLoading(true);
+      
+      // Load water goal first
+      await loadWaterGoal();
       
       // Load all real data in parallel
       const [
@@ -46,12 +81,16 @@ export default function AnalyticsScreen() {
         moodLogs
       ] = await Promise.all([
         dashboardService.getDashboardSummary(),
-        fitnessService.getWorkoutLogs({ period: 'week' }),
-        nutritionService.getMealLogs({ period: 'week' }),
-        waterService.getWaterLogs(7), // 7 days for the week
-        moodService.getMoodLogs({ limit: 50 }) // Get recent mood logs
+        fitnessService.getFitnessLogs({ period: 'week' }),
+        nutritionService.getNutritionLogs({ period: 'week' }),
+        healthService.getWaterLogs(7), // 7 days for the week
+        healthService.getMoodLogs(7) // Get recent mood logs
       ]);
 
+      console.log('📊 Analytics: Dashboard summary:', dashboardSummary);
+      console.log('📊 Analytics: Today stats:', dashboardSummary.today_stats);
+      console.log('📊 Analytics: Weekly stats:', dashboardSummary.weekly_progress);
+      
       setData({
         todayStats: dashboardSummary.today_stats,
         weeklyStats: dashboardSummary.weekly_progress,
@@ -62,6 +101,29 @@ export default function AnalyticsScreen() {
       });
     } catch (error) {
       console.error('Failed to load real-time data:', error);
+      
+      // Set fallback data for testing
+      setData({
+        todayStats: {
+          workouts: 2,
+          meals: 3,
+          water_ml: 2000,
+          streak: 5,
+          calories_burned: 450,
+          calories_consumed: 1800
+        },
+        weeklyStats: {
+          workout_progress: 85,
+          meal_progress: 90,
+          overall_progress: 87,
+          total_minutes_this_week: 180,
+          avg_calories_per_day: 1900
+        },
+        fitnessLogs: [],
+        nutritionLogs: [],
+        waterLogs: [],
+        moodLogs: []
+      });
     } finally {
       setLoading(false);
     }
@@ -486,6 +548,13 @@ export default function AnalyticsScreen() {
 
     const { todayStats, weeklyStats, fitnessLogs, nutritionLogs, waterLogs } = data;
     
+    console.log('📊 Analytics: Rendering overview with data:', {
+      todayStats,
+      weeklyStats,
+      fitnessLogsCount: fitnessLogs?.length || 0,
+      nutritionLogsCount: nutritionLogs?.length || 0
+    });
+    
     // Calculate weekly activity data for charts
     const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
       const date = new Date();
@@ -523,64 +592,65 @@ export default function AnalyticsScreen() {
     
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Progress Line Charts */}
-        <View style={styles.progressGrid}>
-          <View style={styles.progressCardWrapper}>
-            <ProgressLineChart
-              title="Workouts"
-              current={todayStats.workouts || 0}
-              goal={3}
-              unit="sessions"
-              color="#f59e0b"
-              icon="fitness"
-              trend="up"
-              trendValue={Math.round(weeklyStats.workout_progress || 0)}
-              size="small"
-            />
-          </View>
-          <View style={styles.progressCardWrapper}>
-            <ProgressLineChart
-              title="Meals"
-              current={todayStats.meals || 0}
-              goal={3}
-              unit="meals"
-              color="#10b981"
-              icon="restaurant"
-              trend="up"
-              trendValue={Math.round(weeklyStats.meal_progress || 0)}
-              size="small"
-            />
-          </View>
-          <View style={styles.progressCardWrapper}>
-            <ProgressLineChart
-              title="Water"
-              current={Math.round((todayStats.water_ml || 0) / 250)}
-              goal={8}
-              unit="glasses"
-              color="#3b82f6"
-              icon="water"
-              size="small"
-            />
-          </View>
-          <View style={styles.progressCardWrapper}>
-            <ProgressLineChart
-              title="Streak"
-              current={todayStats.streak || 0}
-              goal={7}
-              unit="days"
-              color="#8b5cf6"
-              icon="flame"
-              size="small"
-            />
-          </View>
+        {/* Progress Line Charts - One per line */}
+        <View style={styles.singleColumnGrid}>
+          <ProgressLineChart
+            title="Workouts"
+            current={todayStats?.workouts || 0}
+            goal={3}
+            unit="sessions"
+            color="#f59e0b"
+            icon="fitness"
+            trend="up"
+            trendValue={Math.round(weeklyStats?.workout_progress || 0)}
+            size="large"
+          />
+          <ProgressLineChart
+            title="Meals"
+            current={todayStats?.meals || 0}
+            goal={3}
+            unit="meals"
+            color="#10b981"
+            icon="restaurant"
+            trend="up"
+            trendValue={Math.round(weeklyStats?.meal_progress || 0)}
+            size="large"
+          />
+          <ProgressLineChart
+            title="Water"
+            current={Math.round((todayStats?.water_ml || 0) / 250)}
+            goal={Math.round(waterGoal / 250)}
+            unit="glasses"
+            color="#3b82f6"
+            icon="water"
+            size="large"
+          />
+          <ProgressLineChart
+            title="Streak"
+            current={todayStats?.streak || 0}
+            goal={7}
+            unit="days"
+            color="#8b5cf6"
+            icon="flame"
+            size="large"
+          />
         </View>
+
+        {/* Goal Progress Card */}
+        <GoalProgressCard 
+          onPress={() => {
+            hapticFeedback.light();
+            // Navigate to detailed goals screen or open goals modal
+            console.log('Navigate to detailed goals');
+          }}
+        />
 
         {/* Weekly Activity Chart */}
         <SimpleChart
           title="Weekly Activity"
           data={weeklyActivity}
           type="bar"
-          height={180}
+          height={450}
         />
 
         {/* Macro Breakdown Chart */}
@@ -588,7 +658,7 @@ export default function AnalyticsScreen() {
           title="Macro Breakdown (This Week)"
           data={macroData}
           type="donut"
-          height={200}
+          height={500}
         />
 
         {/* Quick Stats */}
@@ -1219,8 +1289,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 16,
-    gap: 8,
+    marginBottom: 20,
+    gap: 12,
+  },
+  singleColumnGrid: {
+    marginBottom: 20,
+    gap: 16,
   },
   quickStatsGrid: {
     flexDirection: 'row',
@@ -1244,7 +1318,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   progressCardWrapper: {
-    width: '48%',
-    marginBottom: 8,
+    width: '100%',
+    marginBottom: 16,
   },
 });
