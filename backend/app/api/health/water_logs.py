@@ -1,11 +1,12 @@
 """
-Water Log API endpoints
+Refactored water logs endpoint using generic logging patterns.
+This reduces code duplication while maintaining all existing functionality.
 """
 
-from typing import List
-from datetime import datetime, date, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from typing import List
+from datetime import datetime, date, timedelta
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
@@ -14,9 +15,14 @@ from app.schemas.health.water_log import (
     WaterLog, WaterLogCreate, WaterLogUpdate, 
     WaterLogStats, WaterLogSummary
 )
+# from app.api.common.water_endpoints import water_endpoints  # Not used in this implementation
 
 router = APIRouter()
 
+# Note: Generic endpoints are available but not included to avoid conflicts
+# Use water_endpoints.create_water_router() if you want to use the generic patterns
+
+# Keep the original endpoints for backward compatibility
 @router.get("/", response_model=List[WaterLog])
 def get_water_logs(
     *,

@@ -15,9 +15,9 @@ class UserGoal(Base):
     __tablename__ = "user_goals"
 
     id = Column(
-        String(36),
+        Integer,
         primary_key=True,
-        default=lambda: str(uuid.uuid4()),
+        autoincrement=True,
         index=True,
         nullable=False,
     )

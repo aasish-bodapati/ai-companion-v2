@@ -1,69 +1,48 @@
 """
-Generic logging endpoints mixin for health logging APIs.
-Provides reusable endpoint patterns for all health logging types.
+Generic logging endpoint patterns for health logging APIs.
+Provides reusable endpoint mixins to reduce code duplication.
 """
 
-from typing import List, Optional, Dict, Any, Type, Callable
-from datetime import datetime
+from typing import List, Optional, Dict, Any, Type, TypeVar, Generic
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
-from app.db.session import get_db
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_db
 from app.models.user import User
-from app.utils.date_helpers import DateRangeCalculator, DateValidator
-from app.api.common.response_formatters import LoggingResponseFormatter
+from app.crud.common.user_logging import UserLoggingCRUD
+from app.utils.date_helpers import DateRangeCalculator, StreakCalculator
 from app.services.common.statistics import HealthStatisticsCalculator
 
+ModelType = TypeVar("ModelType")
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+ResponseSchemaType = TypeVar("ResponseSchemaType", bound=BaseModel)
 
-class LoggingEndpointsMixin:
-    """Mixin class for creating standardized logging endpoints."""
+
+class GenericLoggingEndpoints(Generic[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType]):
+    """
+    Generic mixin for health logging endpoints.
+    Provides common CRUD patterns for all health logging types.
+    """
     
-    @staticmethod
-    def create_logging_router(
-        log_type: str,
-        crud_service,
-        schema_create,
-        schema_update,
-        response_formatter: Callable,
-        stats_calculator: Callable,
-        additional_filters: Optional[List[str]] = None
-    ) -> APIRouter:
-        """
-        Create a complete logging router with standard endpoints.
-        
-        Args:
-            log_type: Type of logs (e.g., "fitness", "nutrition", "mood")
-            crud_service: CRUD service instance
-            schema_create: Pydantic schema for creating logs
-            schema_update: Pydantic schema for updating logs
-            response_formatter: Function to format log responses
-            stats_calculator: Function to calculate statistics
-            additional_filters: List of additional filter field names
-            
-        Returns:
-            Configured APIRouter
-        """
+    def __init__(
+        self, 
+        crud: UserLoggingCRUD[ModelType, CreateSchemaType, UpdateSchemaType],
+        response_schema: Type[ResponseSchemaType],
+        log_type_name: str
+    ):
+        self.crud = crud
+        self.response_schema = response_schema
+        self.log_type_name = log_type_name
+    
+    def create_router(self) -> APIRouter:
+        """Create a FastAPI router with standard logging endpoints."""
         router = APIRouter()
         
-        # Build query parameters for additional filters
-        def get_query_params():
-            params = {
-                "period": Query("week", description="Filter by period: week, month, all"),
-                "page": Query(1, ge=1, description="Page number"),
-                "size": Query(50, ge=1, le=100, description="Page size"),
-                "start_date": Query(None, description="Start date (YYYY-MM-DD)"),
-                "end_date": Query(None, description="End date (YYYY-MM-DD)"),
-                "timeoutMs": Query(None, description="Request timeout in milliseconds")
-            }
-            
-            if additional_filters:
-                for filter_field in additional_filters:
-                    params[filter_field] = Query(None, description=f"Filter by {filter_field}")
-            
-            return params
-        
-        @router.get("/", response_model=dict)
+        # GET / - List logs with pagination and filtering
+        @router.get("/", response_model=Dict[str, Any])
         def get_logs(
             *,
             db: Session = Depends(get_db),
@@ -73,70 +52,119 @@ class LoggingEndpointsMixin:
             size: int = Query(50, ge=1, le=100, description="Page size"),
             start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
             end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-            timeoutMs: Optional[int] = Query(None, description="Request timeout in milliseconds")
+            **filters
         ):
             """Get logs with optional filtering and pagination."""
             try:
-                # Use the directly passed parameters
-                start_date_str = start_date
-                end_date_str = end_date
-                timeout_ms = timeoutMs  # Ignore timeout parameter
+                # Parse date filters
+                start_date_obj = None
+                end_date_obj = None
                 
-                # Parse custom dates
-                custom_start = None
-                custom_end = None
+                if start_date:
+                    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+                if end_date:
+                    end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
                 
-                if start_date_str:
-                    custom_start = DateValidator.parse_date_string(start_date_str)
-                    if not custom_start:
-                        raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
+                # Use period-based filtering if no custom dates
+                if not start_date_obj and not end_date_obj:
+                    start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
                 
-                if end_date_str:
-                    custom_end = DateValidator.parse_date_string(end_date_str)
-                    if not custom_end:
-                        raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
-                
-                # Get date range
-                start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(
-                    period, custom_start, custom_end
+                # Get logs
+                skip = (page - 1) * size
+                logs = self.crud.get_user_logs(
+                    db,
+                    user_id=current_user.id,
+                    skip=skip,
+                    limit=size,
+                    start_date=start_date_obj,
+                    end_date=end_date_obj,
+                    **filters
                 )
                 
-                # Get logs from database
-                logs = crud_service.get_user_logs(
+                # Get total count for pagination
+                total_count = self.crud.get_user_logs_count(
                     db,
                     user_id=current_user.id,
                     start_date=start_date_obj,
                     end_date=end_date_obj,
-                    skip=(page - 1) * size,
-                    limit=size
+                    **filters
                 )
                 
                 # Calculate statistics
-                all_logs = crud_service.get_user_logs(
+                all_logs = self.crud.get_user_logs(
                     db,
                     user_id=current_user.id,
                     start_date=start_date_obj,
-                    end_date=end_date_obj
+                    end_date=end_date_obj,
+                    **filters
                 )
                 
-                stats = stats_calculator(all_logs)
+                stats = self._calculate_stats(all_logs)
                 
-                # Format logs
-                logs_data = [response_formatter(log) for log in logs]
+                # Format response
+                logs_data = [self._format_log_response(log) for log in logs]
                 
-                # Format pagination
-                pagination = LoggingResponseFormatter.format_pagination_response(
-                    page, size, len(all_logs)
-                )
-                
-                return LoggingResponseFormatter.format_logs_response(
-                    logs_data, stats, pagination, "logs"
-                )
+                return {
+                    "logs": logs_data,
+                    "stats": stats,
+                    "pagination": {
+                        "page": page,
+                        "size": size,
+                        "total": total_count,
+                        "totalPages": (total_count + size - 1) // size
+                    }
+                }
                 
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} logs")
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve {self.log_type_name} logs")
         
-        @router.get("/{id}", response_model=dict)
+        # GET /stats - Get statistics
+        @router.get("/stats", response_model=Dict[str, Any])
+        def get_stats(
+            *,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+            period: str = Query("week", description="Filter by period: week, month, all")
+        ):
+            """Get statistics for the log type."""
+            try:
+                start_date, end_date = DateRangeCalculator.get_period_range(period)
+                logs = self.crud.get_user_logs(
+                    db,
+                    user_id=current_user.id,
+                    start_date=start_date,
+                    end_date=end_date
+                )
+                
+                stats = self._calculate_stats(logs)
+                return stats
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve {self.log_type_name} statistics")
+        
+        # GET /recent - Get recent logs
+        @router.get("/recent", response_model=List[Dict[str, Any]])
+        def get_recent_logs(
+            *,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+            limit: int = Query(10, ge=1, le=50, description="Number of recent logs")
+        ):
+            """Get recent logs."""
+            try:
+                logs = self.crud.get_recent_logs(
+                    db,
+                    user_id=current_user.id,
+                    limit=limit
+                )
+                
+                return [self._format_log_response(log) for log in logs]
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve recent {self.log_type_name} logs")
+        
+        # GET /{id} - Get specific log
+        @router.get("/{id}", response_model=Dict[str, Any])
         def get_log(
             *,
             db: Session = Depends(get_db),
@@ -144,45 +172,50 @@ class LoggingEndpointsMixin:
             id: str
         ):
             """Get a specific log by ID."""
-            log = crud_service.get(db, id=id)
+            log = self.crud.get(db, id=id)
             if not log or log.user_id != current_user.id:
-                raise HTTPException(status_code=404, detail=f"{log_type.title()} log not found")
+                raise HTTPException(status_code=404, detail=f"{self.log_type_name.title()} log not found")
             
-            return response_formatter(log)
+            return self._format_log_response(log)
         
-        @router.post("/", response_model=dict)
+        # POST / - Create new log
+        @router.post("/", response_model=Dict[str, Any])
         def create_log(
             *,
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user),
-            log_data: schema_create
+            log_data: CreateSchemaType
         ):
-            """Create a new log."""
+            """Create a new log entry."""
             try:
-                log = crud_service.create_with_user(db, obj_in=log_data, user_id=current_user.id)
-                return response_formatter(log)
+                log = self.crud.create_with_user(db, obj_in=log_data, user_id=current_user.id)
+                return self._format_log_response(log)
+                
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to create {log_type} log")
+                raise HTTPException(status_code=500, detail=f"Failed to create {self.log_type_name} log")
         
-        @router.put("/{id}", response_model=dict)
+        # PUT /{id} - Update log
+        @router.put("/{id}", response_model=Dict[str, Any])
         def update_log(
             *,
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user),
             id: str,
-            log_data: schema_update
+            log_data: UpdateSchemaType
         ):
             """Update an existing log."""
-            log = crud_service.get(db, id=id)
+            log = self.crud.get(db, id=id)
             if not log or log.user_id != current_user.id:
-                raise HTTPException(status_code=404, detail=f"{log_type.title()} log not found")
+                raise HTTPException(status_code=404, detail=f"{self.log_type_name.title()} log not found")
             
             try:
-                updated_log = crud_service.update(db, db_obj=log, obj_in=log_data)
-                return response_formatter(updated_log)
+                updated_log = self.crud.update(db, db_obj=log, obj_in=log_data)
+                return self._format_log_response(updated_log)
+                
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to update {log_type} log")
+                raise HTTPException(status_code=500, detail=f"Failed to update {self.log_type_name} log")
         
+        # DELETE /{id} - Delete log
         @router.delete("/{id}")
         def delete_log(
             *,
@@ -190,125 +223,127 @@ class LoggingEndpointsMixin:
             current_user: User = Depends(get_current_user),
             id: str
         ):
-            """Delete a log."""
-            log = crud_service.get(db, id=id)
+            """Delete a log entry."""
+            log = self.crud.get(db, id=id)
             if not log or log.user_id != current_user.id:
-                raise HTTPException(status_code=404, detail=f"{log_type.title()} log not found")
+                raise HTTPException(status_code=404, detail=f"{self.log_type_name.title()} log not found")
             
             try:
-                crud_service.remove(db, id=id)
-                return {"message": f"{log_type.title()} log deleted successfully"}
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to delete {log_type} log")
-        
-        @router.get("/stats", response_model=dict)
-        def get_stats(
-            *,
-            db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
-            period: str = Query("week", description="Filter by period: week, month, all")
-        ):
-            """Get statistics."""
-            try:
-                start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
-                
-                logs = crud_service.get_user_logs(
-                    db,
-                    user_id=current_user.id,
-                    start_date=start_date_obj,
-                    end_date=end_date_obj
-                )
-                
-                stats = stats_calculator(logs)
-                return LoggingResponseFormatter.format_stats_response(stats)
+                self.crud.remove(db, id=id)
+                return {"message": f"{self.log_type_name.title()} log deleted successfully"}
                 
             except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} statistics")
-        
-        @router.get("/recent", response_model=List[dict])
-        def get_recent_logs(
-            *,
-            db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user)
-        ):
-            """Get recent logs (last 7 days)."""
-            try:
-                start_date_obj, end_date_obj = DateRangeCalculator.get_period_range("week")
-                
-                logs = crud_service.get_user_logs(
-                    db,
-                    user_id=current_user.id,
-                    start_date=start_date_obj,
-                    end_date=end_date_obj,
-                    limit=10
-                )
-                
-                return [response_formatter(log) for log in logs]
-                
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to retrieve recent {log_type} logs")
-        
-        @router.get("/streak", response_model=dict)
-        def get_streak(
-            *,
-            db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user)
-        ):
-            """Get streak information."""
-            try:
-                logs = crud_service.get_user_logs(db, user_id=current_user.id)
-                
-                from app.utils.date_helpers import StreakCalculator
-                current_streak = crud_service.calculate_user_streak(db, current_user.id)
-                longest_streak = crud_service.calculate_longest_streak(db, current_user.id)
-                
-                # Get last log date
-                last_log_date = None
-                if logs:
-                    last_log = max(logs, key=lambda x: getattr(x, crud_service.date_field) or x.created_at)
-                    last_log_date = (getattr(last_log, crud_service.date_field) or last_log.created_at).isoformat()
-                
-                return {
-                    "currentStreak": current_streak,
-                    "longestStreak": longest_streak,
-                    "lastLogDate": last_log_date
-                }
-                
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=f"Failed to retrieve {log_type} streak")
+                raise HTTPException(status_code=500, detail=f"Failed to delete {self.log_type_name} log")
         
         return router
-
-
-class FitnessLoggingEndpoints(LoggingEndpointsMixin):
-    """Specialized endpoints for fitness logging."""
     
-    @staticmethod
-    def create_fitness_router(crud_service, schema_create, schema_update) -> APIRouter:
-        """Create a fitness logging router."""
-        return LoggingEndpointsMixin.create_logging_router(
-            log_type="fitness",
-            crud_service=crud_service,
-            schema_create=schema_create,
-            schema_update=schema_update,
-            response_formatter=LoggingResponseFormatter.format_fitness_log,
-            stats_calculator=HealthStatisticsCalculator.calculate_fitness_stats,
-            additional_filters=["routine_id"]
+    def _calculate_stats(self, logs: List[ModelType]) -> Dict[str, Any]:
+        """Calculate statistics for the logs. Override in subclasses for specific stats."""
+        if not logs:
+            return {
+                "totalCount": 0,
+                "currentStreak": 0,
+                "longestStreak": 0
+            }
+        
+        # Get basic stats from UserLoggingCRUD
+        stats = self.crud.get_user_stats(
+            db=None,  # We already have the logs
+            user_id=logs[0].user_id if logs else 0,
+            start_date=None,
+            end_date=None
         )
-
-
-class NutritionLoggingEndpoints(LoggingEndpointsMixin):
-    """Specialized endpoints for nutrition logging."""
+        
+        # Calculate streaks
+        current_streak = StreakCalculator.calculate_streak(logs, self.crud.date_field)
+        longest_streak = StreakCalculator.calculate_longest_streak(logs, self.crud.date_field)
+        
+        return {
+            "totalCount": len(logs),
+            "currentStreak": current_streak,
+            "longestStreak": longest_streak,
+            "firstLog": getattr(logs[0], self.crud.date_field).isoformat() if logs else None,
+            "lastLog": getattr(logs[-1], self.crud.date_field).isoformat() if logs else None
+        }
     
-    @staticmethod
-    def create_nutrition_router(crud_service, schema_create, schema_update) -> APIRouter:
-        """Create a nutrition logging router."""
-        return LoggingEndpointsMixin.create_logging_router(
-            log_type="nutrition",
-            crud_service=crud_service,
-            schema_create=schema_create,
-            schema_update=schema_update,
-            response_formatter=LoggingResponseFormatter.format_nutrition_log,
-            stats_calculator=HealthStatisticsCalculator.calculate_nutrition_stats,
-            additional_filters=["routine_id", "meal_type"]
-        )
+    def _format_log_response(self, log: ModelType) -> Dict[str, Any]:
+        """Format a log object for API response. Override in subclasses for specific formatting."""
+        # Convert to dict and handle common fields
+        log_dict = {
+            "id": str(log.id),
+            "user_id": str(log.user_id),
+            "created_at": log.created_at.isoformat() if hasattr(log, 'created_at') and log.created_at else None,
+            "updated_at": log.updated_at.isoformat() if hasattr(log, 'updated_at') and log.updated_at else None
+        }
+        
+        # Add date field
+        date_value = getattr(log, self.crud.date_field, None)
+        if date_value:
+            log_dict[self.crud.date_field] = date_value.isoformat()
+        
+        # Add all other attributes
+        for attr in dir(log):
+            if not attr.startswith('_') and not callable(getattr(log, attr)) and attr not in log_dict:
+                value = getattr(log, attr)
+                if value is not None:
+                    if hasattr(value, 'isoformat'):  # datetime objects
+                        log_dict[attr] = value.isoformat()
+                    else:
+                        log_dict[attr] = value
+        
+        return log_dict
+
+
+class HealthLoggingEndpoints(GenericLoggingEndpoints[ModelType, CreateSchemaType, UpdateSchemaType, ResponseSchemaType]):
+    """
+    Specialized logging endpoints for health data with additional health-specific methods.
+    """
+    
+    def create_health_router(self) -> APIRouter:
+        """Create a router with additional health-specific endpoints."""
+        router = self.create_router()
+        
+        # GET /today - Get today's logs
+        @router.get("/today", response_model=List[Dict[str, Any]])
+        def get_todays_logs(
+            *,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Get today's logs."""
+            try:
+                today = datetime.now()
+                logs = self.crud.get_daily_logs(db, user_id=current_user.id, date=today)
+                return [self._format_log_response(log) for log in logs]
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve today's {self.log_type_name} logs")
+        
+        # GET /weekly - Get weekly summary
+        @router.get("/weekly", response_model=Dict[str, Any])
+        def get_weekly_summary(
+            *,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Get weekly summary."""
+            try:
+                today = datetime.now()
+                week_start = DateRangeCalculator.get_week_start(today)
+                
+                if hasattr(self.crud, 'get_weekly_summary'):
+                    summary = self.crud.get_weekly_summary(db, user_id=current_user.id, week_start=week_start)
+                    return summary
+                else:
+                    # Fallback to basic weekly data
+                    logs = self.crud.get_weekly_logs(db, user_id=current_user.id, week_start=week_start)
+                    return {
+                        "week_start": week_start.isoformat(),
+                        "total_logs": len(logs),
+                        "logs": [self._format_log_response(log) for log in logs]
+                    }
+                
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to retrieve weekly {self.log_type_name} summary")
+        
+        return router

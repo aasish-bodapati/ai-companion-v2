@@ -33,7 +33,7 @@ class ExerciseType(Base):
 
     __tablename__ = "exercise_types"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
 
     # Basic info
     name = Column(String(100), nullable=False, unique=True)  # "Shoulder Press", "Running", "Yoga"
@@ -78,9 +78,9 @@ class RoutineExerciseV2(Base):
 
     __tablename__ = "routine_exercises_v2"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    workout_day_id = Column(String(36), ForeignKey("routine_workout_days.id", ondelete="CASCADE"), nullable=False)
-    exercise_type_id = Column(String(36), ForeignKey("exercise_types.id", ondelete="CASCADE"), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    workout_day_id = Column(Integer, ForeignKey("routine_workout_days.id", ondelete="CASCADE"), nullable=False)
+    exercise_type_id = Column(Integer, ForeignKey("exercise_types.id", ondelete="CASCADE"), nullable=False)
 
     # Flexible attributes stored as JSON
     attributes = Column(JSON, nullable=False)  # All exercise-specific data
@@ -106,9 +106,9 @@ class WorkoutLogV2(Base):
 
     __tablename__ = "workout_logs_v2"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    exercise_type_id = Column(String(36), ForeignKey("exercise_types.id", ondelete="CASCADE"), nullable=False)
+    exercise_type_id = Column(Integer, ForeignKey("exercise_types.id", ondelete="CASCADE"), nullable=False)
 
     # Flexible attributes stored as JSON
     attributes = Column(JSON, nullable=False)  # All exercise-specific data
@@ -121,7 +121,7 @@ class WorkoutLogV2(Base):
 
     # Context
     routine_id = Column(Integer, ForeignKey("simple_routines.id", ondelete="SET NULL"), nullable=True)
-    workout_day_id = Column(String(36), ForeignKey("routine_workout_days.id", ondelete="SET NULL"), nullable=True)
+    workout_day_id = Column(Integer, ForeignKey("routine_workout_days.id", ondelete="SET NULL"), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

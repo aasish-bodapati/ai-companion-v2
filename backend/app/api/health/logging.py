@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from uuid import UUID
+# UUID import removed - using integer IDs
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
@@ -361,7 +361,7 @@ async def get_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Get a specific fitness log by ID."""
     try:
@@ -380,7 +380,7 @@ async def update_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID,
+    id: int,
     fitness_log_in: FitnessLogUpdate
 ):
     """Update a fitness log entry."""
@@ -404,7 +404,7 @@ async def delete_fitness_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Delete a fitness log entry."""
     try:
@@ -436,9 +436,7 @@ async def create_nutrition_log(
         nutrition_log_entry = nutrition_log.create_with_user(
             db, obj_in=nutrition_log_in, user_id=current_user.id
         )
-        # Convert IDs to strings to match the schema
-        nutrition_log_entry.id = str(nutrition_log_entry.id)
-        nutrition_log_entry.user_id = str(nutrition_log_entry.user_id)
+        # IDs are now integers, no conversion needed
         return nutrition_log_entry
     except Exception as e:
         logger.error(f"Error creating nutrition log: {str(e)}")
@@ -478,16 +476,14 @@ async def get_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Get a specific nutrition log by ID."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(id))
+        nutrition_log_entry = nutrition_log.get(db, id=id)
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
-        # Convert IDs to strings to match the schema
-        nutrition_log_entry.id = str(nutrition_log_entry.id)
-        nutrition_log_entry.user_id = str(nutrition_log_entry.user_id)
+        # IDs are now integers, no conversion needed
         return nutrition_log_entry
     except HTTPException:
         raise
@@ -500,12 +496,12 @@ async def update_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID,
+    id: int,
     nutrition_log_in: NutritionLogUpdate
 ):
     """Update a nutrition log entry."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(id))
+        nutrition_log_entry = nutrition_log.get(db, id=id)
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
 
@@ -527,11 +523,11 @@ async def delete_nutrition_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Delete a nutrition log entry."""
     try:
-        nutrition_log_entry = nutrition_log.get(db, id=str(id))
+        nutrition_log_entry = nutrition_log.get(db, id=id)
         if not nutrition_log_entry or nutrition_log_entry.user_id != current_user.id:
             raise HTTPException(status_code=404, detail="Nutrition log not found")
 
@@ -594,7 +590,7 @@ async def get_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Get a specific mood log by ID."""
     try:
@@ -613,7 +609,7 @@ async def update_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID,
+    id: int,
     mood_log_in: MoodLogUpdate
 ):
     """Update a mood log entry."""
@@ -637,7 +633,7 @@ async def delete_mood_log(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: UUID
+    id: int
 ):
     """Delete a mood log entry."""
     try:

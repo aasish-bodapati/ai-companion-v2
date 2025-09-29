@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, desc
 from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
 from app.models.health.food_log_items import FoodLogItem
+from app.services.common.statistics import HealthStatisticsCalculator
+from app.utils.date_helpers import PeriodAggregator
 
 
 class HealthAnalyticsService:
@@ -121,106 +123,76 @@ class HealthAnalyticsService:
         }
     
     def _calculate_fitness_trends(self, logs: List[FitnessLog]) -> Dict[str, any]:
-        """Calculate fitness trends from logs."""
+        """Calculate fitness trends from logs using centralized statistics."""
         if not logs:
             return {"message": "No fitness data available"}
         
-        # Group by week
-        weekly_data = {}
-        for log in logs:
-            week_start = log.activity_date - timedelta(days=log.activity_date.weekday())
-            week_key = week_start.strftime("%Y-%m-%d")
-            
-            if week_key not in weekly_data:
-                weekly_data[week_key] = {
-                    "workouts": 0,
-                    "total_duration": 0,
-                    "total_calories": 0,
-                    "activities": set()
-                }
-            
-            weekly_data[week_key]["workouts"] += 1
-            weekly_data[week_key]["total_duration"] += log.duration_minutes
-            weekly_data[week_key]["total_calories"] += log.calories_burned or 0
-            weekly_data[week_key]["activities"].add(log.activity_type)
+        # Use the centralized weekly trends calculator
+        trends = HealthStatisticsCalculator.calculate_weekly_trends(
+            logs, 
+            date_field="activity_date", 
+            metric_field="duration_minutes"
+        )
         
-        # Convert to list and calculate trends
-        weeks = []
-        for week, data in sorted(weekly_data.items()):
-            weeks.append({
-                "week": week,
-                "workouts": data["workouts"],
-                "total_duration": data["total_duration"],
-                "total_calories": data["total_calories"],
-                "unique_activities": len(data["activities"])
-            })
-        
-        # Calculate trends
-        if len(weeks) >= 2:
-            recent_avg = sum(w["workouts"] for w in weeks[-2:]) / 2
-            older_avg = sum(w["workouts"] for w in weeks[:-2]) / max(1, len(weeks) - 2)
-            trend = "increasing" if recent_avg > older_avg else "decreasing" if recent_avg < older_avg else "stable"
-        else:
-            trend = "insufficient_data"
+        # Add fitness-specific metrics
+        weekly_data = trends.get("weekly_data", [])
+        for week_data in weekly_data:
+            week_logs = [log for log in logs if log.activity_date.strftime("%Y-%m-%d") == week_data["week"]]
+            week_data["unique_activities"] = len(set(log.activity_type for log in week_logs))
+            week_data["total_calories"] = sum(log.calories_burned or 0 for log in week_logs)
         
         return {
-            "weekly_data": weeks,
-            "trend": trend,
-            "total_workouts": sum(w["workouts"] for w in weeks),
-            "avg_workouts_per_week": sum(w["workouts"] for w in weeks) / max(1, len(weeks))
+            "weekly_data": weekly_data,
+            "trend": trends.get("trend", "insufficient_data"),
+            "total_workouts": trends.get("total_count", 0),
+            "avg_workouts_per_week": trends.get("avg_per_week", 0)
         }
     
     def _calculate_nutrition_trends(self, logs: List[NutritionLog]) -> Dict[str, any]:
-        """Calculate nutrition trends from logs."""
+        """Calculate nutrition trends from logs using centralized statistics."""
         if not logs:
             return {"message": "No nutrition data available"}
         
-        # Group by week
-        weekly_data = {}
-        for log in logs:
-            week_start = log.meal_date - timedelta(days=log.meal_date.weekday())
-            week_key = week_start.strftime("%Y-%m-%d")
-            
-            if week_key not in weekly_data:
-                weekly_data[week_key] = {
-                    "meals": 0,
-                    "total_calories": 0,
-                    "total_protein": 0,
-                    "total_carbs": 0,
-                    "total_fat": 0
-                }
-            
-            weekly_data[week_key]["meals"] += 1
-            weekly_data[week_key]["total_calories"] += log.total_calories
-            weekly_data[week_key]["total_protein"] += log.protein_g or 0
-            weekly_data[week_key]["total_carbs"] += log.carbs_g or 0
-            weekly_data[week_key]["total_fat"] += log.fat_g or 0
+        # Use the centralized weekly trends calculator
+        trends = HealthStatisticsCalculator.calculate_weekly_trends(
+            logs, 
+            date_field="meal_date", 
+            metric_field="total_calories"
+        )
         
-        # Convert to list
-        weeks = []
-        for week, data in sorted(weekly_data.items()):
-            weeks.append({
-                "week": week,
-                "meals": data["meals"],
-                "avg_calories_per_meal": data["total_calories"] / max(1, data["meals"]),
-                "total_protein": data["total_protein"],
-                "total_carbs": data["total_carbs"],
-                "total_fat": data["total_fat"]
-            })
+        # Add nutrition-specific metrics
+        weekly_data = trends.get("weekly_data", [])
+        for week_data in weekly_data:
+            week_logs = [log for log in logs if log.meal_date.strftime("%Y-%m-%d") == week_data["week"]]
+            week_data["meals"] = len(week_logs)
+            week_data["avg_calories_per_meal"] = week_data["total"] / max(1, len(week_logs))
+            week_data["total_protein"] = sum(log.protein_g or 0 for log in week_logs)
+            week_data["total_carbs"] = sum(log.carbs_g or 0 for log in week_logs)
+            week_data["total_fat"] = sum(log.fat_g or 0 for log in week_logs)
         
         return {
-            "weekly_data": weeks,
-            "total_meals": sum(w["meals"] for w in weeks),
-            "avg_meals_per_week": sum(w["meals"] for w in weeks) / max(1, len(weeks))
+            "weekly_data": weekly_data,
+            "total_meals": trends.get("total_count", 0),
+            "avg_meals_per_week": trends.get("avg_per_week", 0)
         }
     
     def _analyze_correlations(self, fitness_logs: List[FitnessLog], 
                             nutrition_logs: List[NutritionLog], 
                             mood_logs: List[MoodLog]) -> List[Dict[str, any]]:
-        """Analyze correlations between different health metrics."""
+        """Analyze correlations between different health metrics using centralized calculator."""
         correlations = []
         
-        # Example correlation analysis
+        # Use the centralized correlation calculator
+        if fitness_logs and nutrition_logs:
+            correlations.extend(
+                HealthStatisticsCalculator.calculate_correlations(
+                    fitness_logs, nutrition_logs,
+                    "activity_date", "meal_date",
+                    "calories_burned", "total_calories"
+                )
+            )
+        
+        # Add custom correlation analysis
         if fitness_logs and nutrition_logs:
             # Check if workout days have different nutrition patterns
             workout_days = set(log.activity_date.date() for log in fitness_logs)

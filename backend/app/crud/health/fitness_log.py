@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 import json
 
-from app.crud.base import CRUDBase
+from app.crud.common.user_logging import UserLoggingCRUD
 from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
 from app.schemas.health.fitness_log import (
     FitnessLogCreate, FitnessLogUpdate,
@@ -13,53 +13,14 @@ from app.schemas.health.fitness_log import (
     DailySummary, WeeklySummary, LoggingInsight
 )
 
-class CRUDFitnessLog(CRUDBase[FitnessLog, FitnessLogCreate, FitnessLogUpdate]):
-    def create_with_user(self, db: Session, *, obj_in: FitnessLogCreate, user_id: int) -> FitnessLog:
-        """Create a new fitness log for a specific user."""
-        obj_in_data = obj_in.model_dump()
-        obj_in_data["user_id"] = user_id
-        
-        # Filter out fields that don't exist in the model
-        model_fields = {column.name for column in self.model.__table__.columns}
-        filtered_data = {k: v for k, v in obj_in_data.items() if k in model_fields}
-        
-        db_obj = self.model(**filtered_data)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-    def get_user_logs(
-        self,
-        db: Session,
-        user_id: int,
-        skip: int = 0,
-        limit: int = 100,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> List[FitnessLog]:
-        query = db.query(FitnessLog).filter(FitnessLog.user_id == user_id)
-
-        if start_date:
-            query = query.filter(FitnessLog.activity_date >= start_date)
-        if end_date:
-            query = query.filter(FitnessLog.activity_date <= end_date)
-
-        return query.order_by(desc(FitnessLog.activity_date)).offset(skip).limit(limit).all()
-
-    def get_daily_logs(self, db: Session, user_id: int, date: datetime) -> List[FitnessLog]:
-        start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = start_of_day + timedelta(days=1)
-
-        return db.query(FitnessLog).filter(
-            and_(
-                FitnessLog.user_id == user_id,
-                FitnessLog.activity_date >= start_of_day,
-                FitnessLog.activity_date < end_of_day
-            )
-        ).order_by(FitnessLog.activity_date).all()
-
+class CRUDFitnessLog(UserLoggingCRUD[FitnessLog, FitnessLogCreate, FitnessLogUpdate]):
+    """CRUD operations for FitnessLog using UserLoggingCRUD base class."""
+    
+    def __init__(self):
+        super().__init__(FitnessLog, date_field="activity_date")
+    
     def get_weekly_summary(self, db: Session, user_id: int, week_start: datetime) -> Dict[str, Any]:
+        """Get weekly summary for fitness logs."""
         week_end = week_start + timedelta(days=7)
 
         logs = db.query(FitnessLog).filter(
@@ -86,50 +47,14 @@ class CRUDFitnessLog(CRUDBase[FitnessLog, FitnessLogCreate, FitnessLogUpdate]):
             "average_workout_duration": total_minutes / total_workouts if total_workouts > 0 else 0
         }
 
-class CRUDNutritionLog(CRUDBase[NutritionLog, NutritionLogCreate, NutritionLogUpdate]):
-    def create_with_user(self, db: Session, *, obj_in: NutritionLogCreate, user_id: int) -> NutritionLog:
-        """Create a new nutrition log for a specific user."""
-        obj_in_data = obj_in.model_dump()
-        obj_in_data["user_id"] = user_id
-
-        # The model will handle JSON serialization automatically via the property setter
-        db_obj = self.model(**obj_in_data)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-    def get_user_logs(
-        self,
-        db: Session,
-        user_id: int,
-        skip: int = 0,
-        limit: int = 100,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> List[NutritionLog]:
-        query = db.query(NutritionLog).filter(NutritionLog.user_id == user_id)
-
-        if start_date:
-            query = query.filter(NutritionLog.meal_date >= start_date)
-        if end_date:
-            query = query.filter(NutritionLog.meal_date <= end_date)
-
-        return query.order_by(desc(NutritionLog.meal_date)).offset(skip).limit(limit).all()
-
-    def get_daily_logs(self, db: Session, user_id: int, date: datetime) -> List[NutritionLog]:
-        start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        end_of_day = start_of_day + timedelta(days=1)
-
-        return db.query(NutritionLog).filter(
-            and_(
-                NutritionLog.user_id == user_id,
-                NutritionLog.meal_date >= start_of_day,
-                NutritionLog.meal_date < end_of_day
-            )
-        ).order_by(NutritionLog.meal_date).all()
-
+class CRUDNutritionLog(UserLoggingCRUD[NutritionLog, NutritionLogCreate, NutritionLogUpdate]):
+    """CRUD operations for NutritionLog using UserLoggingCRUD base class."""
+    
+    def __init__(self):
+        super().__init__(NutritionLog, date_field="meal_date")
+    
     def get_daily_summary(self, db: Session, user_id: int, date: datetime) -> Dict[str, Any]:
+        """Get daily summary for nutrition logs."""
         logs = self.get_daily_logs(db, user_id, date)
 
         total_calories = sum(log.total_calories for log in logs)
@@ -156,6 +81,7 @@ class CRUDNutritionLog(CRUDBase[NutritionLog, NutritionLogCreate, NutritionLogUp
         }
 
     def get_weekly_summary(self, db: Session, user_id: int, week_start: datetime) -> Dict[str, Any]:
+        """Get weekly summary for nutrition logs."""
         week_end = week_start + timedelta(days=7)
 
         logs = db.query(NutritionLog).filter(
@@ -187,36 +113,14 @@ class CRUDNutritionLog(CRUDBase[NutritionLog, NutritionLogCreate, NutritionLogUp
             "meals_logged": len(logs)
         }
 
-class CRUDMoodLog(CRUDBase[MoodLog, MoodLogCreate, MoodLogUpdate]):
-    def create_with_user(self, db: Session, *, obj_in: MoodLogCreate, user_id: int) -> MoodLog:
-        """Create a new mood log for a specific user."""
-        obj_in_data = obj_in.model_dump()
-        obj_in_data["user_id"] = user_id
-        db_obj = self.model(**obj_in_data)
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-        return db_obj
-
-    def get_user_logs(
-        self,
-        db: Session,
-        user_id: int,
-        skip: int = 0,
-        limit: int = 100,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None
-    ) -> List[MoodLog]:
-        query = db.query(MoodLog).filter(MoodLog.user_id == user_id)
-
-        if start_date:
-            query = query.filter(MoodLog.log_date >= start_date)
-        if end_date:
-            query = query.filter(MoodLog.log_date <= end_date)
-
-        return query.order_by(desc(MoodLog.log_date)).offset(skip).limit(limit).all()
-
+class CRUDMoodLog(UserLoggingCRUD[MoodLog, MoodLogCreate, MoodLogUpdate]):
+    """CRUD operations for MoodLog using UserLoggingCRUD base class."""
+    
+    def __init__(self):
+        super().__init__(MoodLog, date_field="log_date")
+    
     def get_daily_log(self, db: Session, user_id: int, date: datetime) -> Optional[MoodLog]:
+        """Get mood log for a specific day (only one per day)."""
         start_of_day = date.replace(hour=0, minute=0, second=0, microsecond=0)
         end_of_day = start_of_day + timedelta(days=1)
 
@@ -229,6 +133,7 @@ class CRUDMoodLog(CRUDBase[MoodLog, MoodLogCreate, MoodLogUpdate]):
         ).first()
 
     def get_weekly_summary(self, db: Session, user_id: int, week_start: datetime) -> Dict[str, Any]:
+        """Get weekly summary for mood logs."""
         week_end = week_start + timedelta(days=7)
 
         logs = db.query(MoodLog).filter(
@@ -263,6 +168,6 @@ class CRUDMoodLog(CRUDBase[MoodLog, MoodLogCreate, MoodLogUpdate]):
         }
 
 # Create instances
-fitness_log = CRUDFitnessLog(FitnessLog)
-nutrition_log = CRUDNutritionLog(NutritionLog)
-mood_log = CRUDMoodLog(MoodLog)
+fitness_log = CRUDFitnessLog()
+nutrition_log = CRUDNutritionLog()
+mood_log = CRUDMoodLog()

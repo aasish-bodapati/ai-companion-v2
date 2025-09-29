@@ -13,7 +13,7 @@ class Food(Base):
 
     __tablename__ = "foods"
 
-    id = Column(String, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     name = Column(String(200), nullable=False, index=True)
     brand = Column(String(100), nullable=True)
     category = Column(String(50), nullable=False, index=True)
@@ -70,7 +70,7 @@ class UserFoodHistory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    food_id = Column(String, ForeignKey("foods.id", ondelete="CASCADE"), nullable=False, index=True)
+    food_id = Column(Integer, ForeignKey("foods.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Consumption tracking
     times_consumed = Column(Integer, default=1, nullable=False)

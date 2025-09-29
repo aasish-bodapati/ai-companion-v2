@@ -5,7 +5,7 @@ Pydantic schemas for user health goals and information
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
+# UUID import removed - using integer IDs
 
 # Health Goals Schemas
 class UserHealthGoalsBase(BaseModel):
@@ -96,8 +96,8 @@ class UserHealthGoalsUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 class UserHealthGoals(UserHealthGoalsBase):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
 
@@ -182,8 +182,8 @@ class UserHealthProfileUpdate(BaseModel):
     motivation_level: Optional[int] = Field(None, ge=1, le=10)
 
 class UserHealthProfile(UserHealthProfileBase):
-    id: UUID
-    user_id: UUID
+    id: int
+    user_id: int
     created_at: datetime
     updated_at: datetime
 

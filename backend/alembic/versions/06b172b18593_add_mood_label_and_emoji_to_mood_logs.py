@@ -39,6 +39,9 @@ def upgrade() -> None:
     op.drop_table('nutrition_user_routine_progress')
     op.drop_index('idx_fitness_logs_activity_date', table_name='fitness_logs')
     op.drop_index('idx_fitness_logs_user_id', table_name='fitness_logs')
+    # Drop materialized views first to avoid dependency issues
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS weekly_user_progress CASCADE")
+    op.execute("DROP MATERIALIZED VIEW IF EXISTS daily_user_stats CASCADE")
     op.drop_table('fitness_logs')
     op.drop_index('idx_water_logs_log_date', table_name='water_logs')
     op.drop_index('idx_water_logs_user_id', table_name='water_logs')

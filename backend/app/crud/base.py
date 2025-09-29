@@ -27,14 +27,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
         Args:
             db: Database session
-            id: ID of the object to retrieve. If it's a UUID, it will be converted to string.
+            id: ID of the object to retrieve (integer).
 
         Returns:
             The object if found, None otherwise.
         """
-        # Convert UUID to string if needed
-        if hasattr(id, "hex"):
-            id = str(id)
+        # IDs are now integers, no conversion needed
         return db.query(self.model).filter(self.model.id == id).first()
 
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
@@ -79,9 +77,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
     def remove(self, db: Session, *, id: Any) -> ModelType:
         """Remove an object."""
-        # Convert UUID to string if needed
-        if hasattr(id, "hex"):
-            id = str(id)
+        # IDs are now integers, no conversion needed
         # Get the object first
         obj = db.query(self.model).filter(self.model.id == id).first()
         if obj:

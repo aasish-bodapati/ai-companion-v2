@@ -1,7 +1,7 @@
 """merge heads
 
 Revision ID: fa027e8b4966
-Revises: 1d92b9724638, standardize_integer_ids
+Revises: 1d92b9724638
 Create Date: 2025-09-19 17:30:05.381760
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'fa027e8b4966'
-down_revision = ('1d92b9724638', 'standardize_integer_ids')
+down_revision = '1d92b9724638'
 branch_labels = None
 depends_on = None
 

@@ -1,14 +1,14 @@
-from sqlalchemy import Column, String, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer
 from sqlalchemy.sql import func
 from app.db.base_class import Base
-import uuid
+# uuid import removed - using integer IDs
 
 class WorkoutCategory(Base):
     """Workout categories for organizing exercises."""
 
     __tablename__ = "workout_categories"
 
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     name = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)

@@ -7,12 +7,15 @@ from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from app.crud.base import CRUDBase
+from app.crud.common.user_logging import UserLoggingCRUD
 from app.models.health.water_log import WaterLog
 from app.schemas.health.water_log import WaterLogCreate, WaterLogUpdate
 
-class CRUDWaterLog(CRUDBase[WaterLog, WaterLogCreate, WaterLogUpdate]):
-    """CRUD operations for WaterLog"""
+class CRUDWaterLog(UserLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUpdate]):
+    """CRUD operations for WaterLog using UserLoggingCRUD base class."""
+    
+    def __init__(self):
+        super().__init__(WaterLog, date_field="log_date")
 
     def get_user_logs_today(self, db: Session, *, user_id: int) -> List[WaterLog]:
         """Get user's water logs for today"""
@@ -83,7 +86,7 @@ class CRUDWaterLog(CRUDBase[WaterLog, WaterLogCreate, WaterLogUpdate]):
         }
 
     def create_with_user(self, db: Session, *, obj_in: WaterLogCreate, user_id: int) -> WaterLog:
-        """Create a water log for a user"""
+        """Create a water log for a user with water-specific logic"""
         # Calculate ounces if not provided
         if obj_in.amount_oz is None:
             obj_in.amount_oz = obj_in.amount_ml * 0.033814
@@ -92,14 +95,19 @@ class CRUDWaterLog(CRUDBase[WaterLog, WaterLogCreate, WaterLogUpdate]):
         if obj_in.log_date is None:
             obj_in.log_date = datetime.now()
         
-        db_obj = WaterLog(
-            **obj_in.model_dump(exclude_unset=True),
-            user_id=user_id
-        )
+        # Use the parent class method but with our custom logic
+        obj_in_data = obj_in.model_dump()
+        obj_in_data["user_id"] = user_id
+        
+        # Filter out fields that don't exist in the model
+        model_fields = {column.name for column in self.model.__table__.columns}
+        filtered_data = {k: v for k, v in obj_in_data.items() if k in model_fields}
+        
+        db_obj = self.model(**filtered_data)
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)
         return db_obj
 
 # Create instance
-water_log = CRUDWaterLog(WaterLog)
+water_log = CRUDWaterLog()

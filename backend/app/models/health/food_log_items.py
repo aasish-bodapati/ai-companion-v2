@@ -2,7 +2,7 @@
 Food Log Items model for detailed nutrition tracking.
 """
 
-from sqlalchemy import Column, String, Float, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Column, String, Float, DateTime, ForeignKey, CheckConstraint, Integer
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.db.base_class import Base
@@ -13,9 +13,9 @@ class FoodLogItem(Base):
 
     __tablename__ = "food_log_items"
 
-    id = Column(String(36), primary_key=True, index=True)
-    nutrition_log_id = Column(String(36), ForeignKey("nutrition_logs.id", ondelete="CASCADE"), nullable=False, index=True)
-    food_id = Column(String(36), ForeignKey("foods.id", ondelete="CASCADE"), nullable=True, index=True)
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    nutrition_log_id = Column(Integer, ForeignKey("nutrition_logs.id", ondelete="CASCADE"), nullable=False, index=True)
+    food_id = Column(Integer, ForeignKey("foods.id", ondelete="CASCADE"), nullable=True, index=True)
     food_name = Column(String(300), nullable=False)
     quantity_grams = Column(Float, nullable=False)
     
