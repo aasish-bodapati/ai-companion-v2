@@ -189,7 +189,20 @@ export const fitnessService = {
   async getWorkoutStats(period: 'week' | 'month' | 'year' = 'month'): Promise<WorkoutStats> {
     try {
       const response = await apiClient.get(`/health/fitness-logs/stats?period=${period}`);
-      return response.data;
+      const data = response.data;
+      
+      // Transform backend response to match frontend interface
+      return {
+        total_workouts: data.totalWorkouts || 0,
+        total_duration: data.totalDuration || 0,
+        total_calories_burned: data.totalCalories || 0,
+        average_duration: data.totalDuration ? Math.round(data.totalDuration / (data.totalWorkouts || 1)) : 0,
+        average_calories: data.totalCalories ? Math.round(data.totalCalories / (data.totalWorkouts || 1)) : 0,
+        most_common_activity: 'Weightlifting', // Default since we don't have this data
+        longest_workout: data.totalDuration ? Math.round(data.totalDuration / (data.totalWorkouts || 1)) : 0, // Approximate
+        this_week_workouts: period === 'week' ? (data.totalWorkouts || 0) : 0,
+        this_month_workouts: period === 'month' ? (data.totalWorkouts || 0) : 0,
+      };
     } catch (error) {
       console.error('Failed to fetch workout stats:', error);
       throw error;
@@ -227,6 +240,62 @@ export const fitnessService = {
     } catch (error) {
       console.error('Failed to fetch today\'s workout summary:', error);
       throw error;
+    }
+  },
+
+  // Get weekly activity data for chart
+  async getWeeklyActivityData(): Promise<{
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  }> {
+    try {
+      const response = await apiClient.get('/health/fitness-logs/');
+      const data = response.data;
+      const logs = data.logs || [];
+      
+      // Initialize weekly data
+      const weeklyData = {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
+      
+      // Process each log
+      logs.forEach((log: any) => {
+        const date = new Date(log.activity_date);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Convert to our format (Monday = 0, Sunday = 6)
+        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        if (dayKeys[dayIndex]) {
+          weeklyData[dayKeys[dayIndex] as keyof typeof weeklyData]++;
+        }
+      });
+      
+      return weeklyData;
+    } catch (error) {
+      console.error('Failed to fetch weekly activity data:', error);
+      // Return empty data on error
+      return {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
     }
   },
 

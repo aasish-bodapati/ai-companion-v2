@@ -17,6 +17,7 @@ import LogTodaysWorkoutModal from '../../components/workout/LogTodaysWorkoutModa
 import LogWorkoutModal from '../../components/fitness/LogWorkoutModal';
 import EnhancedWorkoutLogger from '../../components/fitness/EnhancedWorkoutLogger';
 import FitnessLogsView from '../../components/fitness/FitnessLogsView';
+import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import { fitnessService, WorkoutStats } from '../../services/fitnessService';
 import { dashboardService } from '../../services/dashboardService';
 
@@ -31,51 +32,19 @@ export default function FitnessScreen() {
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
   
   // Overview state
-  const [todayStats, setTodayStats] = useState({
-    workouts: 0,
-    duration: 0,
-    calories: 0,
-    exercises: 0,
-  });
   const [weekStats, setWeekStats] = useState<WorkoutStats | null>(null);
+  const [weeklyActivityData, setWeeklyActivityData] = useState({
+    monday: 0,
+    tuesday: 0,
+    wednesday: 0,
+    thursday: 0,
+    friday: 0,
+    saturday: 0,
+    sunday: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadTodayStats = async () => {
-    try {
-      // Try to get real data from fitness service first
-      const [todaySummary, recentWorkouts] = await Promise.allSettled([
-        fitnessService.getTodayWorkoutSummary(),
-        fitnessService.getRecentWorkouts(5)
-      ]);
-
-      if (todaySummary.status === 'fulfilled' && todaySummary.value) {
-        const data = todaySummary.value;
-        setTodayStats({
-          workouts: data.workouts || 0,
-          duration: data.total_duration || 0,
-          calories: data.calories_burned || 0,
-          exercises: data.exercises || 0,
-        });
-      } else {
-        // Final fallback
-        setTodayStats({
-          workouts: 0,
-          duration: 0,
-          calories: 0,
-          exercises: 0,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to load today\'s stats:', error);
-      setTodayStats({
-        workouts: 0,
-        duration: 0,
-        calories: 0,
-        exercises: 0,
-      });
-    }
-  };
 
   const loadWeekStats = async () => {
     try {
@@ -98,10 +67,29 @@ export default function FitnessScreen() {
     }
   };
 
+  const loadWeeklyActivityData = async () => {
+    try {
+      const data = await fitnessService.getWeeklyActivityData();
+      setWeeklyActivityData(data);
+    } catch (error) {
+      console.error('Failed to load weekly activity data:', error);
+      // Set fallback data
+      setWeeklyActivityData({
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      });
+    }
+  };
+
   const loadOverviewData = async () => {
     try {
       setLoading(true);
-      await Promise.all([loadTodayStats(), loadWeekStats()]);
+      await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
     } catch (error) {
       console.error('Failed to load overview data:', error);
     } finally {
@@ -184,71 +172,68 @@ export default function FitnessScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-
-
-      {/* Today's Snapshot */}
+      {/* This Week's Fitness Overview */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Snapshot</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.snapshotScroll}
-        >
-          <View style={styles.snapshotCard}>
-            <Ionicons name="fitness-outline" size={20} color="#10b981" />
-            <Text style={styles.snapshotValue}>{todayStats.workouts}</Text>
-            <Text style={styles.snapshotLabel}>Workouts</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
+        <Text style={styles.sectionTitle}>This Week's Fitness</Text>
+        <View style={styles.weekOverviewCard}>
+          <View style={styles.weekMetricRow}>
+            <View style={styles.weekMetric}>
+              <Ionicons name="fitness-outline" size={24} color="#10b981" />
+              <Text style={styles.weekMetricValue}>{weekStats?.total_workouts || 0}</Text>
+              <Text style={styles.weekMetricLabel}>Workouts</Text>
+            </View>
+            <View style={styles.weekMetric}>
+              <Ionicons name="time-outline" size={24} color="#3b82f6" />
+              <Text style={styles.weekMetricValue}>{Math.round((weekStats?.total_duration || 0) / 60)}h</Text>
+              <Text style={styles.weekMetricLabel}>Duration</Text>
             </View>
           </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="time-outline" size={20} color="#3b82f6" />
-            <Text style={styles.snapshotValue}>{todayStats.duration}m</Text>
-            <Text style={styles.snapshotLabel}>Duration</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
+          
+          <View style={styles.weekMetricRow}>
+            <View style={styles.weekMetric}>
+              <Ionicons name="flame-outline" size={24} color="#ef4444" />
+              <Text style={styles.weekMetricValue}>{weekStats?.total_calories_burned || 0}</Text>
+              <Text style={styles.weekMetricLabel}>Calories Burned</Text>
+            </View>
+            <View style={styles.weekMetric}>
+              <Ionicons name="barbell-outline" size={24} color="#f59e0b" />
+              <Text style={styles.weekMetricValue}>{Math.round((weekStats?.average_duration || 0) / 60)}m</Text>
+              <Text style={styles.weekMetricLabel}>Avg Duration</Text>
             </View>
           </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="flame-outline" size={20} color="#ef4444" />
-            <Text style={styles.snapshotValue}>{todayStats.calories}</Text>
-            <Text style={styles.snapshotLabel}>Calories</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="barbell-outline" size={20} color="#f59e0b" />
-            <Text style={styles.snapshotValue}>{todayStats.exercises}</Text>
-            <Text style={styles.snapshotLabel}>Exercises</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-        </ScrollView>
+        </View>
       </View>
 
-      {/* Recent Activity */}
+
+      {/* Weekly Activity Breakdown */}
       {weekStats && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Week</Text>
-          <View style={styles.weekCard}>
-            <View style={styles.weekStat}>
-              <Text style={styles.weekValue}>{weekStats.total_workouts || 0}</Text>
-              <Text style={styles.weekLabel}>Workouts</Text>
+          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
+          <View style={styles.breakdownCard}>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Most Active Day</Text>
+              <Text style={styles.breakdownValue}>{weekStats.most_common_activity || 'No data'}</Text>
             </View>
-            <View style={styles.weekStat}>
-              <Text style={styles.weekValue}>{weekStats.total_duration || 0}m</Text>
-              <Text style={styles.weekLabel}>Duration</Text>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Longest Workout</Text>
+              <Text style={styles.breakdownValue}>{Math.round((weekStats.longest_workout || 0) / 60)}m</Text>
             </View>
-            <View style={styles.weekStat}>
-              <Text style={styles.weekValue}>{weekStats.total_calories_burned || 0}</Text>
-              <Text style={styles.weekLabel}>Calories</Text>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Avg Calories/Workout</Text>
+              <Text style={styles.breakdownValue}>{Math.round(weekStats.average_calories || 0)}</Text>
             </View>
           </View>
         </View>
       )}
+
+      {/* Weekly Activity Chart */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Weekly Activity</Text>
+        <WeeklyActivityChart 
+          weeklyData={weeklyActivityData}
+          color="#3b82f6"
+        />
+      </View>
 
     </ScrollView>
   );
@@ -549,5 +534,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     textAlign: 'center',
+  },
+  // New week overview styles
+  weekOverviewCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  weekMetricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  weekMetric: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  weekMetricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  weekMetricLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  // Weekly breakdown styles
+  breakdownCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    flex: 1,
+  },
+  breakdownValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
   },
 });

@@ -13,6 +13,7 @@ import {
 import { hapticFeedback } from '../../utils/haptics';
 import EnhancedLoadingState from '../../components/ui/EnhancedLoadingState';
 import MobileOptimizedCard from '../../components/ui/MobileOptimizedCard';
+import DayAtAGlance from '../../components/ui/DayAtAGlance';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { dashboardService, DashboardSummary, QuickStats } from '../../services/dashboardService';
@@ -147,6 +148,7 @@ export default function DashboardScreen() {
     setShowLogMealModal(false);
     loadDashboardData(); // Refresh dashboard data
   };
+
 
 
   useEffect(() => {
@@ -333,80 +335,44 @@ export default function DashboardScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.greeting}>{getGreeting()}</Text>
-          <Text style={styles.userName}>{user?.full_name || 'User'}</Text>
-          <Text style={styles.motivation}>{getMotivationalMessage()}</Text>
+      {/* Hero Header */}
+      <View style={styles.heroHeader}>
+        <View style={styles.headerTop}>
+          <View style={styles.headerContent}>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.userName}>{user?.full_name || 'User'}</Text>
+            <Text style={styles.motivation}>{getMotivationalMessage()}</Text>
+          </View>
+          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+            <Ionicons name="log-out-outline" size={20} color="#6b7280" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={20} color="#6b7280" />
-        </TouchableOpacity>
+
+        {/* Day at a Glance */}
+        <DayAtAGlance
+          todayStats={{
+            workouts: data.summary?.today_stats?.workouts || 0,
+            meals: data.summary?.today_stats?.meals || 0,
+            water_ml: data.summary?.today_stats?.water_ml || 0,
+            calories_burned: data.summary?.today_stats?.calories_burned || 0,
+            calories_consumed: data.summary?.today_stats?.calories_consumed || 0,
+            streak: data.summary?.streak || 0,
+          }}
+          onWorkoutPress={() => {
+            // Navigate to fitness screen or open workout modal
+            console.log('Navigate to workouts');
+          }}
+          onMealPress={() => {
+            // Navigate to nutrition screen or open meal modal
+            console.log('Navigate to meals');
+          }}
+          onWaterPress={() => {
+            // Open water logging modal
+            console.log('Open water logging');
+          }}
+        />
       </View>
 
-      {/* Log Meal Button */}
-      <View style={styles.section}>
-        <TouchableOpacity 
-          style={styles.logMealButton} 
-          onPress={handleLogMeal}
-          activeOpacity={0.8}
-        >
-          <View style={styles.logMealContent}>
-            <View style={styles.logMealIcon}>
-              <Ionicons name="restaurant" size={24} color="#ffffff" />
-            </View>
-            <View style={styles.logMealText}>
-              <Text style={styles.logMealTitle}>Log Meal</Text>
-              <Text style={styles.logMealSubtitle}>Track your nutrition</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#ffffff" />
-          </View>
-        </TouchableOpacity>
-      </View>
-
-      {/* Today's Snapshot */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Snapshot</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.snapshotScroll}
-        >
-          <View style={styles.snapshotCard}>
-            <Ionicons name="fitness-outline" size={20} color="#f59e0b" />
-            <Text style={styles.snapshotValue}>{data.summary?.today_stats?.workouts || 0}</Text>
-            <Text style={styles.snapshotLabel}>Workouts</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="restaurant-outline" size={20} color="#10b981" />
-            <Text style={styles.snapshotValue}>{data.summary?.today_stats?.meals || 0}</Text>
-            <Text style={styles.snapshotLabel}>Meals</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="remove" size={12} color="#6b7280" />
-            </View>
-          </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="flame-outline" size={20} color="#ef4444" />
-            <Text style={styles.snapshotValue}>{data.summary?.today_stats?.calories_burned || 0}</Text>
-            <Text style={styles.snapshotLabel}>Calories</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="trophy-outline" size={20} color="#8b5cf6" />
-            <Text style={styles.snapshotValue}>{data.summary?.streak || 0}</Text>
-            <Text style={styles.snapshotLabel}>Streak</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-        </ScrollView>
-      </View>
 
       {/* Water Logging */}
       <WaterLoggingCard />
@@ -414,22 +380,6 @@ export default function DashboardScreen() {
       {/* Mood Logging */}
       <MoodLoggingCard />
 
-      {/* What's Next */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>What's Next</Text>
-        <View style={styles.nextCard}>
-          <View style={styles.nextContent}>
-            <Ionicons name="add-circle-outline" size={24} color="#10b981" />
-            <View style={styles.nextText}>
-              <Text style={styles.nextTitle}>Log Your Activities</Text>
-              <Text style={styles.nextSubtitle}>Use the + button to log workouts and meals</Text>
-            </View>
-          </View>
-          <View style={styles.nextButton}>
-            <Ionicons name="arrow-forward" size={16} color="#10b981" />
-          </View>
-        </View>
-      </View>
 
 
       {/* AI Health Insights */}
@@ -495,6 +445,7 @@ export default function DashboardScreen() {
         onMealLogged={handleMealLogged}
       />
 
+
     </ScrollView>
   );
 }
@@ -550,23 +501,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
-  header: {
+  heroHeader: {
+    backgroundColor: '#ffffff',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+    marginBottom: 16,
+    paddingBottom: 32,
+  },
+  headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', // Center align for better symmetry
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
-    backgroundColor: '#ffffff',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 8,
-    minHeight: 100, // Ensure consistent header height
   },
   headerContent: {
     flex: 1,
@@ -666,46 +619,6 @@ const styles = StyleSheet.create({
   },
   trendIndicator: {
     marginTop: 4,
-  },
-  nextCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  nextContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  nextText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  nextTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 2,
-  },
-  nextSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  nextButton: {
-    backgroundColor: '#f0fdf4',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   sectionTitle: {
     fontSize: 20,

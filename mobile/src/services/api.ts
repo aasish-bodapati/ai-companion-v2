@@ -4,6 +4,8 @@ import Constants from 'expo-constants';
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000';
 const API_BASE_URL = `${API_URL}/api/v1`;
 
+console.log('🌐 API Client: Base URL configured as:', API_BASE_URL);
+
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 10000,
@@ -23,11 +25,17 @@ apiClient.interceptors.request.use(
         const AsyncStorage = require('@react-native-async-storage/async-storage').default;
         const token = await AsyncStorage.getItem('token');
         
+        console.log('🔐 API Client: Token retrieved:', token ? 'YES' : 'NO');
+        console.log('🔐 API Client: Making request to:', config.url);
+        
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('🔐 API Client: Authorization header added');
+        } else {
+          console.log('🔐 API Client: No token or authorization already present');
         }
       } catch (error) {
-        // Silent fail for token retrieval
+        console.error('🔐 API Client: Error retrieving token:', error);
       }
     }
     

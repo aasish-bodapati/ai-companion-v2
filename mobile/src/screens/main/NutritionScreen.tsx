@@ -9,45 +9,79 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService } from '../../services/nutritionService';
+import { nutritionService, NutritionStats } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import LogMealModal from '../../components/nutrition/LogMealModal';
+import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
 export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
   const nutritionLogsRef = useRef<any>(null);
-  const [todayStats, setTodayStats] = useState({
-    meals: 0,
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
+  const [weekStats, setWeekStats] = useState<NutritionStats | null>(null);
+  const [weeklyActivityData, setWeeklyActivityData] = useState({
+    monday: 0,
+    tuesday: 0,
+    wednesday: 0,
+    thursday: 0,
+    friday: 0,
+    saturday: 0,
+    sunday: 0,
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadTodayStats = async () => {
+  const loadWeekStats = async () => {
+    try {
+      console.log('🍎 Loading nutrition week stats...');
+      const stats = await nutritionService.getNutritionStats('week');
+      console.log('✅ Nutrition week stats data:', stats);
+      setWeekStats(stats);
+    } catch (error) {
+      console.error('❌ Failed to load week stats:', error);
+      // Set fallback stats
+      setWeekStats({
+        total_meals: 0,
+        total_calories: 0,
+        average_daily_calories: 0,
+        macro_breakdown: {
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        },
+        streak: 0,
+        weekly_goal_progress: 0,
+      });
+    }
+  };
+
+  const loadWeeklyActivityData = async () => {
+    try {
+      console.log('📊 Loading nutrition weekly activity data...');
+      const data = await nutritionService.getWeeklyNutritionActivityData();
+      console.log('✅ Nutrition weekly activity data:', data);
+      setWeeklyActivityData(data);
+    } catch (error) {
+      console.error('❌ Failed to load weekly activity data:', error);
+      // Set fallback data
+      setWeeklyActivityData({
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      });
+    }
+  };
+
+  const loadOverviewData = async () => {
     try {
       setLoading(true);
-      const response = await nutritionService.getTodayNutrition();
-      setTodayStats({
-        meals: response.meals || 0,
-        calories: response.calories || 0,
-        protein: response.protein || 0,
-        carbs: response.carbs || 0,
-        fat: response.fat || 0,
-      });
+      await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
     } catch (error) {
-      console.error('Failed to load today\'s nutrition:', error);
-      // Set fallback data if API fails
-      setTodayStats({
-        meals: 0,
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-      });
+      console.error('Failed to load overview data:', error);
     } finally {
       setLoading(false);
     }
@@ -55,12 +89,12 @@ export default function NutritionScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadTodayStats();
+    await loadOverviewData();
     setRefreshing(false);
   };
 
   useEffect(() => {
-    loadTodayStats();
+    loadOverviewData();
   }, []);
 
   const StatCard = ({ icon, title, value, subtitle, color }: {
@@ -91,109 +125,71 @@ export default function NutritionScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-
-      {/* Today's Snapshot */}
+      {/* This Week's Nutrition Overview */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Today's Snapshot</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.snapshotScroll}
-        >
-          <View style={styles.snapshotCard}>
-            <Ionicons name="restaurant-outline" size={20} color="#10b981" />
-            <Text style={styles.snapshotValue}>{todayStats.meals}</Text>
-            <Text style={styles.snapshotLabel}>Meals</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
+        <Text style={styles.sectionTitle}>This Week's Nutrition</Text>
+        <View style={styles.weekOverviewCard}>
+          <View style={styles.weekMetricRow}>
+            <View style={styles.weekMetric}>
+              <Ionicons name="restaurant-outline" size={24} color="#10b981" />
+              <Text style={styles.weekMetricValue}>{weekStats?.total_meals || 0}</Text>
+              <Text style={styles.weekMetricLabel}>Meals</Text>
+            </View>
+            <View style={styles.weekMetric}>
+              <Ionicons name="flame-outline" size={24} color="#ef4444" />
+              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.total_calories || 0)}</Text>
+              <Text style={styles.weekMetricLabel}>Calories</Text>
             </View>
           </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="flame-outline" size={20} color="#ef4444" />
-            <Text style={styles.snapshotValue}>{todayStats.calories}</Text>
-            <Text style={styles.snapshotLabel}>Calories</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
+          
+          <View style={styles.weekMetricRow}>
+            <View style={styles.weekMetric}>
+              <Ionicons name="fitness-outline" size={24} color="#3b82f6" />
+              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.macro_breakdown?.protein || 0)}g</Text>
+              <Text style={styles.weekMetricLabel}>Protein</Text>
+            </View>
+            <View style={styles.weekMetric}>
+              <Ionicons name="analytics-outline" size={24} color="#f59e0b" />
+              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.average_daily_calories || 0)}</Text>
+              <Text style={styles.weekMetricLabel}>Avg Daily</Text>
             </View>
           </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="fitness-outline" size={20} color="#3b82f6" />
-            <Text style={styles.snapshotValue}>{todayStats.protein.toFixed(0)}g</Text>
-            <Text style={styles.snapshotLabel}>Protein</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-          <View style={styles.snapshotCard}>
-            <Ionicons name="analytics-outline" size={20} color="#f59e0b" />
-            <Text style={styles.snapshotValue}>{todayStats.carbs.toFixed(0)}g</Text>
-            <Text style={styles.snapshotLabel}>Carbs</Text>
-            <View style={styles.trendIndicator}>
-              <Ionicons name="trending-up" size={12} color="#10b981" />
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Quick Meals */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Meals</Text>
-        <View style={styles.quickMealsScroll}>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <Ionicons name="cafe" size={24} color="#f59e0b" />
-            <Text style={styles.quickMealTitle}>Breakfast</Text>
-            <Text style={styles.quickMealCount}>5 recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <Ionicons name="sunny" size={24} color="#ef4444" />
-            <Text style={styles.quickMealTitle}>Lunch</Text>
-            <Text style={styles.quickMealCount}>12 recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <Ionicons name="moon" size={24} color="#8b5cf6" />
-            <Text style={styles.quickMealTitle}>Dinner</Text>
-            <Text style={styles.quickMealCount}>18 recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <Ionicons name="ice-cream" size={24} color="#ec4899" />
-            <Text style={styles.quickMealTitle}>Snacks</Text>
-            <Text style={styles.quickMealCount}>8 recipes</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
-      {/* Macro Breakdown */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Macro Breakdown</Text>
-        <View style={styles.macroCard}>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { backgroundColor: '#3b82f6' }]}>
-              <View style={[styles.macroFill, { width: `${Math.min((todayStats.protein / 100) * 100, 100)}%` }]} />
+      {/* Weekly Nutrition Breakdown */}
+      {weekStats && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
+          <View style={styles.breakdownCard}>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Macro Balance</Text>
+              <Text style={styles.breakdownValue}>
+                P: {Math.round(weekStats.macro_breakdown?.protein || 0)}g | 
+                C: {Math.round(weekStats.macro_breakdown?.carbs || 0)}g | 
+                F: {Math.round(weekStats.macro_breakdown?.fat || 0)}g
+              </Text>
             </View>
-            <View style={styles.macroInfo}>
-              <Text style={styles.macroLabel}>Protein</Text>
-              <Text style={styles.macroValue}>{todayStats.protein.toFixed(1)}g</Text>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Weekly Goal Progress</Text>
+              <Text style={styles.breakdownValue}>{Math.round(weekStats.weekly_goal_progress || 0)}%</Text>
             </View>
-          </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { backgroundColor: '#f59e0b' }]}>
-              <View style={[styles.macroFill, { width: `${Math.min((todayStats.carbs / 200) * 100, 100)}%` }]} />
-            </View>
-            <View style={styles.macroInfo}>
-              <Text style={styles.macroLabel}>Carbs</Text>
-              <Text style={styles.macroValue}>{todayStats.carbs.toFixed(1)}g</Text>
-            </View>
-          </View>
-          <View style={styles.macroItem}>
-            <View style={[styles.macroBar, { backgroundColor: '#8b5cf6' }]}>
-              <View style={[styles.macroFill, { width: `${Math.min((todayStats.fat / 60) * 100, 100)}%` }]} />
-            </View>
-            <View style={styles.macroInfo}>
-              <Text style={styles.macroLabel}>Fat</Text>
-              <Text style={styles.macroValue}>{todayStats.fat.toFixed(1)}g</Text>
+            <View style={styles.breakdownItem}>
+              <Text style={styles.breakdownLabel}>Current Streak</Text>
+              <Text style={styles.breakdownValue}>{weekStats.streak || 0} days</Text>
             </View>
           </View>
         </View>
+      )}
+
+      {/* Weekly Activity Chart */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Weekly Activity</Text>
+        <WeeklyNutritionChart 
+          weeklyData={weeklyActivityData}
+          color="#10b981"
+          unit="meals"
+        />
       </View>
     </ScrollView>
   );
@@ -444,7 +440,7 @@ export default function NutritionScreen() {
         onClose={() => setShowLogMealModal(false)}
         onMealLogged={() => {
           setShowLogMealModal(false);
-          loadTodayStats();
+          loadOverviewData();
           // Refresh logs if we're on the logs tab
           if (activeTab === 'logs' && nutritionLogsRef.current) {
             nutritionLogsRef.current.refreshLogs();
@@ -885,5 +881,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  // New week overview styles
+  weekOverviewCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  weekMetricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  weekMetric: {
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  weekMetricValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  weekMetricLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  // Weekly breakdown styles
+  breakdownCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  breakdownLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    flex: 1,
+  },
+  breakdownValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
   },
 });

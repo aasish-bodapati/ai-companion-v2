@@ -12,27 +12,65 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import MobileOptimizedCard from '../../components/ui/MobileOptimizedCard';
 import TouchOptimizedButton from '../../components/ui/TouchOptimizedButton';
-import EditHealthDataModal from '../../components/profile/EditHealthDataModal';
 import EditGoalsModal from '../../components/profile/EditGoalsModal';
+import EditPreferencesModal from '../../components/profile/EditPreferencesModal';
 import TimezoneSelector from '../../components/profile/TimezoneSelector';
 import { onboardingService, OnboardingData, HealthData } from '../../services/onboardingService';
+import { profileService, UserProfile } from '../../services/profileService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 
 export default function EnhancedProfileScreen() {
-  const { user, logout, rerunOnboarding, updateUser } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showHealthDataModal, setShowHealthDataModal] = useState(false);
   const [showGoalsModal, setShowGoalsModal] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   const loadOnboardingData = useCallback(async () => {
     try {
-      const data = await onboardingService.loadOnboardingData();
-      setOnboardingData(data);
+      console.log('📝 ProfileScreen: Loading profile data from backend...');
+      
+      // First try to get data from backend
+      const profileData = await profileService.getUserProfile();
+      
+      if (profileData) {
+        console.log('📝 ProfileScreen: Got profile data from backend:', profileData);
+        const onboardingData = profileService.convertToOnboardingData(profileData);
+        setOnboardingData(onboardingData);
+        
+        // Also save to local storage for offline access
+        await onboardingService.saveOnboardingData(onboardingData);
+      } else {
+        // Fallback to local data
+        console.log('📝 ProfileScreen: No backend data, trying local storage...');
+        let data = await onboardingService.loadOnboardingData();
+        
+        if (!data) {
+          console.log('📝 ProfileScreen: No local data either, creating sample data...');
+          data = {
+            healthData: {
+              age: '25',
+              height: '175',
+              weight: '70',
+              gender: 'male',
+              activityLevel: 'moderate',
+            },
+            goals: ['Weight Loss', 'Better Health', 'Improved Fitness'],
+            preferences: {
+              notifications: true,
+              reminders: true,
+              dataSharing: false,
+            },
+          };
+          await onboardingService.saveOnboardingData(data);
+        }
+        
+        setOnboardingData(data);
+      }
     } catch (error) {
-      console.error('Failed to load onboarding data:', error);
+      console.error('Failed to load profile data:', error);
       showToast.error('Error', 'Failed to load profile data');
     } finally {
       setLoading(false);
@@ -68,7 +106,8 @@ export default function EnhancedProfileScreen() {
 
   const handleEditHealthData = () => {
     hapticFeedback.medium();
-    setShowHealthDataModal(true);
+    console.log('📝 ProfileScreen: Opening preferences modal with data:', onboardingData);
+    setShowPreferencesModal(true);
   };
 
   const handleEditGoals = () => {
@@ -82,40 +121,37 @@ export default function EnhancedProfileScreen() {
     showToast.info('Coming Soon', 'Preferences editing will be available soon');
   };
 
-  const handleHealthDataSave = (healthData: HealthData) => {
-    setOnboardingData(prev => prev ? { ...prev, healthData } : null);
-    setShowHealthDataModal(false);
-  };
 
   const handleGoalsSave = (goals: string[]) => {
     setOnboardingData(prev => prev ? { ...prev, goals } : null);
     setShowGoalsModal(false);
   };
 
-  const handleRerunOnboarding = () => {
-    console.log('🔄 ProfileScreen handleRerunOnboarding called');
-    Alert.alert(
-      'Rerun Onboarding',
-      'This will take you through the setup process again. Your current data will be preserved. Continue?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Continue',
-          style: 'default',
-          onPress: async () => {
-            console.log('🔄 ProfileScreen rerun onboarding confirmed');
-            hapticFeedback.medium();
-            await rerunOnboarding();
-            console.log('🔄 ProfileScreen rerun onboarding completed');
-            showToast.success('Onboarding', 'Setup process will restart');
-          },
-        },
-      ]
-    );
+  const handlePreferencesSave = async (data: OnboardingData) => {
+    try {
+      // Save to local storage
+      await onboardingService.saveOnboardingData(data);
+      setOnboardingData(data);
+      
+      // Also save to backend
+      const profileData = profileService.convertToProfileData(data);
+      const updatedProfile = await profileService.updateUserProfile(profileData);
+      
+      if (updatedProfile) {
+        console.log('📝 ProfileScreen: Successfully updated backend profile');
+        showToast.success('Success', 'Preferences updated successfully');
+      } else {
+        console.log('📝 ProfileScreen: Failed to update backend, but local data saved');
+        showToast.info('Info', 'Preferences saved locally (offline)');
+      }
+      
+      setShowPreferencesModal(false);
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      showToast.error('Error', 'Failed to save preferences');
+    }
   };
+
 
   const ProfileItem = ({ 
     icon, 
@@ -170,7 +206,10 @@ export default function EnhancedProfileScreen() {
       >
         <View style={styles.healthDataHeader}>
           <Ionicons name="fitness-outline" size={24} color="#10b981" />
-          <Text style={styles.healthDataTitle}>Health Information</Text>
+          <View style={styles.healthDataTitleContainer}>
+            <Text style={styles.healthDataTitle}>Health Information</Text>
+            <Text style={styles.healthDataSubtitle}>Tap to edit preferences</Text>
+          </View>
           <TouchableOpacity onPress={handleEditHealthData}>
             <Ionicons name="pencil" size={20} color="#6b7280" />
           </TouchableOpacity>
@@ -371,13 +410,6 @@ export default function EnhancedProfileScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <ProfileItem
-          icon="refresh-outline"
-          title="Re-run Onboarding"
-          subtitle="Update your health information and goals"
-          onPress={handleRerunOnboarding}
-          color="#3b82f6"
-        />
-        <ProfileItem
           icon="download-outline"
           title="Export Data"
           subtitle="Download your health data"
@@ -436,18 +468,18 @@ export default function EnhancedProfileScreen() {
       <View style={styles.bottomSpacing} />
 
       {/* Modals */}
-      <EditHealthDataModal
-        visible={showHealthDataModal}
-        onClose={() => setShowHealthDataModal(false)}
-        onSave={handleHealthDataSave}
-        initialData={onboardingData?.healthData}
-      />
-
       <EditGoalsModal
         visible={showGoalsModal}
         onClose={() => setShowGoalsModal(false)}
         onSave={handleGoalsSave}
         initialGoals={onboardingData?.goals}
+      />
+
+      <EditPreferencesModal
+        visible={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
+        onSave={handlePreferencesSave}
+        initialData={onboardingData}
       />
     </ScrollView>
   );
@@ -557,12 +589,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  healthDataTitleContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
   healthDataTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#1f2937',
-    marginLeft: 12,
-    flex: 1,
+  },
+  healthDataSubtitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
   },
   healthDataContent: {
     gap: 12,

@@ -15,6 +15,8 @@ import { fitnessService } from '../../services/fitnessService';
 import { nutritionService } from '../../services/nutritionService';
 import { waterService } from '../../services/waterService';
 import { moodService } from '../../services/moodService';
+import ProgressLineChart from '../../components/ui/ProgressLineChart';
+import SimpleChart from '../../components/ui/SimpleChart';
 
 interface RealTimeData {
   todayStats: any;
@@ -482,90 +484,138 @@ export default function AnalyticsScreen() {
   const renderOverviewTab = () => {
     if (!data) return null;
 
-    const { todayStats, weeklyStats } = data;
+    const { todayStats, weeklyStats, fitnessLogs, nutritionLogs, waterLogs } = data;
+    
+    // Calculate weekly activity data for charts
+    const weeklyActivity = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      
+      const dayWorkouts = fitnessLogs.filter(log => {
+        const logDate = new Date(log.activity_date || log.created_at);
+        return logDate.toDateString() === date.toDateString();
+      }).length;
+      
+      const dayMeals = nutritionLogs.filter(log => {
+        const logDate = new Date(log.meal_date || log.created_at);
+        return logDate.toDateString() === date.toDateString();
+      }).length;
+      
+      return {
+        label: dayName,
+        value: dayWorkouts + dayMeals,
+        color: '#3b82f6'
+      };
+    });
+
+    // Calculate macro breakdown
+    const totalCalories = nutritionLogs.reduce((sum, log) => sum + (log.total_calories || 0), 0);
+    const totalProtein = nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
+    const totalCarbs = nutritionLogs.reduce((sum, log) => sum + (log.carbs_g || 0), 0);
+    const totalFat = nutritionLogs.reduce((sum, log) => sum + (log.fat_g || 0), 0);
+    
+    const macroData = [
+      { label: 'Protein', value: totalProtein, color: '#ef4444' },
+      { label: 'Carbs', value: totalCarbs, color: '#3b82f6' },
+      { label: 'Fat', value: totalFat, color: '#f59e0b' },
+    ];
     
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Today's Summary */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Today's Summary</Text>
-          <View style={styles.metricRow}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.workouts || 0}</Text>
-              <Text style={styles.metricLabel}>Workouts</Text>
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.meals || 0}</Text>
-              <Text style={styles.metricLabel}>Meals</Text>
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.water_ml || 0}ml</Text>
-              <Text style={styles.metricLabel}>Water</Text>
-            </View>
+        {/* Progress Line Charts */}
+        <View style={styles.progressGrid}>
+          <View style={styles.progressCardWrapper}>
+            <ProgressLineChart
+              title="Workouts"
+              current={todayStats.workouts || 0}
+              goal={3}
+              unit="sessions"
+              color="#f59e0b"
+              icon="fitness"
+              trend="up"
+              trendValue={Math.round(weeklyStats.workout_progress || 0)}
+              size="small"
+            />
+          </View>
+          <View style={styles.progressCardWrapper}>
+            <ProgressLineChart
+              title="Meals"
+              current={todayStats.meals || 0}
+              goal={3}
+              unit="meals"
+              color="#10b981"
+              icon="restaurant"
+              trend="up"
+              trendValue={Math.round(weeklyStats.meal_progress || 0)}
+              size="small"
+            />
+          </View>
+          <View style={styles.progressCardWrapper}>
+            <ProgressLineChart
+              title="Water"
+              current={Math.round((todayStats.water_ml || 0) / 250)}
+              goal={8}
+              unit="glasses"
+              color="#3b82f6"
+              icon="water"
+              size="small"
+            />
+          </View>
+          <View style={styles.progressCardWrapper}>
+            <ProgressLineChart
+              title="Streak"
+              current={todayStats.streak || 0}
+              goal={7}
+              unit="days"
+              color="#8b5cf6"
+              icon="flame"
+              size="small"
+            />
           </View>
         </View>
 
-        {/* Weekly Progress */}
+        {/* Weekly Activity Chart */}
+        <SimpleChart
+          title="Weekly Activity"
+          data={weeklyActivity}
+          type="bar"
+          height={180}
+        />
+
+        {/* Macro Breakdown Chart */}
+        <SimpleChart
+          title="Macro Breakdown (This Week)"
+          data={macroData}
+          type="donut"
+          height={200}
+        />
+
+        {/* Quick Stats */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Weekly Progress</Text>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressItem}>
-              <Text style={styles.progressLabel}>Workouts</Text>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${Math.min(weeklyStats.workout_progress || 0, 100)}%` }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {weeklyStats.workouts_completed || 0}/{weeklyStats.workouts_target || 0}
+          <Text style={styles.sectionTitle}>Quick Stats</Text>
+          <View style={styles.quickStatsGrid}>
+            <View style={styles.quickStatItem}>
+              <Ionicons name="time" size={24} color="#6b7280" />
+              <Text style={styles.quickStatValue}>
+                {Math.round(weeklyStats.total_minutes_this_week || 0)} min
               </Text>
+              <Text style={styles.quickStatLabel}>This Week</Text>
             </View>
-            <View style={styles.progressItem}>
-              <Text style={styles.progressLabel}>Meals</Text>
-              <View style={styles.progressBar}>
-                <View 
-                  style={[
-                    styles.progressFill, 
-                    { width: `${Math.min(weeklyStats.meal_progress || 0, 100)}%` }
-                  ]} 
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {weeklyStats.meals_logged || 0}/{weeklyStats.meals_target || 0}
+            <View style={styles.quickStatItem}>
+              <Ionicons name="flame" size={24} color="#6b7280" />
+              <Text style={styles.quickStatValue}>
+                {Math.round(totalCalories)}
               </Text>
+              <Text style={styles.quickStatLabel}>Calories</Text>
             </View>
-          </View>
-        </View>
-
-        {/* Health Metrics */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Health Metrics</Text>
-          <View style={styles.metricRow}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.total_minutes || 0}</Text>
-              <Text style={styles.metricLabel}>Minutes</Text>
+            <View style={styles.quickStatItem}>
+              <Ionicons name="trophy" size={24} color="#6b7280" />
+              <Text style={styles.quickStatValue}>
+                {Math.round(weeklyStats.overall_progress || 0)}%
+              </Text>
+              <Text style={styles.quickStatLabel}>Progress</Text>
             </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.calories_burned || 0}</Text>
-              <Text style={styles.metricLabel}>Calories Burned</Text>
-            </View>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{todayStats.calories_consumed || 0}</Text>
-              <Text style={styles.metricLabel}>Calories Consumed</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Streak */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Current Streak</Text>
-          <View style={styles.streakContainer}>
-            <Ionicons name="flame" size={32} color="#f59e0b" />
-            <Text style={styles.streakValue}>{weeklyStats.streak || 0} days</Text>
-            <Text style={styles.streakLabel}>Keep it up!</Text>
           </View>
         </View>
       </ScrollView>
@@ -1163,5 +1213,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     marginTop: 2,
+  },
+  // New styles for improved visualization
+  progressGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 8,
+  },
+  quickStatsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+  },
+  quickStatItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  quickStatValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  quickStatLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  progressCardWrapper: {
+    width: '48%',
+    marginBottom: 8,
   },
 });

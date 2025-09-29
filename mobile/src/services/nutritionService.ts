@@ -193,8 +193,24 @@ export const nutritionService = {
   // Statistics and Analytics
   async getNutritionStats(period: 'week' | 'month' | 'all' = 'week') {
     try {
-      const response = await apiClient.get(`/health/nutrition-logs/stats?period=${period}`);
-      return response.data;
+      // Use the working nutrition logs endpoint and transform the data
+      const response = await apiClient.get('/health/nutrition-logs/');
+      const data = response.data;
+      const stats = data.stats || {};
+      
+      // Transform backend response to match frontend interface
+      return {
+        total_meals: stats.totalMeals || 0,
+        total_calories: stats.totalCalories || 0,
+        average_daily_calories: stats.avgCaloriesPerMeal || 0,
+        macro_breakdown: {
+          protein: stats.totalProtein || 0,
+          carbs: stats.totalCarbs || 0,
+          fat: stats.totalFat || 0,
+        },
+        streak: stats.currentStreak || 0,
+        weekly_goal_progress: 0, // Not available in current data
+      };
     } catch (error) {
       console.error('Failed to get nutrition stats:', error);
       throw error;
@@ -218,6 +234,63 @@ export const nutritionService = {
     } catch (error) {
       console.error('Failed to get weekly nutrition:', error);
       throw error;
+    }
+  },
+
+  // Get weekly nutrition activity data for chart
+  async getWeeklyNutritionActivityData(): Promise<{
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  }> {
+    try {
+      const response = await apiClient.get('/health/nutrition-logs/');
+      const data = response.data;
+      const logs = data.logs || [];
+      
+      // Initialize weekly data
+      const weeklyData = {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
+      
+      // Process each log
+      logs.forEach((log: any, index: number) => {
+        const date = new Date(log.logged_at || log.created_at);
+        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Convert to our format (Monday = 0, Sunday = 6)
+        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        const dayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        
+        if (dayKeys[dayIndex]) {
+          weeklyData[dayKeys[dayIndex] as keyof typeof weeklyData]++;
+          console.log(`🍎 Log ${index + 1}: ${log.logged_at || log.created_at} -> ${dayKeys[dayIndex]} (getDay: ${dayOfWeek}, dayIndex: ${dayIndex})`);
+        }
+      });
+      
+      return weeklyData;
+    } catch (error) {
+      console.error('Failed to fetch weekly nutrition activity data:', error);
+      // Return empty data on error
+      return {
+        monday: 0,
+        tuesday: 0,
+        wednesday: 0,
+        thursday: 0,
+        friday: 0,
+        saturday: 0,
+        sunday: 0,
+      };
     }
   },
 
