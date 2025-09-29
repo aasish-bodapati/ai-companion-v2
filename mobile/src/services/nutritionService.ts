@@ -1,7 +1,7 @@
 import { apiClient } from './api';
 
 export interface FoodItem {
-  id: string | number;
+  id: number;
   name: string;
   brand?: string;
   barcode?: string;
@@ -20,8 +20,8 @@ export interface FoodItem {
 }
 
 export interface MealLog {
-  id: string;
-  food_id: string;
+  id: number;
+  food_id: number;
   food_name: string;
   quantity: number;
   unit: string;
@@ -48,7 +48,7 @@ export interface NutritionStats {
 }
 
 export interface NutritionGoal {
-  id: string;
+  id: number;
   title: string;
   target_calories: number;
   target_protein: number;
@@ -126,7 +126,7 @@ export const nutritionService = {
     meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
     total_calories: number;
     food_items: Array<{
-      food_id: string;
+      food_id: number;
       food_name: string;
       quantity_grams: number;
       calories: number;
@@ -166,7 +166,7 @@ export const nutritionService = {
     }
   },
 
-  async updateMealLog(logId: string, updateData: {
+  async updateMealLog(logId: number, updateData: {
     quantity?: number;
     unit?: string;
     meal_type?: string;
@@ -181,7 +181,7 @@ export const nutritionService = {
     }
   },
 
-  async deleteMealLog(logId: string) {
+  async deleteMealLog(logId: number) {
     try {
       await apiClient.delete(`/health/nutrition-logs/${logId}`);
     } catch (error) {

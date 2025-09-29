@@ -66,12 +66,41 @@ export default function LogWorkoutModal({
     }
   };
 
+  // Exercise categories with colors
+  const EXERCISE_CATEGORIES = {
+    bodyweight: {
+      name: 'Bodyweight',
+      icon: 'person-outline',
+      color: '#3b82f6',
+    },
+    weighted: {
+      name: 'Weighted',
+      icon: 'barbell-outline', 
+      color: '#ef4444',
+    },
+    cardio_duration: {
+      name: 'Cardio',
+      icon: 'heart-outline',
+      color: '#10b981',
+    },
+    distance_based: {
+      name: 'Distance',
+      icon: 'walk-outline',
+      color: '#8b5cf6',
+    },
+    general: {
+      name: 'General',
+      icon: 'fitness-outline',
+      color: '#6b7280',
+    },
+  };
+
   // Look up exercise category from database
   const getExerciseCategory = (exerciseName: string) => {
     const exercise = exerciseDatabase.find(ex => 
       ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
     );
-    return exercise?.logging_category || 'GENERAL';
+    return exercise?.logging_category || 'general';
   };
 
   // Keyboard event listeners
@@ -430,17 +459,23 @@ export default function LogWorkoutModal({
                       </Text>
                       
                       <View style={styles.exerciseActionsGroup}>
-                        <View style={styles.exerciseCategoryBadge}>
-                          <Ionicons 
-                            name="barbell-outline" 
-                            size={10} 
-                            color={COLORS.background.primary}
-                            style={styles.badgeIcon}
-                          />
-                          <Text style={styles.exerciseCategoryText}>
-                            {getExerciseCategory(exercise.exercise_name).toUpperCase()}
-                          </Text>
-                        </View>
+                        {(() => {
+                          const category = getExerciseCategory(exercise.exercise_name);
+                          const categoryConfig = EXERCISE_CATEGORIES[category as keyof typeof EXERCISE_CATEGORIES] || EXERCISE_CATEGORIES.general;
+                          return (
+                            <View style={[styles.exerciseCategoryBadge, { backgroundColor: categoryConfig.color, borderColor: categoryConfig.color }]}>
+                              <Ionicons 
+                                name={categoryConfig.icon as any} 
+                                size={10} 
+                                color={COLORS.background.primary}
+                                style={styles.badgeIcon}
+                              />
+                              <Text style={styles.exerciseCategoryText}>
+                                {categoryConfig.name.toUpperCase()}
+                              </Text>
+                            </View>
+                          );
+                        })()}
                         
                         {/* Add Exercise Button */}
                         <TouchableOpacity
@@ -842,14 +877,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   exerciseCategoryBadge: {
-    backgroundColor: COLORS.primary,
     borderRadius: 6,
     paddingHorizontal: 4,
     paddingVertical: 2,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.primary,
   },
   badgeIcon: {
     marginRight: 2,

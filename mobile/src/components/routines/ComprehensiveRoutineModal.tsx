@@ -25,7 +25,7 @@ interface Exercise {
 }
 
 interface Workout {
-  id: string;
+  id: number;
   exercise: Exercise | null;
 }
 
@@ -77,7 +77,7 @@ export default function ComprehensiveRoutineModal({
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
-  const [currentWorkoutId, setCurrentWorkoutId] = useState<string | null>(null);
+  const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
 
   const resetForm = () => {
     setRoutineName('');
@@ -162,7 +162,7 @@ export default function ComprehensiveRoutineModal({
 
   const addWorkout = (dayIndex: number) => {
     const newWorkout: Workout = {
-      id: Date.now().toString(),
+      id: Date.now(),
       exercise: null,
     };
 
@@ -171,7 +171,7 @@ export default function ComprehensiveRoutineModal({
     setDayWorkouts(updatedDayWorkouts);
   };
 
-  const removeWorkout = (dayIndex: number, workoutId: string) => {
+  const removeWorkout = (dayIndex: number, workoutId: number) => {
     const updatedDayWorkouts = [...dayWorkouts];
     updatedDayWorkouts[dayIndex].workouts = updatedDayWorkouts[dayIndex].workouts.filter(
       workout => workout.id !== workoutId

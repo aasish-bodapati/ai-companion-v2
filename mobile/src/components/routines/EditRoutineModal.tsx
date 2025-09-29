@@ -25,7 +25,7 @@ interface Exercise {
 }
 
 interface Workout {
-  id: string;
+  id: number;
   exercise: Exercise | null;
 }
 
@@ -80,7 +80,7 @@ export default function EditRoutineModal({
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
-  const [currentWorkoutId, setCurrentWorkoutId] = useState<string | null>(null);
+  const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
 
   // Load routine data when modal opens
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function EditRoutineModal({
               if (dayIndex !== -1) {
                 if (workoutDay.exercises && Array.isArray(workoutDay.exercises)) {
                   convertedDayWorkouts[dayIndex].workouts = (workoutDay.exercises as any[]).map((exercise: any, index: number) => ({
-                    id: `${dayIndex}-${index}`,
+                    id: dayIndex * 1000 + index, // Generate unique number ID
                     exercise: {
                       id: 0, // We don't have exercise ID in the routine data
                       name: exercise.exercise_name,
@@ -231,7 +231,7 @@ export default function EditRoutineModal({
 
   const addWorkout = (dayIndex: number) => {
     const newWorkout: Workout = {
-      id: Date.now().toString(),
+      id: Date.now(),
       exercise: null,
     };
 
@@ -240,7 +240,7 @@ export default function EditRoutineModal({
     setDayWorkouts(updatedDayWorkouts);
   };
 
-  const removeWorkout = (dayIndex: number, workoutId: string) => {
+  const removeWorkout = (dayIndex: number, workoutId: number) => {
     const updatedDayWorkouts = [...dayWorkouts];
     updatedDayWorkouts[dayIndex].workouts = updatedDayWorkouts[dayIndex].workouts.filter(
       workout => workout.id !== workoutId

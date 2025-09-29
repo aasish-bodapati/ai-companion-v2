@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
 
 interface MealLog {
-  id: string;
+  id: number;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   meal_name?: string;
   total_calories: number;
@@ -24,7 +24,7 @@ interface MealLog {
   logged_at?: string; // API actually returns this field
   created_at: string;
   food_items?: {
-    id: string;
+    id: number;
     food_name: string;
     quantity_grams: number;
     calories: number;
@@ -50,7 +50,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [editingLog, setEditingLog] = useState<MealLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editNotes, setEditNotes] = useState('');
-  const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
+  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [navigating, setNavigating] = useState(false);
@@ -164,7 +164,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     }
   };
 
-  const handleDeleteLog = async (logId: string) => {
+  const handleDeleteLog = async (logId: number) => {
     Alert.alert(
       'Delete Meal Log',
       'Are you sure you want to delete this meal log? This action cannot be undone.',
@@ -182,7 +182,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     );
   };
 
-  const confirmDeleteLog = async (logId: string) => {
+  const confirmDeleteLog = async (logId: number) => {
     try {
       setDeletingLogId(logId);
       
@@ -284,7 +284,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             <View style={styles.mealTimeContainer}>
               <Ionicons name="time-outline" size={14} color="#6b7280" />
               <Text style={styles.mealTime}>
-                {formatTime(log.logged_at || log.meal_date)}
+                {formatTime(log.logged_at || log.meal_date || '')}
               </Text>
             </View>
             <View style={styles.actionButtons}>

@@ -7,8 +7,8 @@ export interface HealthData {
 }
 
 export interface HealthProfile {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   age?: number;
   height?: number;
   weight?: number;
@@ -22,13 +22,13 @@ export interface HealthProfile {
 
 export interface HealthInsights {
   achievements: {
-    id: string;
+    id: number;
     title: string;
     description: string;
     unlocked_at: string;
   }[];
   tips: {
-    id: string;
+    id: number;
     title: string;
     message: string;
     category: string;

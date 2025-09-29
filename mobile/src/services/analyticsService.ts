@@ -65,6 +65,7 @@ export interface DashboardData {
   trends: WeeklyTrends;
   correlations: CorrelationData;
   recommendations: RecommendationsData;
+  overall_health_score?: number;
   generated_at: string;
 }
 

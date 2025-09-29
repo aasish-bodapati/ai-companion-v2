@@ -16,7 +16,7 @@ interface RoutineDashboardProps {
   onRoutineSelected?: () => void;
   onCreateRoutine?: () => void;
   onEditRoutine?: (routine: SimpleRoutineWithProgress) => void;
-  onDeleteRoutine?: (routineId: string) => void;
+  onDeleteRoutine?: (routineId: number) => void;
 }
 
 
@@ -29,7 +29,7 @@ export default function RoutineDashboard({
   const [routines, setRoutines] = useState<SimpleRoutineWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const loadData = async () => {
     try {
@@ -53,7 +53,7 @@ export default function RoutineDashboard({
     loadData();
   }, []);
 
-  const handleStartRoutine = async (routineId: string) => {
+  const handleStartRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
       await routineService.startRoutine(routineId);
@@ -66,7 +66,7 @@ export default function RoutineDashboard({
     }
   };
 
-  const handleStopRoutine = async (routineId: string) => {
+  const handleStopRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
       await routineService.stopRoutine(routineId);
@@ -78,7 +78,7 @@ export default function RoutineDashboard({
     }
   };
 
-  const handleDeleteRoutine = async (routineId: string) => {
+  const handleDeleteRoutine = async (routineId: number) => {
     Alert.alert(
       'Delete Routine',
       'Are you sure you want to delete this routine? This action cannot be undone.',

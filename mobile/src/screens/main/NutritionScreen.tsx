@@ -14,7 +14,7 @@ import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import LogMealModal from '../../components/nutrition/LogMealModal';
 
 export default function NutritionScreen() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'routines'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
   const nutritionLogsRef = useRef<any>(null);
   const [todayStats, setTodayStats] = useState({
@@ -130,26 +130,26 @@ export default function NutritionScreen() {
       {/* Quick Meals */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Quick Meals</Text>
-        <View style={styles.quickMealsGrid}>
+        <View style={styles.quickMealsScroll}>
           <TouchableOpacity style={styles.quickMealCard}>
             <Ionicons name="cafe" size={24} color="#f59e0b" />
             <Text style={styles.quickMealTitle}>Breakfast</Text>
-            <Text style={styles.quickMealSubtitle}>5 recipes</Text>
+            <Text style={styles.quickMealCount}>5 recipes</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickMealCard}>
             <Ionicons name="sunny" size={24} color="#ef4444" />
             <Text style={styles.quickMealTitle}>Lunch</Text>
-            <Text style={styles.quickMealSubtitle}>12 recipes</Text>
+            <Text style={styles.quickMealCount}>12 recipes</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickMealCard}>
             <Ionicons name="moon" size={24} color="#8b5cf6" />
             <Text style={styles.quickMealTitle}>Dinner</Text>
-            <Text style={styles.quickMealSubtitle}>18 recipes</Text>
+            <Text style={styles.quickMealCount}>18 recipes</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickMealCard}>
             <Ionicons name="ice-cream" size={24} color="#ec4899" />
             <Text style={styles.quickMealTitle}>Snacks</Text>
-            <Text style={styles.quickMealSubtitle}>8 recipes</Text>
+            <Text style={styles.quickMealCount}>8 recipes</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -190,83 +190,161 @@ export default function NutritionScreen() {
     </ScrollView>
   );
 
-  const renderRoutines = () => (
+  const renderMeals = () => (
     <ScrollView
       style={styles.content}
       showsVerticalScrollIndicator={false}
     >
-
-      {/* Quick Start Routines */}
+      {/* Today's Meal Plan */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Start Routines</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.quickRoutinesScroll}
-        >
-          <TouchableOpacity style={styles.quickRoutineCard}>
-            <View style={styles.quickRoutineIcon}>
-              <Ionicons name="fitness" size={28} color="#10b981" />
-            </View>
-            <Text style={styles.quickRoutineTitle}>Muscle Building</Text>
-            <Text style={styles.quickRoutineCalories}>2500 cal/day</Text>
-            <Text style={styles.quickRoutineMeals}>5 meals</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Today's Meals</Text>
+          <TouchableOpacity style={styles.addMealButton}>
+            <Ionicons name="add" size={20} color="#10b981" />
+            <Text style={styles.addMealText}>Add Meal</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickRoutineCard}>
-            <View style={styles.quickRoutineIcon}>
-              <Ionicons name="leaf" size={28} color="#10b981" />
+        </View>
+        
+        <View style={styles.todaysMealsContainer}>
+          <TouchableOpacity style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIconContainer}>
+                <Ionicons name="sunny-outline" size={20} color="#f59e0b" />
+              </View>
+              <View style={styles.mealInfo}>
+                <Text style={styles.mealName}>Breakfast</Text>
+                <Text style={styles.mealTime}>8:00 AM</Text>
+              </View>
+              <View style={styles.mealCalories}>
+                <Text style={styles.mealCaloriesText}>450 cal</Text>
+              </View>
             </View>
-            <Text style={styles.quickRoutineTitle}>Weight Loss</Text>
-            <Text style={styles.quickRoutineCalories}>1800 cal/day</Text>
-            <Text style={styles.quickRoutineMeals}>4 meals</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickRoutineCard}>
-            <View style={styles.quickRoutineIcon}>
-              <Ionicons name="heart" size={28} color="#ef4444" />
+            <View style={styles.mealItems}>
+              <Text style={styles.mealItemText}>• Oatmeal with berries</Text>
+              <Text style={styles.mealItemText}>• Greek yogurt</Text>
+              <Text style={styles.mealItemText}>• Green tea</Text>
             </View>
-            <Text style={styles.quickRoutineTitle}>Heart Health</Text>
-            <Text style={styles.quickRoutineCalories}>2000 cal/day</Text>
-            <Text style={styles.quickRoutineMeals}>3 meals</Text>
           </TouchableOpacity>
-        </ScrollView>
-      </View>
 
-      {/* Routine Templates */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Routine Templates</Text>
-        <View style={styles.templateList}>
-          <TouchableOpacity style={styles.templateItem}>
-            <View style={styles.templateInfo}>
-              <Text style={styles.templateTitle}>Keto Diet Plan</Text>
-              <Text style={styles.templateDetails}>Low carb, high fat • 7 days</Text>
+          <TouchableOpacity style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIconContainer}>
+                <Ionicons name="sunny" size={20} color="#f59e0b" />
+              </View>
+              <View style={styles.mealInfo}>
+                <Text style={styles.mealName}>Lunch</Text>
+                <Text style={styles.mealTime}>1:00 PM</Text>
+              </View>
+              <View style={styles.mealCalories}>
+                <Text style={styles.mealCaloriesText}>650 cal</Text>
+              </View>
             </View>
-            <Ionicons name="arrow-forward" size={20} color="#6b7280" />
+            <View style={styles.mealItems}>
+              <Text style={styles.mealItemText}>• Grilled chicken salad</Text>
+              <Text style={styles.mealItemText}>• Quinoa</Text>
+              <Text style={styles.mealItemText}>• Mixed vegetables</Text>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.templateItem}>
-            <View style={styles.templateInfo}>
-              <Text style={styles.templateTitle}>Intermittent Fasting</Text>
-              <Text style={styles.templateDetails}>16:8 schedule • 14 days</Text>
+
+          <TouchableOpacity style={styles.mealCard}>
+            <View style={styles.mealHeader}>
+              <View style={styles.mealIconContainer}>
+                <Ionicons name="moon-outline" size={20} color="#6366f1" />
+              </View>
+              <View style={styles.mealInfo}>
+                <Text style={styles.mealName}>Dinner</Text>
+                <Text style={styles.mealTime}>7:00 PM</Text>
+              </View>
+              <View style={styles.mealCalories}>
+                <Text style={styles.mealCaloriesText}>720 cal</Text>
+              </View>
             </View>
-            <Ionicons name="arrow-forward" size={20} color="#6b7280" />
+            <View style={styles.mealItems}>
+              <Text style={styles.mealItemText}>• Salmon fillet</Text>
+              <Text style={styles.mealItemText}>• Sweet potato</Text>
+              <Text style={styles.mealItemText}>• Steamed broccoli</Text>
+            </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.templateItem}>
-            <View style={styles.templateInfo}>
-              <Text style={styles.templateTitle}>Mediterranean Style</Text>
-              <Text style={styles.templateDetails}>Balanced nutrition • 30 days</Text>
-            </View>
-            <Ionicons name="arrow-forward" size={20} color="#6b7280" />
+
+          <TouchableOpacity style={styles.addMealCard}>
+            <Ionicons name="add-circle-outline" size={32} color="#9ca3af" />
+            <Text style={styles.addMealCardText}>Add Snack</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Create Routine Button */}
-      <TouchableOpacity
-        style={styles.createRoutineButton}
-        onPress={() => setShowLogMealModal(true)}
-      >
-        <Ionicons name="add-circle" size={24} color="#ffffff" />
-        <Text style={styles.createRoutineButtonText}>Create New Routine</Text>
-      </TouchableOpacity>
+      {/* Quick Meal Templates */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Meal Templates</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.quickMealsScroll}
+        >
+          <TouchableOpacity style={styles.quickMealCard}>
+            <View style={styles.quickMealIcon}>
+              <Ionicons name="fitness" size={28} color="#10b981" />
+            </View>
+            <Text style={styles.quickMealTitle}>High Protein</Text>
+            <Text style={styles.quickMealCalories}>35g protein</Text>
+            <Text style={styles.quickMealCount}>Muscle building</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickMealCard}>
+            <View style={styles.quickMealIcon}>
+              <Ionicons name="leaf" size={28} color="#10b981" />
+            </View>
+            <Text style={styles.quickMealTitle}>Low Carb</Text>
+            <Text style={styles.quickMealCalories}>15g carbs</Text>
+            <Text style={styles.quickMealCount}>Weight loss</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.quickMealCard}>
+            <View style={styles.quickMealIcon}>
+              <Ionicons name="heart" size={28} color="#ef4444" />
+            </View>
+            <Text style={styles.quickMealTitle}>Heart Healthy</Text>
+            <Text style={styles.quickMealCalories}>Low sodium</Text>
+            <Text style={styles.quickMealCount}>Cardiovascular</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
+
+      {/* Meal Planning Tools */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Meal Planning Tools</Text>
+        <View style={styles.toolsGrid}>
+          <TouchableOpacity style={styles.toolCard}>
+            <View style={styles.toolIcon}>
+              <Ionicons name="calendar-outline" size={24} color="#3b82f6" />
+            </View>
+            <Text style={styles.toolTitle}>Weekly Planner</Text>
+            <Text style={styles.toolDescription}>Plan your week</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.toolCard}>
+            <View style={styles.toolIcon}>
+              <Ionicons name="list-outline" size={24} color="#10b981" />
+            </View>
+            <Text style={styles.toolTitle}>Shopping List</Text>
+            <Text style={styles.toolDescription}>Auto-generate list</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.toolCard}>
+            <View style={styles.toolIcon}>
+              <Ionicons name="restaurant-outline" size={24} color="#f59e0b" />
+            </View>
+            <Text style={styles.toolTitle}>Meal Prep</Text>
+            <Text style={styles.toolDescription}>Batch cooking</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.toolCard}>
+            <View style={styles.toolIcon}>
+              <Ionicons name="nutrition-outline" size={24} color="#ef4444" />
+            </View>
+            <Text style={styles.toolTitle}>Nutrition Goals</Text>
+            <Text style={styles.toolDescription}>Track macros</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 
@@ -324,19 +402,19 @@ export default function NutritionScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'routines' && styles.activeTab]}
-          onPress={() => setActiveTab('routines')}
+          style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
+          onPress={() => setActiveTab('meals')}
         >
           <Ionicons 
-            name="repeat-outline" 
+            name="restaurant-outline" 
             size={20} 
-            color={activeTab === 'routines' ? '#10b981' : '#6b7280'} 
+            color={activeTab === 'meals' ? '#10b981' : '#6b7280'} 
           />
           <Text style={[
             styles.tabText,
-            activeTab === 'routines' && styles.activeTabText
+            activeTab === 'meals' && styles.activeTabText
           ]}>
-            Routines
+            Meals
           </Text>
         </TouchableOpacity>
       </View>
@@ -344,7 +422,7 @@ export default function NutritionScreen() {
       {/* Content */}
       {activeTab === 'overview' ? renderOverview() : 
        activeTab === 'logs' ? <NutritionLogsView ref={nutritionLogsRef} onRefresh={onRefresh} /> : 
-       renderRoutines()}
+       renderMeals()}
 
       {/* Log Meal Modal */}
       <LogMealModal
@@ -568,11 +646,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1f2937',
   },
-  // Routine styles
-  quickRoutinesScroll: {
+  // Meal styles
+  quickMealsScroll: {
     paddingLeft: 0,
   },
-  quickRoutineCard: {
+  quickMealCard: {
     width: 160,
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -585,7 +663,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  quickRoutineIcon: {
+  quickMealIcon: {
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -594,22 +672,157 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  quickRoutineTitle: {
+  quickMealTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
     textAlign: 'center',
     marginBottom: 8,
   },
-  quickRoutineCalories: {
+  quickMealCalories: {
     fontSize: 14,
     color: '#10b981',
     fontWeight: '500',
     marginBottom: 4,
   },
-  quickRoutineMeals: {
+  quickMealCount: {
     fontSize: 12,
     color: '#6b7280',
+  },
+  // Today's Meals styles
+  addMealButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  addMealText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+    marginLeft: 4,
+  },
+  todaysMealsContainer: {
+    gap: 12,
+  },
+  mealCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  mealHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  mealIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  mealInfo: {
+    flex: 1,
+  },
+  mealName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 2,
+  },
+  mealTime: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  mealCalories: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  mealCaloriesText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  mealItems: {
+    marginLeft: 52,
+  },
+  mealItemText: {
+    fontSize: 14,
+    color: '#4b5563',
+    marginBottom: 4,
+  },
+  addMealCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addMealCardText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#9ca3af',
+    marginTop: 8,
+  },
+  // Meal Planning Tools styles
+  toolsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  toolCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    width: '48%',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  toolIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toolTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  toolDescription: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   templateList: {
     backgroundColor: '#ffffff',

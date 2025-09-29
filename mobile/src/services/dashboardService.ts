@@ -25,7 +25,7 @@ export interface DashboardSummary {
     avg_calories_per_day: number;
   };
   active_routines: {
-    id: string;
+    id: number;
     name: string;
     type: 'fitness' | 'nutrition';
     difficulty: string;
@@ -45,7 +45,7 @@ export interface DashboardSummary {
     icon: string;
   }[];
   quick_actions: {
-    id: string;
+    id: number;
     title: string;
     subtitle: string;
     icon: string;

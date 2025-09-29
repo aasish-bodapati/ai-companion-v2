@@ -39,8 +39,8 @@ curl -X POST "http://localhost:8000/api/v1/health/logging/fitness" \
 **Response:**
 ```json
 {
-  "id": "fitness-log-123",
-  "user_id": "user-456",
+  "id": 123,
+  "user_id": 456,
   "activity_type": "weightlifting",
   "activity_name": "Chest and Triceps Day",
   "duration_minutes": 60,
@@ -67,7 +67,7 @@ curl -X GET "http://localhost:8000/api/v1/health/logging/fitness?skip=0&limit=10
 #### Update a Fitness Log
 
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/health/logging/fitness/fitness-log-123" \
+curl -X PUT "http://localhost:8000/api/v1/health/logging/fitness/123" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{

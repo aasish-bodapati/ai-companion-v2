@@ -17,7 +17,7 @@ import { fitnessService } from '../../services/fitnessService';
 import CalendarComponent from '../common/CalendarComponent';
 
 interface WorkoutLog {
-  id: string;
+  id: number;
   routine_name?: string;
   workout_name?: string;
   exercises?: string; // JSON string for compatibility
@@ -36,7 +36,6 @@ interface FitnessLogsViewProps {
   onRefresh?: () => void;
 }
 
-
 export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +43,22 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editExercises, setEditExercises] = useState<any[]>([]);
-  const [deletingLogId, setDeletingLogId] = useState<string | null>(null);
+  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
+
+  // Debug logging for component mount/remount
+  console.log('🔄 FitnessLogsView component rendered/remounted');
+
+  // Load data when component mounts or remounts
+  useEffect(() => {
+    console.log('🔄 FitnessLogsView useEffect triggered - loading logs');
+    loadLogs();
+    loadExerciseDatabase();
+  }, []); // Empty dependency array means this runs on mount/remount
 
   // Load exercise database for category lookup
   const loadExerciseDatabase = async () => {
@@ -62,12 +71,41 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     }
   };
 
+  // Exercise categories with colors
+  const EXERCISE_CATEGORIES = {
+    bodyweight: {
+      name: 'Bodyweight',
+      icon: 'person-outline',
+      color: '#3b82f6',
+    },
+    weighted: {
+      name: 'Weighted',
+      icon: 'barbell-outline', 
+      color: '#ef4444',
+    },
+    cardio_duration: {
+      name: 'Cardio',
+      icon: 'heart-outline',
+      color: '#10b981',
+    },
+    distance_based: {
+      name: 'Distance',
+      icon: 'walk-outline',
+      color: '#8b5cf6',
+    },
+    general: {
+      name: 'General',
+      icon: 'fitness-outline',
+      color: '#6b7280',
+    },
+  };
+
   // Look up exercise category from database
   const getExerciseCategory = (exerciseName: string) => {
     const exercise = exerciseDatabase.find(ex => 
       ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
     );
-    return exercise?.logging_category || 'GENERAL';
+    return exercise?.logging_category || 'general';
   };
 
   const loadLogs = async (date?: Date) => {
@@ -90,6 +128,9 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const allLogs = response?.logs || response || [];
       console.log('🔍 All logs:', allLogs);
       const targetDateStr = targetDate.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      console.log('🔍 Target date string for filtering:', targetDateStr);
+      console.log('🔍 Selected date:', selectedDate);
+      console.log('🔍 Target date:', targetDate);
       
       const filteredLogs = Array.isArray(allLogs) ? allLogs.filter(log => {
         // Try both activity_date and logged_at fields
@@ -97,21 +138,25 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         if (!dateField) return false;
         
         try {
-          // Handle both ISO string format and date object
-          let logDateStr;
-          if (typeof dateField === 'string') {
-            logDateStr = dateField.split('T')[0]; // Get YYYY-MM-DD format from ISO string
-          } else if (dateField instanceof Date) {
-            logDateStr = dateField.toISOString().split('T')[0];
-          } else {
-            return false;
-          }
+          // Parse the log date and convert to local date
+          const logDate = new Date(dateField);
+          const logLocalDate = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
+          const targetLocalDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
           
+          const logDateStr = logLocalDate.toISOString().split('T')[0];
+          const targetDateStr = targetLocalDate.toISOString().split('T')[0];
+          
+          console.log('🔍 Comparing dates - Log date:', logDateStr, 'Target date:', targetDateStr, 'Match:', logDateStr === targetDateStr);
+          console.log('🔍 Original log date:', dateField, 'Parsed:', logDate, 'Local date:', logLocalDate);
           return logDateStr === targetDateStr;
         } catch (error) {
+          console.log('🔍 Date parsing error for log:', log, error);
           return false;
         }
       }) : [];
+      
+      console.log('🔍 Filtered logs count:', filteredLogs.length);
+      console.log('🔍 Filtered logs:', filteredLogs);
       
       // Parse exercises from JSON string if needed
       const processedLogs = filteredLogs.map(log => {
@@ -125,8 +170,14 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         return log;
       });
       
+      // Sort logs by time (earliest to latest) for chronological numbering
+      const sortedLogs = processedLogs.sort((a, b) => {
+        const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
+        const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
+        return timeA - timeB;
+      });
       
-      setLogs(processedLogs);
+      setLogs(sortedLogs);
       setAllLogs(allLogs); // Store all logs for calendar markers
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
@@ -249,6 +300,36 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     setEditModalVisible(true);
   };
 
+  const handleDeleteLog = (logId: number) => {
+    Alert.alert(
+      'Delete Workout',
+      'Are you sure you want to delete this workout? This action cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingLogId(logId);
+              await fitnessService.deleteWorkoutLog(logId);
+              await loadLogs(); // Refresh the logs
+              Alert.alert('Success', 'Workout deleted successfully');
+            } catch (error) {
+              console.error('Failed to delete workout:', error);
+              Alert.alert('Error', 'Failed to delete workout. Please try again.');
+            } finally {
+              setDeletingLogId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleExerciseUpdate = (exerciseIndex: number, field: string, value: string) => {
     const updatedExercises = [...editExercises];
     if (updatedExercises[exerciseIndex]) {
@@ -291,7 +372,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     }
   };
 
-  const handleDeleteExercise = (logId: string, exerciseIndex: number) => {
+  const handleDeleteExercise = (logId: number, exerciseIndex: number) => {
     Alert.alert(
       'Delete Exercise',
       'Are you sure you want to delete this exercise from your workout log? This action cannot be undone.',
@@ -309,7 +390,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     );
   };
 
-  const confirmDeleteExercise = async (logId: string, exerciseIndex: number) => {
+  const confirmDeleteExercise = async (logId: number, exerciseIndex: number) => {
     try {
       setDeletingLogId(logId);
       
@@ -363,7 +444,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     }
   };
 
-  const confirmDeleteLog = async (logId: string) => {
+  const confirmDeleteLog = async (logId: number) => {
     try {
       setDeletingLogId(logId);
       
@@ -539,53 +620,115 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
             </Text>
           </View>
         ) : (
-          logs.map((log, logIndex) => (
-            <View key={log.id || logIndex} style={styles.workoutLogContainer}>
-              {(() => {
-                // Parse exercises from JSON string if needed
-                let exercises = log.exercises;
-                if (typeof exercises === 'string') {
-                  try {
-                    exercises = JSON.parse(exercises);
-                  } catch (error) {
-                    console.error('Failed to parse exercises JSON:', error);
-                    exercises = [];
+          (() => {
+            // Create a global counter for chronological exercise numbering
+            let globalExerciseCounter = 0;
+            
+            return logs.map((log, logIndex) => (
+              <View key={log.id || logIndex} style={styles.workoutLogContainer}>
+                {(() => {
+                  // Parse exercises from JSON string if needed
+                  let exercises: any = log.exercises;
+                  if (typeof exercises === 'string') {
+                    try {
+                      exercises = JSON.parse(exercises);
+                    } catch (error) {
+                      console.error('Failed to parse exercises JSON:', error);
+                      exercises = [];
+                    }
                   }
-                }
-                return Array.isArray(exercises) ? exercises : [];
-              })().map((exercise: any, exerciseIndex: number) => (
-                <View key={`${log.id}-${exerciseIndex}`} style={styles.exerciseCard}>
-                  <View style={styles.exerciseHeader}>
-                    <View style={styles.exerciseNumberContainer}>
-                      <Text style={styles.exerciseNumber}>{exerciseIndex + 1}</Text>
-                    </View>
+                  return Array.isArray(exercises) ? exercises : [];
+                })().map((exercise: any, exerciseIndex: number) => {
+                  // Safety check to ensure exercise is an object
+                  if (!exercise || typeof exercise !== 'object') {
+                    return null;
+                  }
+                  
+                  // Increment global counter for chronological numbering
+                  globalExerciseCounter++;
+                  
+                  return (
+                  <View key={`${log.id}-${exerciseIndex}`} style={styles.exerciseCard}>
+                    <View style={styles.exerciseHeader}>
+                      <View style={styles.exerciseNumberContainer}>
+                        <Text style={styles.exerciseNumber}>{globalExerciseCounter}</Text>
+                      </View>
                     <Text style={styles.exerciseTitle}>
-                      {exercise.exercise_name || 'Unknown Exercise'}
+                      {String(exercise.exercise_name || 'Unknown Exercise')}
                     </Text>
-                    <View style={styles.exerciseCategoryBadge}>
-                      <Ionicons 
-                        name="barbell-outline" 
-                        size={12} 
-                        color="#ffffff"
-                        style={styles.badgeIcon}
-                      />
-                      <Text style={styles.exerciseCategoryText}>
-                        {getExerciseCategory(exercise.exercise_name).toUpperCase()}
+                    {(() => {
+                      const category = getExerciseCategory(exercise.exercise_name || '');
+                      const categoryConfig = EXERCISE_CATEGORIES[category as keyof typeof EXERCISE_CATEGORIES] || EXERCISE_CATEGORIES.general;
+                      return (
+                        <View style={[styles.exerciseCategoryBadge, { backgroundColor: categoryConfig.color }]}>
+                          <Ionicons 
+                            name={categoryConfig.icon as any} 
+                            size={12} 
+                            color="#ffffff"
+                            style={styles.badgeIcon}
+                          />
+                          <Text style={styles.exerciseCategoryText}>
+                            {categoryConfig.name.toUpperCase()}
+                          </Text>
+                        </View>
+                      );
+                    })()}
+                    
+                    {/* Action buttons next to badge */}
+                    <View style={styles.exerciseActions}>
+                      <TouchableOpacity 
+                        style={styles.exerciseActionButton}
+                        onPress={() => handleEditLog(log)}
+                      >
+                        <Ionicons name="pencil" size={14} color="#6366f1" />
+                      </TouchableOpacity>
+                      <TouchableOpacity 
+                        style={styles.exerciseActionButton}
+                        onPress={() => handleDeleteLog(log.id)}
+                      >
+                        <Ionicons name="trash" size={14} color="#ef4444" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  
+                  {/* Sets/reps and time on same line */}
+                  <View style={styles.exerciseStatsRow}>
+                    <Text style={styles.exerciseStatText}>
+                      {String(exercise.sets || 0)} sets x {String(exercise.reps || 0)} reps
+                    </Text>
+                    <View style={styles.exerciseTimeContainer}>
+                      <Text style={styles.exerciseTimeText}>
+                        {(() => {
+                          const dateField = log.activity_date || log.logged_at;
+                          if (!dateField) return 'Unknown time';
+                          
+                          try {
+                            const date = new Date(dateField);
+                            return date.toLocaleTimeString('en-US', { 
+                              hour: '2-digit', 
+                              minute: '2-digit',
+                              hour12: true,
+                              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                            });
+                          } catch (error) {
+                            return 'Unknown time';
+                          }
+                        })()}
                       </Text>
                     </View>
                   </View>
-                  <Text style={styles.exerciseStatText}>
-                    {String(exercise.sets || 0)} sets x {String(exercise.reps || 0)} reps
-                  </Text>
-                  {exercise.weight_used && Number(exercise.weight_used) > 0 && (
+                  
+                  {exercise.weight_used && Number(exercise.weight_used) > 0 ? (
                     <Text style={styles.exerciseStatText}>
                       {String(exercise.weight_used)}kg
                     </Text>
-                  )}
+                  ) : null}
                 </View>
-              ))}
+                );
+              })}
             </View>
-          ))
+          ));
+          })()
         )}
       </View>
 
@@ -615,7 +758,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                 <ScrollView style={styles.exercisesContainer} showsVerticalScrollIndicator={false}>
                   {editExercises.map((exercise, index) => (
                     <View key={index} style={styles.exerciseEditCard}>
-                      <Text style={styles.exerciseName}>{exercise.exercise_name || `Exercise ${index + 1}`}</Text>
+                      <Text style={styles.exerciseName}>{String(exercise.exercise_name || `Exercise ${index + 1}`)}</Text>
                       
                       <View style={styles.exerciseFieldsRow}>
                         <View style={styles.exerciseField}>
@@ -1026,9 +1169,9 @@ const styles = StyleSheet.create({
   exerciseCard: {
     backgroundColor: 'white',
     borderRadius: 8,
-    padding: 12,
+    padding: 8, // Reduced from 12 to 8
     marginHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 4, // Reduced from 8 to 4
     borderWidth: 1,
     borderColor: '#fb923c', // More vibrant orange border
     shadowColor: '#000',
@@ -1049,11 +1192,6 @@ const styles = StyleSheet.create({
   exerciseTitleContainer: {
     flex: 1,
     marginRight: 8,
-  },
-  exerciseHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
   },
   exerciseNumberContainer: {
     backgroundColor: '#10b981',
@@ -1076,7 +1214,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseCategoryBadge: {
-    backgroundColor: '#3b82f6',
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -1084,7 +1221,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#3b82f6',
   },
   badgeIcon: {
     marginRight: 4,
@@ -1096,7 +1232,62 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   workoutLogContainer: {
-    marginBottom: 20,
+    marginBottom: 12, // Reduced from 20 to 12
+  },
+  workoutTimeContainer: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  workoutTimeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  workoutHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  workoutActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  exerciseStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2, // Reduced from 4 to 2
+    minHeight: 18, // Reduced from 20 to 18
+  },
+  exerciseTimeContainer: {
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6, // Reduced from 8 to 6
+    paddingVertical: 3, // Reduced from 4 to 3
+    borderRadius: 6,
+    alignSelf: 'center', // Ensure it aligns with the text baseline
+  },
+  exerciseTimeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+    lineHeight: 16, // Match the exerciseStatText line height
+  },
+  exerciseActions: {
+    flexDirection: 'row',
+    gap: 4, // Reduced from 6 to 4
+    marginLeft: 8,
+  },
+  exerciseActionButton: {
+    padding: 4, // Reduced from 6 to 4
+    borderRadius: 4,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   exerciseDate: {
     fontSize: 12,
@@ -1104,11 +1295,6 @@ const styles = StyleSheet.create({
   },
   exerciseActionsContainer: {
     alignItems: 'flex-end',
-  },
-  exerciseTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
   },
   exerciseTime: {
     fontSize: 11,
@@ -1135,6 +1321,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
     marginLeft: 3,
+    lineHeight: 16, // Ensure consistent line height
   },
   exerciseNotesContainer: {
     backgroundColor: '#f8fafc',

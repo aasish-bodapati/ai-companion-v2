@@ -1,12 +1,12 @@
 import { apiClient } from './api';
 
 export interface SimpleRoutine {
-  id: string;
+  id: number;
   name: string;
   description: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   duration_weeks: number;
-  created_by_user_id?: string;
+  created_by_user_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -87,7 +87,7 @@ export const routineService = {
   },
 
   // Get a specific routine by ID
-  async getRoutine(routineId: string): Promise<SimpleRoutineWithProgress> {
+  async getRoutine(routineId: number): Promise<SimpleRoutineWithProgress> {
     try {
       const response = await apiClient.get(`/health/simple-routines/${routineId}`);
       return response.data;
@@ -127,7 +127,7 @@ export const routineService = {
 
   // Update a routine
   async updateRoutine(
-    routineId: string,
+    routineId: number,
     routineData: Partial<CreateRoutineData>
   ): Promise<SimpleRoutineWithProgress> {
     try {
@@ -141,7 +141,7 @@ export const routineService = {
 
   // Update routine with workout plan
   async updateRoutineWithWorkoutPlan(
-    routineId: string,
+    routineId: number,
     routineData: CreateRoutineData,
     workoutDays: WorkoutDay[]
   ): Promise<SimpleRoutineWithProgress> {
@@ -158,7 +158,7 @@ export const routineService = {
   },
 
   // Delete a routine
-  async deleteRoutine(routineId: string): Promise<void> {
+  async deleteRoutine(routineId: number): Promise<void> {
     try {
       await apiClient.delete(`/health/simple-routines/${routineId}`);
     } catch (error) {
@@ -168,7 +168,7 @@ export const routineService = {
   },
 
   // Start a routine (set as active)
-  async startRoutine(routineId: string): Promise<void> {
+  async startRoutine(routineId: number): Promise<void> {
     try {
       await apiClient.post(`/health/simple-routines/${routineId}/start`);
     } catch (error) {
@@ -178,7 +178,7 @@ export const routineService = {
   },
 
   // Stop a routine (set as inactive)
-  async stopRoutine(routineId: string): Promise<void> {
+  async stopRoutine(routineId: number): Promise<void> {
     try {
       await apiClient.post(`/health/simple-routines/${routineId}/stop`);
     } catch (error) {
@@ -188,7 +188,7 @@ export const routineService = {
   },
 
   // Get routine progress
-  async getRoutineProgress(routineId: string): Promise<any> {
+  async getRoutineProgress(routineId: number): Promise<any> {
     try {
       const response = await apiClient.get(`/health/simple-routines/${routineId}/progress`);
       return response.data;
@@ -210,7 +210,7 @@ export const routineService = {
   },
 
   // Log today's workout
-  async logTodaysWorkout(routineId: string): Promise<void> {
+  async logTodaysWorkout(routineId: number): Promise<void> {
     try {
       await apiClient.post(`/health/simple-routines/${routineId}/log-workout`);
     } catch (error) {
@@ -220,7 +220,7 @@ export const routineService = {
   },
 
   // Skip today's workout
-  async skipTodaysWorkout(routineId: string): Promise<void> {
+  async skipTodaysWorkout(routineId: number): Promise<void> {
     try {
       await apiClient.post(`/health/simple-routines/${routineId}/skip-workout`);
     } catch (error) {
@@ -292,7 +292,7 @@ export const routineService = {
   },
 
   // Update workout log exercises
-  async updateWorkoutLogExercises(logId: string, exercises: any[]): Promise<any> {
+  async updateWorkoutLogExercises(logId: number, exercises: any[]): Promise<any> {
     try {
       const response = await apiClient.put(`/health/fitness-logs/${logId}`, {
         exercises: JSON.stringify(exercises)
@@ -305,7 +305,7 @@ export const routineService = {
   },
 
   // Delete workout log
-  async deleteWorkoutLog(logId: string): Promise<void> {
+  async deleteWorkoutLog(logId: number): Promise<void> {
     try {
       await apiClient.delete(`/health/fitness-logs/${logId}`);
     } catch (error) {

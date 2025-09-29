@@ -18,7 +18,7 @@ This document contains the complete database schema for the AI Companion health 
 ### Users Table
 ```sql
 CREATE TABLE users (
-    id VARCHAR(36) PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     hashed_password VARCHAR(255) NOT NULL,
     full_name VARCHAR(255),
@@ -37,8 +37,8 @@ CREATE TABLE users (
 ### Fitness Logs Table
 ```sql
 CREATE TABLE fitness_logs (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     activity_type VARCHAR(50) NOT NULL,
     activity_name VARCHAR(100),
     duration_minutes INTEGER NOT NULL,
@@ -461,8 +461,8 @@ CREATE TABLE user_health_goals (
 ### User Health Profile Table
 ```sql
 CREATE TABLE user_health_profile (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     -- Basic Measurements
     height_cm FLOAT,
     age INTEGER,
@@ -604,14 +604,15 @@ CREATE TABLE user_health_profile (
 ## Data Types Summary
 
 ### String Types
-- `VARCHAR(36)`: UUIDs and short identifiers
+- `VARCHAR(36)`: Short identifiers (legacy, being phased out)
 - `VARCHAR(50)`: Medium-length strings (activity types, difficulty levels)
 - `VARCHAR(100)`: Longer strings (names, locations)
 - `VARCHAR(255)`: Long strings (full names, routine names)
 - `TEXT`: Very long strings (notes, JSON data)
 
 ### Numeric Types
-- `INTEGER`: Whole numbers (durations, counts, ratings)
+- `SERIAL`: Auto-incrementing primary keys (replaces UUIDs)
+- `INTEGER`: Whole numbers (durations, counts, ratings, foreign keys)
 - `FLOAT`: Decimal numbers (weights, measurements, percentages)
 - `BOOLEAN`: True/false values
 
@@ -619,7 +620,6 @@ CREATE TABLE user_health_profile (
 - `TIMESTAMP WITH TIME ZONE`: All datetime fields for timezone support
 
 ### Special Types
-- `UUID`: For health goals and profile tables
 - `JSON` (stored as TEXT): For complex data structures (food items, tags, activities)
 
 ---

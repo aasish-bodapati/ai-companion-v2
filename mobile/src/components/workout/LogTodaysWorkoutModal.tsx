@@ -329,7 +329,7 @@ export default function LogTodaysWorkoutModal({
   const handleSkipWorkout = async () => {
     try {
       setLoading(true);
-      await routineService.skipTodaysWorkout(workoutData!.routine_id.toString());
+      await routineService.skipTodaysWorkout(workoutData!.routine_id);
       
       Alert.alert(
         'Workout Skipped',

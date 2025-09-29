@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -21,6 +22,7 @@ import { dashboardService } from '../../services/dashboardService';
 
 export default function FitnessScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
+  const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
   const [showCreateRoutineModal, setShowCreateRoutineModal] = useState(false);
   const [showEditRoutineModal, setShowEditRoutineModal] = useState(false);
   const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
@@ -83,6 +85,13 @@ export default function FitnessScreen() {
     loadOverviewData();
   }, []);
 
+  // Reset to overview tab every time the screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveTab('overview');
+    }, [])
+  );
+
   const handleRoutineCreated = () => {
     setShowCreateRoutineModal(false);
   };
@@ -97,6 +106,20 @@ export default function FitnessScreen() {
     setShowEnhancedWorkoutLogger(false);
     setShowLogTodaysWorkoutModal(false);
     loadOverviewData(); // Refresh overview data after logging workout
+    console.log('🔄 Workout logged, triggering fitness logs refresh');
+    
+    // Force component remount with new key
+    setFitnessLogsKey(prev => {
+      const newKey = prev + 1;
+      console.log('🔄 Incrementing fitness logs key to:', newKey);
+      return newKey;
+    });
+  };
+
+  const handleFitnessLogsRefresh = () => {
+    console.log('🔄 Fitness logs refresh requested from component');
+    // This will trigger a re-render of the FitnessLogsView
+    setFitnessLogsKey(prev => prev + 1);
   };
 
   const StatCard = ({ icon, title, value, subtitle, color }: {
@@ -186,7 +209,7 @@ export default function FitnessScreen() {
               <Text style={styles.weekLabel}>Duration</Text>
             </View>
             <View style={styles.weekStat}>
-              <Text style={styles.weekValue}>{weekStats.total_calories || 0}</Text>
+              <Text style={styles.weekValue}>{weekStats.total_calories_burned || 0}</Text>
               <Text style={styles.weekLabel}>Calories</Text>
             </View>
           </View>
@@ -276,7 +299,8 @@ export default function FitnessScreen() {
         />
       ) : (
         <FitnessLogsView
-          onRefresh={() => {}}
+          key={fitnessLogsKey}
+          onRefresh={handleFitnessLogsRefresh}
         />
       )}
 

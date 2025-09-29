@@ -50,9 +50,9 @@ export default function ExerciseDropdown({
       setLoading(true);
       const exercises = await fitnessService.getAllExercises(700);
       console.log('Loaded exercises:', exercises.length);
-      console.log('Sample exercises:', exercises.slice(0, 5).map(e => e.name));
+      console.log('Sample exercises:', exercises.slice(0, 5).map((e: any) => e.name));
       setAllExercises(exercises);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to load exercises:', error);
     } finally {
       setLoading(false);

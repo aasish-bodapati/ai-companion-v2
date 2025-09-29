@@ -8,6 +8,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import FormModal from '../ui/FormModal';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
+import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { onboardingService } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
@@ -361,7 +362,6 @@ export default function EditGoalsModal({
         onPress: handleSave,
         variant: "primary",
         disabled: selectedGoals.length === 0,
-        loading: loading,
       }}
       secondaryAction={{
         label: "Cancel",

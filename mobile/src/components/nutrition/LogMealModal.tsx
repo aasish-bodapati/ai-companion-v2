@@ -19,7 +19,7 @@ import DateSelector from '../ui/DateSelector';
 interface MealData {
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   food_items: {
-    food_id: string;
+    food_id: number;
     food_name: string;
     quantity_grams: number;
     calories: number;
@@ -44,7 +44,7 @@ export default function LogMealModal({
 }: LogMealModalProps) {
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>(initialMealType);
   const [foodItems, setFoodItems] = useState<{
-    food_id: string;
+    food_id: number;
     food_name: string;
     quantity_grams: number;
     calories: number;

@@ -12,7 +12,7 @@ export interface HealthPattern {
 }
 
 export interface AIInsight {
-  id: string;
+  id: number;
   type: 'pattern' | 'recommendation' | 'achievement' | 'warning';
   title: string;
   message: string;
@@ -26,7 +26,7 @@ export interface AIInsight {
 }
 
 export interface HealthRecommendation {
-  id: string;
+  id: number;
   type: 'workout' | 'nutrition' | 'lifestyle' | 'goal';
   title: string;
   description: string;
@@ -64,7 +64,7 @@ export interface ProgressAnalysis {
 }
 
 export interface GoalAnalysis {
-  goal_id: string;
+  goal_id: number;
   goal_title: string;
   current_progress: number; // 0-100
   projected_completion: string;
@@ -233,7 +233,7 @@ export const aiInsightsService = {
   getMockInsights(): AIInsight[] {
     return [
       {
-        id: '1',
+        id: 1,
         type: 'pattern',
         title: 'Workout Consistency Pattern',
         message: 'You work out most consistently on Tuesdays and Thursdays. Consider adding a third day to maximize your progress.',
@@ -245,7 +245,7 @@ export const aiInsightsService = {
         created_at: new Date().toISOString(),
       },
       {
-        id: '2',
+        id: 2,
         type: 'achievement',
         title: 'Calorie Burn Milestone',
         message: 'You\'ve burned 10,000 calories this month! That\'s equivalent to running 100 miles.',
@@ -256,7 +256,7 @@ export const aiInsightsService = {
         created_at: new Date().toISOString(),
       },
       {
-        id: '3',
+        id: 3,
         type: 'recommendation',
         title: 'Hydration Improvement',
         message: 'Your water intake has decreased by 20% this week. Try setting hourly reminders to drink water.',
@@ -304,7 +304,7 @@ export const aiInsightsService = {
   getMockRecommendations(): HealthRecommendation[] {
     return [
       {
-        id: '1',
+        id: 1,
         type: 'workout',
         title: 'Add HIIT Training',
         description: 'Incorporate 2 HIIT sessions per week to boost fat burning and cardiovascular fitness.',
@@ -316,7 +316,7 @@ export const aiInsightsService = {
         tags: ['hiit', 'fat-burning', 'cardio'],
       },
       {
-        id: '2',
+        id: 2,
         type: 'nutrition',
         title: 'Increase Protein Intake',
         description: 'Aim for 1.2g protein per kg body weight to support muscle recovery and growth.',
@@ -364,7 +364,7 @@ export const aiInsightsService = {
   getMockGoalAnalysis(): GoalAnalysis[] {
     return [
       {
-        goal_id: '1',
+        goal_id: 1,
         goal_title: 'Lose 10 pounds',
         current_progress: 60,
         projected_completion: '2024-02-15',
@@ -393,7 +393,7 @@ export const aiInsightsService = {
   getMockWorkoutSuggestions() {
     return [
       {
-        id: '1',
+        id: 1,
         name: 'Upper Body Strength',
         duration: 45,
         difficulty: 'intermediate',
@@ -402,7 +402,7 @@ export const aiInsightsService = {
         description: 'A balanced upper body workout focusing on pushing and pulling movements.',
       },
       {
-        id: '2',
+        id: 2,
         name: 'HIIT Cardio Blast',
         duration: 20,
         difficulty: 'advanced',
@@ -416,7 +416,7 @@ export const aiInsightsService = {
   getMockNutritionSuggestions() {
     return [
       {
-        id: '1',
+        id: 1,
         name: 'Protein Power Bowl',
         calories: 450,
         protein: 35,
@@ -427,7 +427,7 @@ export const aiInsightsService = {
         description: 'A balanced meal perfect for post-workout recovery.',
       },
       {
-        id: '2',
+        id: 2,
         name: 'Green Smoothie',
         calories: 200,
         protein: 15,

@@ -4,7 +4,7 @@ import { apiClient } from '../services/api';
 import { showToast } from '../utils/toast';
 
 interface User {
-  id: string;
+  id: number;
   email: string;
   full_name: string;
   is_active: boolean;
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('Failed to get user data:', error);
         // Set basic user data from login response if available
         setUser({
-          id: '13', // This should come from the token or a separate call
+          id: 13, // This should come from the token or a separate call
           email: email,
           full_name: 'User',
           is_active: true,

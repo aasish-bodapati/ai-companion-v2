@@ -14,7 +14,7 @@ interface RoutineListProps {
 export default function RoutineList({ onRoutineSelected, onCreateRoutine }: RoutineListProps) {
   const [routines, setRoutines] = useState<SimpleRoutineWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState<SimpleRoutineWithProgress | null>(null);
@@ -42,7 +42,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
     loadRoutines();
   }, [loadRoutines]);
 
-  const handleStartRoutine = async (routineId: string) => {
+  const handleStartRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
       await routineService.startRoutine(routineId);
@@ -57,7 +57,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
     }
   };
 
-  const handleStopRoutine = async (routineId: string) => {
+  const handleStopRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
       await routineService.stopRoutine(routineId);
@@ -76,7 +76,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
     setShowEditModal(true);
   };
 
-  const handleDeleteRoutine = async (routineId: string) => {
+  const handleDeleteRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
       await routineService.deleteRoutine(routineId);

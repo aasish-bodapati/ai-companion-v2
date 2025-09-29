@@ -7,10 +7,10 @@ import { COLORS } from '../../theme/constants';
 
 interface RoutineCardProps {
   routine: SimpleRoutineWithProgress;
-  onStart: (routineId: string) => void;
-  onStop: (routineId: string) => void;
+  onStart: (routineId: number) => void;
+  onStop: (routineId: number) => void;
   onEdit: (routine: SimpleRoutineWithProgress) => void;
-  onDelete: (routineId: string) => void;
+  onDelete: (routineId: number) => void;
   isLoading?: boolean;
 }
 

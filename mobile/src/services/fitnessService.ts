@@ -1,7 +1,7 @@
 import { apiClient } from './api';
 
 export interface WorkoutLog {
-  id: string;
+  id: number;
   user_id: number;
   activity_type: string;
   activity_name?: string;
@@ -26,10 +26,13 @@ export interface ExerciseData {
   sets: number;
   reps: string;
   weight_used?: number;
+  weight?: number; // Alternative field name
   weight_unit?: string;
   duration?: number;
   distance?: number;
   distance_unit?: string;
+  intensity?: string; // low, medium, high
+  logging_category?: string; // Alternative field name
   notes?: string;
   category?: string;
 }
@@ -128,7 +131,7 @@ export const fitnessService = {
       
       // Convert exercises array to JSON string if it's an array
       if (processedData.exercises && Array.isArray(processedData.exercises)) {
-        processedData.exercises = JSON.stringify(processedData.exercises);
+        (processedData as any).exercises = JSON.stringify(processedData.exercises);
       }
       
       // Add debugging
@@ -143,12 +146,13 @@ export const fitnessService = {
       const response = await apiClient.post('/health/fitness-logs/', processedData);
       console.log('✅ DEBUG: Workout logged successfully:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ DEBUG: Failed to log workout:', error);
-      if (error.response) {
-        console.error('❌ DEBUG: Error response status:', error.response.status);
-        console.error('❌ DEBUG: Error response data:', error.response.data);
-        console.error('❌ DEBUG: Error response headers:', error.response.headers);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        console.error('❌ DEBUG: Error response status:', axiosError.response.status);
+        console.error('❌ DEBUG: Error response data:', axiosError.response.data);
+        console.error('❌ DEBUG: Error response headers:', axiosError.response.headers);
       }
       throw error;
     }
@@ -172,7 +176,7 @@ export const fitnessService = {
   },
 
   // Delete workout log
-  async deleteWorkoutLog(logId: string) {
+  async deleteWorkoutLog(logId: number) {
     try {
       await apiClient.delete(`/health/fitness-logs/${logId}`);
     } catch (error) {

@@ -95,7 +95,7 @@ export default function DynamicExerciseForm({
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Sets</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.sets && exercise.sets > 0 ? exercise.sets.toString() : ''}
+              value={exercise.sets && Number(exercise.sets) > 0 ? exercise.sets.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -133,7 +133,7 @@ export default function DynamicExerciseForm({
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
               value={(() => {
                 const weight = exercise.weight_used || exercise.weight;
-                return weight && weight > 0 ? weight.toString() : '';
+                return weight && Number(weight) > 0 ? weight.toString() : '';
               })()}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
@@ -154,7 +154,7 @@ export default function DynamicExerciseForm({
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dur (min)</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.duration && exercise.duration > 0 ? exercise.duration.toString() : ''}
+              value={exercise.duration && Number(exercise.duration) > 0 ? exercise.duration.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -172,7 +172,7 @@ export default function DynamicExerciseForm({
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dist (km)</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.distance && exercise.distance > 0 ? exercise.distance.toString() : ''}
+              value={exercise.distance && Number(exercise.distance) > 0 ? exercise.distance.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
                 const numericValue = text.replace(/[^0-9.]/g, '');

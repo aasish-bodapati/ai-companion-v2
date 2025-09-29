@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS, SHADOWS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface SearchableItem {
-  id: string;
+  id: number;
   title: string;
   subtitle?: string;
   description?: string;
@@ -40,7 +40,7 @@ interface SearchableListProps {
   emptyIcon?: string;
   
   // Item rendering
-  renderItem?: (item: SearchableItem, index: number) => React.ReactNode;
+  renderItem?: (item: SearchableItem, index: number) => React.ReactElement | null;
   itemHeight?: number;
   
   // Styling
@@ -57,10 +57,10 @@ interface SearchableListProps {
   filterItems?: (items: SearchableItem[], query: string) => SearchableItem[];
   
   // Selection
-  selectedItemId?: string;
+  selectedItemId?: number;
   multiSelect?: boolean;
-  selectedItemIds?: string[];
-  onSelectionChange?: (selectedIds: string[]) => void;
+  selectedItemIds?: number[];
+  onSelectionChange?: (selectedIds: number[]) => void;
 }
 
 export default function SearchableList({
@@ -144,14 +144,14 @@ export default function SearchableList({
     onItemSelect(item);
   };
 
-  const isItemSelected = (itemId: string) => {
+  const isItemSelected = (itemId: number) => {
     if (multiSelect) {
       return selectedItemIds.includes(itemId);
     }
     return selectedItemId === itemId;
   };
 
-  const handleSelectionToggle = (itemId: string) => {
+  const handleSelectionToggle = (itemId: number) => {
     if (!multiSelect || !onSelectionChange) return;
     
     hapticFeedback.selection();
@@ -320,7 +320,7 @@ export default function SearchableList({
         renderItem={({ item, index }) => 
           renderItem ? renderItem(item, index) : renderDefaultItem(item, index)
         }
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         style={[styles.list, listStyle]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}

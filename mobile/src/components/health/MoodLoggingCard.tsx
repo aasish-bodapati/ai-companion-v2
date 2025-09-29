@@ -99,7 +99,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       // This provides a better user experience
       
       // Show a more user-friendly error message
-      const errorMessage = error.message === 'Request timeout' 
+      const errorMessage = (error as Error).message === 'Request timeout' 
         ? 'Connection is slow. Your mood is saved locally and will sync when connection improves.'
         : 'Connection issue. Your mood is saved locally and will sync when connection improves.';
         
