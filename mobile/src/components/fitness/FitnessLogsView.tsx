@@ -129,7 +129,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       console.log('🔍 Backend filtered logs:', filteredLogs);
       
       // Parse exercises from JSON string if needed
-      const processedLogs = filteredLogs.map(log => {
+      const processedLogs = filteredLogs.map((log: any) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
@@ -141,7 +141,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       // Sort logs by time (earliest to latest) for chronological numbering
-      const sortedLogs = processedLogs.sort((a, b) => {
+      const sortedLogs = processedLogs.sort((a: any, b: any) => {
         const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
         const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
         return timeA - timeB;

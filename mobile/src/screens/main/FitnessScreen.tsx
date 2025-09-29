@@ -178,12 +178,12 @@ export default function FitnessScreen() {
         <View style={styles.weekOverviewCard}>
           <View style={styles.weekMetricRow}>
             <View style={styles.weekMetric}>
-              <Ionicons name="fitness-outline" size={24} color="#10b981" />
+              <Ionicons name="fitness-outline" size={24} color="#ea580c" />
               <Text style={styles.weekMetricValue}>{weekStats?.total_workouts || 0}</Text>
               <Text style={styles.weekMetricLabel}>Workouts</Text>
             </View>
             <View style={styles.weekMetric}>
-              <Ionicons name="time-outline" size={24} color="#3b82f6" />
+              <Ionicons name="time-outline" size={24} color="#f97316" />
               <Text style={styles.weekMetricValue}>{Math.round((weekStats?.total_duration || 0) / 60)}h</Text>
               <Text style={styles.weekMetricLabel}>Duration</Text>
             </View>
@@ -191,7 +191,7 @@ export default function FitnessScreen() {
           
           <View style={styles.weekMetricRow}>
             <View style={styles.weekMetric}>
-              <Ionicons name="flame-outline" size={24} color="#ef4444" />
+              <Ionicons name="flame-outline" size={24} color="#fb923c" />
               <Text style={styles.weekMetricValue}>{weekStats?.total_calories_burned || 0}</Text>
               <Text style={styles.weekMetricLabel}>Calories Burned</Text>
             </View>
@@ -231,7 +231,7 @@ export default function FitnessScreen() {
         <Text style={styles.sectionTitle}>Weekly Activity</Text>
         <WeeklyActivityChart 
           weeklyData={weeklyActivityData}
-          color="#3b82f6"
+          color="#f97316"
         />
       </View>
 
@@ -255,7 +255,7 @@ export default function FitnessScreen() {
           <Ionicons 
             name="analytics-outline" 
             size={20} 
-            color={activeTab === 'overview' ? '#3b82f6' : '#6b7280'} 
+            color={activeTab === 'overview' ? '#f97316' : '#6b7280'} 
           />
           <Text style={[
             styles.tabText,
@@ -272,7 +272,7 @@ export default function FitnessScreen() {
           <Ionicons 
             name="list-outline" 
             size={20} 
-            color={activeTab === 'routines' ? '#3b82f6' : '#6b7280'} 
+            color={activeTab === 'routines' ? '#f97316' : '#6b7280'} 
           />
           <Text style={[
             styles.tabText,
@@ -289,7 +289,7 @@ export default function FitnessScreen() {
           <Ionicons 
             name="calendar-outline" 
             size={20} 
-            color={activeTab === 'logs' ? '#3b82f6' : '#6b7280'} 
+            color={activeTab === 'logs' ? '#f97316' : '#6b7280'} 
           />
           <Text style={[
             styles.tabText,
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#f97316',
   },
   tabText: {
     fontSize: 14,
