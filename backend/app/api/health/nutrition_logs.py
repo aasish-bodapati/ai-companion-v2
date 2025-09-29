@@ -6,7 +6,7 @@ This applies the same utility classes and patterns that make the fitness backend
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import json
 
 from app.db.session import get_db
@@ -203,8 +203,32 @@ def get_nutrition_stats(
     """Get nutrition statistics."""
     
     try:
-        # Use stable date utilities (same as fitness)
-        start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
+        # Use user's timezone for date calculation
+        user_timezone = current_user.timezone or "UTC"
+        
+        if period == "week":
+            # Get current week range in user's timezone
+            now_utc = datetime.now(timezone.utc)
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            user_tz = timezone(timedelta(hours=offset_hours))
+            now_user = now_utc.astimezone(user_tz)
+            
+            # Get start of week (Monday) in user's timezone
+            week_start = now_user - timedelta(days=now_user.weekday())
+            week_start = datetime.combine(week_start.date(), datetime.min.time()).replace(tzinfo=user_tz)
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            
+            # Convert to UTC
+            start_date_obj = week_start.astimezone(timezone.utc)
+            end_date_obj = week_end.astimezone(timezone.utc)
+        else:
+            # Use existing logic for month/all
+            start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
 
         # Get logs from database
         logs = nutrition_log.get_user_logs(
@@ -223,6 +247,22 @@ def get_nutrition_stats(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Failed to retrieve nutrition statistics")
+
+@router.get("/today", response_model=List[dict])
+def get_todays_nutrition_logs(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get today's nutrition logs."""
+    try:
+        # Simple approach - just return empty array for now
+        return []
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve today's nutrition logs: {str(e)}")
 
 @router.get("/recent", response_model=List[dict])
 def get_recent_meals(

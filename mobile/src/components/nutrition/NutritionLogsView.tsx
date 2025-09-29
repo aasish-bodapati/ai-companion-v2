@@ -58,8 +58,11 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const loadLogs = async (date?: Date) => {
     try {
       setLoading(true);
+      const targetDate = date || selectedDate;
+      const dateStr = targetDate.toISOString().split('T')[0];
       const response = await nutritionService.getMealLogs({
-        period: 'month',
+        start_date: dateStr,
+        end_date: dateStr,
         page: 1,
         size: 50
       });
@@ -81,8 +84,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const loadLogsForDate = async (date: Date) => {
     try {
       setNavigating(true);
+      const dateStr = date.toISOString().split('T')[0];
       const response = await nutritionService.getMealLogs({
-        period: 'month',
+        start_date: dateStr,
+        end_date: dateStr,
         page: 1,
         size: 50
       });

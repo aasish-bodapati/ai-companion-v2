@@ -113,50 +113,20 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setLoading(true);
       const targetDate = date || selectedDate;
       
-      // Load all logs for the month first
+      // Use backend date filtering instead of client-side filtering
+      const targetDateStr = targetDate.toISOString().split('T')[0];
+      
       const response = await fitnessService.getWorkoutLogs({
-        start_date: new Date(targetDate.getFullYear(), targetDate.getMonth(), 1).toISOString(),
-        end_date: new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).toISOString(),
+        start_date: targetDateStr,
+        end_date: targetDateStr,
         page: 1,
         size: 50
       });
       
-      // Filter logs by the target date
       console.log('🔍 Fitness logs response:', response);
-      console.log('🔍 Response type:', typeof response);
-      console.log('🔍 Response keys:', response ? Object.keys(response) : 'No response');
-      const allLogs = response?.logs || response || [];
-      console.log('🔍 All logs:', allLogs);
-      const targetDateStr = targetDate.toISOString().split('T')[0]; // Get YYYY-MM-DD format
-      console.log('🔍 Target date string for filtering:', targetDateStr);
-      console.log('🔍 Selected date:', selectedDate);
-      console.log('🔍 Target date:', targetDate);
-      
-      const filteredLogs = Array.isArray(allLogs) ? allLogs.filter(log => {
-        // Try both activity_date and logged_at fields
-        const dateField = log.activity_date || log.logged_at;
-        if (!dateField) return false;
-        
-        try {
-          // Parse the log date and convert to local date
-          const logDate = new Date(dateField);
-          const logLocalDate = new Date(logDate.getFullYear(), logDate.getMonth(), logDate.getDate());
-          const targetLocalDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
-          
-          const logDateStr = logLocalDate.toISOString().split('T')[0];
-          const targetDateStr = targetLocalDate.toISOString().split('T')[0];
-          
-          console.log('🔍 Comparing dates - Log date:', logDateStr, 'Target date:', targetDateStr, 'Match:', logDateStr === targetDateStr);
-          console.log('🔍 Original log date:', dateField, 'Parsed:', logDate, 'Local date:', logLocalDate);
-          return logDateStr === targetDateStr;
-        } catch (error) {
-          console.log('🔍 Date parsing error for log:', log, error);
-          return false;
-        }
-      }) : [];
-      
-      console.log('🔍 Filtered logs count:', filteredLogs.length);
-      console.log('🔍 Filtered logs:', filteredLogs);
+      const filteredLogs = response?.logs || [];
+      console.log('🔍 Backend filtered logs count:', filteredLogs.length);
+      console.log('🔍 Backend filtered logs:', filteredLogs);
       
       // Parse exercises from JSON string if needed
       const processedLogs = filteredLogs.map(log => {

@@ -9,7 +9,7 @@ from app.api import deps
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
 # Auth cookies removed for Milestone 1 simplicity
-from app.schemas.user import Token, User as UserSchema, UserCreate
+from app.schemas.user import Token, User as UserSchema, UserCreate, UserUpdate
 
 router = APIRouter()
 
@@ -48,6 +48,26 @@ def test_token(current_user: models.User = Depends(deps.get_current_user)):
     Test access token
     """
     return current_user
+
+@router.get("/me", response_model=UserSchema)
+def get_current_user_profile(current_user: models.User = Depends(deps.get_current_user)):
+    """
+    Get current user profile
+    """
+    return current_user
+
+@router.put("/me", response_model=UserSchema)
+def update_current_user_profile(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_user),
+    user_update: UserUpdate
+):
+    """
+    Update current user profile
+    """
+    user = crud.user.update(db, db_obj=current_user, obj_in=user_update)
+    return user
 
 @router.post("/register", response_model=UserSchema)
 def register_user(

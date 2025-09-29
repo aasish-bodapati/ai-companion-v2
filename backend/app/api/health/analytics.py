@@ -75,7 +75,11 @@ async def get_dashboard_data(
         correlations = await analytics_service.get_correlation_insights(current_user.id, 30)
         recommendations = await analytics_service.get_personalized_recommendations(current_user.id)
         
-        # Calculate summary stats
+        # Calculate summary stats using TimezoneService
+        from app.utils.timezone_service import TimezoneService
+        user_timezone = current_user.timezone or "UTC"
+        
+        # Get date range for last 7 days in user's timezone
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=7)
         
@@ -118,11 +122,16 @@ async def get_data_quality_score(
     try:
         from app.services.data_validation import DataValidationService
         from app.models.health.fitness_log import FitnessLog
+        from app.models.health.food_log_items import NutritionLog
         
         validation_service = DataValidationService()
         
-        # Get recent fitness logs for quality analysis
-        end_date = datetime.now()
+        # Get recent fitness logs for quality analysis using TimezoneService
+        from app.utils.timezone_service import TimezoneService
+        user_timezone = current_user.timezone or "UTC"
+        
+        # Get date range for last 30 days
+        end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=30)
         
         fitness_logs = db.query(FitnessLog).filter(

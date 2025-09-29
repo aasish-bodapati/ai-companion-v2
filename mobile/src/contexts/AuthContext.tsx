@@ -8,6 +8,7 @@ interface User {
   email: string;
   full_name: string;
   is_active: boolean;
+  timezone?: string;
 }
 
 interface OnboardingData {
@@ -29,6 +30,7 @@ interface AuthContextType {
   logout: () => void;
   completeOnboarding: (data?: OnboardingData) => void;
   rerunOnboarding: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -234,6 +236,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     console.log('🔄 AuthContext rerunOnboarding completed - needsOnboarding set to true');
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData });
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -245,6 +253,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     completeOnboarding,
     rerunOnboarding,
+    updateUser,
   };
 
   return (

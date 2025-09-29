@@ -26,6 +26,9 @@ class User(Base):
     full_name = Column(String, nullable=True)
     is_active = Column(Boolean(), default=True)
     is_superuser = Column(Boolean(), default=False)
+    
+    # User preferences
+    timezone = Column(String(50), nullable=True, default="UTC")  # User's timezone (e.g., "America/New_York", "Asia/Kolkata")
 
     # Relationships
     onboarding_profile = relationship(

@@ -9,23 +9,57 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import AnalyticsDashboard from '../../components/analytics/AnalyticsDashboard';
 import { hapticFeedback } from '../../utils/haptics';
-import { analyticsService, DashboardData } from '../../services/analyticsService';
+import { dashboardService } from '../../services/dashboardService';
+import { fitnessService } from '../../services/fitnessService';
+import { nutritionService } from '../../services/nutritionService';
+import { waterService } from '../../services/waterService';
+import { moodService } from '../../services/moodService';
+
+interface RealTimeData {
+  todayStats: any;
+  weeklyStats: any;
+  fitnessLogs: any[];
+  nutritionLogs: any[];
+  waterLogs: any[];
+  moodLogs: any[];
+}
 
 export default function AnalyticsScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'fitness' | 'nutrition' | 'mood'>('overview');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [data, setData] = useState<RealTimeData | null>(null);
 
-  const loadDashboardData = async () => {
+  const loadRealTimeData = async () => {
     try {
       setLoading(true);
-      const data = await analyticsService.getDashboardData();
-      setDashboardData(data);
+      
+      // Load all real data in parallel
+      const [
+        dashboardSummary,
+        fitnessLogs,
+        nutritionLogs,
+        waterLogs,
+        moodLogs
+      ] = await Promise.all([
+        dashboardService.getDashboardSummary(),
+        fitnessService.getWorkoutLogs({ period: 'week' }),
+        nutritionService.getMealLogs({ period: 'week' }),
+        waterService.getWaterLogs(7), // 7 days for the week
+        moodService.getMoodLogs({ limit: 50 }) // Get recent mood logs
+      ]);
+
+      setData({
+        todayStats: dashboardSummary.today_stats,
+        weeklyStats: dashboardSummary.weekly_progress,
+        fitnessLogs: Array.isArray(fitnessLogs) ? fitnessLogs : (fitnessLogs?.data || []),
+        nutritionLogs: Array.isArray(nutritionLogs) ? nutritionLogs : (nutritionLogs?.data || []),
+        waterLogs: Array.isArray(waterLogs) ? waterLogs : [],
+        moodLogs: Array.isArray(moodLogs) ? moodLogs : []
+      });
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('Failed to load real-time data:', error);
     } finally {
       setLoading(false);
     }
@@ -34,12 +68,12 @@ export default function AnalyticsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     hapticFeedback.light();
-    await loadDashboardData();
+    await loadRealTimeData();
     setRefreshing(false);
   };
 
   useEffect(() => {
-    loadDashboardData();
+    loadRealTimeData();
   }, []);
 
   const tabs = [
@@ -51,12 +85,37 @@ export default function AnalyticsScreen() {
 
 
   const renderFitnessAnalytics = () => {
-    if (!dashboardData?.trends?.fitness) return null;
+    if (!data) return null;
 
-    const { fitness } = dashboardData.trends;
-    const latestWeek = fitness.weekly_data && Array.isArray(fitness.weekly_data) && fitness.weekly_data.length > 0 
-      ? fitness.weekly_data[fitness.weekly_data.length - 1] 
-      : null;
+    const { fitnessLogs, todayStats, weeklyStats } = data;
+    
+    // Safety check for fitnessLogs
+    if (!Array.isArray(fitnessLogs)) {
+      return (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Fitness Analytics</Text>
+            <Text style={styles.placeholderText}>No fitness data available</Text>
+          </View>
+        </ScrollView>
+      );
+    }
+    
+    // Calculate fitness metrics from real data
+    const totalWorkouts = fitnessLogs.length;
+    const totalMinutes = fitnessLogs.reduce((sum, log) => sum + (log.duration_minutes || 0), 0);
+    const totalCalories = fitnessLogs.reduce((sum, log) => sum + (log.calories_burned || 0), 0);
+    const avgDuration = totalWorkouts > 0 ? totalMinutes / totalWorkouts : 0;
+    
+    // Group by activity type
+    const activityTypes = fitnessLogs.reduce((acc, log) => {
+      acc[log.activity_type] = (acc[log.activity_type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    const mostCommonActivity = Object.keys(activityTypes).reduce((a, b) => 
+      activityTypes[a] > activityTypes[b] ? a : b, 'None'
+    );
 
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -65,51 +124,83 @@ export default function AnalyticsScreen() {
           <Text style={styles.sectionTitle}>Fitness Summary</Text>
           <View style={styles.metricRow}>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{fitness.total_workouts}</Text>
+              <Text style={styles.metricValue}>{totalWorkouts}</Text>
               <Text style={styles.metricLabel}>Total Workouts</Text>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{fitness.avg_workouts_per_week ? fitness.avg_workouts_per_week.toFixed(1) : '0.0'}</Text>
-              <Text style={styles.metricLabel}>Avg/Week</Text>
+              <Text style={styles.metricValue}>{todayStats.workouts || 0}</Text>
+              <Text style={styles.metricLabel}>Today</Text>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{latestWeek?.total_duration || 0}</Text>
-              <Text style={styles.metricLabel}>Minutes</Text>
+              <Text style={styles.metricValue}>{Math.round(avgDuration)}</Text>
+              <Text style={styles.metricLabel}>Avg Minutes</Text>
             </View>
           </View>
         </View>
 
-        {/* Trend Indicator */}
+        {/* Weekly Progress */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Trend</Text>
-          <View style={styles.trendContainer}>
-            <Ionicons 
-              name={fitness.trend === 'increasing' ? 'trending-up' : fitness.trend === 'decreasing' ? 'trending-down' : 'remove'} 
-              size={24} 
-              color={fitness.trend === 'increasing' ? '#10b981' : fitness.trend === 'decreasing' ? '#ef4444' : '#6b7280'} 
-            />
-            <Text style={[styles.trendText, { color: fitness.trend === 'increasing' ? '#10b981' : fitness.trend === 'decreasing' ? '#ef4444' : '#6b7280' }]}>
-              {fitness.trend ? fitness.trend.charAt(0).toUpperCase() + fitness.trend.slice(1) : 'Unknown'} workout frequency
-            </Text>
+          <Text style={styles.sectionTitle}>This Week</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{weeklyStats.workouts_completed || 0}</Text>
+              <Text style={styles.metricLabel}>Workouts</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{weeklyStats.total_minutes_this_week || 0}</Text>
+              <Text style={styles.metricLabel}>Minutes</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{totalCalories}</Text>
+              <Text style={styles.metricLabel}>Calories</Text>
+            </View>
           </View>
         </View>
 
-        {/* Weekly Breakdown */}
+        {/* Activity Breakdown */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
-          {fitness.weekly_data && Array.isArray(fitness.weekly_data) ? (
-            fitness.weekly_data.slice(-4).map((week, index) => (
-              <View key={week.week} style={styles.weekRow}>
-                <Text style={styles.weekLabel}>Week {fitness.weekly_data.length - 3 + index}</Text>
-                <View style={styles.weekMetrics}>
-                  <Text style={styles.weekValue}>{week.workouts} workouts</Text>
-                  <Text style={styles.weekValue}>{week.total_duration}min</Text>
-                  <Text style={styles.weekValue}>{week.total_calories} cal</Text>
+          <Text style={styles.sectionTitle}>Activity Breakdown</Text>
+          {Object.keys(activityTypes).length > 0 ? (
+            Object.entries(activityTypes).map(([activity, count]) => (
+              <View key={activity} style={styles.activityRow}>
+                <Text style={styles.activityLabel}>{activity}</Text>
+                <View style={styles.activityBar}>
+                  <View 
+                    style={[
+                      styles.activityFill, 
+                      { width: `${(count / totalWorkouts) * 100}%` }
+                    ]} 
+                  />
                 </View>
+                <Text style={styles.activityCount}>{count}</Text>
               </View>
             ))
           ) : (
-            <Text style={styles.placeholderText}>No weekly data available</Text>
+            <Text style={styles.placeholderText}>No workout data available</Text>
+          )}
+        </View>
+
+        {/* Recent Workouts */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Recent Workouts</Text>
+          {fitnessLogs.slice(0, 5).map((log, index) => (
+            <View key={log.id || index} style={styles.workoutRow}>
+              <View style={styles.workoutInfo}>
+                <Text style={styles.workoutName}>{log.activity_name || log.activity_type}</Text>
+                <Text style={styles.workoutDate}>
+                  {new Date(log.activity_date).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.workoutStats}>
+                <Text style={styles.workoutDuration}>{log.duration_minutes}min</Text>
+                {log.calories_burned && (
+                  <Text style={styles.workoutCalories}>{log.calories_burned} cal</Text>
+                )}
+              </View>
+            </View>
+          ))}
+          {fitnessLogs.length === 0 && (
+            <Text style={styles.placeholderText}>No recent workouts</Text>
           )}
         </View>
       </ScrollView>
@@ -117,12 +208,36 @@ export default function AnalyticsScreen() {
   };
 
   const renderNutritionAnalytics = () => {
-    if (!dashboardData?.trends?.nutrition) return null;
+    if (!data) return null;
 
-    const { nutrition } = dashboardData.trends;
-    const latestWeek = nutrition.weekly_data && Array.isArray(nutrition.weekly_data) && nutrition.weekly_data.length > 0 
-      ? nutrition.weekly_data[nutrition.weekly_data.length - 1] 
-      : null;
+    const { nutritionLogs, todayStats, weeklyStats } = data;
+    
+    // Safety check for nutritionLogs
+    if (!Array.isArray(nutritionLogs)) {
+      return (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Nutrition Analytics</Text>
+            <Text style={styles.placeholderText}>No nutrition data available</Text>
+          </View>
+        </ScrollView>
+      );
+    }
+    
+    // Calculate nutrition metrics from real data
+    const totalMeals = nutritionLogs.length;
+    const totalCalories = nutritionLogs.reduce((sum, log) => sum + (log.total_calories || 0), 0);
+    const totalProtein = nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
+    const totalCarbs = nutritionLogs.reduce((sum, log) => sum + (log.carbs_g || 0), 0);
+    const totalFat = nutritionLogs.reduce((sum, log) => sum + (log.fat_g || 0), 0);
+    const avgCaloriesPerMeal = totalMeals > 0 ? totalCalories / totalMeals : 0;
+    
+    // Group by meal type
+    const mealTypes = nutritionLogs.reduce((acc, log) => {
+      const mealType = log.meal_type || 'Other';
+      acc[mealType] = (acc[mealType] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -131,55 +246,102 @@ export default function AnalyticsScreen() {
           <Text style={styles.sectionTitle}>Nutrition Summary</Text>
           <View style={styles.metricRow}>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{nutrition.total_meals}</Text>
+              <Text style={styles.metricValue}>{totalMeals}</Text>
               <Text style={styles.metricLabel}>Total Meals</Text>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{nutrition.avg_meals_per_week ? nutrition.avg_meals_per_week.toFixed(1) : '0.0'}</Text>
-              <Text style={styles.metricLabel}>Avg/Week</Text>
+              <Text style={styles.metricValue}>{todayStats.meals || 0}</Text>
+              <Text style={styles.metricLabel}>Today</Text>
             </View>
             <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{latestWeek?.avg_calories_per_meal ? latestWeek.avg_calories_per_meal.toFixed(0) : '0'}</Text>
+              <Text style={styles.metricValue}>{Math.round(avgCaloriesPerMeal)}</Text>
               <Text style={styles.metricLabel}>Cal/Meal</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Weekly Progress */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>This Week</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{weeklyStats.meals_logged || 0}</Text>
+              <Text style={styles.metricLabel}>Meals Logged</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{Math.round(weeklyStats.avg_calories_per_day || 0)}</Text>
+              <Text style={styles.metricLabel}>Avg Cal/Day</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{Math.round(totalCalories)}</Text>
+              <Text style={styles.metricLabel}>Total Calories</Text>
             </View>
           </View>
         </View>
 
         {/* Macro Breakdown */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Macro Breakdown (Latest Week)</Text>
+          <Text style={styles.sectionTitle}>Macro Breakdown</Text>
           <View style={styles.macroContainer}>
             <View style={styles.macroItem}>
               <View style={[styles.macroBar, { backgroundColor: '#ef4444', width: '60%' }]} />
-              <Text style={styles.macroLabel}>Protein: {latestWeek?.total_protein || 0}g</Text>
+              <Text style={styles.macroLabel}>Protein: {Math.round(totalProtein)}g</Text>
             </View>
             <View style={styles.macroItem}>
               <View style={[styles.macroBar, { backgroundColor: '#3b82f6', width: '70%' }]} />
-              <Text style={styles.macroLabel}>Carbs: {latestWeek?.total_carbs || 0}g</Text>
+              <Text style={styles.macroLabel}>Carbs: {Math.round(totalCarbs)}g</Text>
             </View>
             <View style={styles.macroItem}>
               <View style={[styles.macroBar, { backgroundColor: '#f59e0b', width: '50%' }]} />
-              <Text style={styles.macroLabel}>Fat: {latestWeek?.total_fat || 0}g</Text>
+              <Text style={styles.macroLabel}>Fat: {Math.round(totalFat)}g</Text>
             </View>
           </View>
         </View>
 
-        {/* Weekly Breakdown */}
+        {/* Meal Type Breakdown */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
-          {nutrition.weekly_data && Array.isArray(nutrition.weekly_data) ? (
-            nutrition.weekly_data.slice(-4).map((week, index) => (
-              <View key={week.week} style={styles.weekRow}>
-                <Text style={styles.weekLabel}>Week {nutrition.weekly_data.length - 3 + index}</Text>
-                <View style={styles.weekMetrics}>
-                  <Text style={styles.weekValue}>{week.meals} meals</Text>
-                  <Text style={styles.weekValue}>{week.avg_calories_per_meal ? week.avg_calories_per_meal.toFixed(0) : '0'} cal</Text>
-                  <Text style={styles.weekValue}>{week.total_protein}g protein</Text>
+          <Text style={styles.sectionTitle}>Meal Types</Text>
+          {Object.keys(mealTypes).length > 0 ? (
+            Object.entries(mealTypes).map(([mealType, count]) => (
+              <View key={mealType} style={styles.mealTypeRow}>
+                <Text style={styles.mealTypeLabel}>{mealType}</Text>
+                <View style={styles.mealTypeBar}>
+                  <View 
+                    style={[
+                      styles.mealTypeFill, 
+                      { width: `${(count / totalMeals) * 100}%` }
+                    ]} 
+                  />
                 </View>
+                <Text style={styles.mealTypeCount}>{count}</Text>
               </View>
             ))
           ) : (
-            <Text style={styles.placeholderText}>No weekly data available</Text>
+            <Text style={styles.placeholderText}>No meal data available</Text>
+          )}
+        </View>
+
+        {/* Recent Meals */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Recent Meals</Text>
+          {nutritionLogs.slice(0, 5).map((log, index) => (
+            <View key={log.id || index} style={styles.mealRow}>
+              <View style={styles.mealInfo}>
+                <Text style={styles.mealName}>{log.meal_name || log.meal_type || 'Meal'}</Text>
+                <Text style={styles.mealDate}>
+                  {new Date(log.meal_date).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.mealStats}>
+                <Text style={styles.mealCalories}>{log.total_calories} cal</Text>
+                {log.protein_g && (
+                  <Text style={styles.mealProtein}>{log.protein_g}g protein</Text>
+                )}
+              </View>
+            </View>
+          ))}
+          {nutritionLogs.length === 0 && (
+            <Text style={styles.placeholderText}>No recent meals</Text>
           )}
         </View>
       </ScrollView>
@@ -187,6 +349,33 @@ export default function AnalyticsScreen() {
   };
 
   const renderMoodAnalytics = () => {
+    if (!data) return null;
+
+    const { moodLogs, waterLogs } = data;
+    
+    // Safety check for moodLogs and waterLogs
+    const safeMoodLogs = Array.isArray(moodLogs) ? moodLogs : [];
+    const safeWaterLogs = Array.isArray(waterLogs) ? waterLogs : [];
+    
+    // Calculate mood metrics from real data
+    const totalMoodLogs = safeMoodLogs.length;
+    const avgMood = totalMoodLogs > 0 
+      ? safeMoodLogs.reduce((sum, log) => sum + (log.mood_rating || 0), 0) / totalMoodLogs 
+      : 0;
+    
+    // Calculate energy and stress levels
+    const avgEnergy = totalMoodLogs > 0 
+      ? safeMoodLogs.reduce((sum, log) => sum + (log.energy_level || 0), 0) / totalMoodLogs 
+      : 0;
+    
+    const avgStress = totalMoodLogs > 0 
+      ? safeMoodLogs.reduce((sum, log) => sum + (log.stress_level || 0), 0) / totalMoodLogs 
+      : 0;
+    
+    // Calculate water intake
+    const totalWater = safeWaterLogs.reduce((sum, log) => sum + (log.amount_ml || 0), 0);
+    const avgWaterPerDay = safeWaterLogs.length > 0 ? totalWater / safeWaterLogs.length : 0;
+
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.sectionCard}>
@@ -194,35 +383,189 @@ export default function AnalyticsScreen() {
           <View style={styles.moodContainer}>
             <View style={styles.moodItem}>
               <Ionicons name="happy-outline" size={32} color="#10b981" />
-              <Text style={styles.moodValue}>7.2</Text>
+              <Text style={styles.moodValue}>{avgMood.toFixed(1)}</Text>
               <Text style={styles.moodLabel}>Average Mood</Text>
             </View>
             <View style={styles.moodItem}>
               <Ionicons name="battery-half-outline" size={32} color="#3b82f6" />
-              <Text style={styles.moodValue}>75%</Text>
+              <Text style={styles.moodValue}>{Math.round(avgEnergy)}%</Text>
               <Text style={styles.moodLabel}>Energy Level</Text>
             </View>
             <View style={styles.moodItem}>
               <Ionicons name="shield-checkmark-outline" size={32} color="#8b5cf6" />
-              <Text style={styles.moodValue}>68%</Text>
-              <Text style={styles.moodLabel}>Stability</Text>
+              <Text style={styles.moodValue}>{Math.round(100 - avgStress)}%</Text>
+              <Text style={styles.moodLabel}>Wellness</Text>
             </View>
           </View>
         </View>
 
+        {/* Water Intake */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Hydration</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{Math.round(totalWater)}ml</Text>
+              <Text style={styles.metricLabel}>Total Water</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{Math.round(avgWaterPerDay)}ml</Text>
+              <Text style={styles.metricLabel}>Avg/Day</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{safeWaterLogs.length}</Text>
+              <Text style={styles.metricLabel}>Logs</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Mood Logs */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Recent Mood Logs</Text>
+          {safeMoodLogs.slice(0, 5).map((log, index) => (
+            <View key={log.id || index} style={styles.moodLogRow}>
+              <View style={styles.moodLogInfo}>
+                <Text style={styles.moodLogDate}>
+                  {new Date(log.log_date).toLocaleDateString()}
+                </Text>
+                {log.mood_label && (
+                  <Text style={styles.moodLogLabel}>{log.mood_label}</Text>
+                )}
+              </View>
+              <View style={styles.moodLogStats}>
+                <Text style={styles.moodLogRating}>{log.mood_rating}/10</Text>
+                {log.energy_level && (
+                  <Text style={styles.moodLogEnergy}>Energy: {log.energy_level}%</Text>
+                )}
+              </View>
+            </View>
+          ))}
+          {safeMoodLogs.length === 0 && (
+            <Text style={styles.placeholderText}>No mood logs available</Text>
+          )}
+        </View>
+
+        {/* Wellness Insights */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Wellness Insights</Text>
           <View style={styles.insightItem}>
             <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
-            <Text style={styles.insightText}>Your mood improves by 23% on workout days</Text>
+            <Text style={styles.insightText}>
+              {totalMoodLogs > 0 
+                ? `Your average mood is ${avgMood.toFixed(1)}/10 this week`
+                : 'Start logging your mood to see insights'
+              }
+            </Text>
+          </View>
+          <View style={styles.insightItem}>
+            <Ionicons name="water-outline" size={20} color="#3b82f6" />
+            <Text style={styles.insightText}>
+              {safeWaterLogs.length > 0 
+                ? `You've logged ${Math.round(totalWater)}ml of water this week`
+                : 'Start logging water intake for better insights'
+              }
+            </Text>
           </View>
           <View style={styles.insightItem}>
             <Ionicons name="trending-up-outline" size={20} color="#10b981" />
-            <Text style={styles.insightText}>Energy levels have been consistently high this week</Text>
+            <Text style={styles.insightText}>
+              {totalMoodLogs > 0 
+                ? `Keep tracking your mood to identify patterns`
+                : 'Log your mood daily to track patterns'
+              }
+            </Text>
           </View>
-          <View style={styles.insightItem}>
-            <Ionicons name="time-outline" size={20} color="#3b82f6" />
-            <Text style={styles.insightText}>Best mood times: 9-11 AM and 6-8 PM</Text>
+        </View>
+      </ScrollView>
+    );
+  };
+
+  const renderOverviewTab = () => {
+    if (!data) return null;
+
+    const { todayStats, weeklyStats } = data;
+    
+    return (
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Today's Summary */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Today's Summary</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.workouts || 0}</Text>
+              <Text style={styles.metricLabel}>Workouts</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.meals || 0}</Text>
+              <Text style={styles.metricLabel}>Meals</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.water_ml || 0}ml</Text>
+              <Text style={styles.metricLabel}>Water</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Weekly Progress */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Weekly Progress</Text>
+          <View style={styles.progressContainer}>
+            <View style={styles.progressItem}>
+              <Text style={styles.progressLabel}>Workouts</Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${Math.min(weeklyStats.workout_progress || 0, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {weeklyStats.workouts_completed || 0}/{weeklyStats.workouts_target || 0}
+              </Text>
+            </View>
+            <View style={styles.progressItem}>
+              <Text style={styles.progressLabel}>Meals</Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${Math.min(weeklyStats.meal_progress || 0, 100)}%` }
+                  ]} 
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {weeklyStats.meals_logged || 0}/{weeklyStats.meals_target || 0}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Health Metrics */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Health Metrics</Text>
+          <View style={styles.metricRow}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.total_minutes || 0}</Text>
+              <Text style={styles.metricLabel}>Minutes</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.calories_burned || 0}</Text>
+              <Text style={styles.metricLabel}>Calories Burned</Text>
+            </View>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{todayStats.calories_consumed || 0}</Text>
+              <Text style={styles.metricLabel}>Calories Consumed</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Streak */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Current Streak</Text>
+          <View style={styles.streakContainer}>
+            <Ionicons name="flame" size={32} color="#f59e0b" />
+            <Text style={styles.streakValue}>{weeklyStats.streak || 0} days</Text>
+            <Text style={styles.streakLabel}>Keep it up!</Text>
           </View>
         </View>
       </ScrollView>
@@ -242,9 +585,15 @@ export default function AnalyticsScreen() {
     switch (activeTab) {
       case 'overview':
         return (
-          <View style={styles.content}>
-            <AnalyticsDashboard refreshTrigger={refreshing ? 1 : 0} />
-          </View>
+          <ScrollView
+            style={styles.content}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            showsVerticalScrollIndicator={false}
+          >
+            {renderOverviewTab()}
+          </ScrollView>
         );
       case 'fitness':
         return (
@@ -606,5 +955,213 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  // Progress bars
+  progressContainer: {
+    gap: 16,
+  },
+  progressItem: {
+    gap: 8,
+  },
+  progressLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'right',
+  },
+  // Streak
+  streakContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  streakValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 8,
+  },
+  streakLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  // Activity breakdown
+  activityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  activityLabel: {
+    fontSize: 14,
+    color: '#374151',
+    minWidth: 80,
+  },
+  activityBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  activityFill: {
+    height: '100%',
+    backgroundColor: '#3b82f6',
+    borderRadius: 4,
+  },
+  activityCount: {
+    fontSize: 12,
+    color: '#6b7280',
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  // Workout rows
+  workoutRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  workoutInfo: {
+    flex: 1,
+  },
+  workoutName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  workoutDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  workoutStats: {
+    alignItems: 'flex-end',
+  },
+  workoutDuration: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  workoutCalories: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  // Meal rows
+  mealTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  mealTypeLabel: {
+    fontSize: 14,
+    color: '#374151',
+    minWidth: 80,
+  },
+  mealTypeBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  mealTypeFill: {
+    height: '100%',
+    backgroundColor: '#10b981',
+    borderRadius: 4,
+  },
+  mealTypeCount: {
+    fontSize: 12,
+    color: '#6b7280',
+    minWidth: 30,
+    textAlign: 'right',
+  },
+  mealRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  mealInfo: {
+    flex: 1,
+  },
+  mealName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  mealDate: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  mealStats: {
+    alignItems: 'flex-end',
+  },
+  mealCalories: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  mealProtein: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  // Mood logs
+  moodLogRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  moodLogInfo: {
+    flex: 1,
+  },
+  moodLogDate: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  moodLogLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  moodLogStats: {
+    alignItems: 'flex-end',
+  },
+  moodLogRating: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+  },
+  moodLogEnergy: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
   },
 });

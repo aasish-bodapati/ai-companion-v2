@@ -174,14 +174,35 @@ def get_workout_logs(
         from datetime import datetime, timedelta
         import json
         
-        # Calculate date range based on period
-        end_date = datetime.now()
-        if period == "week":
-            start_date = end_date - timedelta(days=7)
-        elif period == "month":
-            start_date = end_date - timedelta(days=30)
-        else:  # all
-            start_date = None
+        # Calculate date range based on period using user's timezone
+        user_timezone = current_user.timezone or "UTC"
+        
+        if user_timezone != "UTC":
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            from datetime import timezone
+            user_tz = timezone(timedelta(hours=offset_hours))
+            now_user = datetime.now(user_tz)
+            end_date = now_user.astimezone(timezone.utc)
+            
+            if period == "week":
+                start_date = (now_user - timedelta(days=7)).astimezone(timezone.utc)
+            elif period == "month":
+                start_date = (now_user - timedelta(days=30)).astimezone(timezone.utc)
+            else:  # all
+                start_date = None
+        else:
+            end_date = datetime.now()
+            if period == "week":
+                start_date = end_date - timedelta(days=7)
+            elif period == "month":
+                start_date = end_date - timedelta(days=30)
+            else:  # all
+                start_date = None
 
         # Build query using raw SQL since our table structure doesn't match the model
         from sqlalchemy import text
@@ -273,8 +294,15 @@ def get_workout_logs(
                 if log['logged_at']:
                     workout_dates.add(log['logged_at'].date())
             
-            # Count consecutive days from today backwards
-            current_date = datetime.now().date()
+            # Count consecutive days from today backwards using user's timezone
+            if user_timezone != "UTC":
+                from datetime import timezone
+                user_tz = timezone(timedelta(hours=offset_hours))
+                now_user = datetime.now(user_tz)
+                current_date = now_user.date()
+            else:
+                current_date = datetime.now().date()
+            
             while current_date in workout_dates:
                 current_streak += 1
                 current_date -= timedelta(days=1)
@@ -484,8 +512,22 @@ def get_today_workout(
     if not routine:
         raise HTTPException(status_code=404, detail="Routine not found")
     
-    # Get today's day of week (0=Monday, 6=Sunday)
-    today = datetime.now()
+    # Get today's day of week (0=Monday, 6=Sunday) using user's timezone
+    user_timezone = current_user.timezone or "UTC"
+    
+    if user_timezone != "UTC":
+        offset_hours = {
+            "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+            "America/Los_Angeles": -8, "Europe/London": 0, 
+            "Asia/Tokyo": 9, "Australia/Sydney": 10
+        }.get(user_timezone, 0)
+        
+        from datetime import timezone
+        user_tz = timezone(timedelta(hours=offset_hours))
+        today = datetime.now(user_tz)
+    else:
+        today = datetime.now()
+    
     day_of_week = today.weekday()  # 0=Monday, 6=Sunday
     day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     today_name = day_names[day_of_week]
@@ -553,8 +595,22 @@ def get_previous_week_workout(
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found")
         
-        # Get today's day of week (0=Monday, 6=Sunday)
-        today = datetime.now()
+        # Get today's day of week (0=Monday, 6=Sunday) using user's timezone
+        user_timezone = current_user.timezone or "UTC"
+        
+        if user_timezone != "UTC":
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            from datetime import timezone
+            user_tz = timezone(timedelta(hours=offset_hours))
+            today = datetime.now(user_tz)
+        else:
+            today = datetime.now()
+        
         day_of_week = today.weekday()  # 0=Monday, 6=Sunday
         day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         today_name = day_names[day_of_week]

@@ -6,7 +6,7 @@ This reduces code duplication while maintaining all existing functionality.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 
 from app.api.deps import get_current_user, get_db
@@ -20,8 +20,35 @@ from app.crud.health.fitness_log import fitness_log
 from app.utils.date_helpers import DateRangeCalculator, DateValidator
 from app.api.common.response_formatters import LoggingResponseFormatter
 from app.services.common.statistics import HealthStatisticsCalculator
+from app.utils.timezone_service import TimezoneService
 
 router = APIRouter()
+
+def get_user_timezone_range(date_obj: datetime, user_timezone: str = "UTC"):
+    """Get start and end of day in user's timezone, converted to UTC for database queries."""
+    # Common timezone mappings
+    timezone_offsets = {
+        "UTC": 0,
+        "Asia/Kolkata": 5.5,  # IST
+        "America/New_York": -5,  # EST
+        "America/Los_Angeles": -8,  # PST
+        "Europe/London": 0,  # GMT
+        "Asia/Tokyo": 9,  # JST
+        "Australia/Sydney": 10,  # AEST
+    }
+    
+    offset_hours = timezone_offsets.get(user_timezone, 0)
+    user_tz = timezone(timedelta(hours=offset_hours))
+    
+    # Get start and end of day in user's timezone
+    start_of_day_user = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=user_tz)
+    end_of_day_user = datetime.combine(date_obj, datetime.max.time()).replace(tzinfo=user_tz)
+    
+    # Convert to UTC for database queries
+    start_of_day_utc = start_of_day_user.astimezone(timezone.utc)
+    end_of_day_utc = end_of_day_user.astimezone(timezone.utc)
+    
+    return start_of_day_utc, end_of_day_utc
 
 # Note: Generic endpoints are available but not included to avoid conflicts
 # Use fitness_endpoints.create_fitness_router() if you want to use the generic patterns
@@ -201,7 +228,19 @@ def get_fitness_stats(
 ):
     """Get fitness statistics."""
     try:
-        start_date, end_date = DateRangeCalculator.get_period_range(period)
+        # Use TimezoneService for proper timezone handling
+        user_timezone = current_user.timezone or "UTC"
+        
+        if period == "week":
+            # Get week range using TimezoneService
+            start_date, end_date = TimezoneService.get_user_week_range(user_timezone)
+        elif period == "month":
+            # Get month range using TimezoneService
+            start_date, end_date = TimezoneService.get_user_month_range(user_timezone)
+        else:
+            # Use existing logic for all
+            start_date, end_date = DateRangeCalculator.get_period_range(period)
+        
         logs = fitness_log.get_user_logs(
             db,
             user_id=current_user.id,
@@ -224,8 +263,18 @@ def get_todays_fitness_logs(
 ):
     """Get today's fitness logs."""
     try:
-        today = datetime.now()
-        logs = fitness_log.get_daily_logs(db, user_id=current_user.id, date=today)
+        # Use TimezoneService for proper timezone handling
+        user_timezone = current_user.timezone or "UTC"
+        
+        # Get today's date range in user's timezone
+        start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+        
+        logs = fitness_log.get_user_logs(
+            db,
+            user_id=current_user.id,
+            start_date=start_of_day,
+            end_date=end_of_day
+        )
         
         logs_data = []
         for log in logs:

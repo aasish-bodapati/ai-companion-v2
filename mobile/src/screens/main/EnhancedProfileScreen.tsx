@@ -14,12 +14,13 @@ import MobileOptimizedCard from '../../components/ui/MobileOptimizedCard';
 import TouchOptimizedButton from '../../components/ui/TouchOptimizedButton';
 import EditHealthDataModal from '../../components/profile/EditHealthDataModal';
 import EditGoalsModal from '../../components/profile/EditGoalsModal';
+import TimezoneSelector from '../../components/profile/TimezoneSelector';
 import { onboardingService, OnboardingData, HealthData } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 
 export default function EnhancedProfileScreen() {
-  const { user, logout, rerunOnboarding } = useAuth();
+  const { user, logout, rerunOnboarding, updateUser } = useAuth();
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -256,6 +257,27 @@ export default function EnhancedProfileScreen() {
     );
   };
 
+  const TimezoneCard = () => {
+    return (
+      <MobileOptimizedCard
+        variant="elevated"
+        style={styles.preferencesCard}
+      >
+        <View style={styles.preferencesHeader}>
+          <Ionicons name="globe-outline" size={24} color="#8b5cf6" />
+          <Text style={styles.preferencesTitle}>Timezone Settings</Text>
+        </View>
+        
+        <View style={styles.preferencesContent}>
+          <TimezoneSelector
+            currentTimezone={user?.timezone || 'UTC'}
+            onTimezoneChange={(timezone) => updateUser({ timezone })}
+          />
+        </View>
+      </MobileOptimizedCard>
+    );
+  };
+
   const PreferencesCard = () => {
     if (!onboardingData?.preferences) return null;
 
@@ -341,6 +363,7 @@ export default function EnhancedProfileScreen() {
         <Text style={styles.sectionTitle}>Your Health Profile</Text>
         <HealthDataCard />
         <GoalsCard />
+        <TimezoneCard />
         <PreferencesCard />
       </View>
 

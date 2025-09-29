@@ -4,7 +4,7 @@ Unified Dashboard API for optimized data loading and performance.
 
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 
@@ -12,10 +12,13 @@ from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.health.fitness_log import FitnessLog
 from app.models.health.fitness_log import NutritionLog, MoodLog
+from app.models.health.water_log import WaterLog
+import logging
 from app.models.health.simple_routine import SimpleRoutine, SimpleUserRoutineProgress
 from app.models.health.nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress
 from app.crud.health import fitness_log, nutrition_log, mood_log
 from app.core.config import settings
+from app.utils.timezone_service import TimezoneService
 from app.core.cache import cache_manager, CacheKey, CacheConfig, cache_invalidator
 import logging
 
@@ -39,15 +42,19 @@ async def get_dashboard_summary(
         cached_result = await cache_manager.get(cache_key)
         if cached_result is not None:
             return cached_result
-        # Get date ranges
+        # Get date ranges using user's timezone from profile
         now_utc = datetime.now(timezone.utc)
         today = now_utc.date()
-        start_of_day = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
-        end_of_day = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
-
-        # Week range
-        week_start = today - timedelta(days=today.weekday())
-        start_of_week = datetime.combine(week_start, datetime.min.time(), tzinfo=timezone.utc)
+        
+        # Use user's timezone if available, otherwise default to UTC
+        # Use TimezoneService for proper timezone handling
+        user_timezone = current_user.timezone or "UTC"
+        
+        # Get today's date range in user's timezone
+        start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+        
+        # Get week range in user's timezone
+        start_of_week, end_of_week = TimezoneService.get_user_week_range(user_timezone)
 
         # Parallel data fetching for performance
 
@@ -68,12 +75,20 @@ async def get_dashboard_summary(
             )
         ).all()
 
+        today_water = db.query(WaterLog).filter(
+            and_(
+                WaterLog.user_id == current_user.id,
+                WaterLog.log_date >= start_of_day,
+                WaterLog.log_date <= end_of_day
+            )
+        ).all()
+
         # 2. Week's activity logs for trends
         week_fitness = db.query(FitnessLog).filter(
             and_(
                 FitnessLog.user_id == current_user.id,
                 FitnessLog.activity_date >= start_of_week,
-                FitnessLog.activity_date <= end_of_day
+                FitnessLog.activity_date <= end_of_week
             )
         ).all()
 
@@ -81,7 +96,7 @@ async def get_dashboard_summary(
             and_(
                 NutritionLog.user_id == current_user.id,
                 NutritionLog.meal_date >= start_of_week,
-                NutritionLog.meal_date <= end_of_day
+                NutritionLog.meal_date <= end_of_week
             )
         ).all()
 
@@ -107,7 +122,7 @@ async def get_dashboard_summary(
         ).all()
 
         # Calculate today's stats
-        today_stats = calculate_today_stats(today_fitness, today_nutrition)
+        today_stats = calculate_today_stats(today_fitness, today_nutrition, today_water)
 
         # Calculate weekly progress
         weekly_progress = calculate_weekly_progress(week_fitness, week_nutrition, today)
@@ -176,11 +191,13 @@ async def get_dashboard_summary(
             "cache_duration": 60
         }
 
-def calculate_today_stats(fitness_logs: List[FitnessLog], nutrition_logs: List[NutritionLog]) -> Dict[str, Any]:
+def calculate_today_stats(fitness_logs: List[FitnessLog], nutrition_logs: List[NutritionLog], water_logs: List[WaterLog] = None) -> Dict[str, Any]:
     """Calculate today's comprehensive stats."""
+    water_logs = water_logs or []
     return {
         "workouts": len(fitness_logs),
         "meals": len(nutrition_logs),
+        "water_ml": sum(log.amount_ml or 0 for log in water_logs),
         "calories_burned": sum(log.calories_burned or 0 for log in fitness_logs),
         "calories_consumed": sum(log.total_calories or 0 for log in nutrition_logs),
         "total_minutes": sum(log.duration_minutes or 0 for log in fitness_logs),

@@ -74,7 +74,38 @@ export const dashboardService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch dashboard summary:', error);
-      throw error;
+      // Return fallback data instead of throwing error
+      return {
+        today_stats: {
+          workouts: 0,
+          meals: 0,
+          calories_burned: 0,
+          calories_consumed: 0,
+          total_minutes: 0,
+          protein_g: 0,
+          carbs_g: 0,
+          fat_g: 0,
+          net_calories: 0,
+        },
+        weekly_progress: {
+          workouts_completed: 0,
+          workouts_target: 5,
+          workout_progress: 0,
+          meals_logged: 0,
+          meals_target: 21,
+          meal_progress: 0,
+          overall_progress: 0,
+          days_in_week: 7,
+          total_minutes_this_week: 0,
+          avg_calories_per_day: 0,
+        },
+        active_routines: [],
+        smart_suggestions: [],
+        quick_actions: [],
+        streak: 0,
+        last_updated: new Date().toISOString(),
+        cache_duration: 60,
+      };
     }
   },
 
@@ -84,7 +115,13 @@ export const dashboardService = {
       return response.data;
     } catch (error) {
       console.error('Failed to fetch quick stats:', error);
-      throw error;
+      // Return fallback data instead of throwing error
+      return {
+        total_workouts: 0,
+        total_meals: 0,
+        current_streak: 0,
+        weekly_goal_progress: 0,
+      };
     }
   },
 

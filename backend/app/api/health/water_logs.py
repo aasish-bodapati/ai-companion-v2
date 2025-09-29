@@ -6,7 +6,7 @@ This reduces code duplication while maintaining all existing functionality.
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
@@ -15,9 +15,36 @@ from app.schemas.health.water_log import (
     WaterLog, WaterLogCreate, WaterLogUpdate, 
     WaterLogStats, WaterLogSummary
 )
+from app.utils.timezone_service import TimezoneService
 # from app.api.common.water_endpoints import water_endpoints  # Not used in this implementation
 
 router = APIRouter()
+
+def get_user_timezone_range(date_obj: datetime, user_timezone: str = "UTC"):
+    """Get start and end of day in user's timezone, converted to UTC for database queries."""
+    # Common timezone mappings
+    timezone_offsets = {
+        "UTC": 0,
+        "Asia/Kolkata": 5.5,  # IST
+        "America/New_York": -5,  # EST
+        "America/Los_Angeles": -8,  # PST
+        "Europe/London": 0,  # GMT
+        "Asia/Tokyo": 9,  # JST
+        "Australia/Sydney": 10,  # AEST
+    }
+    
+    offset_hours = timezone_offsets.get(user_timezone, 0)
+    user_tz = timezone(timedelta(hours=offset_hours))
+    
+    # Get start and end of day in user's timezone
+    start_of_day_user = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=user_tz)
+    end_of_day_user = datetime.combine(date_obj, datetime.max.time()).replace(tzinfo=user_tz)
+    
+    # Convert to UTC for database queries
+    start_of_day_utc = start_of_day_user.astimezone(timezone.utc)
+    end_of_day_utc = end_of_day_user.astimezone(timezone.utc)
+    
+    return start_of_day_utc, end_of_day_utc
 
 # Note: Generic endpoints are available but not included to avoid conflicts
 # Use water_endpoints.create_water_router() if you want to use the generic patterns
@@ -47,7 +74,16 @@ def get_todays_water_logs(
     current_user: User = Depends(get_current_user)
 ):
     """Get user's water logs for today"""
-    logs = water_log.get_user_logs_today(db, user_id=current_user.id)
+    # Use TimezoneService for proper timezone handling
+    user_timezone = current_user.timezone or "UTC"
+    
+    # Get today's date range in user's timezone
+    start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+    
+    logs = water_log.get_user_logs_by_date_range(
+        db, user_id=current_user.id,
+        start_date=start_of_day.date(), end_date=end_of_day.date()
+    )
     return logs
 
 @router.get("/stats", response_model=WaterLogStats)
@@ -57,7 +93,36 @@ def get_water_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Get water intake statistics for today"""
-    stats = water_log.get_water_stats_today(db, user_id=current_user.id)
+    # Use TimezoneService for proper timezone handling
+    user_timezone = current_user.timezone or "UTC"
+    
+    # Get today's date range in user's timezone
+    start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+    
+    # Get logs for today in user's timezone
+    logs = water_log.get_user_logs_by_date_range(
+        db, user_id=current_user.id,
+        start_date=start_of_day.date(), end_date=end_of_day.date()
+    )
+    
+    # Calculate stats manually since we're using timezone-aware filtering
+    total_ml = sum(log.amount_ml or 0 for log in logs)
+    total_oz = sum(log.amount_oz or 0 for log in logs)
+    goal_ml = 2000  # Default goal
+    goal_oz = goal_ml * 0.033814  # Convert to ounces
+    progress_percentage = (total_ml / goal_ml) * 100 if goal_ml > 0 else 0
+    average_per_log = total_ml / len(logs) if logs else 0
+    
+    stats = {
+        "total_ml_today": total_ml,
+        "total_oz_today": total_oz,
+        "goal_ml": goal_ml,
+        "goal_oz": goal_oz,
+        "progress_percentage": progress_percentage,
+        "logs_today": len(logs),
+        "average_per_log": average_per_log
+    }
+    
     return WaterLogStats(**stats)
 
 @router.post("/", response_model=WaterLog)

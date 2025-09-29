@@ -55,9 +55,24 @@ async def get_fitness_today(
 ):
     """Get today's fitness summary."""
     try:
-        # Use user's timezone for date calculation
-        if timezone_offset != 0:
-            # Convert timezone offset from minutes to hours
+        # Use user's stored timezone if available, otherwise use timezone_offset parameter
+        user_timezone = current_user.timezone or "UTC"
+        
+        if user_timezone != "UTC":
+            # Use user's stored timezone
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            user_tz = timezone(timedelta(hours=offset_hours))
+            now_user = datetime.now(user_tz)
+            today = now_user.date()
+            start_of_day = datetime.combine(today, datetime.min.time()).replace(tzinfo=user_tz)
+            end_of_day = datetime.combine(today, datetime.max.time()).replace(tzinfo=user_tz)
+        elif timezone_offset != 0:
+            # Fallback to timezone_offset parameter
             tz_offset_hours = timezone_offset / 60
             user_tz = timezone(timedelta(hours=tz_offset_hours))
             now_user = datetime.now(user_tz)
@@ -181,11 +196,27 @@ async def get_nutrition_today(
 ):
     """Get today's nutrition summary."""
     try:
-        # Use UTC timezone for consistent date calculation
-        now_utc = datetime.now(timezone.utc)
-        today = now_utc.date()
-        start_of_day = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
-        end_of_day = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
+        # Use user's stored timezone for date calculation
+        user_timezone = current_user.timezone or "UTC"
+        
+        if user_timezone != "UTC":
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            user_tz = timezone(timedelta(hours=offset_hours))
+            now_user = datetime.now(user_tz)
+            today = now_user.date()
+            start_of_day = datetime.combine(today, datetime.min.time()).replace(tzinfo=user_tz)
+            end_of_day = datetime.combine(today, datetime.max.time()).replace(tzinfo=user_tz)
+        else:
+            # Fallback to UTC timezone
+            now_utc = datetime.now(timezone.utc)
+            today = now_utc.date()
+            start_of_day = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
+            end_of_day = datetime.combine(today, datetime.max.time(), tzinfo=timezone.utc)
 
         # Get today's nutrition logs
         logs = nutrition_log.get_user_logs(

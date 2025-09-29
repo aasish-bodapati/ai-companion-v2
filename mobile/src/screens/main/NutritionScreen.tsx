@@ -40,6 +40,14 @@ export default function NutritionScreen() {
       });
     } catch (error) {
       console.error('Failed to load today\'s nutrition:', error);
+      // Set fallback data if API fails
+      setTodayStats({
+        meals: 0,
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -199,7 +207,10 @@ export default function NutritionScreen() {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Meals</Text>
-          <TouchableOpacity style={styles.addMealButton}>
+          <TouchableOpacity 
+            style={styles.addMealButton}
+            onPress={() => setShowLogMealModal(true)}
+          >
             <Ionicons name="add" size={20} color="#10b981" />
             <Text style={styles.addMealText}>Add Meal</Text>
           </TouchableOpacity>
@@ -266,7 +277,10 @@ export default function NutritionScreen() {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.addMealCard}>
+          <TouchableOpacity 
+            style={styles.addMealCard}
+            onPress={() => setShowLogMealModal(true)}
+          >
             <Ionicons name="add-circle-outline" size={32} color="#9ca3af" />
             <Text style={styles.addMealCardText}>Add Snack</Text>
           </TouchableOpacity>

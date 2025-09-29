@@ -200,7 +200,30 @@ export const fitnessService = {
   async getTodayWorkoutSummary() {
     try {
       const response = await apiClient.get('/health/fitness-logs/today');
-      return response.data;
+      const logs = response.data;
+      
+      // Calculate summary from logs
+      const workouts = logs.length;
+      const totalDuration = logs.reduce((sum: number, log: any) => sum + (log.duration_minutes || 0), 0);
+      const totalCalories = logs.reduce((sum: number, log: any) => sum + (log.calories_burned || 0), 0);
+      const totalExercises = logs.reduce((sum: number, log: any) => {
+        if (log.exercises) {
+          try {
+            const exercises = typeof log.exercises === 'string' ? JSON.parse(log.exercises) : log.exercises;
+            return sum + (Array.isArray(exercises) ? exercises.length : 0);
+          } catch {
+            return sum;
+          }
+        }
+        return sum;
+      }, 0);
+      
+      return {
+        workouts,
+        total_duration: totalDuration,
+        calories_burned: totalCalories,
+        exercises: totalExercises
+      };
     } catch (error) {
       console.error('Failed to fetch today\'s workout summary:', error);
       throw error;

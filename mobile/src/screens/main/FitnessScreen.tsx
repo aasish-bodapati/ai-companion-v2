@@ -43,15 +43,37 @@ export default function FitnessScreen() {
 
   const loadTodayStats = async () => {
     try {
-      const response = await dashboardService.getDashboardSummary();
-      setTodayStats({
-        workouts: response.today_stats.workouts,
-        duration: response.today_stats.calories_burned, // Using calories as proxy for duration
-        calories: response.today_stats.calories_burned,
-        exercises: response.today_stats.workouts * 3, // Estimate exercises per workout
-      });
+      // Try to get real data from fitness service first
+      const [todaySummary, recentWorkouts] = await Promise.allSettled([
+        fitnessService.getTodayWorkoutSummary(),
+        fitnessService.getRecentWorkouts(5)
+      ]);
+
+      if (todaySummary.status === 'fulfilled' && todaySummary.value) {
+        const data = todaySummary.value;
+        setTodayStats({
+          workouts: data.workouts || 0,
+          duration: data.total_duration || 0,
+          calories: data.calories_burned || 0,
+          exercises: data.exercises || 0,
+        });
+      } else {
+        // Final fallback
+        setTodayStats({
+          workouts: 0,
+          duration: 0,
+          calories: 0,
+          exercises: 0,
+        });
+      }
     } catch (error) {
       console.error('Failed to load today\'s stats:', error);
+      setTodayStats({
+        workouts: 0,
+        duration: 0,
+        calories: 0,
+        exercises: 0,
+      });
     }
   };
 
@@ -61,6 +83,18 @@ export default function FitnessScreen() {
       setWeekStats(stats);
     } catch (error) {
       console.error('Failed to load week stats:', error);
+      // Set fallback stats
+      setWeekStats({
+        total_workouts: 0,
+        total_duration: 0,
+        total_calories_burned: 0,
+        average_duration: 0,
+        average_calories: 0,
+        most_common_activity: 'No data',
+        longest_workout: 0,
+        this_week_workouts: 0,
+        this_month_workouts: 0,
+      });
     }
   };
 
