@@ -30,6 +30,7 @@ class UserHealthProfile(Base):
     # Additional Health Metrics
     smm_kg = Column(Float, nullable=True)  # Skeletal Muscle Mass in kg
     body_fat_percentage = Column(Float, nullable=True)  # Body Fat Percentage
+    ffm_kg = Column(Float, nullable=True)  # Fat-Free Mass in kg
     workout_days_per_week = Column(Integer, nullable=True)  # Number of workout days per week
 
     # Timestamps

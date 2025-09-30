@@ -16,7 +16,9 @@ from . import (
     water_logs,
     profile,
     analytics,
-    body_type_goals
+    body_type_goals,
+    nutrition_search,
+    indian_foods
 )
 
 router = APIRouter()
@@ -40,3 +42,5 @@ router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs
 router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
 router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 router.include_router(body_type_goals.router, prefix="/body-type-goals", tags=["body-type-goals"])
+router.include_router(nutrition_search.router, prefix="/nutrition-search", tags=["nutrition-search"])
+router.include_router(indian_foods.router, prefix="/indian-foods", tags=["indian-foods"])

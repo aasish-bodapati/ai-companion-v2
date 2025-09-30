@@ -362,7 +362,7 @@ async def get_food_categories():
                 "name": "fruits",
                 "display_name": "Fruits",
                 "description": "Fresh and dried fruits",
-                "icon": "apple",
+                "icon": "apple-outline",
                 "subcategories": ["citrus", "berries", "tropical", "stone_fruits"]
             },
             {

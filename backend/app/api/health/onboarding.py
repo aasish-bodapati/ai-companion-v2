@@ -16,6 +16,8 @@ from app.crud.onboarding import onboarding_profile
 from app.crud.health.user_goals import user_health_profile
 from app.models.health.user_goals import UserHealthProfile
 from app.schemas.health_profile import HealthProfileCreate
+from app.crud.health.body_type_goals import body_type_goal
+from app.schemas.health.body_type_goals import BodyTypeGoalCreate
 import logging
 
 logger = logging.getLogger(__name__)
@@ -113,6 +115,7 @@ async def complete_onboarding(
                     activity_level=onboarding_data.activity_level,
                     smm_kg=onboarding_data.smm,
                     body_fat_percentage=onboarding_data.body_fat_percentage,
+                    ffm_kg=onboarding_data.ffm,
                     workout_days_per_week=onboarding_data.workout_days
                 )
                 db.add(health_profile)
@@ -127,12 +130,51 @@ async def complete_onboarding(
                 existing_health_profile.activity_level = onboarding_data.activity_level
                 existing_health_profile.smm_kg = onboarding_data.smm
                 existing_health_profile.body_fat_percentage = onboarding_data.body_fat_percentage
+                existing_health_profile.ffm_kg = onboarding_data.ffm
                 existing_health_profile.workout_days_per_week = onboarding_data.workout_days
                 db.commit()
                 logger.info(f"Health profile updated for user {current_user.id}")
         except Exception as e:
             logger.warning(f"Failed to create/update health profile: {str(e)}")
             # Don't fail the onboarding if health profile creation fails
+
+        # Create user body type goal if edited goal is provided
+        if onboarding_data.editedBodyTypeGoal:
+            try:
+                edited_goal = onboarding_data.editedBodyTypeGoal
+                
+                # Create user body type goal from edited data
+                user_goal_data = BodyTypeGoalCreate(
+                    name=edited_goal.get('name', 'Custom Goal'),
+                    description=edited_goal.get('description', 'Custom body type goal'),
+                    category='body_type',
+                    icon=edited_goal.get('icon', 'body-outline'),
+                    color=edited_goal.get('color', '#3b82f6'),
+                    target_bmi=edited_goal.get('targetBMI', 22.0),
+                    target_body_fat=edited_goal.get('targetBodyFat'),
+                    target_attributes={
+                        'target_weight': edited_goal.get('targetAttributes', {}).get('targetWeight', 70),
+                        'weight_change': edited_goal.get('targetAttributes', {}).get('weightChange', 0),
+                        'water_goal': edited_goal.get('targetAttributes', {}).get('waterGoal', 2500),
+                        'calorie_target': edited_goal.get('targetAttributes', {}).get('calorieTarget', 2000),
+                        'protein_target': edited_goal.get('targetAttributes', {}).get('proteinTarget', 120),
+                        'workout_frequency': edited_goal.get('targetAttributes', {}).get('workoutFrequency', 3),
+                        'cardio_minutes': edited_goal.get('targetAttributes', {}).get('cardioMinutes', 150),
+                        'timeline': edited_goal.get('targetAttributes', {}).get('timeline', 20),
+                        'waist_to_height_ratio': edited_goal.get('waistToHeightRatio'),
+                        'fat_free_mass_index': edited_goal.get('fatFreeMassIndex'),
+                    },
+                    created_by=current_user.id,
+                    is_active=True,
+                    sort_order=999  # User goals at the end
+                )
+                
+                user_goal = body_type_goal.create(db, obj_in=user_goal_data)
+                logger.info(f"User body type goal created for user {current_user.id}: {user_goal.id}")
+                
+            except Exception as e:
+                logger.warning(f"Failed to create user body type goal: {str(e)}")
+                # Don't fail the onboarding if user goal creation fails
 
         logger.info(f"Onboarding completed for user {current_user.id}")
 

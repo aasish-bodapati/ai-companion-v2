@@ -11,6 +11,7 @@ from .weight_logs import UserWeightLog
 # from .exercise_database import Exercise, UserExerciseHistory
 from .exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum
 from .body_type_goals import BodyTypeGoal
+from .indian_food_database import IndianFood
 __all__ = [
     "FitnessLog",
     "NutritionLog",
@@ -27,4 +28,5 @@ __all__ = [
     "ExerciseLoggingCategory",
     "ExerciseLoggingCategoryEnum",
     "BodyTypeGoal",
+    "IndianFood",
 ]

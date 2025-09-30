@@ -16,6 +16,11 @@ class BodyTypeGoalTargetAttributes(BaseModel):
     workout_frequency: int  # days per week
     cardio_minutes: int  # minutes per week
     timeline: int  # weeks to reach goal
+    waist_to_height_ratio: Optional[float] = None  # Waist-to-height ratio
+    fat_free_mass_index: Optional[float] = None  # Fat-Free Mass Index
+    sleep_duration: Optional[float] = None  # hours per night
+    daily_steps: Optional[int] = None  # steps per day
+    recovery_days: Optional[int] = None  # rest days per week
 
 
 class BodyTypeGoalBase(BaseModel):
@@ -27,7 +32,7 @@ class BodyTypeGoalBase(BaseModel):
     target_bmi: float
     target_body_fat: Optional[float] = None
     target_attributes: BodyTypeGoalTargetAttributes
-    created_by: str = "system"
+    created_by: Optional[int] = None
     is_active: bool = True
     sort_order: int = 0
 

@@ -382,7 +382,45 @@ async def get_fitness_logs(
             start_date=start_date,
             end_date=end_date
         )
-        return logs
+        
+        # Convert the logs to match the Pydantic schema
+        converted_logs = []
+        for log in logs:
+            # Handle exercises field - convert array to JSON string if needed
+            exercises_str = log.exercises
+            if isinstance(log.exercises, list):
+                # Convert array to JSON string
+                import json
+                exercises_str = json.dumps(log.exercises)
+            elif isinstance(log.exercises, str):
+                # Already a string, validate it's proper JSON
+                try:
+                    import json
+                    exercises_data = json.loads(log.exercises)
+                    exercises_str = json.dumps(exercises_data)  # Re-serialize to ensure proper format
+                except (json.JSONDecodeError, TypeError):
+                    exercises_str = log.exercises  # Keep as is if not valid JSON
+            else:
+                # Handle None or other types
+                exercises_str = None
+            
+            converted_log = {
+                "id": str(log.id),
+                "user_id": str(log.user_id),
+                "activity_type": log.activity_type,
+                "activity_name": log.activity_name,
+                "duration_minutes": log.duration_minutes,
+                "calories_burned": log.calories_burned,
+                "notes": log.notes,
+                "activity_date": log.activity_date,
+                "exercises": exercises_str,
+                "unit": log.unit,
+                "created_at": log.created_at,
+                "updated_at": log.updated_at
+            }
+            converted_logs.append(converted_log)
+        
+        return converted_logs
     except Exception as e:
         logger.error(f"Error getting fitness logs: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to get fitness logs")
@@ -455,6 +493,149 @@ async def delete_fitness_log(
 # NUTRITION LOGGING CRUD ENDPOINTS
 # ============================================================================
 
+@router.post("/nutrition/test")
+async def create_nutrition_log_test(
+    *,
+    db: Session = Depends(get_db),
+    meal_data: dict
+):
+    """Create a new nutrition log entry (test endpoint without auth)."""
+    try:
+        from datetime import datetime, timezone
+        
+        # Create nutrition log directly using the database model
+        from app.models.health.fitness_log import NutritionLog as NutritionLogModel
+        
+        # Handle meal_date with timezone awareness
+        meal_date = None
+        if meal_data.get('meal_date'):
+            try:
+                # Parse the ISO string with timezone info
+                meal_date = datetime.fromisoformat(meal_data['meal_date'].replace('Z', '+00:00'))
+                # Ensure it's timezone-aware
+                if meal_date.tzinfo is None:
+                    meal_date = meal_date.replace(tzinfo=timezone.utc)
+            except (ValueError, TypeError):
+                # Fallback to current time if parsing fails
+                meal_date = datetime.now(timezone.utc)
+        else:
+            meal_date = datetime.now(timezone.utc)
+        
+        nutrition_log_entry = NutritionLogModel(
+            user_id=13,  # Use mobile app user ID
+            meal_type=meal_data.get('meal_type', 'lunch'),
+            meal_name=meal_data.get('meal_name'),
+            total_calories=meal_data.get('total_calories', 0),
+            protein_g=meal_data.get('protein_g'),
+            carbs_g=meal_data.get('carbs_g'),
+            fat_g=meal_data.get('fat_g'),
+            notes=meal_data.get('notes'),
+            food_items=meal_data.get('food_items'),
+            meal_date=meal_date
+        )
+        
+        db.add(nutrition_log_entry)
+        db.commit()
+        db.refresh(nutrition_log_entry)
+        
+        return {"status": "success", "id": nutrition_log_entry.id}
+    except Exception as e:
+        logger.error(f"Error creating nutrition log: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create nutrition log: {str(e)}")
+
+@router.get("/nutrition/test")
+async def get_nutrition_logs_test(
+    start_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    period: str = Query("week", description="Filter by period: week, month, all"),
+    page: int = Query(1, ge=1, description="Page number"),
+    size: int = Query(50, ge=1, le=100, description="Page size"),
+    timezone_offset: int = Query(0, description="Timezone offset in minutes from UTC"),
+    db: Session = Depends(get_db)
+):
+    """Get nutrition logs (test endpoint without auth)."""
+    try:
+        from datetime import datetime, timezone, timedelta
+        from app.crud.health.fitness_log import nutrition_log
+        
+        print(f"🍽️ [BACKEND NUTRITION] Request received - start_date: {start_date}, end_date: {end_date}, timezone_offset: {timezone_offset}")
+        
+        # Create timezone-aware datetime objects
+        user_tz = timezone(timedelta(minutes=timezone_offset))
+        print(f"🍽️ [BACKEND NUTRITION] User timezone: {user_tz}")
+        
+        if start_date and end_date:
+            # Parse dates in user's timezone, then convert to UTC for database query
+            start_date_local = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=user_tz)
+            end_date_local = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=user_tz)
+            
+            print(f"🍽️ [BACKEND NUTRITION] Local dates - start: {start_date_local}, end: {end_date_local}")
+            
+            # Convert to UTC for database query
+            start_date_obj = start_date_local.astimezone(timezone.utc)
+            end_date_obj = end_date_local.replace(hour=23, minute=59, second=59).astimezone(timezone.utc)
+            
+            print(f"🍽️ [BACKEND NUTRITION] UTC dates - start: {start_date_obj}, end: {end_date_obj}")
+        else:
+            # Use period parameter with user's timezone
+            now_local = datetime.now(user_tz)
+            if period == "week":
+                start_date_obj = (now_local - timedelta(days=7)).astimezone(timezone.utc)
+                end_date_obj = now_local.astimezone(timezone.utc)
+            elif period == "month":
+                start_date_obj = (now_local - timedelta(days=30)).astimezone(timezone.utc)
+                end_date_obj = now_local.astimezone(timezone.utc)
+            else:  # "all"
+                start_date_obj = (now_local - timedelta(days=365)).astimezone(timezone.utc)
+                end_date_obj = now_local.astimezone(timezone.utc)
+        
+        # Get logs from database (use user_id=13 for mobile app)
+        print(f"🍽️ [BACKEND NUTRITION] Querying database for user_id=13, start_date={start_date_obj}, end_date={end_date_obj}")
+        
+        logs = nutrition_log.get_user_logs(
+            db,
+            user_id=13,  # Use mobile app user ID
+            start_date=start_date_obj,
+            end_date=end_date_obj,
+            skip=(page - 1) * size,
+            limit=size
+        )
+        
+        print(f"🍽️ [BACKEND NUTRITION] Found {len(logs)} logs from database")
+        
+        # Format logs for response
+        logs_data = []
+        for i, log in enumerate(logs):
+            print(f"🍽️ [BACKEND NUTRITION] Log {i+1}: id={log.id}, meal_name={log.meal_name}, meal_date={log.meal_date}, created_at={log.created_at}")
+            logs_data.append({
+                "id": log.id,
+                "meal_type": log.meal_type,
+                "meal_name": log.meal_name,
+                "total_calories": log.total_calories,
+                "protein_g": log.protein_g,
+                "carbs_g": log.carbs_g,
+                "fat_g": log.fat_g,
+                "notes": log.notes,
+                "meal_date": log.meal_date.isoformat() if log.meal_date else None,
+                "created_at": log.created_at.isoformat() if log.created_at else None,
+                "food_items": log.food_items
+            })
+        
+        response_data = {
+            "logs": logs_data,
+            "count": len(logs_data),
+            "page": page,
+            "size": size
+        }
+        
+        print(f"🍽️ [BACKEND NUTRITION] Returning response with {len(logs_data)} logs")
+        print(f"🍽️ [BACKEND NUTRITION] Response data: {response_data}")
+        
+        return response_data
+    except Exception as e:
+        logger.error(f"Error getting nutrition logs: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get nutrition logs: {str(e)}")
+
 @router.post("/nutrition", response_model=NutritionLog)
 async def create_nutrition_log(
     *,
@@ -481,17 +662,30 @@ async def get_nutrition_logs(
     skip: int = 0,
     limit: int = 100,
     start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None,
+    timezone_offset: int = Query(0, description="Timezone offset in minutes from UTC")
 ):
     """Get nutrition logs for the current user."""
     try:
+        from datetime import timezone, timedelta
+        
+        # Handle timezone conversion if dates are provided
+        if start_date and end_date:
+            user_tz = timezone(timedelta(minutes=timezone_offset))
+            # Convert dates to UTC for database query
+            start_date_utc = start_date.astimezone(timezone.utc) if start_date.tzinfo else start_date.replace(tzinfo=user_tz).astimezone(timezone.utc)
+            end_date_utc = end_date.astimezone(timezone.utc) if end_date.tzinfo else end_date.replace(tzinfo=user_tz).astimezone(timezone.utc)
+        else:
+            start_date_utc = start_date
+            end_date_utc = end_date
+            
         logs = nutrition_log.get_user_logs(
             db,
             user_id=current_user.id,
             skip=skip,
             limit=limit,
-            start_date=start_date,
-            end_date=end_date
+            start_date=start_date_utc,
+            end_date=end_date_utc
         )
         # Convert IDs to strings to match the schema
         for log in logs:

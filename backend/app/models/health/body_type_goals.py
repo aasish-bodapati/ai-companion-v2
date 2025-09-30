@@ -26,7 +26,7 @@ class BodyTypeGoal(Base):
     target_attributes = Column(JSON, nullable=False)
     
     # Metadata
-    created_by = Column(String, nullable=False, default="system")  # "system" or "user"
+    created_by = Column(Integer, nullable=True)  # User ID who created this goal
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
     

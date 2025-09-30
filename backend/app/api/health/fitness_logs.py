@@ -109,8 +109,10 @@ def get_fitness_logs(
                 start_date_obj = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
             except ValueError:
                 try:
-                    # Fall back to YYYY-MM-DD format
+                    # Fall back to YYYY-MM-DD format - make it timezone-aware
                     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+                    # Convert to UTC to match database timezone
+                    start_date_obj = start_date_obj.replace(tzinfo=timezone.utc)
                 except ValueError:
                     # If both fail, skip the filter
                     pass
@@ -121,8 +123,11 @@ def get_fitness_logs(
                 end_date_obj = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
             except ValueError:
                 try:
-                    # Fall back to YYYY-MM-DD format
+                    # Fall back to YYYY-MM-DD format - make it timezone-aware
                     end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
+                    # Set to end of day and convert to UTC
+                    end_date_obj = end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
+                    end_date_obj = end_date_obj.replace(tzinfo=timezone.utc)
                 except ValueError:
                     # If both fail, skip the filter
                     pass

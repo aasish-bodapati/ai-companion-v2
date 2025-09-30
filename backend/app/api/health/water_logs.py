@@ -99,11 +99,17 @@ def get_water_stats(
     # Get today's date range in user's timezone
     start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
     
-    # Get logs for today in user's timezone
-    logs = water_log.get_user_logs_by_date_range(
-        db, user_id=current_user.id,
-        start_date=start_of_day.date(), end_date=end_of_day.date()
-    )
+    # Get logs for today in user's timezone using datetime comparison
+    from sqlalchemy import and_
+    from app.models.health.water_log import WaterLog
+    
+    logs = db.query(WaterLog).filter(
+        and_(
+            WaterLog.user_id == current_user.id,
+            WaterLog.log_date >= start_of_day,
+            WaterLog.log_date <= end_of_day
+        )
+    ).order_by(WaterLog.log_date.desc()).all()
     
     # Calculate stats manually since we're using timezone-aware filtering
     total_ml = sum(log.amount_ml or 0 for log in logs)

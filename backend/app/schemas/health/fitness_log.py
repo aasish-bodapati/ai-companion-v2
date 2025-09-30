@@ -87,7 +87,7 @@ class NutritionLogBase(BaseModel):
     meal_name: Optional[str] = None
     total_calories: int = Field(..., ge=0)
     notes: Optional[str] = None
-    meal_date: datetime
+    meal_date: Optional[datetime] = None
     food_items: Optional[Union[list, str]] = None
 
 class NutritionLogCreate(NutritionLogBase):

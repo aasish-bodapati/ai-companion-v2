@@ -29,7 +29,7 @@ class CRUDBodyTypeGoal(CRUDBase[BodyTypeGoal, BodyTypeGoalCreate, BodyTypeGoalUp
             .all()
         )
     
-    def get_by_created_by(self, db: Session, *, created_by: str) -> List[BodyTypeGoal]:
+    def get_by_created_by(self, db: Session, *, created_by: int) -> List[BodyTypeGoal]:
         return (
             db.query(BodyTypeGoal)
             .filter(BodyTypeGoal.created_by == created_by, BodyTypeGoal.is_active == True)
@@ -38,10 +38,11 @@ class CRUDBodyTypeGoal(CRUDBase[BodyTypeGoal, BodyTypeGoalCreate, BodyTypeGoalUp
         )
     
     def get_system_goals(self, db: Session) -> List[BodyTypeGoal]:
-        return self.get_by_created_by(db, created_by="system")
+        # System goals have created_by = 1 (system user ID)
+        return self.get_by_created_by(db, created_by=1)
     
-    def get_user_goals(self, db: Session) -> List[BodyTypeGoal]:
-        return self.get_by_created_by(db, created_by="user")
+    def get_user_goals(self, db: Session, user_id: int) -> List[BodyTypeGoal]:
+        return self.get_by_created_by(db, created_by=user_id)
 
 
 body_type_goal = CRUDBodyTypeGoal(BodyTypeGoal)

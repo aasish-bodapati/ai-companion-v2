@@ -22,6 +22,89 @@ from app.schemas.health.simple_routine import (
 
 router = APIRouter()
 
+@router.get("/templates", response_model=SimpleRoutineListResponse)
+def get_routine_templates(
+    *,
+    db: Session = Depends(get_db),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100)
+):
+    """Get system template routines - public access"""
+    # Get template routines
+    routines_list = simple_routine.get_templates(db, skip=skip, limit=limit)
+
+    # Prepare routines with workout details
+    routines_with_progress = []
+    for routine_obj in routines_list:
+        # Prepare routine data with proper tags handling
+        routine_data = routine_obj.__dict__.copy()
+
+        # Convert tags from JSON string to list if needed
+        if routine_data.get('tags') and isinstance(routine_data['tags'], str):
+            try:
+                import json
+                routine_data['tags'] = json.loads(routine_data['tags'])
+            except (json.JSONDecodeError, TypeError):
+                # If it's a comma-separated string, split it
+                if ',' in routine_data['tags']:
+                    routine_data['tags'] = [tag.strip() for tag in routine_data['tags'].split(',')]
+                else:
+                    routine_data['tags'] = [routine_data['tags']]
+
+        # Load workout schedule for this routine
+        from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+        workout_days = db.query(RoutineWorkoutDay).filter(
+            RoutineWorkoutDay.routine_id == routine_obj.id
+        ).order_by(RoutineWorkoutDay.day_order).all()
+        
+        workout_schedule = []
+        for workout_day in workout_days:
+            exercises = db.query(RoutineExercise).filter(
+                RoutineExercise.workout_day_id == workout_day.id
+            ).order_by(RoutineExercise.order_index).all()
+            
+            workout_schedule.append({
+                "day": workout_day.day_name,
+                "workout_name": workout_day.workout_name,
+                "description": workout_day.description,
+                "exercises": [
+                    {
+                        "exercise_name": ex.exercise_name,
+                        "logging_category": ex.logging_category,
+                        "sets": ex.sets,
+                        "reps": ex.reps,
+                        "duration": ex.duration,
+                        "distance": ex.distance,
+                        "distance_unit": ex.distance_unit,
+                        "intensity": ex.intensity,
+                        "heart_rate": ex.heart_rate,
+                        "difficulty": ex.difficulty,
+                        "total_reps": ex.total_reps,
+                        "time": ex.time,
+                        "pace": ex.pace,
+                        "weight_notes": ex.weight_notes,
+                        "rest_time": ex.rest_time,
+                        "notes": ex.notes,
+                        "order_index": ex.order_index
+                    } for ex in exercises
+                ]
+            })
+        
+        # Add required fields for SimpleRoutineWithProgress
+        routine_data['workout_schedule'] = workout_schedule
+        routine_data['total_workouts_per_week'] = len(workout_schedule)
+        routine_data['is_template'] = True
+        
+        routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=None)
+        routines_with_progress.append(routine_with_progress)
+
+    return SimpleRoutineListResponse(
+        routines=routines_with_progress,
+        total=len(routines_with_progress),
+        page=skip // limit + 1,
+        size=limit
+    )
+
 @router.get("/", response_model=SimpleRoutineListResponse)
 def get_routines(
     *,
@@ -329,6 +412,157 @@ def get_workout_logs(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch workout logs: {str(e)}")
 
+@router.get("/templates/{id}", response_model=SimpleRoutineWithProgress)
+def get_template_routine(
+    *,
+    db: Session = Depends(get_db),
+    id: str
+):
+    """Get a specific template routine with detailed workout data - public access"""
+    routine_obj = simple_routine.get(db, id=id)
+    if not routine_obj:
+        raise HTTPException(status_code=404, detail="Template routine not found")
+    
+    # Only allow access to template routines
+    if not routine_obj.is_template:
+        raise HTTPException(status_code=403, detail="Not a template routine")
+
+    # Prepare routine data with proper tags handling
+    routine_data = routine_obj.__dict__.copy()
+
+    # Convert tags from JSON string to list if needed
+    if routine_data.get('tags') and isinstance(routine_data['tags'], str):
+        try:
+            import json
+            routine_data['tags'] = json.loads(routine_data['tags'])
+        except (json.JSONDecodeError, TypeError):
+            # If it's a comma-separated string, split it
+            if ',' in routine_data['tags']:
+                routine_data['tags'] = [tag.strip() for tag in routine_data['tags'].split(',')]
+            else:
+                routine_data['tags'] = [routine_data['tags']]
+
+    # Load workout schedule for this routine
+    from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+    workout_days = db.query(RoutineWorkoutDay).filter(
+        RoutineWorkoutDay.routine_id == routine_obj.id
+    ).order_by(RoutineWorkoutDay.day_order).all()
+    
+    workout_schedule = []
+    for workout_day in workout_days:
+        exercises = db.query(RoutineExercise).filter(
+            RoutineExercise.workout_day_id == workout_day.id
+        ).order_by(RoutineExercise.order_index).all()
+        
+        workout_schedule.append({
+            "day": workout_day.day_name,
+            "workout_name": workout_day.workout_name,
+            "description": workout_day.description,
+            "exercises": [
+                {
+                    "exercise_name": ex.exercise_name,
+                    "logging_category": ex.logging_category,
+                    "sets": ex.sets,
+                    "reps": ex.reps,
+                    "duration": ex.duration,
+                    "distance": ex.distance,
+                    "distance_unit": ex.distance_unit,
+                    "intensity": ex.intensity,
+                    "heart_rate": ex.heart_rate,
+                    "difficulty": ex.difficulty,
+                    "total_reps": ex.total_reps,
+                    "time": ex.time,
+                    "pace": ex.pace,
+                    "weight_notes": ex.weight_notes,
+                    "rest_time": ex.rest_time,
+                    "notes": ex.notes,
+                    "order_index": ex.order_index
+                } for ex in exercises
+            ]
+        })
+    
+    # Add required fields for SimpleRoutineWithProgress
+    routine_data['workout_schedule'] = workout_schedule
+    routine_data['total_workouts_per_week'] = len(workout_schedule)
+    routine_data['is_template'] = True
+    
+    return SimpleRoutineWithProgress(**routine_data, user_progress=None)
+
+@router.get("/active", response_model=SimpleRoutineWithProgress)
+def get_active_routine(
+    *,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get the user's currently active routine"""
+    active_progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
+    if not active_progress:
+        raise HTTPException(status_code=404, detail="No active routine found")
+    
+    # Get the routine details
+    routine_obj = simple_routine.get(db, id=active_progress.routine_id)
+    if not routine_obj:
+        raise HTTPException(status_code=404, detail="Active routine not found")
+    
+    # Prepare routine data with proper tags handling
+    routine_data = routine_obj.__dict__.copy()
+    
+    # Convert tags from JSON string to list if needed
+    if routine_data.get('tags') and isinstance(routine_data['tags'], str):
+        try:
+            import json
+            routine_data['tags'] = json.loads(routine_data['tags'])
+        except (json.JSONDecodeError, TypeError):
+            if ',' in routine_data['tags']:
+                routine_data['tags'] = [tag.strip() for tag in routine_data['tags'].split(',')]
+            else:
+                routine_data['tags'] = [routine_data['tags']]
+    
+    # Load workout schedule for this routine
+    from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+    workout_days = db.query(RoutineWorkoutDay).filter(
+        RoutineWorkoutDay.routine_id == routine_obj.id
+    ).order_by(RoutineWorkoutDay.day_order).all()
+    
+    workout_schedule = []
+    for workout_day in workout_days:
+        exercises = db.query(RoutineExercise).filter(
+            RoutineExercise.workout_day_id == workout_day.id
+        ).order_by(RoutineExercise.order_index).all()
+        
+        workout_schedule.append({
+            "day": workout_day.day_name,
+            "workout_name": workout_day.workout_name,
+            "description": workout_day.description,
+            "exercises": [
+                {
+                    "exercise_name": ex.exercise_name,
+                    "logging_category": ex.logging_category,
+                    "sets": ex.sets,
+                    "reps": ex.reps,
+                    "duration": ex.duration,
+                    "distance": ex.distance,
+                    "distance_unit": ex.distance_unit,
+                    "intensity": ex.intensity,
+                    "heart_rate": ex.heart_rate,
+                    "difficulty": ex.difficulty,
+                    "total_reps": ex.total_reps,
+                    "time": ex.time,
+                    "pace": ex.pace,
+                    "weight_notes": ex.weight_notes,
+                    "rest_time": ex.rest_time,
+                    "notes": ex.notes,
+                    "order_index": ex.order_index
+                } for ex in exercises
+            ]
+        })
+    
+    # Add required fields for SimpleRoutineWithProgress
+    routine_data['workout_schedule'] = workout_schedule
+    routine_data['total_workouts_per_week'] = len(workout_schedule)
+    
+    return SimpleRoutineWithProgress(**routine_data, user_progress=active_progress)
+
 @router.get("/{id}", response_model=SimpleRoutineWithProgress)
 def get_routine(
     *,
@@ -500,80 +734,113 @@ def get_today_workout(
     current_user: User = Depends(get_current_user)
 ):
     """Get today's workout from the active routine"""
-    from datetime import datetime
-    
-    # Get active routine
-    progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
-    if not progress:
-        raise HTTPException(status_code=404, detail="No active routine found")
-    
-    # Get the routine details
-    routine = simple_routine.get(db, id=progress.routine_id)
-    if not routine:
-        raise HTTPException(status_code=404, detail="Routine not found")
-    
-    # Get today's day of week (0=Monday, 6=Sunday) using user's timezone
-    user_timezone = current_user.timezone or "UTC"
-    
-    if user_timezone != "UTC":
-        offset_hours = {
-            "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
-            "America/Los_Angeles": -8, "Europe/London": 0, 
-            "Asia/Tokyo": 9, "Australia/Sydney": 10
-        }.get(user_timezone, 0)
+    try:
+        from datetime import datetime, timedelta
         
-        from datetime import timezone
-        user_tz = timezone(timedelta(hours=offset_hours))
-        today = datetime.now(user_tz)
-    else:
-        today = datetime.now()
-    
-    day_of_week = today.weekday()  # 0=Monday, 6=Sunday
-    day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    today_name = day_names[day_of_week]
-    
-    # Get today's workout day
-    from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
-    workout_day = db.query(RoutineWorkoutDay).filter(
-        RoutineWorkoutDay.routine_id == routine.id,
-        RoutineWorkoutDay.day_name == today_name
-    ).first()
-    
-    if not workout_day:
-        raise HTTPException(status_code=404, detail=f"No workout scheduled for {today_name}")
-    
-    # Get exercises for today
-    exercises = db.query(RoutineExercise).filter(
-        RoutineExercise.workout_day_id == workout_day.id
-    ).order_by(RoutineExercise.order_index).all()
-    
-    return {
-        "routine_id": routine.id,
-        "routine_name": routine.name,
-        "day_name": workout_day.day_name,
-        "workout_name": workout_day.workout_name,
-        "description": workout_day.description,
-        "exercises": [
-            {
-                "id": ex.id,
-                "exercise_name": ex.exercise_name,
-                "logging_category": ex.logging_category,
-                "duration": ex.duration,
-                "distance": ex.distance,
-                "distance_unit": ex.distance_unit,
-                "intensity": ex.intensity,
-                "heart_rate": ex.heart_rate,
-                "difficulty": ex.difficulty,
-                "total_reps": ex.total_reps,
-                "time": ex.time,
-                "pace": ex.pace,
-                "weight_notes": ex.weight_notes,
-                "rest_time": ex.rest_time,
-                "notes": ex.notes,
-                "order_index": ex.order_index
-            } for ex in exercises
-        ]
-    }
+        print(f"🔍 [TODAY WORKOUT] Getting today's workout for user {current_user.id}")
+        
+        # Get active routine
+        progress = simple_user_routine_progress.get_user_active_routine(db, user_id=current_user.id)
+        if not progress:
+            print(f"❌ [TODAY WORKOUT] No active routine found for user {current_user.id}")
+            raise HTTPException(status_code=404, detail="No active routine found")
+        
+        print(f"✅ [TODAY WORKOUT] Active routine found: {progress.routine_id}")
+        
+        # Get the routine details
+        routine = simple_routine.get(db, id=progress.routine_id)
+        if not routine:
+            print(f"❌ [TODAY WORKOUT] Routine {progress.routine_id} not found")
+            raise HTTPException(status_code=404, detail="Routine not found")
+        
+        print(f"✅ [TODAY WORKOUT] Routine found: {routine.name} (Template: {routine.is_template})")
+        
+        # Get today's day of week (0=Monday, 6=Sunday) using user's timezone
+        user_timezone = current_user.timezone or "UTC"
+        print(f"🕐 [TODAY WORKOUT] User timezone: {user_timezone}")
+        
+        if user_timezone != "UTC":
+            offset_hours = {
+                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
+                "America/Los_Angeles": -8, "Europe/London": 0, 
+                "Asia/Tokyo": 9, "Australia/Sydney": 10
+            }.get(user_timezone, 0)
+            
+            from datetime import timezone
+            user_tz = timezone(timedelta(hours=offset_hours))
+            today = datetime.now(user_tz)
+        else:
+            today = datetime.now()
+        
+        day_of_week = today.weekday()  # 0=Monday, 6=Sunday
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        today_name = day_names[day_of_week]
+        
+        print(f"📅 [TODAY WORKOUT] Today is: {today_name} (weekday: {day_of_week})")
+        
+        # Get today's workout day
+        from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+        workout_day = db.query(RoutineWorkoutDay).filter(
+            RoutineWorkoutDay.routine_id == routine.id,
+            RoutineWorkoutDay.day_name == today_name
+        ).first()
+        
+        if not workout_day:
+            print(f"❌ [TODAY WORKOUT] No workout scheduled for {today_name}")
+            raise HTTPException(status_code=404, detail=f"No workout scheduled for {today_name}")
+        
+        print(f"✅ [TODAY WORKOUT] Workout day found: {workout_day.workout_name}")
+        
+        # Get exercises for today with logging category from exercises table
+        from app.models.health.exercise_database import Exercise
+        exercises_query = db.query(
+            RoutineExercise,
+            Exercise.logging_category.label('db_logging_category')
+        ).outerjoin(
+            Exercise, RoutineExercise.exercise_name == Exercise.name
+        ).filter(
+            RoutineExercise.workout_day_id == workout_day.id
+        ).order_by(RoutineExercise.order_index).all()
+        
+        print(f"🏋️ [TODAY WORKOUT] Found {len(exercises_query)} exercises")
+        
+        return {
+            "routine_id": routine.id,
+            "routine_name": routine.name,
+            "day_name": workout_day.day_name,
+            "workout_name": workout_day.workout_name,
+            "description": workout_day.description,
+            "exercises": [
+                {
+                    "id": ex.id,
+                    "exercise_name": ex.exercise_name,
+                    "logging_category": db_logging_category or ex.logging_category or "weighted",  # Fallback to weighted if not found
+                    "duration": ex.duration,
+                    "distance": ex.distance,
+                    "distance_unit": ex.distance_unit,
+                    "intensity": ex.intensity,
+                    "heart_rate": ex.heart_rate,
+                    "difficulty": ex.difficulty,
+                    "total_reps": ex.total_reps,
+                    "time": ex.time,
+                    "pace": ex.pace,
+                    "weight_notes": ex.weight_notes,
+                    "rest_time": ex.rest_time,
+                    "notes": ex.notes,
+                    "order_index": ex.order_index
+                } for ex, db_logging_category in exercises_query
+            ]
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, etc.)
+        raise
+    except Exception as e:
+        print(f"❌ [TODAY WORKOUT] Unexpected error: {str(e)}")
+        print(f"❌ [TODAY WORKOUT] Error type: {type(e).__name__}")
+        import traceback
+        print(f"❌ [TODAY WORKOUT] Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 @router.get("/active/previous-week-workout")
 def get_previous_week_workout(

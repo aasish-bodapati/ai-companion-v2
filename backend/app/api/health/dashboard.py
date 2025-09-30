@@ -255,7 +255,7 @@ def generate_smart_suggestions(
             "message": "Start your day right! Log your breakfast to track your nutrition goals.",
             "action": "log_meal",
             "action_data": {"meal_type": "breakfast"},
-            "icon": "coffee"
+            "icon": "cafe-outline"
         })
 
     if 11 <= hour < 15 and len([n for n in today_nutrition if "lunch" in (n.meal_type or "").lower()]) == 0:
@@ -266,7 +266,7 @@ def generate_smart_suggestions(
             "message": "Don't skip lunch! Your body needs fuel for the afternoon.",
             "action": "log_meal",
             "action_data": {"meal_type": "lunch"},
-            "icon": "utensils"
+            "icon": "restaurant-outline"
         })
 
     # Workout suggestions based on routines
@@ -279,7 +279,7 @@ def generate_smart_suggestions(
             "message": f"You have a {routine.difficulty} workout planned. Ready to crush it?",
             "action": "log_workout",
             "action_data": {"routine_id": routine.id},
-            "icon": "dumbbell"
+            "icon": "barbell-outline"
         })
 
     # Achievement-based suggestions
@@ -291,7 +291,7 @@ def generate_smart_suggestions(
             "message": f"You've logged {len(today_fitness)} workout(s) and {len(today_nutrition)} meal(s). Keep it up!",
             "action": "view_progress",
             "action_data": {},
-            "icon": "trophy"
+            "icon": "trophy-outline"
         })
 
     return suggestions[:3]  # Return top 3 suggestions
@@ -308,7 +308,7 @@ def format_active_routines(fitness_routines: List[SimpleRoutine], nutrition_rout
             "difficulty": routine.difficulty,
             "duration_weeks": routine.duration_weeks,
             "description": routine.description,
-            "icon": "dumbbell"
+            "icon": "barbell-outline"
         })
 
     for routine in nutrition_routines:
@@ -319,7 +319,7 @@ def format_active_routines(fitness_routines: List[SimpleRoutine], nutrition_rout
             "difficulty": routine.difficulty,
             "duration_weeks": routine.duration_weeks,
             "description": routine.description,
-            "icon": "apple"
+            "icon": "apple-outline"
         })
 
     return formatted
@@ -339,7 +339,7 @@ def generate_quick_actions(
         "id": "log_workout",
         "title": "Log Workout",
         "subtitle": f"{len(today_fitness)} logged today",
-        "icon": "plus-circle",
+        "icon": "add-circle-outline",
         "color": "orange",
         "action": "navigate",
         "target": "/fitness?tab=log"
@@ -349,7 +349,7 @@ def generate_quick_actions(
         "id": "log_meal",
         "title": "Log Meal",
         "subtitle": f"{len(today_nutrition)} logged today",
-        "icon": "plus-circle",
+        "icon": "add-circle-outline",
         "color": "green",
         "action": "navigate",
         "target": "/nutrition?tab=log"
@@ -361,7 +361,7 @@ def generate_quick_actions(
             "id": "view_routines",
             "title": "Active Routines",
             "subtitle": f"{len(active_routines)} active",
-            "icon": "calendar",
+            "icon": "calendar-outline",
             "color": "blue",
             "action": "navigate",
             "target": "/fitness?tab=routines"
@@ -373,7 +373,7 @@ def generate_quick_actions(
             "id": "view_progress",
             "title": "View Progress",
             "subtitle": "See your stats",
-            "icon": "chart-bar",
+            "icon": "bar-chart-outline",
             "color": "purple",
             "action": "navigate",
             "target": "/profile"

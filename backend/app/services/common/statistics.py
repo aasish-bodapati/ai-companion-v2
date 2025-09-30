@@ -37,23 +37,31 @@ class HealthStatisticsCalculator:
         
         # Calculate sums
         for field in fields_to_sum:
-            total = sum(getattr(log, field, 0) or 0 for log in logs)
-            results[f"total_{field}"] = total
+            try:
+                total = sum(getattr(log, field, 0) or 0 for log in logs)
+                results[f"total_{field}"] = total
+            except Exception as e:
+                results[f"total_{field}"] = 0
         
         # Calculate averages
         if fields_to_avg:
             for field in fields_to_avg:
-                values = [getattr(log, field, 0) or 0 for log in logs if getattr(log, field, None) is not None]
-                avg = sum(values) / len(values) if values else 0
-                results[f"avg_{field}"] = round(avg, 1)
+                try:
+                    values = [getattr(log, field, 0) or 0 for log in logs if getattr(log, field, None) is not None]
+                    avg = sum(values) / len(values) if values else 0
+                    results[f"avg_{field}"] = round(avg, 1)
+                except Exception as e:
+                    results[f"avg_{field}"] = 0
         
         # Calculate count
-        if count_field:
-            count = sum(1 for log in logs if getattr(log, count_field, None) is not None)
-        else:
-            count = len(logs)
-        
-        results["count"] = count
+        try:
+            if count_field:
+                count = sum(1 for log in logs if getattr(log, count_field, None) is not None)
+            else:
+                count = len(logs)
+            results["count"] = count
+        except Exception as e:
+            results["count"] = 0
         
         return results
     
@@ -90,45 +98,53 @@ class HealthStatisticsCalculator:
     @staticmethod
     def calculate_nutrition_stats(logs: List[Any]) -> Dict[str, Any]:
         """Calculate nutrition-specific statistics."""
+        
         if not logs:
             return {
-                "totalMeals": 0,
-                "totalCalories": 0,
-                "totalProtein": 0,
-                "totalCarbs": 0,
-                "totalFat": 0,
-                "totalFiber": 0,
-                "totalSugar": 0,
-                "totalSodium": 0,
-                "avgCaloriesPerMeal": 0,
-                "currentStreak": 0
+                "meals_count": 0,
+                "total_calories": 0,
+                "protein_g": 0,
+                "carbs_g": 0,
+                "fat_g": 0,
+                "fiber_g": 0,
+                "sugar_g": 0,
+                "sodium_mg": 0,
+                "avg_calories_per_meal": 0,
+                "current_streak": 0
             }
         
-        aggregates = HealthStatisticsCalculator.calculate_aggregates(
-            logs,
-            fields_to_sum=["total_calories"],
-            count_field="meal_type"
-        )
+        try:
+            aggregates = HealthStatisticsCalculator.calculate_aggregates(
+                logs,
+                fields_to_sum=["total_calories", "protein_g", "carbs_g", "fat_g"],
+                count_field="meal_type"
+            )
+        except Exception as e:
+            raise
         
         # Calculate average calories per meal
         avg_calories_per_meal = aggregates["total_total_calories"] / aggregates["count"] if aggregates["count"] > 0 else 0
-        
         # Calculate current streak
-        from app.utils.date_helpers import StreakCalculator
-        current_streak = StreakCalculator.calculate_streak(logs, "meal_date")
+        try:
+            from app.utils.date_helpers import StreakCalculator
+            current_streak = StreakCalculator.calculate_streak(logs, "meal_date")
+        except Exception as e:
+            current_streak = 0
         
-        return {
-            "totalMeals": aggregates["count"],
-            "totalCalories": aggregates["total_total_calories"],
-            "totalProtein": 0,  # Not available in current model
-            "totalCarbs": 0,    # Not available in current model
-            "totalFat": 0,      # Not available in current model
-            "totalFiber": 0,    # Not available in current model
-            "totalSugar": 0,    # Not available in current model
-            "totalSodium": 0,   # Not available in current model
-            "avgCaloriesPerMeal": round(avg_calories_per_meal, 1),
-            "currentStreak": current_streak
+        result = {
+            "meals_count": aggregates["count"],
+            "total_calories": aggregates["total_total_calories"],
+            "protein_g": aggregates["total_protein_g"],
+            "carbs_g": aggregates["total_carbs_g"],
+            "fat_g": aggregates["total_fat_g"],
+            "fiber_g": 0,    # Not available in current model
+            "sugar_g": 0,    # Not available in current model
+            "sodium_mg": 0,   # Not available in current model
+            "avg_calories_per_meal": round(avg_calories_per_meal, 1),
+            "current_streak": current_streak
         }
+        
+        return result
     
     @staticmethod
     def calculate_weekly_trends(logs: List[Any], date_field: str, 

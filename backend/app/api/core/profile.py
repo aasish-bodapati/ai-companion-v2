@@ -12,6 +12,8 @@ from app.models.health.user_goal import UserGoal
 from app.models.health.user_goals import UserHealthProfile
 from app.models.onboarding import OnboardingProfile
 from app.schemas.profile import UserProfile, HealthProfile
+from app.crud.health.body_type_goals import body_type_goal
+from app.schemas.health.body_type_goals import BodyTypeGoal
 
 router = APIRouter()
 
@@ -35,18 +37,14 @@ async def get_user_profile(
             OnboardingProfile.user_id == current_user.id
         ).first()
         
-        # Debug: Check all onboarding profiles
-        all_onboarding = db.query(OnboardingProfile).all()
-        print(f"All onboarding profiles in DB: {len(all_onboarding)}")
-        for profile in all_onboarding:
-            print(f"  - User {profile.user_id}: completed={profile.completed}, body_type_goal={profile.body_type_goal}")
         
         # Get user goals (if table exists)
         goals = []
         try:
-            goals = db.query(UserGoal).filter(
+            user_goals = db.query(UserGoal).filter(
                 UserGoal.user_id == current_user.id
             ).all()
+            goals = [goal.title for goal in user_goals]
         except Exception as e:
             print(f"Warning: Could not query user_goals table: {e}")
             goals = []
@@ -62,17 +60,20 @@ async def get_user_profile(
                 activity_level=health_profile.activity_level,
                 smm=str(health_profile.smm_kg) if health_profile.smm_kg else None,
                 body_fat_percentage=str(health_profile.body_fat_percentage) if health_profile.body_fat_percentage else None,
+                ffm=str(health_profile.ffm_kg) if health_profile.ffm_kg else None,
                 workout_days_per_week=str(health_profile.workout_days_per_week) if health_profile.workout_days_per_week else None
             )
         
         # Get body type goal from onboarding status
-        body_type_goal = onboarding_status.body_type_goal if onboarding_status else None
-        print(f"Profile API Debug - User {current_user.id}:")
-        print(f"  - onboarding_status exists: {onboarding_status is not None}")
-        print(f"  - body_type_goal: {body_type_goal}")
-        if onboarding_status:
-            print(f"  - onboarding_status.body_type_goal: {onboarding_status.body_type_goal}")
-            print(f"  - onboarding_status.completed: {onboarding_status.completed}")
+        user_body_type_goal_name = onboarding_status.body_type_goal if onboarding_status else None
+        
+        # Get user's body type goals (if any exist)
+        user_body_type_goals = []
+        try:
+            user_body_type_goals = body_type_goal.get_user_goals(db, user_id=current_user.id)
+        except Exception as e:
+            print(f"Warning: Could not query body type goals: {e}")
+            user_body_type_goals = []
         
         # Build onboarding status
         onboarding_completed = onboarding_status.completed if onboarding_status else False
@@ -83,7 +84,9 @@ async def get_user_profile(
             full_name=current_user.full_name,
             timezone=current_user.timezone,
             health_data=health_data,
-            bodyTypeGoal=body_type_goal,
+            goals=goals,
+            bodyTypeGoal=user_body_type_goal_name,
+            bodyTypeGoals=user_body_type_goals,
             preferences={
                 "notifications": True,  # Default values
                 "reminders": True,

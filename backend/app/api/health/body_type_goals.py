@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ...db.session import get_db
+from ...api.deps import get_current_user
+from ...models.user import User
 from ...crud.health.body_type_goals import body_type_goal
 from ...schemas.health.body_type_goals import BodyTypeGoal, BodyTypeGoalList
 
@@ -21,7 +23,12 @@ def get_body_type_goals(
 ):
     """Get all active body type goals, optionally filtered by category or created_by"""
     if created_by:
-        goals = body_type_goal.get_by_created_by(db, created_by=created_by)
+        # Convert string to integer if needed
+        try:
+            created_by_id = int(created_by) if isinstance(created_by, str) else created_by
+            goals = body_type_goal.get_by_created_by(db, created_by=created_by_id)
+        except (ValueError, TypeError):
+            goals = []
     elif category:
         goals = body_type_goal.get_by_category(db, category=category)
     else:
@@ -44,9 +51,12 @@ def get_system_body_type_goals(db: Session = Depends(get_db)):
 
 
 @router.get("/user", response_model=BodyTypeGoalList)
-def get_user_body_type_goals(db: Session = Depends(get_db)):
-    """Get all user-created body type goals"""
-    goals = body_type_goal.get_user_goals(db)
+def get_user_body_type_goals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get all user-created body type goals for the current user"""
+    goals = body_type_goal.get_user_goals(db, user_id=current_user.id)
     return BodyTypeGoalList(
         body_type_goals=goals,
         total=len(goals)
