@@ -24,6 +24,79 @@ from app.utils.timezone_service import TimezoneService
 
 router = APIRouter()
 
+@router.get("/latest-exercise")
+async def get_latest_workout_for_exercise(
+    exercise_name: str = Query(..., description="Name of the exercise"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get the latest workout data for a specific exercise."""
+    try:
+        from sqlalchemy import text
+        
+        print(f"🔍 [BACKEND] Looking for exercise: '{exercise_name}' for user_id: {current_user.id}")
+        
+        # Query for the most recent fitness log containing this exercise
+        # Use PostgreSQL JSONB operators to search within the JSON array
+        query = text("""
+            SELECT id, exercises, activity_date, created_at
+            FROM fitness_logs 
+            WHERE user_id = :user_id AND exercises::text ILIKE :exercise_pattern
+            ORDER BY created_at DESC 
+            LIMIT 1
+        """)
+        
+        exercise_pattern = f'%{exercise_name}%'
+        print(f"🔍 [BACKEND] Search pattern: '{exercise_pattern}'")
+        
+        result = db.execute(query, {
+            "user_id": current_user.id,
+            "exercise_pattern": exercise_pattern
+        })
+        row = result.fetchone()
+        
+        print(f"🔍 [BACKEND] Query result: {row}")
+        
+        if not row:
+            print(f"🔍 [BACKEND] No rows found for exercise: '{exercise_name}'")
+            return {"message": "No previous workouts found for this exercise"}
+        
+        # Parse the exercises JSON to find the specific exercise
+        try:
+            exercises_data = json.loads(row.exercises) if isinstance(row.exercises, str) else row.exercises
+            print(f"🔍 [BACKEND] Parsed exercises data: {exercises_data}")
+            
+            if isinstance(exercises_data, list) and exercises_data:
+                # Find the exercise with matching name
+                for exercise in exercises_data:
+                    exercise_name_in_data = exercise.get('exercise_name', '')
+                    print(f"🔍 [BACKEND] Comparing '{exercise_name_in_data.lower()}' with '{exercise_name.lower()}'")
+                    
+                    if exercise_name_in_data.lower() == exercise_name.lower():
+                        result_data = {
+                            "exercise_name": exercise.get('exercise_name'),
+                            "sets": exercise.get('sets'),
+                            "reps": exercise.get('reps'),
+                            "weight_kg": exercise.get('weight_kg'),
+                            "duration_minutes": exercise.get('duration_minutes'),
+                            "rest_time": exercise.get('rest_time'),
+                            "notes": exercise.get('notes'),
+                            "workout_date": row.activity_date.isoformat() if row.activity_date else None
+                        }
+                        print(f"🔍 [BACKEND] Found matching exercise: {result_data}")
+                        return result_data
+                        
+            print(f"🔍 [BACKEND] No matching exercise found in data")
+        except (json.JSONDecodeError, TypeError) as e:
+            print(f"🔍 [BACKEND] Error parsing exercises data: {e}")
+            pass
+        
+        return {"message": "No previous workouts found for this exercise"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get latest workout: {str(e)}")
+
+
 def get_user_timezone_range(date_obj: datetime, user_timezone: str = "UTC"):
     """Get start and end of day in user's timezone, converted to UTC for database queries."""
     # Common timezone mappings
@@ -95,6 +168,9 @@ def get_fitness_logs(
     activity_type: Optional[str] = Query(None, description="Filter by activity type")
 ):
     """Get fitness logs with optional filtering and pagination."""
+    print(f"🏋️ [FITNESS LOGS ENDPOINT] Called for user {current_user.id}")
+    print(f"🏋️ [FITNESS LOGS ENDPOINT] Parameters: period={period}, page={page}, size={size}, start_date={start_date}, end_date={end_date}")
+    
     try:
         # Use the generic endpoint logic
         # from app.api.common.fitness_endpoints import fitness_endpoints  # Not used
@@ -209,6 +285,10 @@ def get_fitness_logs(
             }
             logs_data.append(log_dict)
 
+        print(f"🏋️ [FITNESS LOGS ENDPOINT] Returning {len(logs_data)} logs")
+        for i, log in enumerate(logs_data):
+            print(f"🏋️ [FITNESS LOGS ENDPOINT] Log {i+1}: ID={log['id']}, Activity={log['workout_name']}, Date={log['activity_date']}")
+        
         return {
             "logs": logs_data,
             "stats": stats,
@@ -361,13 +441,8 @@ def create_fitness_log(
 ):
     """Create a new fitness log."""
     try:
-        # Add debugging
-        print(f"🔍 DEBUG: Received fitness log data from user {current_user.id}")
-        print(f"🔍 DEBUG: Raw log_data: {log_data}")
-        
         # Convert to dict and handle field mapping
         log_data_dict = log_data.model_dump()
-        print(f"🔍 DEBUG: log_data_dict: {log_data_dict}")
         
         # Handle field name mapping from frontend
         if 'workout_name' in log_data_dict and log_data_dict['workout_name']:
@@ -375,24 +450,17 @@ def create_fitness_log(
         
         # Set default activity_date if not provided
         if not log_data_dict.get('activity_date'):
-            from datetime import datetime
-            log_data_dict['activity_date'] = datetime.now()
+            log_data_dict['activity_date'] = datetime.now(timezone.utc)
         
         # Convert exercises to JSON string if it's a list
         if 'exercises' in log_data_dict and isinstance(log_data_dict['exercises'], list):
             log_data_dict['exercises'] = json.dumps(log_data_dict['exercises'])
-            print(f"🔍 DEBUG: Converted exercises to JSON: {log_data_dict['exercises']}")
-
-        print(f"🔍 DEBUG: Final processed data: {log_data_dict}")
 
         # Create a new schema instance with the processed data
         from app.schemas.health.fitness_log import FitnessLogCreate
         processed_log_data = FitnessLogCreate(**log_data_dict)
         
-        print(f"🔍 DEBUG: Created FitnessLogCreate instance: {processed_log_data}")
-        
         log = fitness_log.create_with_user(db, obj_in=processed_log_data, user_id=current_user.id)
-        print(f"🔍 DEBUG: Created fitness log with ID: {log.id}")
 
         # Parse exercises from JSON string
         exercises = []
@@ -420,10 +488,9 @@ def create_fitness_log(
         }
     except Exception as e:
         import traceback
-        print(f"❌ DEBUG: Exception in create_fitness_log: {str(e)}")
-        print(f"❌ DEBUG: Exception type: {type(e)}")
+        logger.error(f"Error creating fitness log: {str(e)}")
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Failed to create fitness log: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create fitness log")
 
 # Keep the original update endpoint for backward compatibility
 @router.put("/{id}", response_model=dict)

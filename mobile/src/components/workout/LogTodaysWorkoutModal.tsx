@@ -13,29 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
-
-const EXERCISE_CATEGORIES = {
-  bodyweight: {
-    name: 'Bodyweight',
-    icon: 'person-outline',
-    color: '#3b82f6',
-  },
-  weighted: {
-    name: 'Weighted',
-    icon: 'barbell-outline', 
-    color: '#ef4444',
-  },
-  cardio_duration: {
-    name: 'Cardio & Duration',
-    icon: 'heart-outline',
-    color: '#22c55e', 
-  },
-  distance_based: {
-    name: 'Distance-Based',
-    icon: 'map-outline',
-    color: '#8b5cf6',
-  }
-};
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 
 interface Exercise {
   id: number;
@@ -74,13 +52,41 @@ export default function LogTodaysWorkoutModal({
   const [exerciseData, setExerciseData] = useState<{ [key: number]: any }>({});
   const [loggedExercises, setLoggedExercises] = useState<Set<number>>(new Set());
   const [skippedExercises, setSkippedExercises] = useState<Set<number>>(new Set());
+  const [categories, setCategories] = useState<any[]>([]);
   const weightInputRefs = useRef<{ [key: number]: TextInput | null }>({});
 
   useEffect(() => {
     if (visible) {
       loadTodaysWorkout();
+      loadCategories();
     }
   }, [visible]);
+
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await exerciseCategoryService.getCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
+
+  const getCategoryConfig = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      return {
+        name: category.display_name,
+        icon: category.icon,
+        color: category.color,
+      };
+    }
+    // Return "Category Not Found" config
+    return {
+      name: 'Category Not Found',
+      icon: 'help-outline',
+      color: '#6b7280',
+    };
+  };
 
   const loadTodaysWorkout = async () => {
     try {
@@ -92,19 +98,9 @@ export default function LogTodaysWorkoutModal({
       
       setWorkoutData(data);
       
-      // Get exercise names for fetching last instances
-      const exerciseNames = data.exercises?.map((exercise: Exercise) => exercise.exercise_name) || [];
-      
-      // Fetch last instances of each exercise from user's workout logs
-      let lastInstances = {};
-      if (exerciseNames.length > 0) {
-        try {
-          lastInstances = await fitnessService.getLastExerciseInstances(exerciseNames);
-        } catch (error) {
-          console.error('Failed to fetch last exercise instances:', error);
-          // Continue without last instances if this fails
-        }
-      }
+      // Note: Last exercise instances feature not implemented yet
+      // This would pre-populate form with previous logged values
+      const lastInstances = {};
       
       // Initialize exercise data with last logged values or defaults
       const initialData: { [key: number]: any } = {};
@@ -125,8 +121,25 @@ export default function LogTodaysWorkoutModal({
       setExerciseData(initialData);
     } catch (error) {
       console.error('Failed to load today\'s workout:', error);
-      Alert.alert('Error', 'Failed to load today\'s workout. Please try again.');
-      onClose();
+      
+      // Handle different error types
+      if (error.response?.status === 404) {
+        const errorMessage = error.response?.data?.detail || 'No workout scheduled for today';
+        Alert.alert(
+          'No Workout Today', 
+          errorMessage + '\n\nYou can still log a custom workout or check your routine schedule.',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: onClose },
+            { text: 'Log Custom Workout', onPress: () => {
+              onClose();
+              // You could navigate to a custom workout logging screen here
+            }}
+          ]
+        );
+      } else {
+        Alert.alert('Error', 'Failed to load today\'s workout. Please try again.');
+        onClose();
+      }
     } finally {
       setLoading(false);
     }
@@ -211,6 +224,11 @@ export default function LogTodaysWorkoutModal({
   };
 
   const handleSaveWorkout = async () => {
+    if (loading) {
+      console.log('🚫 [LOG TODAYS WORKOUT MODAL] Save already in progress, ignoring duplicate request');
+      return;
+    }
+
     if (!isFormValid()) {
       // Find exercises that need attention
       const incompleteExercises = [];
@@ -303,7 +321,9 @@ export default function LogTodaysWorkoutModal({
       };
 
       // Log the workout using fitness logs API
-      await routineService.createWorkoutLog(logData);
+      console.log('🔍 [WORKOUT LOG] Logging workout with data:', logData);
+      const result = await routineService.createWorkoutLog(logData);
+      console.log('✅ [WORKOUT LOG] Workout logged successfully:', result);
 
       Alert.alert(
         'Workout Logged!',
@@ -426,11 +446,8 @@ export default function LogTodaysWorkoutModal({
                       <Text style={styles.exerciseNumber}>#{index + 1}</Text>
                       <Text style={styles.exerciseName}>{exercise.exercise_name}</Text>
                       {exercise.logging_category && (() => {
-                        const categoryConfig = EXERCISE_CATEGORIES[exercise.logging_category as keyof typeof EXERCISE_CATEGORIES] || {
-                          name: exercise.logging_category,
-                          icon: 'fitness-outline',
-                          color: '#6b7280'
-                        };
+                        const categoryConfig = getCategoryConfig(exercise.logging_category);
+                        
                         return (
                           <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
                             <Ionicons 

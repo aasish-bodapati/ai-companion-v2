@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, CreateRoutineData, SimpleRoutineWithProgress } from '../../services/routineService';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 
@@ -44,12 +45,7 @@ interface EditRoutineModalProps {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const WORKOUT_CATEGORIES = [
-  { id: 'bodyweight', name: 'Bodyweight Exercises', color: '#3b82f6', icon: 'person-outline' },
-  { id: 'weighted', name: 'Weighted Exercises', color: '#ef4444', icon: 'barbell-outline' },
-  { id: 'cardio_duration', name: 'Cardio & Duration', color: '#22c55e', icon: 'heart-outline' },
-  { id: 'distance_based', name: 'Distance-Based', color: '#8b5cf6', icon: 'map-outline' },
-];
+// Categories will be loaded from database
 
 export default function EditRoutineModal({
   isVisible,
@@ -62,6 +58,7 @@ export default function EditRoutineModal({
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
   const [loadingRoutineData, setLoadingRoutineData] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
   
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
@@ -82,6 +79,38 @@ export default function EditRoutineModal({
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
 
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await exerciseCategoryService.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const getCategoryConfig = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      return {
+        id: category.id,
+        name: category.display_name,
+        color: category.color,
+        icon: category.icon,
+      };
+    }
+    // Return "Category Not Found" config
+    return {
+      id: categoryId,
+      name: 'Category Not Found',
+      color: '#6b7280',
+      icon: 'help-outline',
+    };
+  };
+
   // Load routine data when modal opens
   useEffect(() => {
     const loadRoutineData = async () => {
@@ -93,7 +122,19 @@ export default function EditRoutineModal({
         // Fetch full routine details with workout data
         try {
           setLoadingRoutineData(true);
-          const fullRoutine = await routineService.getRoutine(routine.id);
+          
+          // Use appropriate method based on routine type
+          console.log('🔍 [EDIT MODAL] Fetching routine data:', {
+            routineId: routine.id,
+            routineName: routine.name,
+            isTemplate: routine.is_template,
+            method: routine.is_template ? 'getTemplateRoutine' : 'getRoutine'
+          });
+          
+          const fullRoutine = routine.is_template 
+            ? await routineService.getTemplateRoutine(routine.id)
+            : await routineService.getRoutine(routine.id);
+            
           console.log('🔍 [EDIT MODAL] Full routine data:', fullRoutine);
           
           // Convert routine workout schedule to dayWorkouts format
@@ -110,7 +151,10 @@ export default function EditRoutineModal({
               console.log(`🔍 [EDIT MODAL] Day exercises:`, workoutDay.exercises);
               console.log(`🔍 [EDIT MODAL] Is exercises array?`, Array.isArray(workoutDay.exercises));
               
-              const dayIndex = DAYS.findIndex(d => d.toLowerCase() === workoutDay.day);
+              // Match day name to DAYS array
+              const dayIndex = DAYS.findIndex(d => d.toLowerCase() === workoutDay.day.toLowerCase());
+              console.log(`🔍 [EDIT MODAL] Day match for "${workoutDay.day}":`, dayIndex);
+              
               if (dayIndex !== -1) {
                 if (workoutDay.exercises && Array.isArray(workoutDay.exercises)) {
                   convertedDayWorkouts[dayIndex].workouts = (workoutDay.exercises as any[]).map((exercise: any, index: number) => ({
@@ -135,10 +179,18 @@ export default function EditRoutineModal({
             console.log('🔍 [EDIT MODAL] No workout schedule found');
           }
 
+          console.log('🔍 [EDIT MODAL] Final converted day workouts:', convertedDayWorkouts);
           setDayWorkouts(convertedDayWorkouts);
         } catch (error) {
-          console.error('Failed to load full routine data:', error);
-          showToast.error('Error', 'Failed to load routine details');
+          console.error('❌ [EDIT MODAL] Failed to load full routine data:', error);
+          console.error('❌ [EDIT MODAL] Error details:', {
+            message: error.message,
+            status: error.response?.status,
+            data: error.response?.data,
+            routineId: routine.id,
+            isTemplate: routine.is_template
+          });
+          showToast.error('Error', 'Failed to load routine details. Please try again.');
         } finally {
           setLoadingRoutineData(false);
         }
@@ -368,30 +420,33 @@ export default function EditRoutineModal({
                 All
               </Text>
             </TouchableOpacity>
-            {WORKOUT_CATEGORIES.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.id && styles.categoryChipSelected,
-                  { borderColor: category.color },
-                ]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <Ionicons
-                  name={category.icon as any}
-                  size={16}
-                  color={selectedCategory === category.id ? '#fff' : category.color}
-                />
-                <Text style={[
-                  styles.categoryChipText,
-                  selectedCategory === category.id && styles.categoryChipTextSelected,
-                  { color: selectedCategory === category.id ? '#fff' : category.color },
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {categories.map(category => {
+              const categoryConfig = getCategoryConfig(category.id);
+              return (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === category.id && styles.categoryChipSelected,
+                    { borderColor: categoryConfig.color },
+                  ]}
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  <Ionicons
+                    name={categoryConfig.icon as any}
+                    size={16}
+                    color={selectedCategory === category.id ? '#fff' : categoryConfig.color}
+                  />
+                  <Text style={[
+                    styles.categoryChipText,
+                    selectedCategory === category.id && styles.categoryChipTextSelected,
+                    { color: selectedCategory === category.id ? '#fff' : categoryConfig.color },
+                  ]}>
+                    {categoryConfig.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 

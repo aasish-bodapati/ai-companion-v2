@@ -14,7 +14,7 @@ import RoutineDashboard from '../../components/routines/RoutineDashboard';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
 import EditRoutineModal from '../../components/routines/EditRoutineModal';
 import LogTodaysWorkoutModal from '../../components/workout/LogTodaysWorkoutModal';
-import LogWorkoutModal from '../../components/fitness/LogWorkoutModal';
+import WorkoutLoggingModal from '../../components/fitness/WorkoutLoggingModal';
 import EnhancedWorkoutLogger from '../../components/fitness/EnhancedWorkoutLogger';
 import FitnessLogsView from '../../components/fitness/FitnessLogsView';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
@@ -48,10 +48,8 @@ export default function FitnessScreen() {
 
   const loadWeekStats = async () => {
     try {
-      console.log('🏃 Loading fitness week stats...');
       // Get recent workouts for the week
       const workouts = await fitnessService.getFitnessLogs({ period: 'week' });
-      console.log('✅ Fitness week workouts data:', workouts);
       
       // Calculate stats from the workouts
       const totalWorkouts = workouts.length;
@@ -87,7 +85,7 @@ export default function FitnessScreen() {
         this_month_workouts: totalWorkouts, // Simplified for now
       });
     } catch (error) {
-      console.error('❌ Failed to load week stats:', error);
+      console.error('Failed to load week stats:', error);
       // Set fallback stats
       setWeekStats({
         total_workouts: 0,
@@ -105,14 +103,11 @@ export default function FitnessScreen() {
 
   const loadWeeklyActivityData = async () => {
     try {
-      console.log('📊 Loading fitness weekly activity data...');
       // Get recent workouts for the week
       const response = await fitnessService.getFitnessLogs({ period: 'week' });
-      console.log('✅ Fitness weekly workouts data:', response);
       
       // Extract workouts array from response
       const workouts = response?.workouts || response || [];
-      console.log('✅ Extracted workouts array:', workouts);
       
       // Group workouts by day of week
       const weeklyData = {
@@ -144,7 +139,7 @@ export default function FitnessScreen() {
       
       setWeeklyActivityData(weeklyData);
     } catch (error) {
-      console.error('❌ Failed to load weekly activity data:', error);
+      console.error('Failed to load weekly activity data:', error);
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -200,18 +195,15 @@ export default function FitnessScreen() {
     setShowEnhancedWorkoutLogger(false);
     setShowLogTodaysWorkoutModal(false);
     loadOverviewData(); // Refresh overview data after logging workout
-    console.log('🔄 Workout logged, triggering fitness logs refresh');
     
     // Force component remount with new key
     setFitnessLogsKey(prev => {
       const newKey = prev + 1;
-      console.log('🔄 Incrementing fitness logs key to:', newKey);
       return newKey;
     });
   };
 
   const handleFitnessLogsRefresh = () => {
-    console.log('🔄 Fitness logs refresh requested from component');
     // This will trigger a re-render of the FitnessLogsView
     setFitnessLogsKey(prev => prev + 1);
   };
@@ -418,7 +410,7 @@ export default function FitnessScreen() {
       />
 
       {/* Log Workout Modal */}
-      <LogWorkoutModal
+      <WorkoutLoggingModal
         visible={showLogWorkoutModal}
         onClose={() => setShowLogWorkoutModal(false)}
         onWorkoutLogged={handleWorkoutLogged}

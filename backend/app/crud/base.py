@@ -32,8 +32,13 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Returns:
             The object if found, None otherwise.
         """
-        # IDs are now integers, no conversion needed
-        return db.query(self.model).filter(self.model.id == id).first()
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔍 [CRUD BASE] Getting {self.model.__name__} with ID: {id}")
+        result = db.query(self.model).filter(self.model.id == id).first()
+        logger.info(f"🔍 [CRUD BASE] Query result: {result.id if result else 'None'}")
+        return result
 
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
         """Get multiple objects with pagination."""

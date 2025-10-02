@@ -76,9 +76,7 @@ export interface QuickStats {
 export const dashboardService = {
   async getDashboardSummary(): Promise<DashboardSummary> {
     try {
-      console.log('📊 Dashboard Service: Fetching dashboard summary...');
       const response = await apiClient.get('/health/dashboard/summary');
-      console.log('📊 Dashboard Service: Summary received:', response.data);
       return response.data;
     } catch (error) {
       console.error('📊 Dashboard Service: Error fetching summary:', error);
@@ -88,9 +86,7 @@ export const dashboardService = {
 
   async getQuickStats(): Promise<QuickStats> {
     try {
-      console.log('📊 Dashboard Service: Fetching quick stats...');
       const response = await apiClient.get('/health/dashboard/quick-stats');
-      console.log('📊 Dashboard Service: Quick stats received:', response.data);
       return response.data;
     } catch (error) {
       console.error('📊 Dashboard Service: Error fetching quick stats:', error);
@@ -100,9 +96,7 @@ export const dashboardService = {
 
   async getAnalyticsData(): Promise<any> {
     try {
-      console.log('📊 Dashboard Service: Fetching analytics data...');
       const response = await apiClient.get('/health/analytics/dashboard');
-      console.log('📊 Dashboard Service: Analytics received:', response.data);
       return response.data;
     } catch (error) {
       console.error('📊 Dashboard Service: Error fetching analytics:', error);

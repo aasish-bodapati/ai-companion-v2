@@ -22,6 +22,7 @@ interface HealthData {
   weight: string;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
   bodyFat?: string; // Body Fat Percentage (optional)
 }
@@ -29,7 +30,7 @@ interface HealthData {
 interface OnboardingData {
   healthData: HealthData;
   bodyTypeGoal: string;
-  editedBodyTypeGoal?: any; // Store the edited goal data
+  editedBodyTypeGoal?: any; // Store the edited goal details
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -82,6 +83,7 @@ export default function EnhancedOnboardingScreen() {
       weight: '',
       gender: 'male',
       activityLevel: 'moderate',
+      ffm: '',
       smm: '',
       bodyFat: '',
     },
@@ -239,7 +241,7 @@ export default function EnhancedOnboardingScreen() {
         activity_level: onboardingData.healthData.activityLevel,
         smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : null,
         body_fat_percentage: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : null,
-        workout_days: onboardingData.healthData.workoutDays ? parseInt(onboardingData.healthData.workoutDays) : null,
+        ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : null,
         bodyTypeGoal: onboardingData.bodyTypeGoal
       };
       
@@ -292,7 +294,7 @@ export default function EnhancedOnboardingScreen() {
     setOnboardingData(prev => ({ 
       ...prev, 
       bodyTypeGoal,
-      editedBodyTypeGoal: editedGoal // Store the edited goal if provided
+      editedBodyTypeGoal: editedGoal
     }));
   }, []);
 
@@ -329,6 +331,9 @@ export default function EnhancedOnboardingScreen() {
               weight: parseInt(onboardingData.healthData.weight) || 70,
               gender: onboardingData.healthData.gender,
               activityLevel: onboardingData.healthData.activityLevel,
+              ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : undefined,
+              smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : undefined,
+              bodyFat: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : undefined,
             }}
             isPrePopulated={dataLoaded}
           />

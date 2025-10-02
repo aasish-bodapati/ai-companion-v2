@@ -42,6 +42,7 @@ interface FormModalProps {
   // Form state
   loading?: boolean;
   isFormValid?: boolean;
+  scrollEnabled?: boolean;
   
   // Custom styling
   contentStyle?: any;
@@ -65,6 +66,7 @@ export default function FormModal({
   closeOnBackdrop = true,
   loading = false,
   isFormValid = true,
+  scrollEnabled = true,
   contentStyle,
   headerStyle,
   footerStyle,
@@ -215,13 +217,21 @@ export default function FormModal({
     >
       <View style={styles.container}>
         <ScrollView 
-          style={[styles.content, contentStyle]}
-          showsVerticalScrollIndicator={false}
+          style={[styles.scrollView, contentStyle]}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={scrollEnabled}
+          bounces={true}
+          nestedScrollEnabled={true}
+          contentContainerStyle={styles.scrollContentContainer}
+          keyboardDismissMode="interactive"
+          alwaysBounceVertical={true}
+          scrollEventThrottle={16}
+          automaticallyAdjustKeyboardInsets={false}
+          decelerationRate="normal"
         >
           {children}
         </ScrollView>
-        
         {renderFooter()}
       </View>
     </MobileOptimizedModal>
@@ -233,10 +243,12 @@ const styles = StyleSheet.create({
     flex: 1,
     maxHeight: '100%',
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContentContainer: {
     paddingHorizontal: SPACING.lg,
-    paddingBottom: SPACING.sm,
+    paddingBottom: '50%', // 50% empty space below content for scrolling
   },
   footer: {
     paddingHorizontal: SPACING.lg,
@@ -244,6 +256,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border.light,
     backgroundColor: COLORS.background.primary,
+    minHeight: 80, // Ensure footer has minimum height for better scrolling
+    marginTop: SPACING.lg,
   },
   actionButtons: {
     flexDirection: 'row',

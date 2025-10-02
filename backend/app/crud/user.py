@@ -11,9 +11,15 @@ from app.schemas.user import UserCreate, UserUpdate
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
     def get_by_email(self, db: Session, *, email: str) -> Optional[User]:
         """Get a user by email."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"👤 [USER CRUD] Looking up user by email: {email}")
         # Case-insensitive lookup to accommodate legacy records
         normalized = email.strip().lower()
-        return db.query(User).filter(func.lower(User.email) == normalized).first()
+        user = db.query(User).filter(func.lower(User.email) == normalized).first()
+        logger.info(f"👤 [USER CRUD] User lookup result: {user.id if user else 'None'}")
+        return user
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
         """Create a new user with hashed password."""

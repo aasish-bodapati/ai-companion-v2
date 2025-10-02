@@ -12,6 +12,9 @@ engine_kwargs = {
     "pool_recycle": 3600,  # Recycle connections after 1 hour
     "pool_size": 10,  # PostgreSQL connection pool size
     "max_overflow": 20,  # Additional connections beyond pool_size
+    "connect_args": {
+        "options": "-c timezone=UTC"  # Force UTC timezone for all connections
+    }
 }
 
 engine = create_engine(db_url, **engine_kwargs)

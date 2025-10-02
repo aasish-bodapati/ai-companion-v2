@@ -235,22 +235,22 @@ async def get_nutrition_today(
         total_meals = len(logs)
 
         return {
-            "calories": total_calories,
-            "protein": total_protein,
-            "carbs": total_carbs,
-            "fat": total_fat,
-            "water": total_water,
-            "meals": total_meals
+            "total_calories": total_calories,
+            "protein_g": total_protein,
+            "carbs_g": total_carbs,
+            "fat_g": total_fat,
+            "water_ml": total_water,
+            "meals_count": total_meals
         }
     except Exception as e:
         logger.error(f"Error getting nutrition today: {str(e)}")
         return {
-            "calories": 0,
-            "protein": 0,
-            "carbs": 0,
-            "fat": 0,
-            "water": 0,
-            "meals": 0
+            "total_calories": 0,
+            "protein_g": 0,
+            "carbs_g": 0,
+            "fat_g": 0,
+            "water_ml": 0,
+            "meals_count": 0
         }
 
 @router.get("/nutrition/weekly")
@@ -353,13 +353,39 @@ async def create_fitness_log(
     fitness_log_in: FitnessLogCreate
 ):
     """Create a new fitness log entry."""
+    logger.info(f"🏋️ [FITNESS LOGGING] Received request from user {current_user.id}")
+    logger.info(f"🏋️ [FITNESS LOGGING] Request data: {fitness_log_in.model_dump()}")
+    
     try:
+        # Handle timezone conversion for activity_date
+        if fitness_log_in.activity_date:
+            # Get user's timezone
+            user_timezone = current_user.timezone or "UTC"
+            logger.info(f"🏋️ [FITNESS LOGGING] User timezone: {user_timezone}")
+            
+            # If activity_date is naive (no timezone info), assume it's in user's timezone
+            if fitness_log_in.activity_date.tzinfo is None:
+                from app.utils.timezone_service import TimezoneService
+                user_tz = TimezoneService.get_user_timezone(user_timezone)
+                # Localize the datetime to user's timezone
+                localized_date = user_tz.localize(fitness_log_in.activity_date)
+                # Convert to UTC for storage
+                fitness_log_in.activity_date = localized_date.astimezone(timezone.utc)
+                logger.info(f"🏋️ [FITNESS LOGGING] Converted activity_date to UTC: {fitness_log_in.activity_date}")
+            else:
+                # If already timezone-aware, convert to UTC
+                fitness_log_in.activity_date = fitness_log_in.activity_date.astimezone(timezone.utc)
+                logger.info(f"🏋️ [FITNESS LOGGING] Converted activity_date to UTC: {fitness_log_in.activity_date}")
+        
         fitness_log_entry = fitness_log.create_with_user(
             db, obj_in=fitness_log_in, user_id=current_user.id
         )
+        logger.info(f"🏋️ [FITNESS LOGGING] Successfully created fitness log with ID: {fitness_log_entry.id}")
+        logger.info(f"🏋️ [FITNESS LOGGING] Exercises field type: {type(fitness_log_entry.exercises)}")
+        logger.info(f"🏋️ [FITNESS LOGGING] Exercises field value: {fitness_log_entry.exercises}")
         return fitness_log_entry
     except Exception as e:
-        logger.error(f"Error creating fitness log: {str(e)}")
+        logger.error(f"🏋️ [FITNESS LOGGING] Error creating fitness log: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to create fitness log")
 
 @router.get("/fitness", response_model=List[FitnessLog])
@@ -565,15 +591,34 @@ async def get_nutrition_logs_test(
         print(f"🍽️ [BACKEND NUTRITION] User timezone: {user_tz}")
         
         if start_date and end_date:
-            # Parse dates in user's timezone, then convert to UTC for database query
-            start_date_local = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=user_tz)
-            end_date_local = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=user_tz)
+            # Parse dates - if they come with timezone info, use that; otherwise assume they're in user's timezone
+            try:
+                if 'T' in start_date:
+                    # Parse ISO string and convert to user timezone
+                    start_date_utc = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                    start_date_local = start_date_utc.astimezone(user_tz)
+                else:
+                    start_date_local = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=user_tz)
+            except ValueError:
+                start_date_local = datetime.strptime(start_date.split('T')[0], "%Y-%m-%d").replace(tzinfo=user_tz)
+                
+            try:
+                if 'T' in end_date:
+                    # Parse ISO string and convert to user timezone
+                    end_date_utc = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                    end_date_local = end_date_utc.astimezone(user_tz)
+                else:
+                    end_date_local = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=user_tz)
+            except ValueError:
+                end_date_local = datetime.strptime(end_date.split('T')[0], "%Y-%m-%d").replace(tzinfo=user_tz)
             
             print(f"🍽️ [BACKEND NUTRITION] Local dates - start: {start_date_local}, end: {end_date_local}")
             
-            # Convert to UTC for database query
-            start_date_obj = start_date_local.astimezone(timezone.utc)
-            end_date_obj = end_date_local.replace(hour=23, minute=59, second=59).astimezone(timezone.utc)
+            # For database query, we need to find all logs that fall within the user's local date range
+            # Convert start of day in user timezone to UTC
+            start_date_obj = start_date_local.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(timezone.utc)
+            # Convert end of day in user timezone to UTC
+            end_date_obj = end_date_local.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(timezone.utc)
             
             print(f"🍽️ [BACKEND NUTRITION] UTC dates - start: {start_date_obj}, end: {end_date_obj}")
         else:
@@ -607,18 +652,34 @@ async def get_nutrition_logs_test(
         logs_data = []
         for i, log in enumerate(logs):
             print(f"🍽️ [BACKEND NUTRITION] Log {i+1}: id={log.id}, meal_name={log.meal_name}, meal_date={log.meal_date}, created_at={log.created_at}")
+            # Parse food_items if it's a JSON string
+            food_items = log.food_items
+            if isinstance(food_items, str):
+                try:
+                    import json
+                    food_items = json.loads(food_items)
+                except (json.JSONDecodeError, TypeError):
+                    food_items = []
+            elif food_items is None:
+                food_items = []
+            
             logs_data.append({
-                "id": log.id,
+                "id": str(log.id),
+                "user_id": str(log.user_id) if hasattr(log, 'user_id') else "13",
                 "meal_type": log.meal_type,
                 "meal_name": log.meal_name,
                 "total_calories": log.total_calories,
                 "protein_g": log.protein_g,
                 "carbs_g": log.carbs_g,
                 "fat_g": log.fat_g,
+                "fiber_g": getattr(log, 'fiber_g', None),
+                "sugar_g": getattr(log, 'sugar_g', None),
+                "sodium_mg": getattr(log, 'sodium_mg', None),
                 "notes": log.notes,
                 "meal_date": log.meal_date.isoformat() if log.meal_date else None,
                 "created_at": log.created_at.isoformat() if log.created_at else None,
-                "food_items": log.food_items
+                "updated_at": log.updated_at.isoformat() if hasattr(log, 'updated_at') and log.updated_at else None,
+                "food_items": food_items
             })
         
         response_data = {

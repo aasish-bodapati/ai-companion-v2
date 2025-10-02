@@ -23,7 +23,6 @@ import { fitnessService } from '../../services/fitnessService';
 import AIInsightsCard from '../../components/ai/AIInsightsCard';
 import WaterLoggingCard from '../../components/health/WaterLoggingCard';
 import MoodLoggingCard from '../../components/health/MoodLoggingCard';
-import LogMealModal from '../../components/nutrition/LogMealModal';
 
 const { width } = Dimensions.get('window');
 
@@ -43,13 +42,10 @@ export default function DashboardScreen() {
     error: null,
   });
   const [refreshing, setRefreshing] = useState(false);
-  const [showLogMealModal, setShowLogMealModal] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
-      
-      console.log('📊 Dashboard: Loading dashboard data...');
       
       // Load dashboard summary and quick stats in parallel
       const [summaryResponse, quickStatsResponse] = await Promise.allSettled([
@@ -60,12 +56,8 @@ export default function DashboardScreen() {
       let summary = summaryResponse.status === 'fulfilled' ? summaryResponse.value : null;
       let quickStats = quickStatsResponse.status === 'fulfilled' ? quickStatsResponse.value : null;
 
-      console.log('📊 Dashboard: Summary response:', summaryResponse.status);
-      console.log('📊 Dashboard: Quick stats response:', quickStatsResponse.status);
-
       // If dashboard API fails, try to get some real data from individual services
       if (!summary || !quickStats) {
-        console.log('📊 Dashboard: Primary APIs failed, trying fallback...');
         try {
           const [recentWorkouts, todayWorkoutSummary, recentMeals, todayNutritionSummary] = await Promise.allSettled([
             fitnessService.getRecentWorkouts(5),
@@ -119,8 +111,6 @@ export default function DashboardScreen() {
             current_streak: workouts.length > 0 || meals.length > 0 ? 1 : 0,
             weekly_goal_progress: Math.min(((workouts.length / 5) + (meals.length / 21)) * 50, 100),
           };
-
-          console.log('📊 Dashboard: Fallback data created:', { summary, quickStats });
         } catch (fallbackError) {
           console.error('📊 Dashboard: Failed to load fallback data:', fallbackError);
         }
@@ -132,8 +122,6 @@ export default function DashboardScreen() {
         loading: false,
         error: null,
       });
-      
-      console.log('📊 Dashboard: Data loaded successfully');
     } catch (error) {
       console.error('📊 Dashboard: Failed to load dashboard data:', error);
       // Don't set error state, just show fallback data
@@ -152,21 +140,12 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, [loadDashboardData]);
 
-  const handleLogMeal = () => {
-    hapticFeedback.medium();
-    setShowLogMealModal(true);
-  };
-
-  const handleMealLogged = () => {
-    setShowLogMealModal(false);
-    loadDashboardData(); // Refresh dashboard data
-  };
 
 
 
   useEffect(() => {
     loadDashboardData();
-  }, [loadDashboardData]);
+  }, []); // Only run once on mount
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -361,6 +340,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
 
+
         {/* Day at a Glance */}
         <DayAtAGlance
           todayStats={{
@@ -370,18 +350,18 @@ export default function DashboardScreen() {
             calories_burned: data.summary?.today_stats?.calories_burned || 0,
             calories_consumed: data.summary?.today_stats?.calories_consumed || 0,
             streak: data.summary?.streak || 0,
+            protein_g: data.summary?.today_stats?.protein_g || 0,
+            carbs_g: data.summary?.today_stats?.carbs_g || 0,
+            fat_g: data.summary?.today_stats?.fat_g || 0,
           }}
           onWorkoutPress={() => {
             // Navigate to fitness screen or open workout modal
-            console.log('Navigate to workouts');
           }}
           onMealPress={() => {
             // Navigate to nutrition screen or open meal modal
-            console.log('Navigate to meals');
           }}
           onWaterPress={() => {
             // Open water logging modal
-            console.log('Open water logging');
           }}
         />
       </View>
@@ -451,12 +431,6 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      {/* Log Meal Modal */}
-      <LogMealModal
-        visible={showLogMealModal}
-        onClose={() => setShowLogMealModal(false)}
-        onMealLogged={handleMealLogged}
-      />
 
 
     </ScrollView>

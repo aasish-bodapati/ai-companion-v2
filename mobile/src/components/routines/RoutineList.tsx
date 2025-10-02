@@ -24,12 +24,48 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       setLoading(true);
       setError(null);
       
-      const response = await routineService.getRoutines({
-        limit: 50,
-      });
+      // Fetch user routines, templates, and active routine
+      const [userRoutinesResponse, templatesResponse, activeRoutineResponse] = await Promise.allSettled([
+        routineService.getRoutines({ limit: 50 }),
+        routineService.getTemplates({ limit: 50 }),
+        routineService.getActiveRoutine()
+      ]);
       
+      const allRoutines: SimpleRoutineWithProgress[] = [];
+      const activeRoutine = activeRoutineResponse.status === 'fulfilled' ? activeRoutineResponse.value : null;
       
-      setRoutines(response.routines);
+      console.log('🔍 Active routine:', activeRoutine ? {
+        id: activeRoutine.id,
+        name: activeRoutine.name,
+        isTemplate: activeRoutine.is_template
+      } : 'None');
+      
+      // Add user routines if successful
+      if (userRoutinesResponse.status === 'fulfilled') {
+        allRoutines.push(...userRoutinesResponse.value.routines);
+      }
+      
+      // Add templates if successful, and mark as active if they match the active routine
+      if (templatesResponse.status === 'fulfilled') {
+        const templates = templatesResponse.value.routines;
+        for (const template of templates) {
+          // If this template is the active routine, use the active routine data instead
+          if (activeRoutine && activeRoutine.id === template.id) {
+            console.log(`✅ Template ${template.id} is active, using active routine data`);
+            allRoutines.push(activeRoutine);
+          } else {
+            allRoutines.push(template);
+          }
+        }
+      }
+      
+      console.log('📋 Loaded routines:', allRoutines.map(r => ({
+        id: r.id,
+        name: r.name,
+        isTemplate: r.is_template,
+        isActive: r.user_progress?.is_active || false
+      })));
+      setRoutines(allRoutines);
     } catch (err: any) {
       console.error('Failed to load routines:', err);
       setError(err.response?.data?.detail || err.message || 'Failed to load routines');
@@ -45,12 +81,42 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
   const handleStartRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
-      await routineService.startRoutine(routineId);
-      showToast.success('Success!', 'Routine set as active');
+      
+      // Find the routine to check if it's a template
+      const routine = routines.find(r => r.id === routineId);
+      if (!routine) {
+        throw new Error('Routine not found');
+      }
+
+      console.log('🔄 Starting routine:', {
+        routineId: routine.id,
+        routineName: routine.name,
+        isTemplate: routine.is_template
+      });
+
+      if (routine.is_template) {
+        console.log('📋 Template routine detected, starting directly...');
+        // Start template routine directly - no copy needed
+        await routineService.startRoutine(routine.id);
+        showToast.success('Success!', 'Routine set as active');
+      } else {
+        console.log('👤 User-created routine, starting directly...');
+        // Start the user routine directly
+        await routineService.startRoutine(routineId);
+        showToast.success('Success!', 'Routine set as active');
+      }
+      
+      console.log('🔄 Refreshing routine list after starting routine...');
       await loadRoutines();
+      console.log('✅ Routine list refreshed');
       onRoutineSelected?.();
     } catch (err: any) {
-      console.error('Failed to start routine:', err);
+      console.error('❌ Failed to start routine:', err);
+      console.error('Error details:', {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data
+      });
       showToast.error('Error', err.response?.data?.detail || err.message || 'Failed to set routine as active');
     } finally {
       setActionLoading(null);
@@ -72,11 +138,49 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
   };
 
   const handleEditRoutine = async (routine: SimpleRoutineWithProgress) => {
-    setSelectedRoutine(routine);
-    setShowEditModal(true);
+    try {
+      console.log('🔄 Starting edit routine process:', {
+        routineId: routine.id,
+        routineName: routine.name,
+        isTemplate: routine.is_template,
+        createdByUser: routine.created_by_user_id
+      });
+
+      // If it's a template, create a user copy first (templates can't be edited directly)
+      if (routine.is_template) {
+        console.log('📋 Template routine detected, creating user copy for editing...');
+        const userCopy = await routineService.createFromTemplate(routine.id, routine.name);
+        console.log('✅ User copy created for editing:', {
+          newId: userCopy.id,
+          newName: userCopy.name,
+          isTemplate: userCopy.is_template
+        });
+        setSelectedRoutine(userCopy);
+        showToast.success('Success!', 'Template copied for editing');
+      } else {
+        console.log('👤 User-created routine, using directly');
+        setSelectedRoutine(routine);
+      }
+      setShowEditModal(true);
+    } catch (error) {
+      console.error('❌ Failed to prepare routine for editing:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      showToast.error('Error', 'Failed to prepare routine for editing. Please try again.');
+    }
   };
 
   const handleDeleteRoutine = async (routineId: number) => {
+    // Find the routine to check if it's a template
+    const routine = routines.find(r => r.id === routineId);
+    if (routine?.is_template) {
+      showToast.error('Error', 'Template routines cannot be deleted. Create a copy to customize.');
+      return;
+    }
+
     try {
       setActionLoading(routineId);
       await routineService.deleteRoutine(routineId);

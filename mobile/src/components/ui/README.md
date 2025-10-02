@@ -131,5 +131,5 @@ When refactoring existing components:
 
 See the refactored components for examples:
 - `WaterLoggingCard.tsx` - Uses `StatsCard`
-- `LogMealModal.tsx` - Uses `DateSelector`
-- `LogWorkoutModal.tsx` - Uses `DateSelector`
+- `MealLoggingModal.tsx` - Uses `DateSelector`
+- `WorkoutLoggingModal.tsx` - Uses `DateSelector`

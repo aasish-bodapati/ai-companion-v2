@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { BaseService } from './BaseService';
 
 export interface HealthData {
   message?: string;
@@ -40,150 +41,111 @@ export interface HealthInsights {
   }[];
 }
 
-export interface WaterLog {
-  id: number;
-  user_id: number;
-  amount_ml: number;
-  log_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MoodLog {
-  id: number;
-  user_id: number;
-  mood_rating: number;
-  energy_level?: number;
-  stress_level?: number;
-  sleep_quality?: number;
-  sleep_hours?: number;
-  water_intake_ml?: number;
-  steps_count?: number;
-  weight_kg?: number;
-  notes?: string;
-  activities?: string;
-  log_date: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export const healthService = {
+class HealthService extends BaseService {
   async getHealthData(): Promise<HealthData> {
-    try {
-      console.log('🏥 Health Service: Fetching health data...');
-      const response = await apiClient.get('/health');
-      console.log('🏥 Health Service: Health data received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching health data:', error);
-      throw error;
-    }
-  },
+    console.log('🏥 Health Service: Fetching health data...');
+    return this.makeRequest(
+      () => apiClient.get('/health'),
+      'HEALTH SERVICE - getHealthData'
+    ).then(data => {
+      console.log('🏥 Health Service: Health data received:', data);
+      return data;
+    });
+  }
 
   async getHealthProfile(): Promise<HealthProfile | null> {
     try {
       console.log('🏥 Health Service: Fetching health profile...');
-      const response = await apiClient.get('/health/profile/');
-      console.log('🏥 Health Service: Profile received:', response.data);
-      return response.data;
+      const data = await this.makeRequest(
+        () => apiClient.get('/health/profile/'),
+        'HEALTH SERVICE - getHealthProfile'
+      );
+      console.log('🏥 Health Service: Profile received:', data);
+      return data;
     } catch (error) {
-      console.error('🏥 Health Service: Error fetching health profile:', error);
+      this.handleError(error, 'HEALTH SERVICE - getHealthProfile');
       return null;
     }
-  },
+  }
 
   async updateHealthProfile(profileData: Partial<HealthProfile>): Promise<HealthProfile> {
-    try {
-      console.log('🏥 Health Service: Updating health profile...', profileData);
-      const response = await apiClient.put('/health/profile/', profileData);
-      console.log('🏥 Health Service: Profile updated:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error updating health profile:', error);
-      throw error;
-    }
-  },
+    console.log('🏥 Health Service: Updating health profile...', profileData);
+    return this.makeRequest(
+      () => apiClient.put('/health/profile/', profileData),
+      'HEALTH SERVICE - updateHealthProfile'
+    ).then(data => {
+      console.log('🏥 Health Service: Profile updated:', data);
+      return data;
+    });
+  }
 
   async getHealthInsights(): Promise<HealthInsights> {
-    try {
-      console.log('🏥 Health Service: Fetching health insights...');
-      const response = await apiClient.get('/health/insights/suggestions');
-      console.log('🏥 Health Service: Insights received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching health insights:', error);
-      throw error;
-    }
-  },
+    console.log('🏥 Health Service: Fetching health insights...');
+    return this.makeRequest(
+      () => apiClient.get('/health/insights/suggestions'),
+      'HEALTH SERVICE - getHealthInsights'
+    ).then(data => {
+      console.log('🏥 Health Service: Insights received:', data);
+      return data;
+    });
+  }
 
   async getHealthScore(): Promise<{ score: number; breakdown: any }> {
-    try {
-      console.log('🏥 Health Service: Fetching health score...');
-      const response = await apiClient.get('/health/insights/health-score');
-      console.log('🏥 Health Service: Health score received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching health score:', error);
-      throw error;
-    }
-  },
+    console.log('🏥 Health Service: Fetching health score...');
+    return this.makeRequest(
+      () => apiClient.get('/health/insights/health-score'),
+      'HEALTH SERVICE - getHealthScore'
+    ).then(data => {
+      console.log('🏥 Health Service: Health score received:', data);
+      return data;
+    });
+  }
 
   async getWeeklyReport(): Promise<any> {
-    try {
-      console.log('🏥 Health Service: Fetching weekly report...');
-      const response = await apiClient.get('/health/insights/weekly-report');
-      console.log('🏥 Health Service: Weekly report received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching weekly report:', error);
-      throw error;
-    }
-  },
+    console.log('🏥 Health Service: Fetching weekly report...');
+    return this.makeRequest(
+      () => apiClient.get('/health/insights/weekly-report'),
+      'HEALTH SERVICE - getWeeklyReport'
+    ).then(data => {
+      console.log('🏥 Health Service: Weekly report received:', data);
+      return data;
+    });
+  }
 
-  // Water logging
-  async getWaterLogs(days: number = 7): Promise<WaterLog[]> {
-    try {
-      console.log('🏥 Health Service: Fetching water logs...', days);
-      const response = await apiClient.get('/health/water-logs/', {
-        params: { days }
-      });
-      console.log('🏥 Health Service: Water logs received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching water logs:', error);
-      throw error;
-    }
-  },
+  // Analytics
+  async getAnalyticsData(): Promise<any> {
+    console.log('🏥 Health Service: Fetching analytics data...');
+    return this.makeRequest(
+      () => apiClient.get('/health/analytics/dashboard'),
+      'HEALTH SERVICE - getAnalyticsData'
+    ).then(data => {
+      console.log('🏥 Health Service: Analytics received:', data);
+      return data;
+    });
+  }
 
-  async logWater(amount_ml: number): Promise<WaterLog> {
-    try {
-      console.log('🏥 Health Service: Logging water...', amount_ml);
-      const response = await apiClient.post('/health/logging/water', {
-        amount_ml,
-        log_date: new Date().toISOString()
-      });
-      console.log('🏥 Health Service: Water logged:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error logging water:', error);
-      throw error;
-    }
-  },
+  // Water logging (delegated to waterService for consistency)
+  async getWaterLogs(days: number = 7): Promise<any[]> {
+    console.log('🏥 Health Service: Delegating to waterService for water logs...', days);
+    const { waterService } = await import('./waterService');
+    return waterService.getWaterLogs(days);
+  }
 
-  // Mood logging
-  async getMoodLogs(days: number = 7): Promise<MoodLog[]> {
-    try {
-      console.log('🏥 Health Service: Fetching mood logs...', days);
-      const response = await apiClient.get('/health/logging/mood', {
-        params: { days }
-      });
-      console.log('🏥 Health Service: Mood logs received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching mood logs:', error);
-      throw error;
-    }
-  },
+  async logWater(amount_ml: number): Promise<any> {
+    console.log('🏥 Health Service: Delegating to waterService for water logging...', amount_ml);
+    const { waterService } = await import('./waterService');
+    return waterService.createWaterLog({ amount_ml });
+  }
+
+  // Mood logging (delegated to moodService for consistency)
+  async getMoodLogs(days: number = 7): Promise<any[]> {
+    console.log('🏥 Health Service: Delegating to moodService for mood logs...', days);
+    const { moodService } = await import('./moodService');
+    return moodService.getMoodLogs({ 
+      start_date: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      end_date: new Date().toISOString().split('T')[0]
+    });
+  }
 
   async logMood(moodData: {
     mood_rating: number;
@@ -196,31 +158,16 @@ export const healthService = {
     weight_kg?: number;
     notes?: string;
     activities?: string;
-  }): Promise<MoodLog> {
-    try {
-      console.log('🏥 Health Service: Logging mood...', moodData);
-      const response = await apiClient.post('/health/logging/mood', {
-        ...moodData,
-        log_date: new Date().toISOString()
-      });
-      console.log('🏥 Health Service: Mood logged:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error logging mood:', error);
-      throw error;
-    }
-  },
-
-  // Analytics
-  async getAnalyticsData(): Promise<any> {
-    try {
-      console.log('🏥 Health Service: Fetching analytics data...');
-      const response = await apiClient.get('/health/analytics/dashboard');
-      console.log('🏥 Health Service: Analytics received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏥 Health Service: Error fetching analytics:', error);
-      throw error;
-    }
+  }): Promise<any> {
+    console.log('🏥 Health Service: Delegating to moodService for mood logging...', moodData);
+    const { moodService } = await import('./moodService');
+    return moodService.createMoodLog({
+      mood_rating: moodData.mood_rating,
+      mood_label: moodData.notes,
+      notes: moodData.notes
+    });
   }
-};
+}
+
+// Export singleton instance to maintain backward compatibility
+export const healthService = new HealthService();

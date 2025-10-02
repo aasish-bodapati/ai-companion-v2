@@ -10,6 +10,9 @@ interface DayAtAGlanceProps {
     calories_burned?: number;
     calories_consumed?: number;
     streak?: number;
+    protein_g?: number;
+    carbs_g?: number;
+    fat_g?: number;
   };
   onWorkoutPress?: () => void;
   onMealPress?: () => void;
@@ -89,11 +92,45 @@ export default function DayAtAGlance({
           <Text style={styles.statLabel}>Water</Text>
         </TouchableOpacity>
 
-        {/* Calories */}
+        {/* Calories Consumed */}
         <View style={[styles.statItem, styles.calorieItem]}>
-          <Ionicons name="flame" size={18} color="#ef4444" />
-          <Text style={styles.statValue}>{todayStats.calories_burned || 0}</Text>
+          <Ionicons name="restaurant" size={18} color="#ef4444" />
+          <Text style={styles.statValue}>{todayStats.calories_consumed || 0}</Text>
           <Text style={styles.statLabel}>Calories</Text>
+        </View>
+      </View>
+
+      {/* Daily Macros & Calories */}
+      <View style={styles.macrosSection}>
+        <Text style={styles.macrosTitle}>Daily Macros & Calories</Text>
+        <View style={styles.macrosRow}>
+          <View style={styles.macroItem}>
+            <Ionicons name="fitness" size={14} color="#ef4444" />
+            <Text style={styles.macroValue}>{Math.round(todayStats.protein_g || 0)}g</Text>
+            <Text style={styles.macroLabel}>Protein</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Ionicons name="leaf" size={14} color="#10b981" />
+            <Text style={styles.macroValue}>{Math.round(todayStats.carbs_g || 0)}g</Text>
+            <Text style={styles.macroLabel}>Carbs</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Ionicons name="water" size={14} color="#f59e0b" />
+            <Text style={styles.macroValue}>{Math.round(todayStats.fat_g || 0)}g</Text>
+            <Text style={styles.macroLabel}>Fat</Text>
+          </View>
+        </View>
+        <View style={styles.caloriesRow}>
+          <View style={styles.calorieItem}>
+            <Ionicons name="restaurant" size={14} color="#10b981" />
+            <Text style={styles.calorieValue}>{todayStats.calories_consumed || 0}</Text>
+            <Text style={styles.calorieLabel}>Consumed</Text>
+          </View>
+          <View style={styles.calorieItem}>
+            <Ionicons name="flame" size={14} color="#ef4444" />
+            <Text style={styles.calorieValue}>{todayStats.calories_burned || 0}</Text>
+            <Text style={styles.calorieLabel}>Burned</Text>
+          </View>
         </View>
       </View>
 
@@ -188,6 +225,63 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     fontWeight: '500',
     textAlign: 'center',
+  },
+  macrosSection: {
+    marginBottom: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  macrosTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  macrosRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  macroLabel: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  caloriesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  calorieItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  calorieValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  calorieLabel: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   footer: {
     flexDirection: 'row',

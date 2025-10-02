@@ -7,6 +7,9 @@ export interface HealthData {
   weight: string;
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  ffm?: string; // Fat-Free Mass (optional)
+  smm?: string; // Skeletal Muscle Mass (optional)
+  bodyFat?: string; // Body Fat Percentage (optional)
 }
 
 export interface OnboardingData {
@@ -124,8 +127,11 @@ export const onboardingService = {
       weight: '',
       gender: 'male',
       activityLevel: 'moderate',
+      ffm: '',
+      smm: '',
+      bodyFat: '',
     },
-    goals: [],
+    bodyTypeGoal: '',
     preferences: {
       notifications: true,
       reminders: true,

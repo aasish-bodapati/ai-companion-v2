@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 
 export interface ExerciseData {
   exercise_name: string;
@@ -26,32 +27,7 @@ interface DynamicExerciseFormProps {
   showRemove?: boolean;
 }
 
-const EXERCISE_CATEGORIES = {
-  bodyweight: {
-    name: 'Bodyweight',
-    icon: 'person-outline',
-    color: '#3b82f6',
-    fields: ['sets', 'reps']
-  },
-  weighted: {
-    name: 'Weighted',
-    icon: 'barbell-outline', 
-    color: '#ef4444',
-    fields: ['sets', 'reps', 'weight_used']
-  },
-  cardio_duration: {
-    name: 'Cardio & Duration',
-    icon: 'heart-outline',
-    color: '#22c55e', 
-    fields: ['duration']
-  },
-  distance_based: {
-    name: 'Distance-Based',
-    icon: 'map-outline',
-    color: '#8b5cf6',
-    fields: ['distance', 'duration']
-  }
-};
+// Categories will be loaded from database
 
 
 
@@ -63,6 +39,19 @@ export default function DynamicExerciseForm({
   activityType,
   showRemove = true
 }: DynamicExerciseFormProps) {
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await exerciseCategoryService.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
   
   // Use category from database (backend provides logging_category)
   const getExerciseCategory = (): string => {
@@ -82,8 +71,28 @@ export default function DynamicExerciseForm({
     return 'weighted';
   };
 
+  const getCategoryConfig = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      return {
+        name: category.display_name,
+        icon: category.icon,
+        color: category.color,
+        fields: ['sets', 'reps', 'weight_used'], // Default fields, could be made dynamic
+      };
+    }
+    // Return "Category Not Found" config
+    return {
+      name: 'Category Not Found',
+      icon: 'help-outline',
+      color: '#6b7280',
+      fields: ['sets', 'reps'],
+    };
+  };
+
   const category = getExerciseCategory();
-  const categoryConfig = EXERCISE_CATEGORIES[category as keyof typeof EXERCISE_CATEGORIES];
+  const categoryConfig = getCategoryConfig(category);
+  
 
   const renderField = (field: string, isHorizontal: boolean = false) => {
     const containerStyle = isHorizontal ? styles.horizontalFieldContainer : styles.fieldContainer;

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, CreateRoutineData } from '../../services/routineService';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 
@@ -43,12 +44,7 @@ interface ComprehensiveRoutineModalProps {
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const WORKOUT_CATEGORIES = [
-  { id: 'bodyweight', name: 'Bodyweight Exercises', color: '#3b82f6', icon: 'person-outline' },
-  { id: 'weighted', name: 'Weighted Exercises', color: '#ef4444', icon: 'barbell-outline' },
-  { id: 'cardio_duration', name: 'Cardio & Duration', color: '#22c55e', icon: 'heart-outline' },
-  { id: 'distance_based', name: 'Distance-Based', color: '#8b5cf6', icon: 'map-outline' },
-];
+// Categories will be loaded from database
 
 export default function ComprehensiveRoutineModal({
   isVisible,
@@ -59,6 +55,7 @@ export default function ComprehensiveRoutineModal({
   const [difficulty, setDifficulty] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
   
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
@@ -99,6 +96,38 @@ export default function ComprehensiveRoutineModal({
   const handleClose = () => {
     resetForm();
     onClose();
+  };
+
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await exerciseCategoryService.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const getCategoryConfig = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      return {
+        id: category.id,
+        name: category.display_name,
+        color: category.color,
+        icon: category.icon,
+      };
+    }
+    // Return "Category Not Found" config
+    return {
+      id: categoryId,
+      name: 'Category Not Found',
+      color: '#6b7280',
+      icon: 'help-outline',
+    };
   };
 
   // Load exercises on component mount
@@ -298,30 +327,33 @@ export default function ComprehensiveRoutineModal({
                 All
               </Text>
             </TouchableOpacity>
-            {WORKOUT_CATEGORIES.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryChip,
-                  selectedCategory === category.id && styles.categoryChipSelected,
-                  { borderColor: category.color },
-                ]}
-                onPress={() => setSelectedCategory(category.id)}
-              >
-                <Ionicons
-                  name={category.icon as any}
-                  size={16}
-                  color={selectedCategory === category.id ? '#fff' : category.color}
-                />
-                <Text style={[
-                  styles.categoryChipText,
-                  selectedCategory === category.id && styles.categoryChipTextSelected,
-                  { color: selectedCategory === category.id ? '#fff' : category.color },
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {categories.map(category => {
+              const categoryConfig = getCategoryConfig(category.id);
+              return (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === category.id && styles.categoryChipSelected,
+                    { borderColor: categoryConfig.color },
+                  ]}
+                  onPress={() => setSelectedCategory(category.id)}
+                >
+                  <Ionicons
+                    name={categoryConfig.icon as any}
+                    size={16}
+                    color={selectedCategory === category.id ? '#fff' : categoryConfig.color}
+                  />
+                  <Text style={[
+                    styles.categoryChipText,
+                    selectedCategory === category.id && styles.categoryChipTextSelected,
+                    { color: selectedCategory === category.id ? '#fff' : categoryConfig.color },
+                  ]}>
+                    {categoryConfig.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 

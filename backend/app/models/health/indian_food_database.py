@@ -141,23 +141,31 @@ class IndianFood(Base):
     
     def get_serving_nutrition(self, serving_qty: float = 1.0) -> dict:
         """Get nutrition data for a specific serving quantity"""
-        if not self.servings_unit:
+        # Check if we have unit_serving_* data available
+        has_serving_data = any([
+            self.unit_serving_energy_kcal is not None,
+            self.unit_serving_protein_g is not None,
+            self.unit_serving_carb_g is not None,
+            self.unit_serving_fat_g is not None
+        ])
+        
+        if has_serving_data:
+            # Use serving-specific data if available (regardless of servings_unit)
+            multiplier = serving_qty
+            return {
+                "energy_kcal": round((self.unit_serving_energy_kcal or 0) * multiplier, 2),
+                "protein_g": round((self.unit_serving_protein_g or 0) * multiplier, 2),
+                "carbs_g": round((self.unit_serving_carb_g or 0) * multiplier, 2),
+                "fat_g": round((self.unit_serving_fat_g or 0) * multiplier, 2),
+                "fiber_g": round((self.unit_serving_fibre_g or 0) * multiplier, 2),
+                "sugar_g": round((self.unit_serving_freesugar_g or 0) * multiplier, 2),
+                "sodium_mg": round((self.unit_serving_sodium_mg or 0) * multiplier, 2),
+                "calcium_mg": round((self.unit_serving_calcium_mg or 0) * multiplier, 2),
+                "iron_mg": round((self.unit_serving_iron_mg or 0) * multiplier, 2),
+                "vitc_mg": round((self.unit_serving_vitc_mg or 0) * multiplier, 2),
+            }
+        else:
             # Fallback to per 100g calculation
             multiplier = serving_qty / 100.0
             base_nutrition = self.get_nutrition_per_100g()
             return {k: round(v * multiplier, 2) for k, v in base_nutrition.items()}
-        
-        # Use serving-specific data if available
-        multiplier = serving_qty
-        return {
-            "energy_kcal": round((self.unit_serving_energy_kcal or 0) * multiplier, 2),
-            "protein_g": round((self.unit_serving_protein_g or 0) * multiplier, 2),
-            "carbs_g": round((self.unit_serving_carb_g or 0) * multiplier, 2),
-            "fat_g": round((self.unit_serving_fat_g or 0) * multiplier, 2),
-            "fiber_g": round((self.unit_serving_fibre_g or 0) * multiplier, 2),
-            "sugar_g": round((self.unit_serving_freesugar_g or 0) * multiplier, 2),
-            "sodium_mg": round((self.unit_serving_sodium_mg or 0) * multiplier, 2),
-            "calcium_mg": round((self.unit_serving_calcium_mg or 0) * multiplier, 2),
-            "iron_mg": round((self.unit_serving_iron_mg or 0) * multiplier, 2),
-            "vitc_mg": round((self.unit_serving_vitc_mg or 0) * multiplier, 2),
-        }

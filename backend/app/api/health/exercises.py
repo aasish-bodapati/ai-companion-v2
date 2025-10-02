@@ -16,6 +16,11 @@ class ExerciseResponse(BaseModel):
     """Simplified exercise response model for API documentation"""
     id: int
     name: str
+    category: str
+    muscle_group: str
+    equipment: Optional[str] = None
+    instructions: Optional[str] = None
+    difficulty: str
     logging_category: str
     logging_category_info: dict
 
@@ -67,17 +72,31 @@ class ExerciseSearchResponse(BaseModel):
 )
 async def search_exercises(
     q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    limit: int = Query(8, ge=1, le=20, description="Maximum number of results to return"),
+    limit: int = Query(20, ge=1, le=50, description="Maximum number of results to return"),
     db: Session = Depends(get_db)
 ):
     if not q or len(q) < 2:
         return {"exercises": []}
 
     search_term = f"%{q.lower()}%"
+    exact_term = q.lower()
 
-    # Query the database for exercises matching the search term
+    # Query the database for exercises matching the search term with proper sorting
+    from sqlalchemy import case, desc
+    
     exercises = db.query(Exercise).filter(
         Exercise.name.ilike(search_term)
+    ).order_by(
+        # Exact match first
+        case(
+            (Exercise.name.ilike(exact_term), 1),
+            # Starts with search term
+            (Exercise.name.ilike(f"{exact_term}%"), 2),
+            # Contains search term
+            else_=3
+        ),
+        # Then by name alphabetically
+        Exercise.name
     ).limit(limit).all()
 
     # Convert to response format
@@ -89,6 +108,11 @@ async def search_exercises(
         results.append(ExerciseResponse(
             id=ex.id,
             name=ex.name,
+            category=ex.logging_category if ex.logging_category else 'weighted',
+            muscle_group='general',  # Default muscle group since it's not in the database
+            equipment=None,
+            instructions=None,
+            difficulty='intermediate',  # Default difficulty
             logging_category=ex.logging_category if ex.logging_category else None,
             logging_category_info=logging_category_info
         ))
@@ -154,6 +178,11 @@ async def get_all_exercises(
         results.append(ExerciseResponse(
             id=ex.id,
             name=ex.name,
+            category=ex.logging_category if ex.logging_category else 'weighted',
+            muscle_group='general',  # Default muscle group since it's not in the database
+            equipment=None,
+            instructions=None,
+            difficulty='intermediate',  # Default difficulty
             logging_category=ex.logging_category if ex.logging_category else None,
             logging_category_info=logging_category_info
         ))
@@ -181,6 +210,7 @@ async def get_exercise_categories(
         })
 
     return {"categories": results}
+
 
 def _get_logging_category_info(logging_category: str, db: Session) -> dict:
     """Get logging category information from database"""

@@ -21,11 +21,21 @@ def get_db() -> Generator:
     Yields:
         Session: A database session.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🗄️ [DB] Creating database session...")
     try:
         db = SessionLocal()
+        logger.info(f"🗄️ [DB] Database session created successfully")
         yield db
+    except Exception as e:
+        logger.error(f"🗄️ [DB] Error creating database session: {e}")
+        raise
     finally:
+        logger.info(f"🗄️ [DB] Closing database session...")
         db.close()
+        logger.info(f"🗄️ [DB] Database session closed")
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)) -> User:
     """
@@ -41,17 +51,30 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusabl
     Raises:
         HTTPException: If the token is invalid or the user doesn't exist.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🔐 [AUTH] Starting authentication for token: {token[:20]}...")
+    
     try:
+        logger.info(f"🔐 [AUTH] Decoding JWT token...")
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
-    except (jwt.JWTError, ValidationError):
+        logger.info(f"🔐 [AUTH] Token decoded, user_id: {token_data.sub}")
+    except (jwt.JWTError, ValidationError) as e:
+        logger.error(f"🔐 [AUTH] JWT decode error: {e}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
+    
+    logger.info(f"🔐 [AUTH] Looking up user in database...")
     user = crud.user.get(db, id=token_data.sub)
     if not user:
+        logger.warning(f"🔐 [AUTH] User not found: {token_data.sub}")
         raise HTTPException(status_code=404, detail="User not found")
+    
+    logger.info(f"🔐 [AUTH] Authentication successful for user: {user.id}")
     return user
 
 def get_current_active_user(

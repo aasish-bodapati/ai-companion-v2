@@ -24,6 +24,7 @@ export default function RoutineCard({
 }: RoutineCardProps) {
   const isActive = routine.user_progress?.is_active || false;
   const isUserCreated = !!routine.created_by_user_id;
+  const isTemplate = routine.is_template || false;
 
   const handleStart = () => {
     onStart(routine.id);
@@ -38,6 +39,15 @@ export default function RoutineCard({
   };
 
   const handleDelete = () => {
+    if (isTemplate) {
+      Alert.alert(
+        'Template Routine',
+        'This is a template routine and cannot be deleted. You can create a copy to customize it.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     Alert.alert(
       'Delete Routine',
       'Are you sure you want to delete this routine? This action cannot be undone.',
@@ -76,6 +86,7 @@ export default function RoutineCard({
 
   const badges = [
     ...(isActive ? [{ text: 'Active', variant: 'success' as const, icon: 'checkmark-circle' }] : []),
+    ...(isTemplate ? [{ text: 'Template', variant: 'info' as const, icon: 'library-outline' }] : []),
     ...(isUserCreated ? [{ text: 'Custom', variant: 'info' as const, icon: 'star' }] : []),
   ];
 
@@ -116,22 +127,22 @@ export default function RoutineCard({
         loading: isLoading,
       };
 
-  const secondaryActions = isUserCreated
+  const secondaryActions = (isUserCreated || isTemplate)
     ? [
         {
-          label: 'Edit',
+          label: isTemplate ? 'Customize' : 'Edit',
           icon: 'pencil',
           onPress: handleEdit,
           variant: 'ghost' as const,
           disabled: isLoading,
         },
-        {
+        ...(isUserCreated ? [{
           label: 'Delete',
           icon: 'trash',
           onPress: handleDelete,
           variant: 'danger' as const,
           disabled: isLoading,
-        },
+        }] : []),
       ]
     : [];
 

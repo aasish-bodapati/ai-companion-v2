@@ -105,8 +105,6 @@ class Settings(BaseSettings):
     REDIS_URL: Optional[str] = None  # Redis URL for rate limiting and caching
 
     # External API settings
-    NUTRITIONIX_APP_ID: str = "fb6b427b"
-    NUTRITIONIX_API_KEY: str = "7017dca7c579fb823722dc34441c570e"
     WGER_API: Optional[str] = None  # wger.de API key for exercise data
 
 

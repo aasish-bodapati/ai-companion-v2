@@ -6,413 +6,331 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS, SHADOWS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
-interface StatItem {
-  label: string;
-  value: string | number;
-  unit?: string;
+interface ProgressData {
+  current: number;
+  target: number;
+  label?: string;
   color?: string;
-  trend?: {
-    value: number;
-    direction: 'up' | 'down' | 'stable';
-  };
+}
+
+interface AchievementData {
+  reached: boolean;
+  message: string;
+  icon: string;
 }
 
 interface StatsCardProps {
   title: string;
+  value: string | number;
+  subtitle?: string;
   icon?: string;
   iconColor?: string;
-  stats: StatItem[];
+  trend?: 'up' | 'down' | 'neutral';
+  trendValue?: string;
   onPress?: () => void;
-  
-  // Progress indicator
-  progress?: {
-    current: number;
-    target: number;
-    label?: string;
-    color?: string;
-  };
-  
-  // Achievement indicator
-  achievement?: {
-    reached: boolean;
-    message: string;
-    icon?: string;
-  };
-  
-  // Styling
-  variant?: 'default' | 'compact' | 'detailed';
-  backgroundColor?: string;
+  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error';
+  size?: 'small' | 'medium' | 'large';
+  loading?: boolean;
+  disabled?: boolean;
   style?: any;
+  testID?: string;
+  progress?: ProgressData;
+  achievement?: AchievementData;
 }
 
 export default function StatsCard({
   title,
+  value,
+  subtitle,
   icon,
   iconColor = COLORS.primary,
-  stats,
+  trend,
+  trendValue,
   onPress,
+  variant = 'default',
+  size = 'medium',
+  loading = false,
+  disabled = false,
+  style,
+  testID,
   progress,
   achievement,
-  variant = 'default',
-  backgroundColor = COLORS.background.primary,
-  style,
 }: StatsCardProps) {
-
   const handlePress = () => {
-    if (onPress) {
-      hapticFeedback.light();
-      onPress();
-    }
+    if (disabled || loading) return;
+    hapticFeedback.light();
+    onPress?.();
   };
 
-  const getTrendIcon = (trend: StatItem['trend']) => {
-    if (!trend) return null;
-    switch (trend.direction) {
+  const getTrendIcon = () => {
+    switch (trend) {
       case 'up':
         return 'trending-up';
       case 'down':
         return 'trending-down';
-      case 'stable':
-        return 'trending-flat';
+      case 'neutral':
+        return 'remove';
       default:
         return null;
     }
   };
 
-  const getTrendColor = (trend: StatItem['trend']) => {
-    if (!trend) return COLORS.text.secondary;
-    switch (trend.direction) {
+  const getTrendColor = () => {
+    switch (trend) {
       case 'up':
         return COLORS.success;
       case 'down':
-        return COLORS.danger;
-      case 'stable':
+        return COLORS.error;
+      case 'neutral':
         return COLORS.text.secondary;
       default:
         return COLORS.text.secondary;
     }
   };
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <View style={styles.titleContainer}>
-        {icon && (
-          <Ionicons 
-            name={icon as any} 
-            size={20} 
-            color={iconColor}
-            style={styles.titleIcon}
-          />
-        )}
-        <Text style={styles.title}>{title}</Text>
-      </View>
-      {onPress && (
-        <Ionicons 
-          name="chevron-forward" 
-          size={16} 
-          color={COLORS.text.secondary}
-        />
-      )}
-    </View>
-  );
+  const getVariantStyles = () => {
+    switch (variant) {
+      case 'primary':
+        return {
+          backgroundColor: COLORS.primary + '20',
+          borderColor: COLORS.primary + '40',
+        };
+      case 'success':
+        return {
+          backgroundColor: COLORS.success + '20',
+          borderColor: COLORS.success + '40',
+        };
+      case 'warning':
+        return {
+          backgroundColor: COLORS.warning + '20',
+          borderColor: COLORS.warning + '40',
+        };
+      case 'error':
+        return {
+          backgroundColor: COLORS.error + '20',
+          borderColor: COLORS.error + '40',
+        };
+      default:
+        return {
+          backgroundColor: COLORS.background.secondary,
+          borderColor: COLORS.border.primary,
+        };
+    }
+  };
 
-  const renderStat = (stat: StatItem, index: number) => {
-    const isCompact = variant === 'compact';
-    
-    return (
-      <View 
-        key={index} 
-        style={[
-          styles.statItem,
-          isCompact && styles.compactStatItem,
-          stats.length > 2 && styles.gridStatItem
-        ]}
-      >
-        <Text 
-          style={[
-            styles.statValue,
-            isCompact && styles.compactStatValue,
-            stat.color && { color: stat.color }
-          ]}
-        >
-          {stat.value}
-          {stat.unit && (
-            <Text style={styles.statUnit}>{stat.unit}</Text>
-          )}
-        </Text>
-        
-        <View style={styles.statLabelContainer}>
-          <Text style={[styles.statLabel, isCompact && styles.compactStatLabel]}>
-            {stat.label}
+  const getSizeStyles = () => {
+    switch (size) {
+      case 'small':
+        return {
+          padding: SPACING.small,
+          minHeight: 80,
+        };
+      case 'large':
+        return {
+          padding: SPACING.large,
+          minHeight: 120,
+        };
+      default:
+        return {
+          padding: SPACING.medium,
+          minHeight: 100,
+        };
+    }
+  };
+
+  const containerStyle = [
+    styles.container,
+    getVariantStyles(),
+    getSizeStyles(),
+    disabled && styles.disabledVariant,
+    style,
+  ];
+
+  const TouchableComponent = onPress ? TouchableOpacity : View;
+
+  return (
+    <TouchableComponent
+      style={containerStyle}
+      onPress={onPress ? handlePress : undefined}
+      disabled={disabled || loading}
+      testID={testID}
+    >
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text style={[styles.title, disabled && styles.disabledText]}>
+            {title}
           </Text>
-          
-          {stat.trend && (
+          {icon && (
+            <Ionicons
+              name={icon as any}
+              size={20}
+              color={disabled ? COLORS.text.disabled : iconColor}
+            />
+          )}
+        </View>
+        
+        <View style={styles.valueContainer}>
+          <Text style={[styles.value, disabled && styles.disabledText]}>
+            {loading ? '...' : value}
+          </Text>
+          {trend && trendValue && (
             <View style={styles.trendContainer}>
               <Ionicons
-                name={getTrendIcon(stat.trend) as any}
-                size={12}
-                color={getTrendColor(stat.trend)}
+                name={getTrendIcon() as any}
+                size={16}
+                color={getTrendColor()}
               />
-              <Text style={[styles.trendText, { color: getTrendColor(stat.trend) }]}>
-                {stat.trend.value > 0 ? '+' : ''}{stat.trend.value}%
+              <Text style={[styles.trendText, { color: getTrendColor() }]}>
+                {trendValue}
               </Text>
             </View>
           )}
         </View>
-      </View>
-    );
-  };
-
-  const renderStats = () => {
-    const isGrid = stats.length > 2;
-    
-    return (
-      <View style={[styles.statsContainer, isGrid && styles.statsGrid]}>
-        {stats.map(renderStat)}
-      </View>
-    );
-  };
-
-  const renderProgress = () => {
-    if (!progress) return null;
-    
-    const percentage = Math.min((progress.current / progress.target) * 100, 100);
-    const isComplete = percentage >= 100;
-    
-    return (
-      <View style={styles.progressContainer}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressLabel}>
-            {progress.label || 'Progress'}
-          </Text>
-          <Text style={styles.progressText}>
-            {progress.current} / {progress.target}
-          </Text>
-        </View>
         
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${percentage}%`,
-                backgroundColor: progress.color || (isComplete ? COLORS.success : COLORS.primary),
-              },
-            ]}
-          />
-        </View>
+        {subtitle && (
+          <Text style={[styles.subtitle, disabled && styles.disabledText]}>
+            {subtitle}
+          </Text>
+        )}
         
-        <Text style={styles.progressPercentage}>
-          {percentage.toFixed(0)}% Complete
-        </Text>
+        {/* Progress Bar */}
+        {progress && (
+          <View style={styles.progressContainer}>
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>
+                {progress.label || 'Progress'}
+              </Text>
+              <Text style={styles.progressText}>
+                {progress.current} / {progress.target}
+              </Text>
+            </View>
+            <View style={styles.progressBarContainer}>
+              <View 
+                style={[
+                  styles.progressBar,
+                  {
+                    width: `${Math.min((progress.current / progress.target) * 100, 100)}%`,
+                    backgroundColor: progress.color || COLORS.primary,
+                  }
+                ]}
+              />
+            </View>
+          </View>
+        )}
+        
+        {/* Achievement */}
+        {achievement && achievement.reached && (
+          <View style={styles.achievementContainer}>
+            <Ionicons
+              name={achievement.icon as any}
+              size={16}
+              color={COLORS.success}
+            />
+            <Text style={styles.achievementText}>
+              {achievement.message}
+            </Text>
+          </View>
+        )}
       </View>
-    );
-  };
-
-  const renderAchievement = () => {
-    if (!achievement) return null;
-    
-    return (
-      <View style={styles.achievementContainer}>
-        <Ionicons 
-          name={achievement.icon as any || 'trophy'} 
-          size={16} 
-          color={COLORS.success}
-        />
-        <Text style={styles.achievementText}>
-          {achievement.message}
-        </Text>
-      </View>
-    );
-  };
-
-  const getCardStyle = () => {
-    return [
-      styles.card,
-      variant === 'compact' && styles.compactCard,
-      { backgroundColor },
-      style,
-    ];
-  };
-
-  const CardContent = () => (
-    <View style={getCardStyle()}>
-      {renderHeader()}
-      {renderStats()}
-      {renderProgress()}
-      {achievement?.reached && renderAchievement()}
-    </View>
+    </TouchableComponent>
   );
-
-  if (onPress) {
-    return (
-      <TouchableOpacity onPress={handlePress} activeOpacity={0.7}>
-        <CardContent />
-      </TouchableOpacity>
-    );
-  }
-
-  return <CardContent />;
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...MIXINS.card,
-    marginBottom: SPACING.lg,
+  container: {
+    borderRadius: BORDER_RADIUS.medium,
+    borderWidth: 1,
+    marginBottom: SPACING.small,
+    ...SHADOWS.small,
   },
-  
-  compactCard: {
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+  disabledVariant: {
+    opacity: 0.5,
   },
-  
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   header: {
-    ...MIXINS.rowSpaceBetween,
-    marginBottom: SPACING.md,
-  },
-  
-  titleContainer: {
-    ...MIXINS.row,
-    flex: 1,
-  },
-  
-  titleIcon: {
-    marginRight: SPACING.sm,
-  },
-  
-  title: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-    flex: 1,
-  },
-  
-  // Stats styles
-  statsContainer: {
-    gap: SPACING.lg,
-  },
-  
-  statsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    gap: SPACING.md,
-  },
-  
-  statItem: {
+    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: SPACING.small,
   },
-  
-  compactStatItem: {
-    alignItems: 'flex-start',
+  title: {
+    fontSize: FONT_SIZE.small,
+    fontWeight: '500',
+    color: COLORS.text.secondary,
+    flex: 1,
   },
-  
-  gridStatItem: {
-    minWidth: '30%',
-    alignItems: 'center',
+  valueContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: SPACING.xs,
   },
-  
-  statValue: {
-    fontSize: FONT_SIZE.xxxl,
+  value: {
+    fontSize: FONT_SIZE.xl,
     fontWeight: '700',
     color: COLORS.text.primary,
-    marginBottom: SPACING.xs,
+    flex: 1,
   },
-  
-  compactStatValue: {
-    fontSize: FONT_SIZE.xl,
-    marginBottom: SPACING.xs,
-  },
-  
-  statUnit: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '400',
-    color: COLORS.text.secondary,
-  },
-  
-  statLabelContainer: {
+  trendContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
   },
-  
-  statLabel: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-  },
-  
-  compactStatLabel: {
-    fontSize: FONT_SIZE.xs,
-    textAlign: 'left',
-  },
-  
-  trendContainer: {
-    ...MIXINS.row,
-    gap: SPACING.xs,
-  },
-  
   trendText: {
-    fontSize: FONT_SIZE.xs,
-    fontWeight: '600',
+    fontSize: FONT_SIZE.small,
+    fontWeight: '500',
   },
-  
-  // Progress styles
+  subtitle: {
+    fontSize: FONT_SIZE.small,
+    color: COLORS.text.tertiary,
+  },
+  disabledText: {
+    color: COLORS.text.disabled,
+  },
   progressContainer: {
-    marginTop: SPACING.lg,
-    gap: SPACING.sm,
+    marginTop: SPACING.small,
   },
-  
   progressHeader: {
-    ...MIXINS.rowSpaceBetween,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
   },
-  
   progressLabel: {
-    fontSize: FONT_SIZE.md,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-  },
-  
-  progressText: {
-    fontSize: FONT_SIZE.sm,
+    fontSize: FONT_SIZE.small,
     color: COLORS.text.secondary,
+    fontWeight: '500',
   },
-  
-  progressBar: {
-    height: 8,
-    backgroundColor: COLORS.gray[200],
-    borderRadius: BORDER_RADIUS.sm,
+  progressText: {
+    fontSize: FONT_SIZE.small,
+    color: COLORS.text.primary,
+    fontWeight: '600',
+  },
+  progressBarContainer: {
+    height: 10,
+    backgroundColor: COLORS.border.primary,
+    borderRadius: 5,
     overflow: 'hidden',
   },
-  
-  progressFill: {
+  progressBar: {
     height: '100%',
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: 5,
   },
-  
-  progressPercentage: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-  },
-  
-  // Achievement styles
   achievementContainer: {
-    ...MIXINS.row,
-    justifyContent: 'center',
-    backgroundColor: COLORS.success + '15',
-    paddingVertical: SPACING.sm,
-    paddingHorizontal: SPACING.md,
-    borderRadius: BORDER_RADIUS.sm,
-    marginTop: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.small,
     gap: SPACING.xs,
   },
-  
   achievementText: {
+    fontSize: FONT_SIZE.small,
     color: COLORS.success,
     fontWeight: '600',
-    fontSize: FONT_SIZE.sm,
   },
 });

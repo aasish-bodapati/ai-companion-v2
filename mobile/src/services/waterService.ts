@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { BaseService } from './BaseService';
 
 export interface WaterLog {
   id: number;
@@ -38,104 +39,80 @@ export interface WaterLogSummary {
   goal_achieved: boolean;
 }
 
-export const waterService = {
+class WaterService extends BaseService {
   // Get water logs for a specific number of days
   async getWaterLogs(days: number = 7): Promise<WaterLog[]> {
-    try {
-      const response = await apiClient.get(`/health/water-logs/?days=${days}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch water logs:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get(`/health/water-logs/?days=${days}`),
+      'WATER SERVICE - getWaterLogs'
+    );
+  }
 
   // Get today's water logs
   async getTodaysWaterLogs(): Promise<WaterLog[]> {
-    try {
-      const response = await apiClient.get('/health/water-logs/today');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch today\'s water logs:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get('/health/water-logs/today'),
+      'WATER SERVICE - getTodaysWaterLogs'
+    );
+  }
 
   // Get water intake statistics for today
   async getWaterStats(): Promise<WaterLogStats> {
-    try {
-      const response = await apiClient.get('/health/water-logs/stats');
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch water stats:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get('/health/water-logs/stats'),
+      'WATER SERVICE - getWaterStats'
+    );
+  }
 
   // Create a new water log entry
   async createWaterLog(waterLogData: WaterLogCreate): Promise<WaterLog> {
-    try {
-      const response = await apiClient.post('/health/water-logs/', waterLogData);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to create water log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.post('/health/water-logs/', waterLogData),
+      'WATER SERVICE - createWaterLog'
+    );
+  }
 
   // Quick log water intake
   async quickLogWater(amount_ml: number): Promise<{ message: string; log_entry: WaterLog; stats: WaterLogStats }> {
-    try {
-      const response = await apiClient.post(`/health/water-logs/quick-log?amount_ml=${amount_ml}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to quick log water:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.post(`/health/water-logs/quick-log?amount_ml=${amount_ml}`),
+      'WATER SERVICE - quickLogWater'
+    );
+  }
 
   // Get a specific water log entry
   async getWaterLog(id: number): Promise<WaterLog> {
-    try {
-      const response = await apiClient.get(`/health/water-logs/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch water log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get(`/health/water-logs/${id}`),
+      'WATER SERVICE - getWaterLog'
+    );
+  }
 
   // Update a water log entry
   async updateWaterLog(id: number, updateData: Partial<WaterLogCreate>): Promise<WaterLog> {
-    try {
-      const response = await apiClient.put(`/health/water-logs/${id}`, updateData);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to update water log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.put(`/health/water-logs/${id}`, updateData),
+      'WATER SERVICE - updateWaterLog'
+    );
+  }
 
   // Delete a water log entry
   async deleteWaterLog(id: number): Promise<{ message: string }> {
-    try {
-      const response = await apiClient.delete(`/health/water-logs/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to delete water log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.delete(`/health/water-logs/${id}`),
+      'WATER SERVICE - deleteWaterLog'
+    );
+  }
 
   // Helper function to convert ml to oz
   mlToOz(ml: number): number {
     return ml * 0.033814;
-  },
+  }
 
   // Helper function to convert oz to ml
   ozToMl(oz: number): number {
     return oz / 0.033814;
-  },
+  }
 
   // Get common water amounts in ml
   getCommonAmounts(): { label: string; ml: number; oz: number }[] {
@@ -147,5 +124,8 @@ export const waterService = {
       { label: 'Large Bottle', ml: 750, oz: 25.4 },
       { label: '1 Liter', ml: 1000, oz: 33.8 },
     ];
-  },
-};
+  }
+}
+
+// Export singleton instance to maintain backward compatibility
+export const waterService = new WaterService();

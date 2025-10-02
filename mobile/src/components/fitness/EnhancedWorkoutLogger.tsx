@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { fitnessService, ExerciseData } from '../../services/fitnessService';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import DynamicExerciseForm from './DynamicExerciseForm';
 import { hapticFeedback } from '../../utils/haptics';
 
@@ -25,7 +26,7 @@ interface WorkoutData {
   activity_name?: string;
   duration_minutes: number;
   calories_burned?: number;
-  exercises: ExerciseData[];
+  exercises: string; // JSON string as expected by backend
   unit?: string;
   notes?: string;
   photos?: string[];
@@ -51,11 +52,33 @@ export default function EnhancedWorkoutLogger({
   const [activityName, setActivityName] = useState('');
   const [duration, setDuration] = useState('');
   const [calories, setCalories] = useState('');
+  const [categories, setCategories] = useState<any[]>([]);
   const [unit, setUnit] = useState('kg');
   const [notes, setNotes] = useState('');
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await exerciseCategoryService.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
+
+  const getCategoryForActivityType = (activityType: string): string => {
+    // Map activity types to database categories
+    if (activityType === 'weightlifting') return 'weighted';
+    if (['cardio', 'running', 'cycling', 'swimming'].includes(activityType)) return 'distance_based';
+    if (activityType === 'yoga') return 'cardio_duration';
+    return 'bodyweight'; // Default fallback
+  };
   const [currentStep, setCurrentStep] = useState(1);
   const [showExerciseForm, setShowExerciseForm] = useState(false);
 
@@ -110,9 +133,7 @@ export default function EnhancedWorkoutLogger({
       weight_used: 0,
       weight_unit: 'kg', // Default to kg (hidden in UI)
       distance_unit: 'km', // Default to km (hidden in UI)
-      category: activityType === 'weightlifting' ? 'weighted' : 
-                activityType === 'cardio' || activityType === 'running' || activityType === 'cycling' || activityType === 'swimming' ? 'distance_based' :
-                activityType === 'yoga' ? 'cardio_duration' : 'bodyweight'
+      category: getCategoryForActivityType(activityType)
     };
     setExercises(prev => [...prev, newExercise]);
     setShowExerciseForm(true);
@@ -150,7 +171,6 @@ export default function EnhancedWorkoutLogger({
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
       Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
@@ -176,7 +196,6 @@ export default function EnhancedWorkoutLogger({
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
     } catch (error) {
-      console.error('Error selecting photo:', error);
       Alert.alert('Error', 'Failed to select photo. Please try again.');
     }
   };
@@ -196,6 +215,11 @@ export default function EnhancedWorkoutLogger({
       return;
     }
 
+    if (saving) {
+      console.log('🚫 [ENHANCED WORKOUT LOGGER] Save already in progress, ignoring duplicate request');
+      return;
+    }
+
     try {
       setSaving(true);
       hapticFeedback.success();
@@ -205,7 +229,7 @@ export default function EnhancedWorkoutLogger({
         activity_name: activityName.trim() || undefined,
         duration_minutes: Number(duration),
         calories_burned: calories ? Number(calories) : undefined,
-        exercises: exercises.filter(ex => ex.exercise_name.trim()),
+        exercises: JSON.stringify(exercises.filter(ex => ex.exercise_name.trim())),
         unit: unit,
         notes: notes.trim() || undefined,
         photos: photos.length > 0 ? photos : undefined,
@@ -228,7 +252,6 @@ export default function EnhancedWorkoutLogger({
         ]
       );
     } catch (error) {
-      console.error('Failed to log workout:', error);
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log workout. Please try again.');
     } finally {

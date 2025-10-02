@@ -8,10 +8,11 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService, NutritionStats } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
-import LogMealModal from '../../components/nutrition/LogMealModal';
+import MealLoggingModal from '../../components/nutrition/MealLoggingModal';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
 export default function NutritionScreen() {
@@ -31,11 +32,11 @@ export default function NutritionScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Modal is now handled directly in TabNavigator
+
   const loadWeekStats = async () => {
     try {
-      console.log('🍎 Loading nutrition week stats...');
       const stats = await nutritionService.getNutritionStats('week');
-      console.log('✅ Nutrition week stats data:', stats);
       
       // Transform the stats to match the expected format
       setWeekStats({
@@ -51,7 +52,7 @@ export default function NutritionScreen() {
         weekly_goal_progress: 0, // Will be calculated separately
       });
     } catch (error) {
-      console.error('❌ Failed to load week stats:', error);
+      console.error('Failed to load week stats:', error);
       // Set fallback stats
       setWeekStats({
         total_meals: 0,
@@ -70,14 +71,11 @@ export default function NutritionScreen() {
 
   const loadWeeklyActivityData = async () => {
     try {
-      console.log('📊 Loading nutrition weekly activity data...');
       // Get recent meals for the week
       const response = await nutritionService.getNutritionLogs({ period: 'week' });
-      console.log('✅ Nutrition weekly meals data:', response);
       
       // Extract meals array from response
       const meals = response?.meals || response || [];
-      console.log('✅ Extracted meals array:', meals);
       
       // Group meals by day of week
       const weeklyData = {
@@ -109,7 +107,7 @@ export default function NutritionScreen() {
       
       setWeeklyActivityData(weeklyData);
     } catch (error) {
-      console.error('❌ Failed to load weekly activity data:', error);
+      console.error('Failed to load weekly activity data:', error);
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -143,6 +141,13 @@ export default function NutritionScreen() {
   useEffect(() => {
     loadOverviewData();
   }, []);
+
+  // Reset to overview tab when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveTab('overview');
+    }, [])
+  );
 
   const StatCard = ({ icon, title, value, subtitle, color }: {
     icon: string;
@@ -414,6 +419,7 @@ export default function NutritionScreen() {
     );
   }
 
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -482,7 +488,7 @@ export default function NutritionScreen() {
        renderMeals()}
 
       {/* Log Meal Modal */}
-      <LogMealModal
+      <MealLoggingModal
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
         onMealLogged={() => {

@@ -47,6 +47,7 @@ export const COLORS = {
     secondary: '#6b7280',
     tertiary: '#9ca3af',
     inverse: '#ffffff',
+    disabled: '#9ca3af',
   },
   
   // Border colors
@@ -54,11 +55,16 @@ export const COLORS = {
     light: '#e5e7eb',
     medium: '#d1d5db',
     dark: '#9ca3af',
+    primary: '#d1d5db',
   },
   
   // Overlay colors
   overlay: 'rgba(0, 0, 0, 0.5)',
   backdropLight: 'rgba(0, 0, 0, 0.3)',
+  
+  // Additional colors
+  error: '#ef4444',
+  info: '#3b82f6',
 };
 
 export const SPACING = {
@@ -70,6 +76,11 @@ export const SPACING = {
   xxl: 24,
   xxxl: 32,
   xxxxl: 40,
+  xxxxxl: 48,
+  // Additional spacing
+  small: 8,
+  medium: 16,
+  large: 24,
 };
 
 export const BORDER_RADIUS = {
@@ -79,6 +90,10 @@ export const BORDER_RADIUS = {
   xl: 16,
   xxl: 20,
   round: 50,
+  // Additional border radius
+  small: 4,
+  medium: 8,
+  large: 12,
 };
 
 export const FONT_SIZE = {
@@ -91,6 +106,10 @@ export const FONT_SIZE = {
   xxxl: 24,
   xxxxl: 28,
   xxxxxl: 32,
+  // Additional font sizes
+  small: 12,
+  medium: 14,
+  large: 18,
 };
 
 export const FONT_WEIGHT = {

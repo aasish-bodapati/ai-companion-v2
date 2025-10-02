@@ -14,6 +14,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { 
+  formatTimeInUserTimezone, 
+  formatDateInUserTimezone, 
+  getDateInUserTimezone,
+  isDateInUserTimezone,
+  getUserTimezone
+} from '../../utils/timezoneUtils';
 import CalendarComponent from '../common/CalendarComponent';
 
 interface WorkoutLog {
@@ -49,55 +57,59 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [navigating, setNavigating] = useState(false);
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   // Debug logging for component mount/remount
-  console.log('🔄 FitnessLogsView component rendered/remounted');
 
   // Load data when component mounts or remounts
   useEffect(() => {
-    console.log('🔄 FitnessLogsView useEffect triggered - loading logs');
-    loadLogs();
     loadExerciseDatabase();
+    loadCategories();
   }, []); // Empty dependency array means this runs on mount/remount
+
+  // Load logs when categories are loaded
+  useEffect(() => {
+    if (categories.length > 0) {
+      loadLogs();
+    }
+  }, [categories]);
 
   // Load exercise database for category lookup
   const loadExerciseDatabase = async () => {
     try {
       const exercises = await fitnessService.getExerciseTypes();
       setExerciseDatabase(exercises);
-      console.log('🔍 Loaded exercise database:', exercises.length, 'exercises');
     } catch (error) {
       console.error('Failed to load exercise database:', error);
     }
   };
 
-  // Exercise categories with colors
-  const EXERCISE_CATEGORIES = {
-    bodyweight: {
-      name: 'Bodyweight',
-      icon: 'person-outline',
-      color: '#3b82f6',
-    },
-    weighted: {
-      name: 'Weighted',
-      icon: 'barbell-outline', 
-      color: '#ef4444',
-    },
-    cardio_duration: {
-      name: 'Cardio',
-      icon: 'heart-outline',
-      color: '#10b981',
-    },
-    distance_based: {
-      name: 'Distance',
-      icon: 'walk-outline',
-      color: '#8b5cf6',
-    },
-    general: {
-      name: 'General',
-      icon: 'fitness-outline',
+  // Load categories from database
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await exerciseCategoryService.getCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
+
+  // Get category config from database or return "Category Not Found"
+  const getCategoryConfig = (categoryId: string) => {
+    const category = categories.find(cat => cat.id === categoryId);
+    if (category) {
+      return {
+        name: category.display_name,
+        icon: category.icon,
+        color: category.color,
+      };
+    }
+    // Return "Category Not Found" config
+    return {
+      name: 'Category Not Found',
+      icon: 'help-outline',
       color: '#6b7280',
-    },
+    };
   };
 
   // Look up exercise category from database
@@ -105,7 +117,14 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     const exercise = exerciseDatabase.find(ex => 
       ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
     );
-    return exercise?.logging_category || 'general';
+    const category = exercise?.category;
+    
+    // Check if category exists in our loaded categories from DB
+    if (category && categories.find(cat => cat.id === category)) {
+      return category;
+    }
+    
+    return 'unknown'; // Show "Category Not Found" badge for unknown categories
   };
 
   const loadLogs = async (date?: Date) => {
@@ -113,8 +132,28 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setLoading(true);
       const targetDate = date || selectedDate;
       
-      // Use backend date filtering instead of client-side filtering
-      const targetDateStr = targetDate.toISOString().split('T')[0];
+      // Load all logs for the month first for calendar indicators
+      const allLogsResponse = await fitnessService.getFitnessLogs({
+        period: 'month',
+        page: 1,
+        size: 50
+      });
+      
+      // Process all logs for calendar indicators
+      const processedAllLogs = (allLogsResponse || []).map((log: any) => {
+        if (log.exercises && typeof log.exercises === 'string') {
+          try {
+            log.exercises = JSON.parse(log.exercises);
+          } catch (e) {
+            log.exercises = [];
+          }
+        }
+        return log;
+      });
+      setAllLogs(processedAllLogs);
+      
+      // Use user's timezone for date filtering
+      const targetDateStr = getDateInUserTimezone(targetDate);
       
       const response = await fitnessService.getFitnessLogs({
         start_date: targetDateStr,
@@ -123,10 +162,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         size: 50
       });
       
-      console.log('🔍 Fitness logs response:', response);
       const filteredLogs = response || [];
-      console.log('🔍 Backend filtered logs count:', filteredLogs.length);
-      console.log('🔍 Backend filtered logs:', filteredLogs);
       
       // Parse exercises from JSON string if needed
       const processedLogs = filteredLogs.map((log: any) => {
@@ -140,15 +176,15 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         return log;
       });
       
-      // Sort logs by time (earliest to latest) for chronological numbering
+      // Sort logs by time (earliest to latest) for chronological order
+      // All dates from backend are in UTC, so we can compare them directly
       const sortedLogs = processedLogs.sort((a: any, b: any) => {
         const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
         const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
-        return timeA - timeB;
+        return timeA - timeB; // Chronological order: earliest first
       });
       
       setLogs(sortedLogs);
-      setAllLogs(allLogs); // Store all logs for calendar markers
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
       Alert.alert('Error', 'Failed to load fitness logs. Please try again.');
@@ -160,6 +196,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const loadLogsForDate = async (date: Date) => {
     try {
       setNavigating(true);
+      
       // Load all logs for the month first
       const response = await fitnessService.getFitnessLogs({
         period: 'month',
@@ -167,27 +204,30 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         size: 50
       });
       
-      // Filter logs by the selected date
+      // Store all logs for calendar indicators
       const allLogs = response || [];
-      const selectedDateStr = date.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+      const processedAllLogs = allLogs.map((log: any) => {
+        if (log.exercises && typeof log.exercises === 'string') {
+          try {
+            log.exercises = JSON.parse(log.exercises);
+          } catch (e) {
+            log.exercises = [];
+          }
+        }
+        return log;
+      });
+      setAllLogs(processedAllLogs);
       
+      // Filter logs by the selected date using timezone-aware comparison
       const filteredLogs = allLogs.filter((log: any) => {
         // Try both activity_date and logged_at fields
         const dateField = log.activity_date || log.logged_at;
+        
         if (!dateField) return false;
         
         try {
-          // Handle both ISO string format and date object
-          let logDateStr;
-          if (typeof dateField === 'string') {
-            logDateStr = dateField.split('T')[0]; // Get YYYY-MM-DD format from ISO string
-          } else if (dateField instanceof Date) {
-            logDateStr = dateField.toISOString().split('T')[0];
-          } else {
-            return false;
-          }
-          
-          return logDateStr === selectedDateStr;
+          // Use timezone-aware date comparison
+          return isDateInUserTimezone(dateField, date);
         } catch (error) {
           return false;
         }
@@ -205,7 +245,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         return log;
       });
       
-      
+      // Update logs for display
       setLogs(processedLogs);
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
@@ -233,7 +273,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   };
 
   const formatDateForPicker = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
+    return formatDateInUserTimezone(date.toISOString(), {
       month: 'short',
       day: '2-digit',
       year: 'numeric'
@@ -261,7 +301,6 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       try {
         exercises = typeof log.exercises === 'string' ? JSON.parse(log.exercises) : log.exercises;
       } catch (error) {
-        console.error('Failed to parse exercises:', error);
         exercises = [];
       }
     }
@@ -376,7 +415,6 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       try {
         exercises = logToUpdate.exercises ? JSON.parse(logToUpdate.exercises) : [];
       } catch (e) {
-        console.error('Failed to parse exercises:', e);
         exercises = [];
       }
       
@@ -439,30 +477,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   }, []);
 
   const formatDate = (dateString: string) => {
-    if (!dateString) return 'Unknown Date';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
+    return formatDateInUserTimezone(dateString);
   };
 
   const formatTime = (dateString: string) => {
-    if (!dateString) return 'Unknown Time';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (error) {
-      return 'Invalid Time';
-    }
+    return formatTimeInUserTimezone(dateString);
   };
 
   // Create set of dates that have logs for calendar markers
@@ -472,27 +491,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const dateField = log.activity_date || log.logged_at;
       if (dateField) {
         try {
-          let logDateStr;
-          if (typeof dateField === 'string') {
-            // Handle ISO string - use local date to avoid timezone issues
-            const date = new Date(dateField);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            logDateStr = `${year}-${month}-${day}`;
-          } else if (dateField && typeof dateField === 'object' && 'toISOString' in dateField) {
-            // Handle Date object - use local date
-            const date = dateField as Date;
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            logDateStr = `${year}-${month}-${day}`;
-          }
-          if (logDateStr) {
-            datesSet.add(logDateStr);
-          }
+          // Use the timezone utility to get date in user's timezone
+          const logDateStr = getDateInUserTimezone(new Date(dateField));
+          datesSet.add(logDateStr);
         } catch (error) {
-          console.warn('Error parsing date for calendar marker:', dateField, error);
+          // Ignore invalid dates
         }
       }
     });
@@ -603,7 +606,6 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                     try {
                       exercises = JSON.parse(exercises);
                     } catch (error) {
-                      console.error('Failed to parse exercises JSON:', error);
                       exercises = [];
                     }
                   }
@@ -628,7 +630,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                     </Text>
                     {(() => {
                       const category = getExerciseCategory(exercise.exercise_name || '');
-                      const categoryConfig = EXERCISE_CATEGORIES[category as keyof typeof EXERCISE_CATEGORIES] || EXERCISE_CATEGORIES.general;
+                      const categoryConfig = getCategoryConfig(category);
                       return (
                         <View style={[styles.exerciseCategoryBadge, { backgroundColor: categoryConfig.color }]}>
                           <Ionicons 
@@ -674,11 +676,10 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                           
                           try {
                             const date = new Date(dateField);
-                            return date.toLocaleTimeString('en-US', { 
+                            return formatTimeInUserTimezone(dateField, {
                               hour: '2-digit', 
                               minute: '2-digit',
-                              hour12: true,
-                              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                              hour12: true
                             });
                           } catch (error) {
                             return 'Unknown time';

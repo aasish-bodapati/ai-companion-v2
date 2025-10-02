@@ -1,7 +1,9 @@
 /**
  * Body Type Goals Service
- * Provides body type goals with hardcoded logic based on user attributes
+ * Provides body type goals fetched from the backend API
  */
+
+import { bodyTypeGoalsApiService, BodyTypeGoal as ApiBodyTypeGoal } from './bodyTypeGoalsApi';
 
 export interface UserAttributes {
   age: number;
@@ -9,6 +11,9 @@ export interface UserAttributes {
   weight: number; // kg
   gender: 'male' | 'female' | 'other';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  ffm?: number; // Fat-Free Mass (kg)
+  smm?: number; // Skeletal Muscle Mass (kg)
+  bodyFat?: number; // Body Fat Percentage
 }
 
 export interface BodyTypeGoal {
@@ -20,6 +25,8 @@ export interface BodyTypeGoal {
   color: string;
   targetBMI: number;
   targetBodyFat?: number;
+  waistToHeightRatio?: number;
+  fatFreeMassIndex?: number;
   createdBy: 'system' | 'user';
   targetAttributes: {
     targetWeight: number;
@@ -45,98 +52,48 @@ export interface BodyTypeCalculation {
   recommendations: string[];
 }
 
-// Body Type Goals Database
-export const BODY_TYPE_GOALS: BodyTypeGoal[] = [
-  {
-    id: 'athletic',
-    name: 'Athletic',
-    description: 'Lean, defined physique with excellent conditioning',
-    category: 'body_type',
-    icon: 'leaf-outline',
-    color: '#10b981',
-    targetBMI: 20.5,
-    targetBodyFat: 10, // Will be adjusted for gender
-    createdBy: 'system',
+// Helper function to convert API body type goal to frontend format
+function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
+  if (!apiGoal.target_attributes) {
+    console.error('❌ API goal missing target_attributes:', apiGoal);
+    throw new Error(`Body type goal ${apiGoal.id} is missing target_attributes`);
+  }
+  
+  return {
+    id: apiGoal.id,
+    name: apiGoal.name,
+    description: apiGoal.description,
+    category: apiGoal.category as 'body_type',
+    icon: apiGoal.icon,
+    color: apiGoal.color,
+    targetBMI: apiGoal.target_bmi,
+    targetBodyFat: apiGoal.target_body_fat,
+    waistToHeightRatio: apiGoal.target_attributes.waist_to_height_ratio,
+    fatFreeMassIndex: apiGoal.target_attributes.fat_free_mass_index,
+    createdBy: apiGoal.created_by as 'system' | 'user',
     targetAttributes: {
-      targetWeight: 0, // Will be calculated based on height and targetBMI
-      weightChange: 0, // Will be calculated
-      waterGoal: 3000, // 3L per day for athletic performance
-      calorieTarget: 0, // Will be calculated based on user data
-      proteinTarget: 1.6, // 1.6g per kg body weight
-      workoutFrequency: 5, // 5 days per week
-      cardioMinutes: 180, // 3 hours per week
-      timeline: 16, // 16 weeks to achieve
+      targetWeight: apiGoal.target_attributes.target_weight,
+      weightChange: apiGoal.target_attributes.weight_change,
+      waterGoal: apiGoal.target_attributes.water_goal,
+      calorieTarget: apiGoal.target_attributes.calorie_target,
+      proteinTarget: apiGoal.target_attributes.protein_target,
+      workoutFrequency: apiGoal.target_attributes.workout_frequency,
+      cardioMinutes: apiGoal.target_attributes.cardio_minutes,
+      timeline: apiGoal.target_attributes.timeline,
     },
-  },
-  {
-    id: 'balanced',
-    name: 'Balanced',
-    description: 'Well-proportioned build with optimal strength and endurance',
-    category: 'body_type',
-    icon: 'fitness-outline',
-    color: '#3b82f6',
-    targetBMI: 22.5,
-    targetBodyFat: 14, // Will be adjusted for gender
-    createdBy: 'system',
-    targetAttributes: {
-      targetWeight: 0, // Will be calculated
-      weightChange: 0, // Will be calculated
-      waterGoal: 2500, // 2.5L per day
-      calorieTarget: 0, // Will be calculated
-      proteinTarget: 1.2, // 1.2g per kg body weight
-      workoutFrequency: 4, // 4 days per week
-      cardioMinutes: 150, // 2.5 hours per week
-      timeline: 20, // 20 weeks to achieve
-    },
-  },
-  {
-    id: 'powerful',
-    name: 'Powerful',
-    description: 'Strong, muscular build with impressive definition',
-    category: 'body_type',
-    icon: 'barbell-outline',
-    color: '#f59e0b',
-    targetBMI: 24.5,
-    targetBodyFat: 12, // Will be adjusted for gender
-    createdBy: 'system',
-    targetAttributes: {
-      targetWeight: 0, // Will be calculated
-      weightChange: 0, // Will be calculated
-      waterGoal: 3500, // 3.5L per day for muscle building
-      calorieTarget: 0, // Will be calculated
-      proteinTarget: 2.0, // 2.0g per kg body weight for muscle building
-      workoutFrequency: 6, // 6 days per week
-      cardioMinutes: 120, // 2 hours per week
-      timeline: 24, // 24 weeks to achieve
-    },
-  },
-  {
-    id: 'elite',
-    name: 'Elite',
-    description: 'Maximum muscle development and peak physical condition',
-    category: 'body_type',
-    icon: 'shield-outline',
-    color: '#ef4444',
-    targetBMI: 27.0,
-    targetBodyFat: 13, // Will be adjusted for gender
-    createdBy: 'system',
-    targetAttributes: {
-      targetWeight: 0, // Will be calculated
-      weightChange: 0, // Will be calculated
-      waterGoal: 4000, // 4L per day for elite performance
-      calorieTarget: 0, // Will be calculated
-      proteinTarget: 2.5, // 2.5g per kg body weight for elite muscle building
-      workoutFrequency: 7, // 7 days per week
-      cardioMinutes: 90, // 1.5 hours per week
-      timeline: 32, // 32 weeks to achieve
-    },
-  },
-];
+  };
+}
 
 // Helper function to calculate BMI
 export function calculateBMI(height: number, weight: number): number {
   const heightInMeters = height / 100;
   return weight / (heightInMeters * heightInMeters);
+}
+
+// Helper function to calculate FFMI
+export function calculateFFMI(height: number, ffm: number): number {
+  const heightInMeters = height / 100;
+  return ffm / (heightInMeters * heightInMeters);
 }
 
 // Helper function to estimate body fat percentage (simplified)
@@ -209,8 +166,8 @@ export function calculateCalorieTarget(
   }
 }
 
-// Calculate protein target based on weight and goal
-export function calculateProteinTarget(targetWeight: number, proteinPerKg: number): number {
+// Legacy protein target calculation (kept for backward compatibility)
+export function calculateLegacyProteinTarget(targetWeight: number, proteinPerKg: number): number {
   return Math.round(targetWeight * proteinPerKg);
 }
 
@@ -253,12 +210,54 @@ export function calculateMuscleMass(
   return Math.round(muscleMass * 10) / 10;
 }
 
+// Helper function to calculate protein target using comprehensive formula
+function calculateProteinTarget(weight: number, ffm?: number, smm?: number, bodyFat?: number): number {
+  // Comprehensive protein calculation based on available metrics
+  // Case 1: All optional metrics are provided (FFM, SMM, BF%)
+  if (ffm && smm && bodyFat) {
+    const ffmi = calculateFFMI(175, ffm); // Default height for FFMI calculation
+    const proteinTarget = ffm * 1.6 * (1 + 0.3 * smm / 30 + 0.1 * (ffmi - 20));
+    return Math.round(proteinTarget * 10) / 10;
+  }
+  
+  // Case 2: FFM provided, SMM and FFMI not provided
+  if (ffm && !smm && !bodyFat) {
+    const proteinTarget = ffm * 1.8;
+    return Math.round(proteinTarget * 10) / 10;
+  }
+  
+  // Case 3: SMM and BF% provided, FFM not provided
+  if (smm && bodyFat && !ffm) {
+    const estimatedFFM = weight * (1 - bodyFat / 100);
+    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
+    return Math.round(proteinTarget * 10) / 10;
+  }
+  
+  // Case 4: Only BF% provided, SMM and FFM not provided
+  if (bodyFat && !smm && !ffm) {
+    const estimatedFFM = weight * (1 - bodyFat / 100);
+    const proteinTarget = estimatedFFM * 1.8;
+    return Math.round(proteinTarget * 10) / 10;
+  }
+  
+  // Case 5: Only SMM provided, FFM & BF% not provided
+  if (smm && !ffm && !bodyFat) {
+    const estimatedFFM = smm * 2; // Skeletal muscle is ~50% of FFM
+    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
+    return Math.round(proteinTarget * 10) / 10;
+  }
+  
+  // Case 6: None of the optional metrics provided (only height & weight)
+  const proteinTarget = weight * 1.6;
+  return Math.round(proteinTarget * 10) / 10;
+}
+
 // Main function to calculate body type goals
-export function calculateBodyTypeGoal(
+export async function calculateBodyTypeGoal(
   userData: UserAttributes,
   bodyTypeId: string
-): BodyTypeCalculation {
-  const bodyType = BODY_TYPE_GOALS.find(bt => bt.id === bodyTypeId);
+): Promise<BodyTypeCalculation> {
+  const bodyType = await getBodyTypeGoalById(bodyTypeId);
   if (!bodyType) {
     throw new Error(`Body type ${bodyTypeId} not found`);
   }
@@ -280,10 +279,18 @@ export function calculateBodyTypeGoal(
   const waterGoal = calculateWaterGoal(userData.gender, userData.activityLevel);
   const isWeightLoss = bodyType.category === 'weight_loss';
   const calorieTarget = calculateCalorieTarget(userData, targetWeight, isWeightLoss);
-  const proteinTarget = calculateProteinTarget(targetWeight, bodyType.targetAttributes.proteinTarget);
+  
+  // Calculate protein target using comprehensive formula
+  const proteinTarget = calculateProteinTarget(
+    userData.weight, 
+    userData.ffm, 
+    userData.smm, 
+    userData.bodyFat
+  );
   
   // Determine if goal is realistic
-  const weightChangePerWeek = Math.abs(weightChange) / bodyType.timeline;
+  const timeline = bodyType.targetAttributes.timeline || 20; // Default to 20 weeks
+  const weightChangePerWeek = Math.abs(weightChange) / timeline;
   const isRealistic = weightChangePerWeek <= 1.0; // Max 1kg per week change
   
   // Determine difficulty
@@ -306,10 +313,10 @@ export function calculateBodyTypeGoal(
   if (difficulty === 'hard' || difficulty === 'extreme') {
     recommendations.push('Consult with a healthcare professional before starting');
   }
-  if (bodyType.category === 'muscle_building' && currentBodyFat > 20) {
+  if (currentBodyFat > 20) {
     recommendations.push('Consider a cutting phase first to reduce body fat');
   }
-  if (bodyType.category === 'weight_loss' && currentBMI < 20) {
+  if (currentBMI < 20) {
     recommendations.push('Your current weight is already quite low - consider maintenance instead');
   }
   
@@ -340,9 +347,14 @@ export function calculateBodyTypeGoal(
 }
 
 // Get available body types for a user based on their current state
-export function getAvailableBodyTypes(userData: UserAttributes): BodyTypeGoal[] {
-  // All body types are available to everyone - let them choose what they want
-  return BODY_TYPE_GOALS;
+export async function getAvailableBodyTypes(userData: UserAttributes): Promise<BodyTypeGoal[]> {
+  try {
+    const apiGoals = await bodyTypeGoalsApiService.getBodyTypeGoals();
+    return apiGoals.map(convertApiBodyTypeGoal);
+  } catch (error) {
+    console.error('❌ Failed to fetch body type goals:', error);
+    return []; // Return empty array on error
+  }
 }
 
 // Get body type categories
@@ -350,4 +362,15 @@ export function getBodyTypeCategories() {
   return [
     { id: 'body_type', title: 'Body Type', icon: 'body-outline', color: '#3b82f6' },
   ];
+}
+
+// Get a specific body type goal by ID
+export async function getBodyTypeGoalById(id: string): Promise<BodyTypeGoal | null> {
+  try {
+    const apiGoal = await bodyTypeGoalsApiService.getBodyTypeGoalById(id);
+    return apiGoal ? convertApiBodyTypeGoal(apiGoal) : null;
+  } catch (error) {
+    console.error(`Failed to fetch body type goal ${id}:`, error);
+    return null;
+  }
 }

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
+import { getDateLocal } from '../../utils/dateUtils';
 
 interface MealLog {
   id: number;
@@ -49,7 +50,8 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [refreshing, setRefreshing] = useState(false);
   const [editingLog, setEditingLog] = useState<MealLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editNotes, setEditNotes] = useState('');
+  const [editFoodItems, setEditFoodItems] = useState<{id: string, quantity: number, quantity_unit: string}[]>([]);
+  const [editingSingleFood, setEditingSingleFood] = useState<{logId: number, foodItem: any} | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -57,24 +59,49 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   const loadLogs = async (date?: Date) => {
     try {
+      console.log('🍽️ [NUTRITION LOGS] Starting loadLogs...');
       setLoading(true);
       const targetDate = date || selectedDate;
-      const dateStr = targetDate.toISOString().split('T')[0];
-      const response = await nutritionService.getMealLogs({
+      // Use local date instead of UTC to match user's timezone
+      const year = targetDate.getFullYear();
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      console.log('🍽️ [NUTRITION LOGS] Target date:', targetDate);
+      console.log('🍽️ [NUTRITION LOGS] Date string (local):', dateStr);
+      console.log('🍽️ [NUTRITION LOGS] UTC date string:', targetDate.toISOString().split('T')[0]);
+      
+      const requestParams = {
         start_date: dateStr,
         end_date: dateStr,
         page: 1,
         size: 50
+      };
+      console.log('🍽️ [NUTRITION LOGS] Request params:', requestParams);
+      
+      const response = await nutritionService.getNutritionLogs(requestParams);
+      console.log('🍽️ [NUTRITION LOGS] Raw response:', response);
+      
+      const logs = response || [];
+      console.log('🍽️ [NUTRITION LOGS] Processed logs:', logs);
+      console.log('🍽️ [NUTRITION LOGS] Number of logs found:', logs.length);
+      
+      // Log each individual log for debugging
+      logs.forEach((log, index) => {
+        console.log(`🍽️ [NUTRITION LOGS] Log ${index + 1}:`, {
+          id: log.id,
+          meal_type: log.meal_type,
+          meal_name: log.meal_name,
+          total_calories: log.total_calories,
+          meal_date: log.meal_date,
+          created_at: log.created_at,
+          food_items: log.food_items
+        });
       });
-      console.log('📊 Nutrition logs response:', response);
-      console.log('📊 Logs data:', response.logs);
-      if (response.logs && response.logs.length > 0) {
-        console.log('📊 First log meal_date:', response.logs[0].meal_date);
-        console.log('📊 First log logged_at:', response.logs[0].logged_at);
-      }
-      setLogs(response.logs || []);
+      
+      setLogs(logs);
     } catch (error) {
-      console.error('Failed to load nutrition logs:', error);
+      console.error('🍽️ [NUTRITION LOGS] Failed to load nutrition logs:', error);
       Alert.alert('Error', 'Failed to load nutrition logs. Please try again.');
     } finally {
       setLoading(false);
@@ -84,14 +111,19 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const loadLogsForDate = async (date: Date) => {
     try {
       setNavigating(true);
-      const dateStr = date.toISOString().split('T')[0];
-      const response = await nutritionService.getMealLogs({
+      // Use local date instead of UTC to match user's timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const response = await nutritionService.getNutritionLogs({
         start_date: dateStr,
         end_date: dateStr,
         page: 1,
         size: 50
       });
-      setLogs(response.logs || []);
+      setLogs(response || []);
     } catch (error) {
       console.error('Failed to load nutrition logs:', error);
       Alert.alert('Error', 'Failed to load nutrition logs. Please try again.');
@@ -139,29 +171,121 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   const handleEditLog = (log: MealLog) => {
     setEditingLog(log);
-    setEditNotes(log.notes || '');
+    setEditFoodItems(
+      log.food_items?.map(item => ({
+        id: `${log.id}-${item.food_id || item.id}`,
+        quantity: item.quantity || 1,
+        quantity_unit: item.quantity_unit || 'serving',
+      })) || []
+    );
+    setEditingSingleFood(null);
+    setEditModalVisible(true);
+  };
+
+  const handleEditSingleFood = (logId: number, foodItem: any) => {
+    setEditingSingleFood({ logId, foodItem });
+    setEditFoodItems([{
+      id: `${logId}-${foodItem.food_id || foodItem.id}`,
+      quantity: foodItem.quantity || 1,
+      quantity_unit: foodItem.quantity_unit || 'serving',
+    }]);
+    setEditingLog(null);
     setEditModalVisible(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editingLog) return;
+    if (!editingLog && !editingSingleFood) return;
 
     try {
-      await nutritionService.updateMealLog(editingLog.id, {
-        notes: editNotes
-      });
+      if (editingSingleFood) {
+        // Editing a single food item
+        const { logId, foodItem } = editingSingleFood;
+        const log = logs.find(l => l.id === logId);
+        if (!log) return;
 
-      // Update in the logs array
-      setLogs(prevLogs => 
-        prevLogs.map(log => 
-          log.id === editingLog.id ? { ...log, notes: editNotes } : log
-        )
-      );
+        const editItem = editFoodItems[0];
+        const quantity = editItem.quantity;
+        
+        // Calculate per-serving nutrition
+        const originalCalories = foodItem.calories / (foodItem.quantity || 1);
+        const originalProtein = foodItem.protein_g / (foodItem.quantity || 1);
+        const originalCarbs = foodItem.carbs_g / (foodItem.quantity || 1);
+        const originalFat = foodItem.fat_g / (foodItem.quantity || 1);
+
+        // Update the specific food item
+        const updatedFoodItems = log.food_items?.map(item => {
+          if (item.food_id === foodItem.food_id || item.id === foodItem.id) {
+            return {
+              ...item,
+              quantity: quantity,
+              calories: originalCalories * quantity,
+              protein_g: originalProtein * quantity,
+              carbs_g: originalCarbs * quantity,
+              fat_g: originalFat * quantity,
+            };
+          }
+          return item;
+        }) || [];
+
+        const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum, item) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum, item) => sum + item.fat_g, 0);
+
+        await nutritionService.updateMeal(logId.toString(), {
+          food_items: JSON.stringify(updatedFoodItems),
+          total_calories: totalCalories,
+          protein_g: totalProtein,
+          carbs_g: totalCarbs,
+          fat_g: totalFat,
+        });
+      } else if (editingLog) {
+        // Editing entire meal
+        const updatedFoodItems = editingLog.food_items?.map(item => {
+          const editItem = editFoodItems.find(editItem => 
+            editItem.id === `${editingLog.id}-${item.food_id || item.id}`
+          );
+          
+          if (editItem) {
+            const quantity = editItem.quantity;
+            const originalCalories = item.calories / (item.quantity || 1);
+            const originalProtein = item.protein_g / (item.quantity || 1);
+            const originalCarbs = item.carbs_g / (item.quantity || 1);
+            const originalFat = item.fat_g / (item.quantity || 1);
+            
+            return {
+              ...item,
+              quantity: quantity,
+              calories: originalCalories * quantity,
+              protein_g: originalProtein * quantity,
+              carbs_g: originalCarbs * quantity,
+              fat_g: originalFat * quantity,
+            };
+          }
+          return item;
+        }) || [];
+
+        const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum, item) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum, item) => sum + item.fat_g, 0);
+
+        await nutritionService.updateMeal(editingLog.id.toString(), {
+          food_items: JSON.stringify(updatedFoodItems),
+          total_calories: totalCalories,
+          protein_g: totalProtein,
+          carbs_g: totalCarbs,
+          fat_g: totalFat,
+        });
+      }
+
+      // Reload logs to get updated data
+      await loadLogs();
 
       setEditModalVisible(false);
       setEditingLog(null);
-      setEditNotes('');
-
+      setEditingSingleFood(null);
+      setEditFoodItems([]);
       Alert.alert('Success', 'Meal log updated successfully!');
     } catch (error) {
       console.error('Failed to update log:', error);
@@ -187,11 +311,98 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     );
   };
 
+  const handleDeleteFoodItem = async (logId: number, foodItemId: string) => {
+    // Find the log and check how many food items it has
+    const log = logs.find(l => l.id === logId);
+    if (!log || !log.food_items) return;
+
+    if (log.food_items.length === 1) {
+      // If only one food item, delete the entire log
+      handleDeleteLog(logId);
+    } else {
+      // If multiple food items, remove just this one
+      Alert.alert(
+        'Remove Food Item',
+        'Are you sure you want to remove this food item from the meal?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Remove',
+            style: 'destructive',
+            onPress: () => confirmDeleteFoodItem(logId, foodItemId),
+          },
+        ]
+      );
+    }
+  };
+
+  const confirmDeleteFoodItem = async (logId: number, foodItemId: string) => {
+    try {
+      setDeletingLogId(logId);
+      
+      // Find the log and remove the specific food item
+      const log = logs.find(l => l.id === logId);
+      if (!log || !log.food_items) return;
+
+      const updatedFoodItems = log.food_items.filter(item => 
+        `${log.id}-${item.id || log.food_items.indexOf(item)}` !== foodItemId
+      );
+
+      if (updatedFoodItems.length === 0) {
+        // If no food items left, delete the entire log
+        await nutritionService.deleteMeal(logId);
+        setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
+        Alert.alert('Success', 'Meal log deleted successfully!');
+      } else {
+        // Update the log with remaining food items
+        const updatedLog = {
+          ...log,
+          food_items: updatedFoodItems,
+          total_calories: updatedFoodItems.reduce((sum, item) => sum + (item.calories || 0), 0),
+          protein_g: updatedFoodItems.reduce((sum, item) => sum + (item.protein_g || 0), 0),
+          carbs_g: updatedFoodItems.reduce((sum, item) => sum + (item.carbs_g || 0), 0),
+          fat_g: updatedFoodItems.reduce((sum, item) => sum + (item.fat_g || 0), 0),
+        };
+
+        // Update the log in the backend
+        await nutritionService.updateMeal(logId, {
+          food_items: JSON.stringify(updatedFoodItems.map(item => ({
+            food_id: item.id,
+            food_name: item.food_name,
+            quantity: item.quantity || 1,
+            quantity_unit: item.quantity_unit || 'serving',
+            quantity_grams: item.quantity_grams || 100,
+            calories: item.calories || 0,
+            protein_g: item.protein_g || 0,
+            carbs_g: item.carbs_g || 0,
+            fat_g: item.fat_g || 0,
+          }))),
+          total_calories: updatedLog.total_calories,
+          protein_g: updatedLog.protein_g,
+          carbs_g: updatedLog.carbs_g,
+          fat_g: updatedLog.fat_g,
+        });
+
+        // Update the local state
+        setLogs(prevLogs => prevLogs.map(l => l.id === logId ? updatedLog : l));
+        Alert.alert('Success', 'Food item removed successfully!');
+      }
+    } catch (error) {
+      console.error('Failed to remove food item:', error);
+      Alert.alert('Error', 'Failed to remove food item. Please try again.');
+    } finally {
+      setDeletingLogId(null);
+    }
+  };
+
   const confirmDeleteLog = async (logId: number) => {
     try {
       setDeletingLogId(logId);
       
-      await nutritionService.deleteMealLog(logId);
+      await nutritionService.deleteMeal(logId);
       
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
@@ -231,7 +442,6 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     if (!dateString) return 'Unknown Time';
     try {
       const date = new Date(dateString);
-      console.log('🕐 Formatting time:', { dateString, date, isValid: !isNaN(date.getTime()) });
       if (isNaN(date.getTime())) {
         return 'Invalid Time';
       }
@@ -240,7 +450,6 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         minute: '2-digit',
       });
     } catch (error) {
-      console.log('🕐 Time formatting error:', error);
       return 'Invalid Time';
     }
   };
@@ -266,65 +475,99 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   };
 
   const renderMealCards = () => {
-    return logs.map((log) => (
-      <View key={log.id} style={styles.mealCard}>
+    // Flatten all food items from all logs into individual cards
+    const allFoodItems: Array<{
+      id: string;
+      food_name: string;
+      quantity_grams: number;
+      calories: number;
+      protein_g: number;
+      carbs_g: number;
+      fat_g: number;
+      quantity: number;
+      quantity_unit: string;
+      log_id: number;
+      meal_type: string;
+      meal_date: string;
+      created_at: string;
+    }> = [];
+
+    logs.forEach((log) => {
+      if (log.food_items && log.food_items.length > 0) {
+        log.food_items.forEach((item, index) => {
+          allFoodItems.push({
+            id: `${log.id}-${item.id || index}`,
+            food_name: item.food_name,
+            quantity_grams: item.quantity_grams,
+            calories: item.calories,
+            protein_g: item.protein_g,
+            carbs_g: item.carbs_g,
+            fat_g: item.fat_g,
+            quantity: item.quantity || 1,
+            quantity_unit: item.quantity_unit || 'serving',
+            log_id: log.id,
+            meal_type: log.meal_type,
+            meal_date: log.meal_date || log.created_at,
+            created_at: log.created_at
+          });
+        });
+      }
+    });
+
+    return allFoodItems.map((foodItem) => (
+      <View key={foodItem.id} style={styles.mealCard}>
         <View style={styles.mealHeader}>
-          <View style={styles.mealTitleContainer}>
-            <View style={styles.mealTypeBadge}>
-              <Text style={[styles.mealTypeBadgeText, { color: getMealTypeColor(log.meal_type) }]}>
-                {log.meal_type.charAt(0).toUpperCase() + log.meal_type.slice(1)}
-              </Text>
-            </View>
-            <View style={styles.mealTitleText}>
-              <Text style={styles.mealTitle}>
-                {log.food_items && log.food_items.length > 0 
-                  ? log.food_items.map(item => item.food_name).join(', ')
-                  : 'No food items logged'
-                }
-              </Text>
-              <Text style={styles.mealCalories}>{log.total_calories} calories</Text>
-            </View>
+          <Text style={styles.mealTitle} numberOfLines={1}>
+            {foodItem.food_name} ({foodItem.quantity} {foodItem.quantity_unit})
+          </Text>
+          <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(foodItem.meal_type) }]}>
+            <Ionicons 
+              name={getMealTypeIcon(foodItem.meal_type) as any} 
+              size={8} 
+              color="#ffffff"
+              style={styles.badgeIcon}
+            />
+            <Text style={styles.mealTypeBadgeText}>
+              {foodItem.meal_type.toUpperCase()}
+            </Text>
           </View>
-          <View style={styles.mealActionsContainer}>
-            <View style={styles.mealTimeContainer}>
-              <Ionicons name="time-outline" size={14} color="#6b7280" />
-              <Text style={styles.mealTime}>
-                {formatTime(log.logged_at || log.meal_date || '')}
-              </Text>
-            </View>
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleEditLog(log)}
-                disabled={deletingLogId === log.id}
-              >
-                <Ionicons name="pencil-outline" size={16} color="#3b82f6" />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => handleDeleteLog(log.id)}
-                disabled={deletingLogId === log.id}
-              >
-                {deletingLogId === log.id ? (
-                  <ActivityIndicator size="small" color="#ef4444" />
-                ) : (
-                  <Ionicons name="trash-outline" size={16} color="#ef4444" />
-                )}
-              </TouchableOpacity>
-            </View>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleEditSingleFood(foodItem.log_id, foodItem)}
+              disabled={deletingLogId === foodItem.log_id}
+            >
+              <Ionicons name="pencil-outline" size={14} color="#3b82f6" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => handleDeleteFoodItem(foodItem.log_id, foodItem.id)}
+              disabled={deletingLogId === foodItem.log_id}
+            >
+              {deletingLogId === foodItem.log_id ? (
+                <ActivityIndicator size="small" color="#ef4444" />
+              ) : (
+                <Ionicons name="trash-outline" size={14} color="#ef4444" />
+              )}
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.mealStatsContainer}>
-          {/* Time display removed - already shown in header */}
+        <View style={styles.mealStatsRow}>
+          <View style={styles.mealStatsLeft}>
+            <Text style={styles.mealCalories}>{foodItem.calories} calories</Text>
+            <Text style={styles.mealServingSize}>
+              {foodItem.quantity_grams}g • {foodItem.protein_g}g protein • {foodItem.carbs_g}g carbs • {foodItem.fat_g}g fat
+            </Text>
+          </View>
+          <View style={styles.mealTimeContainer}>
+            <Text style={styles.mealTimeText}>
+              {formatTime(foodItem.meal_date || foodItem.created_at)}
+            </Text>
+          </View>
         </View>
 
-
-        {log.notes && log.notes.trim() && (
-          <View style={styles.mealNotesContainer}>
-            <Text style={styles.mealNotesText}>{log.notes}</Text>
-          </View>
-        )}
+        {/* Notes section removed for individual food items */}
       </View>
     ));
   };
@@ -440,17 +683,71 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             </View>
             
             <View style={styles.modalBody}>
-              <Text style={styles.modalLabel}>Meal: {editingLog?.meal_type}</Text>
-              <Text style={styles.modalLabel}>Notes:</Text>
-              <TextInput
-                style={styles.notesInput}
-                value={editNotes}
-                onChangeText={setEditNotes}
-                placeholder="Add notes about your meal..."
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
+              <Text style={styles.modalLabel}>
+                Meal: {editingLog?.meal_type || editingSingleFood?.foodItem.meal_type}
+              </Text>
+              
+              {/* Food Items with serving quantities */}
+              <Text style={styles.modalLabel}>Food Item:</Text>
+              {editingSingleFood ? (
+                // Editing single food item
+                <View style={styles.foodItemEditContainer}>
+                  <Text style={styles.foodItemName}>{editingSingleFood.foodItem.food_name}</Text>
+                  <View style={styles.servingRow}>
+                    <TextInput
+                      style={styles.servingInput}
+                      value={editFoodItems[0]?.quantity.toString() || '1'}
+                      onChangeText={(text) => {
+                        const quantity = parseFloat(text) || 1;
+                        setEditFoodItems([{
+                          ...editFoodItems[0],
+                          quantity: quantity
+                        }]);
+                      }}
+                      placeholder="1"
+                      keyboardType="numeric"
+                    />
+                    <Text style={styles.servingUnit}>
+                      {editFoodItems[0]?.quantity_unit || editingSingleFood.foodItem.quantity_unit || 'serving'}
+                    </Text>
+                  </View>
+                </View>
+              ) : editingLog ? (
+                // Editing entire meal
+                editingLog.food_items?.map((foodItem, index) => {
+                  const editItem = editFoodItems.find(item => 
+                    item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
+                  );
+                  return (
+                    <View key={foodItem.id} style={styles.foodItemEditContainer}>
+                      <Text style={styles.foodItemName}>{foodItem.food_name}</Text>
+                      <View style={styles.servingRow}>
+                        <TextInput
+                          style={styles.servingInput}
+                          value={editItem?.quantity.toString() || '1'}
+                          onChangeText={(text) => {
+                            const quantity = parseFloat(text) || 1;
+                            setEditFoodItems(prev => 
+                              prev.map(item => 
+                                item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
+                                  ? { ...item, quantity: quantity }
+                                  : item
+                              )
+                            );
+                          }}
+                          placeholder="1"
+                          keyboardType="numeric"
+                        />
+                        <Text style={styles.servingUnit}>
+                          {editItem?.quantity_unit || foodItem.quantity_unit || 'serving'}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                }) || <Text style={styles.noFoodItems}>No food items found</Text>
+              ) : (
+                <Text style={styles.noFoodItems}>No food items found</Text>
+              )}
             </View>
             
             <View style={styles.modalActions}>
@@ -534,9 +831,9 @@ const styles = StyleSheet.create({
   mealCard: {
     backgroundColor: 'white',
     borderRadius: 8,
-    padding: 12,
+    padding: 8,
     marginHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 4,
     borderWidth: 1,
     borderColor: '#10b981',
     shadowColor: '#000',
@@ -551,8 +848,8 @@ const styles = StyleSheet.create({
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 2,
   },
   mealTitleContainer: {
     flexDirection: 'row',
@@ -561,58 +858,78 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   mealTypeBadge: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginRight: 12,
+    borderRadius: 6,
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginLeft: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
   },
   mealTypeBadgeText: {
-    fontSize: 12,
+    fontSize: 8,
     fontWeight: '600',
+    color: '#ffffff',
     textTransform: 'uppercase',
+  },
+  badgeIcon: {
+    marginRight: 2,
   },
   mealTitleText: {
     flex: 1,
+    marginLeft: 8,
   },
   mealTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: 2,
+    flex: 1,
+  },
+  mealStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
+    minHeight: 18,
+  },
+  mealStatsLeft: {
+    flex: 1,
   },
   mealCalories: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     fontWeight: '500',
   },
-  mealActionsContainer: {
-    alignItems: 'flex-end',
+  mealServingSize: {
+    fontSize: 10,
+    color: '#9ca3af',
+    marginTop: 2,
   },
   mealTimeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'center',
   },
-  mealTime: {
+  mealTimeText: {
     fontSize: 11,
     color: '#6b7280',
-    marginLeft: 3,
+    fontWeight: '500',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 4,
+    marginLeft: 8,
   },
   actionButton: {
-    padding: 6,
+    padding: 4,
     borderRadius: 4,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 32,
-    minHeight: 32,
   },
   mealStatsContainer: {
     flexDirection: 'row',
@@ -645,12 +962,12 @@ const styles = StyleSheet.create({
   },
   mealNotesContainer: {
     backgroundColor: '#f8fafc',
-    padding: 8,
-    borderRadius: 6,
-    marginBottom: 8,
+    padding: 6,
+    borderRadius: 4,
+    marginTop: 4,
   },
   mealNotesText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
     fontStyle: 'italic',
   },
@@ -771,16 +1088,6 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8,
   },
-  notesInput: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: '#374151',
-    backgroundColor: '#f9fafb',
-    minHeight: 100,
-  },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -811,5 +1118,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: 'white',
+  },
+  foodItemEditContainer: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  foodItemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  servingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 4,
+  },
+  servingInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    fontSize: 14,
+    color: '#374151',
+    backgroundColor: 'white',
+    minWidth: 60,
+    textAlign: 'center',
+  },
+  servingUnit: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  noFoodItems: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 20,
   },
 });

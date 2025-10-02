@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { BaseService } from './BaseService';
 
 export interface FitnessLog {
   id: number;
@@ -40,11 +41,17 @@ export interface ExerciseType {
 export interface WorkoutCategory {
   id: number;
   name: string;
+  category: string;
+  display_name: string;
   description?: string;
   icon?: string;
+  color?: string;
+  logging_attributes?: any;
 }
 
-export const fitnessService = {
+class FitnessService extends BaseService {
+  private pendingRequests = new Set<string>();
+
   async getFitnessLogs(params?: {
     period?: string;
     page?: number;
@@ -52,55 +59,32 @@ export const fitnessService = {
     start_date?: string;
     end_date?: string;
   }): Promise<FitnessLog[]> {
-    try {
-      const response = await apiClient.get('/health/fitness-logs/', { params });
-      
-      // Extract logs array from response
-      const logs = response.data?.logs || response.data || [];
-      
-      // Ensure it's an array
-      if (!Array.isArray(logs)) {
-        console.warn('Fitness Service: Expected array but got:', typeof logs);
-        return [];
-      }
-      
-      return logs;
-    } catch (error) {
-      console.error('Fitness Service: Error fetching logs:', error);
-      throw error;
-    }
-  },
+    // Convert string dates to datetime objects for the API
+    const apiParams = this.getPaginationParams(params);
+    
+    return this.makeRequest(
+      () => apiClient.get('/health/logging/fitness', { params: apiParams }),
+      'FITNESS SERVICE - getFitnessLogs'
+    );
+  }
 
   async getRecentWorkouts(limit: number = 5): Promise<FitnessLog[]> {
-    try {
-      const response = await apiClient.get('/health/logging/fitness', {
+    return this.makeRequest(
+      () => apiClient.get('/health/logging/fitness', {
         params: { size: limit, page: 1 }
-      });
-      
-      // Extract logs array from response
-      const logs = response.data?.logs || response.data || [];
-      
-      // Ensure it's an array
-      if (!Array.isArray(logs)) {
-        console.warn('Fitness Service: Expected array but got:', typeof logs);
-        return [];
-      }
-      
-      return logs;
-    } catch (error) {
-      console.error('Fitness Service: Error fetching recent workouts:', error);
-      throw error;
-    }
-  },
+      }),
+      'FITNESS SERVICE - getRecentWorkouts'
+    );
+  }
 
   async getTodayWorkoutSummary(): Promise<WorkoutSummary> {
     try {
       const today = new Date().toISOString().split('T')[0];
-      const response = await apiClient.get('/health/logging/fitness', {
-        params: { start_date: today, end_date: today }
+      const logs = await this.getFitnessLogs({ 
+        start_date: today, 
+        end_date: today 
       });
       
-      const logs = response.data || [];
       const summary: WorkoutSummary = {
         workouts: logs.length,
         total_duration: logs.reduce((sum: number, log: FitnessLog) => sum + (log.duration_minutes || 0), 0),
@@ -110,7 +94,7 @@ export const fitnessService = {
       
       return summary;
     } catch (error) {
-      console.error('Fitness Service: Error fetching today\'s summary:', error);
+      this.handleError(error, 'FITNESS SERVICE - getTodayWorkoutSummary');
       return {
         workouts: 0,
         total_duration: 0,
@@ -118,7 +102,7 @@ export const fitnessService = {
         avg_intensity: 'medium'
       };
     }
-  },
+  }
 
   async logWorkout(workoutData: {
     activity_type: string;
@@ -134,76 +118,96 @@ export const fitnessService = {
     location?: string;
     weather?: string;
     activity_date?: string;
+    exercises?: string; // JSON string containing exercise data
+    unit?: string; // Unit for weight measurements
   }): Promise<FitnessLog> {
-    try {
-      console.log('🏃 Fitness Service: Logging workout...', workoutData);
-      const response = await apiClient.post('/health/logging/fitness', workoutData);
-      console.log('🏃 Fitness Service: Workout logged:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error logging workout:', error);
-      throw error;
+    // Create a unique key for this workout to prevent duplicates
+    const workoutKey = `${workoutData.activity_type}_${workoutData.activity_name}_${workoutData.duration_minutes}_${workoutData.exercises}`;
+    
+    // Check if this exact workout is already being processed
+    if (this.pendingRequests.has(workoutKey)) {
+      console.log('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
+      throw new Error('Workout is already being processed. Please wait.');
     }
-  },
 
-  async updateWorkout(id: number, workoutData: Partial<FitnessLog>): Promise<FitnessLog> {
+    // Add to pending requests
+    this.pendingRequests.add(workoutKey);
+    
     try {
-      console.log('🏃 Fitness Service: Updating workout...', id, workoutData);
-      const response = await apiClient.put(`/health/logging/fitness/${id}`, workoutData);
-      console.log('🏃 Fitness Service: Workout updated:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error updating workout:', error);
-      throw error;
-    }
-  },
-
-  async deleteWorkout(id: number): Promise<void> {
-    try {
-      console.log('🏃 Fitness Service: Deleting workout...', id);
-      await apiClient.delete(`/health/logging/fitness/${id}`);
-      console.log('🏃 Fitness Service: Workout deleted');
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error deleting workout:', error);
-      throw error;
-    }
-  },
-
-  async getExerciseTypes(): Promise<ExerciseType[]> {
-    try {
-      console.log('🏃 Fitness Service: Fetching exercise types...');
-      const response = await apiClient.get('/health/exercises/types');
-      console.log('🏃 Fitness Service: Exercise types received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error fetching exercise types:', error);
-      throw error;
-    }
-  },
-
-  async getWorkoutCategories(): Promise<WorkoutCategory[]> {
-    try {
-      console.log('🏃 Fitness Service: Fetching workout categories...');
-      const response = await apiClient.get('/health/exercises/categories');
-      console.log('🏃 Fitness Service: Categories received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error fetching categories:', error);
-      throw error;
-    }
-  },
-
-  async searchExercises(query: string): Promise<ExerciseType[]> {
-    try {
-      console.log('🏃 Fitness Service: Searching exercises...', query);
-      const response = await apiClient.get('/health/exercises/search', {
-        params: { q: query }
-      });
-      console.log('🏃 Fitness Service: Search results:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🏃 Fitness Service: Error searching exercises:', error);
-      throw error;
+      // Add timezone information to the request
+      const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
+      const workoutDataWithTimezone = {
+        ...workoutData,
+        timezone_offset: timezoneOffset
+      };
+      
+      console.log('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
+      const result = await this.makeRequest(
+        () => apiClient.post('/health/logging/fitness', workoutDataWithTimezone),
+        'FITNESS SERVICE - logWorkout'
+      );
+      return result;
+    } finally {
+      // Remove from pending requests after completion
+      this.pendingRequests.delete(workoutKey);
     }
   }
-};
+
+  async updateWorkout(id: number, workoutData: Partial<FitnessLog>): Promise<FitnessLog> {
+    return this.makeRequest(
+      () => apiClient.put(`/health/logging/fitness/${id}`, workoutData),
+      'FITNESS SERVICE - updateWorkout'
+    );
+  }
+
+  async deleteWorkout(id: number): Promise<void> {
+    return this.makeRequest(
+      () => apiClient.delete(`/health/logging/fitness/${id}`),
+      'FITNESS SERVICE - deleteWorkout'
+    );
+  }
+
+  async getExerciseTypes(): Promise<ExerciseType[]> {
+    return this.makeRequest(
+      () => apiClient.get('/health/exercises/all?limit=1000'),
+      'FITNESS SERVICE - getExerciseTypes'
+    ).then(data => data.exercises || data);
+  }
+
+  async getWorkoutCategories(): Promise<WorkoutCategory[]> {
+    return this.makeRequest(
+      () => apiClient.get('/health/exercises/categories'),
+      'FITNESS SERVICE - getWorkoutCategories'
+    );
+  }
+
+  async searchExercises(query: string): Promise<ExerciseType[]> {
+    const response = await this.makeRequest(
+      () => apiClient.get('/health/exercises/search', {
+        params: { q: query }
+      }),
+      'FITNESS SERVICE - searchExercises'
+    );
+    
+    // The API returns { exercises: [...] }, extract the exercises array
+    return response.exercises || [];
+  }
+
+  async getLatestWorkoutForExercise(exerciseName: string): Promise<any> {
+    try {
+      const response = await this.makeRequest(
+        () => apiClient.get('/health/fitness-logs/latest-exercise', {
+          params: { exercise_name: exerciseName }
+        }),
+        'FITNESS SERVICE - getLatestWorkoutForExercise'
+      );
+      return response;
+    } catch (error) {
+      console.error('Error fetching latest workout for exercise:', error);
+      return null;
+    }
+  }
+}
+
+// Export singleton instance to maintain backward compatibility
+export const fitnessService = new FitnessService();

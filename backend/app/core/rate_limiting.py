@@ -157,6 +157,10 @@ async def rate_limit_middleware(request: Request, call_next):
             not settings.RATE_LIMITING_ENABLED):
             return await call_next(request)
         
+        # TEMPORARILY DISABLE RATE LIMITING FOR DEBUGGING
+        logger.info(f"🚫 [RATE LIMITING] Temporarily disabled for debugging")
+        return await call_next(request)
+        
         endpoint = request.url.path
         config = get_rate_limit_config(endpoint)
         

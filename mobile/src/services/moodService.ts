@@ -1,4 +1,5 @@
 import { apiClient } from './api';
+import { BaseService } from './BaseService';
 
 export interface MoodLog {
   id: number;
@@ -36,7 +37,7 @@ export interface MoodStats {
   }[];
 }
 
-export const moodService = {
+class MoodService extends BaseService {
   // Get mood logs with filtering
   async getMoodLogs(params?: {
     skip?: number;
@@ -44,82 +45,63 @@ export const moodService = {
     start_date?: string;
     end_date?: string;
   }): Promise<MoodLog[]> {
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.skip) queryParams.append('skip', params.skip.toString());
-      if (params?.limit) queryParams.append('limit', params.limit.toString());
-      if (params?.start_date) queryParams.append('start_date', params.start_date);
-      if (params?.end_date) queryParams.append('end_date', params.end_date);
+    const queryParams = new URLSearchParams();
+    if (params?.skip) queryParams.append('skip', params.skip.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.end_date) queryParams.append('end_date', params.end_date);
 
-      const response = await apiClient.get(`/health/logging/mood?${queryParams.toString()}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get mood logs:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get(`/health/logging/mood?${queryParams.toString()}`),
+      'MOOD SERVICE - getMoodLogs'
+    );
+  }
 
   // Get today's mood logs
   async getTodaysMoodLogs(): Promise<MoodLog[]> {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await apiClient.get(`/health/logging/mood?start_date=${today}&end_date=${today}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to get today\'s mood logs:', error);
-      throw error;
-    }
-  },
+    const today = new Date().toISOString().split('T')[0];
+    return this.makeRequest(
+      () => apiClient.get(`/health/logging/mood?start_date=${today}&end_date=${today}`),
+      'MOOD SERVICE - getTodaysMoodLogs'
+    );
+  }
 
   // Create a new mood log
   async createMoodLog(moodData: MoodLogCreate): Promise<MoodLog> {
-    try {
-      const response = await apiClient.post('/health/logging/mood', moodData);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to create mood log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.post('/health/logging/mood', moodData),
+      'MOOD SERVICE - createMoodLog'
+    );
+  }
 
   // Update a mood log
   async updateMoodLog(logId: string, updateData: MoodLogUpdate): Promise<MoodLog> {
-    try {
-      const response = await apiClient.put(`/health/logging/mood/${logId}`, updateData);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to update mood log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.put(`/health/logging/mood/${logId}`, updateData),
+      'MOOD SERVICE - updateMoodLog'
+    );
+  }
 
   // Delete a mood log
   async deleteMoodLog(logId: string): Promise<void> {
-    try {
-      await apiClient.delete(`/health/logging/mood/${logId}`);
-    } catch (error) {
-      console.error('Failed to delete mood log:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.delete(`/health/logging/mood/${logId}`),
+      'MOOD SERVICE - deleteMoodLog'
+    );
+  }
 
   // Quick log mood (1-10 scale)
   async quickLogMood(rating: number, moodLabel?: string, moodEmoji?: string, notes?: string): Promise<MoodLog> {
-    try {
-      const moodData: MoodLogCreate = {
-        mood_rating: rating,
-        mood_label: moodLabel,
-        mood_emoji: moodEmoji,
-        notes: notes,
-        log_date: new Date().toISOString(),
-      };
-      
-      const result = await this.createMoodLog(moodData);
-      return result;
-    } catch (error) {
-      throw error;
-    }
-  },
+    const moodData: MoodLogCreate = {
+      mood_rating: rating,
+      mood_label: moodLabel,
+      mood_emoji: moodEmoji,
+      notes: notes,
+      log_date: new Date().toISOString(),
+    };
+    
+    return this.createMoodLog(moodData);
+  }
 
   // Get mood statistics
   async getMoodStats(days: number = 30): Promise<MoodStats> {
@@ -167,10 +149,10 @@ export const moodService = {
         mood_distribution: moodDistribution,
       };
     } catch (error) {
-      console.error('Failed to get mood stats:', error);
+      this.handleError(error, 'MOOD SERVICE - getMoodStats');
       throw error;
     }
-  },
+  }
 
   // Get mood insights
   async getMoodInsights(): Promise<{
@@ -208,8 +190,11 @@ export const moodService = {
 
       return { insights, recommendations };
     } catch (error) {
-      console.error('Failed to get mood insights:', error);
+      this.handleError(error, 'MOOD SERVICE - getMoodInsights');
       return { insights: [], recommendations: [] };
     }
-  },
-};
+  }
+}
+
+// Export singleton instance to maintain backward compatibility
+export const moodService = new MoodService();

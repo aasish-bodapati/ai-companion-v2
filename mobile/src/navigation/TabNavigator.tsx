@@ -10,7 +10,8 @@ import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
-import LogWorkoutModal from '../components/fitness/LogWorkoutModal';
+import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
+import MealLoggingModal from '../components/nutrition/MealLoggingModal';
 
 export type TabParamList = {
   Dashboard: undefined;
@@ -27,6 +28,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const [showLogTodaysWorkoutModal, setShowLogTodaysWorkoutModal] = useState(false);
   const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [showLogMealModal, setShowLogMealModal] = useState(false);
 
   return (
     <>
@@ -115,7 +117,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
         visible={showQuickAddModal}
         onClose={() => setShowQuickAddModal(false)}
         onLogWorkout={() => setShowLogWorkoutModal(true)}
-        onLogMeal={() => navigation.navigate('Nutrition')}
+        onLogMeal={() => setShowLogMealModal(true)}
         onLogTodaysWorkout={() => setShowLogTodaysWorkoutModal(true)}
       />
 
@@ -127,10 +129,17 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       />
 
       {/* Log Workout Modal */}
-      <LogWorkoutModal
+      <WorkoutLoggingModal
         visible={showLogWorkoutModal}
         onClose={() => setShowLogWorkoutModal(false)}
         onWorkoutLogged={() => setShowLogWorkoutModal(false)}
+      />
+
+      {/* Log Meal Modal */}
+      <MealLoggingModal
+        visible={showLogMealModal}
+        onClose={() => setShowLogMealModal(false)}
+        onMealLogged={() => setShowLogMealModal(false)}
       />
     </>
   );

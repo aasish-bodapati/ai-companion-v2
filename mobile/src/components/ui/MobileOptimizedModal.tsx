@@ -151,6 +151,11 @@ export default function MobileOptimizedModal({
       ...styles[`${variant}Modal`],
     };
 
+    // Don't apply maxHeight constraints for fullScreen variant
+    if (variant === 'fullScreen') {
+      return baseStyle;
+    }
+
     switch (size) {
       case 'small':
         return { ...baseStyle, maxHeight: screenHeight * 0.4 };
@@ -228,7 +233,10 @@ export default function MobileOptimizedModal({
       ]}
     >
       {renderHeader()}
-      <View style={styles.content}>
+      <View style={[
+        styles.content,
+        variant === 'fullScreen' && styles.fullScreenContent
+      ]}>
         {children}
       </View>
     </Animated.View>
@@ -323,7 +331,6 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 0,
     margin: 0,
-    maxHeight: '100%',
   },
   centeredModal: {
     margin: 40,
@@ -370,5 +377,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 16,
+  },
+  fullScreenContent: {
+    flex: 1,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
 });

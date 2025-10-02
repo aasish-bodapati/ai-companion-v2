@@ -34,8 +34,43 @@ export default function RoutineDashboard({
   const loadData = async () => {
     try {
       setLoading(true);
-      const routinesResponse = await routineService.getRoutines({ limit: 50 });
-      setRoutines(routinesResponse.routines || []);
+      
+      // Fetch user routines, templates, and active routine
+      const [userRoutinesResponse, templatesResponse, activeRoutineResponse] = await Promise.allSettled([
+        routineService.getRoutines({ limit: 50 }),
+        routineService.getTemplates({ limit: 50 }),
+        routineService.getActiveRoutine()
+      ]);
+      
+      const allRoutines: SimpleRoutineWithProgress[] = [];
+      const activeRoutine = activeRoutineResponse.status === 'fulfilled' ? activeRoutineResponse.value : null;
+      
+      console.log('🔍 Active routine:', activeRoutine ? {
+        id: activeRoutine.id,
+        name: activeRoutine.name,
+        isTemplate: activeRoutine.is_template
+      } : 'None');
+      
+      // Add user routines if successful
+      if (userRoutinesResponse.status === 'fulfilled') {
+        allRoutines.push(...(userRoutinesResponse.value.routines || []));
+      }
+      
+      // Add templates if successful, and mark as active if they match the active routine
+      if (templatesResponse.status === 'fulfilled') {
+        const templates = templatesResponse.value.routines || [];
+        for (const template of templates) {
+          // If this template is the active routine, use the active routine data instead
+          if (activeRoutine && activeRoutine.id === template.id) {
+            console.log(`✅ Template ${template.id} is active, using active routine data`);
+            allRoutines.push(activeRoutine);
+          } else {
+            allRoutines.push(template);
+          }
+        }
+      }
+      
+      setRoutines(allRoutines);
     } catch (error) {
       console.error('Failed to load routine data:', error);
     } finally {
@@ -56,11 +91,38 @@ export default function RoutineDashboard({
   const handleStartRoutine = async (routineId: number) => {
     try {
       setActionLoading(routineId);
-      await routineService.startRoutine(routineId);
+      
+      // Find the routine to check if it's a template
+      const routine = routines.find(r => r.id === routineId);
+      if (!routine) {
+        throw new Error('Routine not found');
+      }
+
+      console.log('🔄 Starting routine:', {
+        routineId: routine.id,
+        routineName: routine.name,
+        isTemplate: routine.is_template
+      });
+
+      if (routine.is_template) {
+        console.log('📋 Template routine detected, starting directly...');
+        // Start template routine directly - no copy needed
+        await routineService.startRoutine(routine.id);
+      } else {
+        console.log('👤 User-created routine, starting directly...');
+        // Start the user routine directly
+        await routineService.startRoutine(routineId);
+      }
+      
       await loadData();
       onRoutineSelected?.();
     } catch (error) {
-      console.error('Failed to start routine:', error);
+      console.error('❌ Failed to start routine:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
     } finally {
       setActionLoading(null);
     }

@@ -48,9 +48,7 @@ export default function ExerciseDropdown({
   const loadExercises = async () => {
     try {
       setLoading(true);
-      const exercises = await fitnessService.getAllExercises(700);
-      console.log('Loaded exercises:', exercises.length);
-      console.log('Sample exercises:', exercises.slice(0, 5).map((e: any) => e.name));
+      const exercises = await fitnessService.getExerciseTypes();
       setAllExercises(exercises);
     } catch (error: unknown) {
       console.error('Failed to load exercises:', error);
@@ -65,13 +63,9 @@ export default function ExerciseDropdown({
     // Filter by search term
     if (searchQuery.trim()) {
       const searchTerm = searchQuery.toLowerCase();
-      console.log('Searching for:', searchTerm);
-      console.log('Total exercises before search:', filtered.length);
       filtered = filtered.filter(exercise =>
         exercise.name.toLowerCase().includes(searchTerm)
       );
-      console.log('Exercises found:', filtered.length);
-      console.log('Sample results:', filtered.slice(0, 5).map(e => e.name));
     }
 
     // Sort by relevance to search term

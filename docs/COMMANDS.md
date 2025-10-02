@@ -14,6 +14,7 @@ taskkill /f /pid <PID_NUMBER>
 # Kill Node server (Windows)
 taskkill /f /im node.exe
 
+npx expo start --clear
 
 ### Backend Development
 ```bash

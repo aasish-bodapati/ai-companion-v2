@@ -1,4 +1,6 @@
 import { apiClient } from './api';
+import { BaseService } from './BaseService';
+import { getTodayLocal } from '../utils/dateUtils';
 
 export interface NutritionLog {
   id: string;
@@ -22,19 +24,29 @@ export interface NutritionLog {
 }
 
 export interface FoodItem {
-  id: number;
+  id: number | string;
   name: string;
   brand?: string;
   category: string;
   calories_per_100g: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
   fiber_g: number;
   sugar_g: number;
   sodium_mg: number;
   serving_size_g: number;
+  serving_qty: number;
+  serving_unit: string;
+  serving_weight_g: number;
+  photo?: string;
+  type?: string;
   barcode?: string;
+  // Serving nutrition data
+  calories_per_serving?: number;
+  protein_per_serving?: number;
+  carbs_per_serving?: number;
+  fat_per_serving?: number;
 }
 
 export interface NutritionStats {
@@ -79,7 +91,9 @@ export interface MealPlanFood {
   fat_g: number;
 }
 
-export const nutritionService = {
+// Nutritionix API removed - using Indian food database instead
+
+class NutritionService extends BaseService {
   async getNutritionLogs(params?: {
     period?: string;
     page?: number;
@@ -87,45 +101,55 @@ export const nutritionService = {
     start_date?: string;
     end_date?: string;
   }): Promise<NutritionLog[]> {
-    try {
-      const response = await apiClient.get('/health/nutrition-logs/', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Nutrition Service: Error fetching logs:', error);
-      throw error;
-    }
-  },
+    console.log('🍽️ [NUTRITION SERVICE] getNutritionLogs called with params:', params);
+    
+    // Get timezone offset in minutes
+    const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
+    console.log('🍽️ [NUTRITION SERVICE] Timezone offset:', timezoneOffset);
+    
+    // Add timezone offset to params
+    const paramsWithTimezone = {
+      ...this.getPaginationParams(params),
+      timezone_offset: timezoneOffset
+    };
+    console.log('🍽️ [NUTRITION SERVICE] Params with timezone:', paramsWithTimezone);
+    
+    return this.makeRequest(
+      () => apiClient.get('/health/logging/nutrition/test', { params: paramsWithTimezone }),
+      'NUTRITION SERVICE - getNutritionLogs'
+    ).then(data => {
+      console.log('🍽️ [NUTRITION SERVICE] Extracted logs:', data);
+      console.log('🍽️ [NUTRITION SERVICE] Number of logs:', data.length);
+      return data;
+    });
+  }
 
   async getRecentMeals(limit: number = 5): Promise<NutritionLog[]> {
-    try {
-      const response = await apiClient.get('/health/logging/nutrition', {
+    return this.makeRequest(
+      () => apiClient.get('/health/logging/nutrition', {
         params: { size: limit, page: 1 }
-      });
-      
-      // Extract meals array from response
-      const meals = response.data?.meals || response.data || [];
-      
-      // Ensure it's an array
+      }),
+      'NUTRITION SERVICE - getRecentMeals'
+    ).then(data => {
+      const meals = data?.meals || data || [];
       if (!Array.isArray(meals)) {
         console.warn('Nutrition Service: Expected array but got:', typeof meals);
         return [];
       }
-      
       return meals;
-    } catch (error) {
-      console.error('Nutrition Service: Error fetching recent meals:', error);
-      throw error;
-    }
-  },
+    });
+  }
 
   async getTodayNutritionSummary(): Promise<NutritionStats> {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await apiClient.get('/health/logging/nutrition', {
-        params: { start_date: today, end_date: today }
+      const today = getTodayLocal();
+      console.log('🍽️ [NUTRITION SERVICE] Today (local):', today);
+      
+      const logs = await this.getNutritionLogs({ 
+        start_date: today, 
+        end_date: today 
       });
       
-      const logs = response.data || [];
       const summary: NutritionStats = {
         total_calories: logs.reduce((sum: number, log: NutritionLog) => sum + (log.total_calories || 0), 0),
         protein_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.protein_g || 0), 0),
@@ -141,7 +165,7 @@ export const nutritionService = {
       
       return summary;
     } catch (error) {
-      console.error('Nutrition Service: Error fetching today\'s summary:', error);
+      this.handleError(error, 'NUTRITION SERVICE - getTodayNutritionSummary');
       return {
         total_calories: 0,
         protein_g: 0,
@@ -154,7 +178,7 @@ export const nutritionService = {
         avg_calories_per_meal: 0
       };
     }
-  },
+  }
 
   async logMeal(mealData: {
     meal_type: string;
@@ -171,104 +195,117 @@ export const nutritionService = {
     mood_before?: string;
     mood_after?: string;
     meal_date?: string;
-  }): Promise<NutritionLog> {
-    try {
-      console.log('🍎 Nutrition Service: Logging meal...', mealData);
-      const response = await apiClient.post('/health/logging/nutrition', mealData);
-      console.log('🍎 Nutrition Service: Meal logged:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error logging meal:', error);
-      throw error;
-    }
-  },
+  }): Promise<{status: string, id: number}> {
+    return this.makeRequest(
+      () => apiClient.post('/health/logging/nutrition/test', mealData),
+      'NUTRITION SERVICE - logMeal'
+    );
+  }
 
   async updateMeal(id: string, mealData: Partial<NutritionLog>): Promise<NutritionLog> {
-    try {
-      console.log('🍎 Nutrition Service: Updating meal...', id, mealData);
-      const response = await apiClient.put(`/health/logging/nutrition/${id}`, mealData);
-      console.log('🍎 Nutrition Service: Meal updated:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error updating meal:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.put(`/health/logging/nutrition/${id}`, mealData),
+      'NUTRITION SERVICE - updateMeal'
+    );
+  }
 
   async deleteMeal(id: string): Promise<void> {
-    try {
-      console.log('🍎 Nutrition Service: Deleting meal...', id);
-      await apiClient.delete(`/health/logging/nutrition/${id}`);
-      console.log('🍎 Nutrition Service: Meal deleted');
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error deleting meal:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.delete(`/health/logging/nutrition/${id}`),
+      'NUTRITION SERVICE - deleteMeal'
+    );
+  }
 
   async searchFoods(query: string): Promise<FoodItem[]> {
-    try {
-      console.log('🍎 Nutrition Service: Searching foods...', query);
-      const response = await apiClient.get('/health/foods/search', {
+    console.log('🔍 [NUTRITION SERVICE] Searching for:', query);
+    
+    const response = await this.makeRequest(
+      () => apiClient.get('/health/indian-foods/search', {
         params: { q: query }
-      });
-      console.log('🍎 Nutrition Service: Search results:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error searching foods:', error);
-      throw error;
+      }),
+      'NUTRITION SERVICE - searchFoods'
+    );
+    
+    console.log('🔍 [NUTRITION SERVICE] Raw response:', JSON.stringify(response, null, 2));
+    
+    // Transform API response to match FoodItem interface
+    // The API returns the data array directly
+    if (response && Array.isArray(response)) {
+      console.log('🔍 [NUTRITION SERVICE] Found data array with', response.length, 'items');
+      const transformed = response.map((item: any) => ({
+        id: item.food_code,
+        name: item.food_name,
+        brand: '',
+        category: 'Indian Food',
+        calories_per_100g: item.energy_kcal || 0,
+        protein_per_100g: item.protein_g || 0,
+        carbs_per_100g: item.carbs_g || 0,
+        fat_per_100g: item.fat_g || 0,
+        fiber_g: item.fiber_g || 0,
+        sugar_g: item.sugar_g || 0,
+        sodium_mg: 0, // Not available in current API
+        serving_size_g: 100,
+        serving_qty: 1,
+        serving_unit: item.serving_unit || 'serving',
+        serving_weight_g: 100,
+        type: 'indian_food',
+        // Add serving nutrition data
+        calories_per_serving: item.nutrition_per_serving?.energy_kcal || 0,
+        protein_per_serving: item.nutrition_per_serving?.protein_g || 0,
+        carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
+        fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
+      }));
+      console.log('🔍 [NUTRITION SERVICE] Transformed results:', transformed);
+      return transformed;
     }
-  },
+    
+    console.log('🔍 [NUTRITION SERVICE] No valid data found, returning empty array');
+    return [];
+  }
 
   async getFoodById(id: number): Promise<FoodItem> {
-    try {
-      console.log('🍎 Nutrition Service: Fetching food by ID...', id);
-      const response = await apiClient.get(`/health/foods/${id}`);
-      console.log('🍎 Nutrition Service: Food received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error fetching food:', error);
-      throw error;
-    }
-  },
+    return this.makeRequest(
+      () => apiClient.get(`/health/foods/${id}`),
+      'NUTRITION SERVICE - getFoodById'
+    );
+  }
 
   async getFoodByBarcode(barcode: string): Promise<FoodItem> {
-    try {
-      console.log('🍎 Nutrition Service: Fetching food by barcode...', barcode);
-      const response = await apiClient.get('/health/foods/barcode', {
+    return this.makeRequest(
+      () => apiClient.get('/health/foods/barcode', {
         params: { barcode }
-      });
-      console.log('🍎 Nutrition Service: Food received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error fetching food by barcode:', error);
-      throw error;
-    }
-  },
+      }),
+      'NUTRITION SERVICE - getFoodByBarcode'
+    );
+  }
 
   async getNutritionStats(period: string = 'week'): Promise<NutritionStats> {
-    try {
-      console.log('🍎 Nutrition Service: Fetching nutrition stats...', period);
-      const response = await apiClient.get('/health/logging/nutrition/stats', {
+    return this.makeRequest(
+      () => apiClient.get('/health/nutrition-logs/stats', {
         params: { period }
-      });
-      console.log('🍎 Nutrition Service: Stats received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error fetching stats:', error);
-      throw error;
-    }
-  },
+      }),
+      'NUTRITION SERVICE - getNutritionStats'
+    );
+  }
 
   async getMealPlans(): Promise<MealPlan[]> {
-    try {
-      console.log('🍎 Nutrition Service: Fetching meal plans...');
-      const response = await apiClient.get('/health/nutrition-routines');
-      console.log('🍎 Nutrition Service: Meal plans received:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('🍎 Nutrition Service: Error fetching meal plans:', error);
-      throw error;
-    }
+    return this.makeRequest(
+      () => apiClient.get('/health/nutrition-routines'),
+      'NUTRITION SERVICE - getMealPlans'
+    );
   }
-};
+
+  // Nutritionix API methods removed - using Indian food database instead
+
+  async updateFoodItemQuantity(foodItemId: number, quantityGrams: number): Promise<void> {
+    return this.makeRequest(
+      () => apiClient.put(`/health/logging/food-items/${foodItemId}`, {
+        quantity_grams: quantityGrams
+      }),
+      'NUTRITION SERVICE - updateFoodItemQuantity'
+    );
+  }
+}
+
+// Export singleton instance to maintain backward compatibility
+export const nutritionService = new NutritionService();

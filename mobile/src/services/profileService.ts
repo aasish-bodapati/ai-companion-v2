@@ -8,6 +8,7 @@ export interface HealthProfile {
   activity_level?: string;
   smm?: string; // Skeletal Muscle Mass
   body_fat_percentage?: string; // Body Fat Percentage
+  ffm?: string; // Fat-Free Mass
   workout_days_per_week?: string; // Workout days per week
 }
 
@@ -19,6 +20,7 @@ export interface UserProfile {
   health_data?: HealthProfile;
   goals: string[];
   bodyTypeGoal?: string;
+  bodyTypeGoals?: any[]; // User's body type goals
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -59,6 +61,7 @@ export const profileService = {
         weight: profile.health_data.weight || '',
         gender: profile.health_data.gender as 'male' | 'female' | 'other' || 'male',
         activityLevel: profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' || 'moderate',
+        ffm: profile.health_data.ffm || '',
         smm: profile.health_data.smm || '',
         bodyFat: profile.health_data.body_fat_percentage || '',
         workoutDays: profile.health_data.workout_days_per_week || '',
@@ -68,6 +71,7 @@ export const profileService = {
         weight: '',
         gender: 'male' as const,
         activityLevel: 'moderate' as const,
+        ffm: '',
         smm: '',
         bodyFat: '',
         workoutDays: '',
@@ -91,6 +95,7 @@ export const profileService = {
         weight: onboardingData.healthData.weight,
         gender: onboardingData.healthData.gender,
         activity_level: onboardingData.healthData.activityLevel,
+        ffm: onboardingData.healthData.ffm,
         smm: onboardingData.healthData.smm,
         body_fat_percentage: onboardingData.healthData.bodyFat,
         workout_days_per_week: onboardingData.healthData.workoutDays,

@@ -63,18 +63,6 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     loadWaterGoal();
   }, []);
 
-  // Refresh water goal when component mounts or when screen comes into focus
-  useEffect(() => {
-    const refreshWaterGoal = () => {
-      loadWaterGoal();
-    };
-
-    // Refresh every 5 seconds to catch any updates
-    const interval = setInterval(refreshWaterGoal, 5000);
-    
-    return () => clearInterval(interval);
-  }, []);
-
   const handleQuickLog = async (amount_ml: number) => {
     try {
       hapticFeedback.light();

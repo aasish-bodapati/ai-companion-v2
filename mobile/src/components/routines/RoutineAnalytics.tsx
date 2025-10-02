@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
+import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 
 interface RoutineAnalyticsProps {
   routine: SimpleRoutineWithProgress;
@@ -43,6 +44,20 @@ const { width } = Dimensions.get('window');
 export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  // Load categories on mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await exerciseCategoryService.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    loadCategories();
+  }, []);
 
   const loadAnalytics = async () => {
     try {
@@ -63,10 +78,9 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
         planned: routine.total_workouts_per_week,
       }));
       
-      // Generate exercise breakdown
-      const exerciseTypes = ['weighted', 'bodyweight', 'cardio_duration', 'distance_based'];
-      const exerciseBreakdown = exerciseTypes.map(type => ({
-        type: type.replace('_', ' ').toUpperCase(),
+      // Generate exercise breakdown using database categories
+      const exerciseBreakdown = categories.map(category => ({
+        type: category.display_name.toUpperCase(),
         count: Math.floor(Math.random() * 10) + 1,
         percentage: Math.floor(Math.random() * 30) + 10,
       }));

@@ -184,18 +184,48 @@ class IndianFoodService:
             return None
     
     def search_foods(self, query: str, limit: int = 20) -> List[Dict]:
-        """Search for Indian foods by name"""
+        """Search for Indian foods by name with relevance ranking"""
         search_term = f"%{query.lower()}%"
+        exact_term = query.lower()
+        starts_with_term = f"{query.lower()}%"
         
-        foods = self.db.query(IndianFood).filter(
-            and_(
-                IndianFood.is_active == True,
-                or_(
-                    IndianFood.food_name.ilike(search_term),
-                    IndianFood.food_code.ilike(search_term)
-                )
+        # Use raw SQL to get proper ranking
+        from sqlalchemy import text
+        
+        sql_query = text("""
+            SELECT *,
+                CASE 
+                    WHEN LOWER(food_name) = :exact_term THEN 1
+                    WHEN LOWER(food_name) LIKE :starts_with_term THEN 2
+                    WHEN LOWER(food_name) LIKE :search_term THEN 3
+                    WHEN LOWER(food_code) LIKE :search_term THEN 4
+                    ELSE 5
+                END as relevance_rank
+            FROM indian_foods 
+            WHERE is_active = true 
+            AND (
+                LOWER(food_name) LIKE :search_term 
+                OR LOWER(food_code) LIKE :search_term
             )
-        ).limit(limit).all()
+            ORDER BY relevance_rank, food_name
+            LIMIT :limit
+        """)
+        
+        result = self.db.execute(sql_query, {
+            'exact_term': exact_term,
+            'starts_with_term': starts_with_term,
+            'search_term': search_term,
+            'limit': limit
+        })
+        
+        # Convert result to IndianFood objects
+        foods = []
+        for row in result:
+            food = IndianFood()
+            for key, value in row._mapping.items():
+                if key != 'relevance_rank':
+                    setattr(food, key, value)
+            foods.append(food)
         
         return [self._format_food_for_api(food) for food in foods]
     
@@ -268,7 +298,8 @@ class IndianFoodService:
             "fiber_g": food.fibre_g,
             "sugar_g": food.free_sugar_g,
             "serving_unit": food.servings_unit,
-            "nutrition_per_100g": food.get_nutrition_per_100g()
+            "nutrition_per_100g": food.get_nutrition_per_100g(),
+            "nutrition_per_serving": food.get_serving_nutrition(1.0)  # Add serving nutrition data
         }
     
     def calculate_meal_nutrition(self, food_items: List[Dict]) -> Dict:

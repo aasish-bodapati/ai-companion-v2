@@ -82,6 +82,7 @@ export default function QuickAddModal({
   ];
 
   const handleActionPress = (action: typeof quickActions[0]) => {
+    console.log('🍽️ QuickAddModal: Action pressed:', action.title);
     onClose();
     action.onPress();
   };

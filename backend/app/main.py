@@ -215,13 +215,20 @@ async def correlation_id_middleware(request: Request, call_next):
 @app.middleware("http")
 async def timeout_middleware(request: Request, call_next):
     import asyncio
+    import time
 
+    start_time = time.time()
+    logger.info(f"🚀 [TIMEOUT MIDDLEWARE] Starting request: {request.method} {request.url.path}")
+    
     try:
         # Set a 30-second timeout for all requests
         response = await asyncio.wait_for(call_next(request), timeout=30.0)
+        elapsed = time.time() - start_time
+        logger.info(f"✅ [TIMEOUT MIDDLEWARE] Request completed in {elapsed:.2f}s: {request.method} {request.url.path}")
         return response
     except asyncio.TimeoutError:
-        logger.warning(f"Request timeout: {request.method} {request.url.path}")
+        elapsed = time.time() - start_time
+        logger.warning(f"⏰ [TIMEOUT MIDDLEWARE] Request timeout after {elapsed:.2f}s: {request.method} {request.url.path}")
         return JSONResponse(
             status_code=504,
             content={"detail": "Request timeout - server took too long to respond"}
