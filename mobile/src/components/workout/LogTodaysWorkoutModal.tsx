@@ -14,6 +14,7 @@ import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface Exercise {
   id: number;
@@ -47,11 +48,13 @@ export default function LogTodaysWorkoutModal({
   onClose,
   onWorkoutLogged,
 }: LogTodaysWorkoutModalProps) {
+  const { showToast } = useToast();
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
   const [loading, setLoading] = useState(false);
   const [exerciseData, setExerciseData] = useState<{ [key: number]: any }>({});
   const [loggedExercises, setLoggedExercises] = useState<Set<number>>(new Set());
   const [skippedExercises, setSkippedExercises] = useState<Set<number>>(new Set());
+  const [exercisesLoggedToday, setExercisesLoggedToday] = useState<Set<number>>(new Set());
   const [categories, setCategories] = useState<any[]>([]);
   const weightInputRefs = useRef<{ [key: number]: TextInput | null }>({});
 
@@ -98,27 +101,81 @@ export default function LogTodaysWorkoutModal({
       
       setWorkoutData(data);
       
-      // Note: Last exercise instances feature not implemented yet
-      // This would pre-populate form with previous logged values
-      const lastInstances = {};
-      
-      // Initialize exercise data with last logged values or defaults
+      // Auto-populate exercise data with previous logged values and check if logged today
       const initialData: { [key: number]: any } = {};
+      const loggedTodaySet = new Set<number>();
+      
       if (data.exercises && Array.isArray(data.exercises)) {
-        data.exercises.forEach((exercise: Exercise) => {
-          const lastInstance = (lastInstances as any)[exercise.exercise_name];
-          
-          initialData[exercise.id] = {
-            sets: lastInstance?.sets || '',
-            reps: lastInstance?.reps || '',
-            weight: lastInstance?.weight_used || '',
-            duration: '',
-            distance: '',
-            notes: lastInstance?.notes || '',
-          };
+        // Fetch latest data and check if logged today for each exercise in parallel
+        const exercisePromises = data.exercises.map(async (exercise: Exercise) => {
+          try {
+            console.log(`🔍 [LOG TODAY'S WORKOUT] Fetching latest data for: ${exercise.exercise_name}`);
+            
+            // Check both latest data and if logged today in parallel
+            const [latestData, isLoggedToday] = await Promise.all([
+              fitnessService.getLatestExerciseData(exercise.exercise_name),
+              fitnessService.isExerciseLoggedToday(exercise.exercise_name)
+            ]);
+            
+            if (isLoggedToday) {
+              console.log(`✅ [LOG TODAY'S WORKOUT] Exercise ${exercise.exercise_name} was logged today`);
+              loggedTodaySet.add(exercise.id);
+            }
+            
+            if (latestData) {
+              console.log(`✅ [LOG TODAY'S WORKOUT] Found previous data for ${exercise.exercise_name}:`, latestData);
+              return {
+                id: exercise.id,
+                data: {
+                  sets: latestData.sets?.toString() || '',
+                  reps: latestData.reps?.toString() || '',
+                  weight: (latestData.weight_kg || latestData.weight_used)?.toString() || '',
+                  duration: latestData.duration_minutes?.toString() || '',
+                  distance: latestData.distance?.toString() || '',
+                  notes: latestData.notes || '',
+                }
+              };
+            } else {
+              console.log(`🔍 [LOG TODAY'S WORKOUT] No previous data for ${exercise.exercise_name}`);
+              return {
+                id: exercise.id,
+                data: {
+                  sets: '',
+                  reps: '',
+                  weight: '',
+                  duration: '',
+                  distance: '',
+                  notes: '',
+                }
+              };
+            }
+          } catch (error) {
+            console.log(`🔍 [LOG TODAY'S WORKOUT] Error fetching data for ${exercise.exercise_name}:`, error);
+            return {
+              id: exercise.id,
+              data: {
+                sets: '',
+                reps: '',
+                weight: '',
+                duration: '',
+                distance: '',
+                notes: '',
+              }
+            };
+          }
+        });
+        
+        // Wait for all exercise data to be fetched
+        const exerciseResults = await Promise.all(exercisePromises);
+        
+        // Convert results to the expected format
+        exerciseResults.forEach(result => {
+          initialData[result.id] = result.data;
         });
       }
+      
       setExerciseData(initialData);
+      setExercisesLoggedToday(loggedTodaySet);
     } catch (error) {
       console.error('Failed to load today\'s workout:', error);
       
@@ -137,7 +194,7 @@ export default function LogTodaysWorkoutModal({
           ]
         );
       } else {
-        Alert.alert('Error', 'Failed to load today\'s workout. Please try again.');
+        showToast('Failed to load today\'s workout. Please try again.', 'error');
         onClose();
       }
     } finally {
@@ -176,40 +233,76 @@ export default function LogTodaysWorkoutModal({
   };
 
   const handleInputChange = (exerciseId: number, field: string, value: string) => {
-    setExerciseData(prev => ({
-      ...prev,
-      [exerciseId]: {
-        ...prev[exerciseId],
-        [field]: field === 'notes' ? value : value, // Keep as string for numeric fields too
-      },
-    }));
+    setExerciseData(prev => {
+      const newData = {
+        ...prev,
+        [exerciseId]: {
+          ...prev[exerciseId],
+          [field]: field === 'notes' ? value : value, // Keep as string for numeric fields too
+        },
+      };
+      
+      // Auto-mark exercise as logged if it has valid data
+      const exerciseData = newData[exerciseId] || {};
+      const exercise = workoutData?.exercises.find(ex => ex.id === exerciseId);
+      
+      if (exercise) {
+        const isCompleted = checkExerciseCompletion(exercise, exerciseData);
+        
+        if (isCompleted) {
+          // Exercise has valid data, mark as logged
+          console.log(`✅ [AUTO LOG] Exercise ${exerciseId} (${exercise.logging_category}) has valid data - marking as logged`);
+          setLoggedExercises(prev => new Set([...prev, exerciseId]));
+          setSkippedExercises(prev => {
+            const newSkipped = new Set(prev);
+            newSkipped.delete(exerciseId);
+            return newSkipped;
+          });
+        } else {
+          // Exercise doesn't have valid data, unmark as logged
+          console.log(`❌ [AUTO LOG] Exercise ${exerciseId} (${exercise.logging_category}) doesn't have valid data - unmarking as logged`);
+          setLoggedExercises(prev => {
+            const newLogged = new Set(prev);
+            newLogged.delete(exerciseId);
+            return newLogged;
+          });
+        }
+      }
+      
+      return newData;
+    });
   };
 
   // Check if all required fields are filled
   const isFormValid = () => {
     if (!workoutData) return false;
     
+    console.log('🔍 [FORM VALIDATION] Checking form validity...');
+    console.log('🔍 [FORM VALIDATION] Skipped exercises:', Array.from(skippedExercises));
+    console.log('🔍 [FORM VALIDATION] Exercise data:', exerciseData);
     
     // Check that EVERY exercise is either completed or explicitly skipped
     for (const exercise of workoutData.exercises) {
       const isSkipped = skippedExercises.has(exercise.id);
       const loggedData = exerciseData[exercise.id] || {};
-      const sets = parseInt(loggedData.sets) || 0;
-      const reps = loggedData.reps || '';
       
+      console.log(`🔍 [FORM VALIDATION] Exercise ${exercise.exercise_name} (${exercise.logging_category}):`, {
+        isSkipped,
+        loggedData
+      });
       
       if (isSkipped) {
         // If skipped, that's OK regardless of input values
+        console.log(`✅ [FORM VALIDATION] Exercise ${exercise.exercise_name} is skipped - OK`);
       } else {
-        // If not skipped, must be completed (sets > 0 AND reps filled)
-        if (sets > 0) {
-          if (!reps || reps.trim() === '' || reps === '0') {
-            return false;
-          } else {
-          }
-        } else {
-          // If not skipped and sets = 0, this is not allowed
+        // Check completion based on exercise type
+        const isCompleted = checkExerciseCompletion(exercise, loggedData);
+        
+        if (!isCompleted) {
+          console.log(`❌ [FORM VALIDATION] Exercise ${exercise.exercise_name} is not completed - INVALID`);
           return false;
+        } else {
+          console.log(`✅ [FORM VALIDATION] Exercise ${exercise.exercise_name} is completed - OK`);
         }
       }
     }
@@ -217,10 +310,43 @@ export default function LogTodaysWorkoutModal({
     // Check if all exercises were skipped
     const allSkipped = workoutData.exercises.every(exercise => skippedExercises.has(exercise.id));
     if (allSkipped) {
+      console.log('❌ [FORM VALIDATION] All exercises were skipped - INVALID');
       return false;
     }
     
+    console.log('✅ [FORM VALIDATION] Form is valid!');
     return true;
+  };
+
+  // Check if an exercise is completed based on its type
+  const checkExerciseCompletion = (exercise: Exercise, loggedData: any) => {
+    const category = exercise.logging_category;
+    
+    switch (category) {
+      case 'weighted':
+      case 'bodyweight':
+        // Weight/bodyweight exercises need sets and reps
+        const sets = parseInt(loggedData.sets) || 0;
+        const reps = loggedData.reps || '';
+        return sets > 0 && reps && reps.trim() !== '' && reps !== '0';
+        
+      case 'distance_based':
+        // Distance-based exercises need distance
+        const distance = parseFloat(loggedData.distance) || 0;
+        return distance > 0;
+        
+      case 'cardio_duration':
+        // Duration-based exercises need duration
+        const duration = parseFloat(loggedData.duration) || 0;
+        return duration > 0;
+        
+      default:
+        // For unknown types, check if any field has a value
+        const hasAnyValue = Object.values(loggedData).some(value => 
+          value && value.toString().trim() !== '' && value !== '0'
+        );
+        return hasAnyValue;
+    }
   };
 
   const handleSaveWorkout = async () => {
@@ -230,52 +356,35 @@ export default function LogTodaysWorkoutModal({
     }
 
     if (!isFormValid()) {
-      // Find exercises that need attention
+      // Find exercises that need attention using the new validation logic
       const incompleteExercises = [];
       const unhandledExercises = [];
       
       for (const exercise of workoutData!.exercises) {
         const isSkipped = skippedExercises.has(exercise.id);
         const loggedData = exerciseData[exercise.id] || {};
-        const sets = parseInt(loggedData.sets) || 0;
-        const reps = loggedData.reps || '';
         
         if (isSkipped) {
           // Skipped exercises are OK
           continue;
-        } else if (sets > 0) {
-          // Has sets but missing reps
-          if (!reps || reps.trim() === '' || reps === '0') {
+        } else {
+          // Check if exercise is completed using the new logic
+          const isCompleted = checkExerciseCompletion(exercise, loggedData);
+          if (!isCompleted) {
             incompleteExercises.push(exercise);
           }
-        } else {
-          // No sets and not skipped - needs to be handled
-          unhandledExercises.push(exercise);
         }
       }
 
       // Check if all exercises were skipped
       const allSkipped = workoutData!.exercises.every(exercise => skippedExercises.has(exercise.id));
       if (allSkipped) {
-        Alert.alert(
-          'No Exercises Logged',
-          'All exercises were skipped. Please complete at least one exercise to log your workout.',
-          [{ text: 'OK' }]
-        );
+        showToast('All exercises were skipped. Please complete at least one exercise to log your workout.', 'warning');
       } else if (incompleteExercises.length > 0) {
         const exerciseNames = incompleteExercises.map(ex => ex.exercise_name).join(', ');
-        Alert.alert(
-          'Incomplete Workout', 
-          `Please fill in reps for: ${exerciseNames}`
-        );
-      } else if (unhandledExercises.length > 0) {
-        const exerciseNames = unhandledExercises.map(ex => ex.exercise_name).join(', ');
-        Alert.alert(
-          'Incomplete Workout', 
-          `Please either complete or skip these exercises: ${exerciseNames}`
-        );
+        showToast(`Please complete these exercises: ${exerciseNames}`, 'warning');
       } else {
-        Alert.alert('Incomplete Workout', 'Please complete or skip all exercises.');
+        showToast('Please complete or skip all exercises.', 'warning');
       }
       return;
     }
@@ -283,25 +392,30 @@ export default function LogTodaysWorkoutModal({
     try {
       setLoading(true);
 
-      // Prepare exercise data for logging
-      const exercises = workoutData!.exercises.map(exercise => {
-        const loggedData = exerciseData[exercise.id] || {};
-        return {
-          exercise_name: exercise.exercise_name,
-          sets: parseInt(loggedData.sets) || 0,
-          reps: loggedData.reps || '',
-          weight_used: parseFloat(loggedData.weight) || null,
-          notes: loggedData.notes || ''
-        };
-      }).filter(ex => ex.sets > 0); // Only include exercises with sets logged
+      // Prepare exercise data for logging - only include completed exercises
+      const exercises = workoutData!.exercises
+        .filter(exercise => {
+          const isSkipped = skippedExercises.has(exercise.id);
+          const loggedData = exerciseData[exercise.id] || {};
+          const isCompleted = checkExerciseCompletion(exercise, loggedData);
+          return !isSkipped && isCompleted;
+        })
+        .map(exercise => {
+          const loggedData = exerciseData[exercise.id] || {};
+          return {
+            exercise_name: exercise.exercise_name,
+            sets: parseInt(loggedData.sets) || 0,
+            reps: loggedData.reps || '',
+            weight_used: parseFloat(loggedData.weight) || null,
+            duration_minutes: parseFloat(loggedData.duration) || null,
+            distance: parseFloat(loggedData.distance) || null,
+            notes: loggedData.notes || ''
+          };
+        });
 
       // Check if all exercises were skipped
       if (exercises.length === 0) {
-        Alert.alert(
-          'No Exercises Logged',
-          'All exercises were skipped. Please complete at least one exercise to log your workout.',
-          [{ text: 'OK' }]
-        );
+        showToast('All exercises were skipped. Please complete at least one exercise to log your workout.', 'warning');
         setLoading(false);
         return;
       }
@@ -309,38 +423,46 @@ export default function LogTodaysWorkoutModal({
       // Calculate total duration (estimate 2 minutes per exercise)
       const estimatedDuration = exercises.length * 2;
 
-      // Create workout log data
-      const logData = {
-        activity_name: workoutData!.workout_name,
-        activity_type: 'weightlifting',
-        duration_minutes: estimatedDuration,
-        calories_burned: Math.round(estimatedDuration * 8), // Rough estimate
-        notes: `Completed ${exercises.length} exercises from ${workoutData!.routine_name}`,
-        exercises: JSON.stringify(exercises), // Convert to JSON string
-        unit: 'kg'
-      };
+      // Create separate log entries for each exercise
+      console.log('🔍 [WORKOUT LOG] Creating separate log entries for each exercise');
+      
+      const logPromises = exercises.map(async (exercise, index) => {
+        const logData = {
+          activity_name: exercise.exercise_name,
+          activity_type: 'weightlifting',
+          duration_minutes: exercise.duration_minutes || 2, // Use exercise duration or default 2 minutes
+          calories_burned: Math.round((exercise.duration_minutes || 2) * 8), // Rough estimate
+          notes: `From ${workoutData!.routine_name} - ${workoutData!.workout_name}`,
+          exercises: JSON.stringify([exercise]), // Single exercise as array
+          unit: 'kg',
+          // Add exercise-specific data
+          sets: exercise.sets,
+          reps: exercise.reps,
+          weight_used: exercise.weight_used,
+          distance: exercise.distance
+        };
 
-      // Log the workout using fitness logs API
-      console.log('🔍 [WORKOUT LOG] Logging workout with data:', logData);
-      const result = await routineService.createWorkoutLog(logData);
-      console.log('✅ [WORKOUT LOG] Workout logged successfully:', result);
+        console.log(`🔍 [WORKOUT LOG] Creating log for exercise ${index + 1}:`, logData);
+        return routineService.createWorkoutLog(logData);
+      });
 
-      Alert.alert(
-        'Workout Logged!',
-        `Great job completing your ${workoutData!.workout_name}!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              onWorkoutLogged();
-              onClose();
-            },
-          },
-        ]
-      );
+      // Wait for all logs to be created
+      const results = await Promise.all(logPromises);
+      console.log('✅ [WORKOUT LOG] Workout logged successfully:', results);
+
+      // Update the exercisesLoggedToday state to reflect the newly logged exercises
+      const newlyLoggedIds = new Set(exercises.map(exercise => 
+        workoutData!.exercises.find(ex => ex.exercise_name === exercise.exercise_name)?.id
+      ).filter(id => id !== undefined));
+      
+      setExercisesLoggedToday(prev => new Set([...prev, ...newlyLoggedIds]));
+
+      showToast(`Great job! ${exercises.length} exercises from ${workoutData!.workout_name} have been logged individually.`, 'success');
+      onWorkoutLogged();
+      onClose();
     } catch (error) {
       console.error('Failed to log workout:', error);
-      Alert.alert('Error', 'Failed to log workout. Please try again.');
+      showToast('Failed to log workout. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -351,22 +473,12 @@ export default function LogTodaysWorkoutModal({
       setLoading(true);
       await routineService.skipTodaysWorkout(workoutData!.routine_id);
       
-      Alert.alert(
-        'Workout Skipped',
-        'Your workout has been marked as skipped.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              onWorkoutLogged();
-              onClose();
-            },
-          },
-        ]
-      );
+      showToast('Your workout has been marked as skipped.', 'info');
+      onWorkoutLogged();
+      onClose();
     } catch (error) {
       console.error('Failed to skip workout:', error);
-      Alert.alert('Error', 'Failed to skip workout. Please try again.');
+      showToast('Failed to skip workout. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -419,7 +531,7 @@ export default function LogTodaysWorkoutModal({
             <Text style={styles.sectionTitle}>Exercises ({getTotalExercises()})</Text>
             
             {workoutData.exercises?.map((exercise, index) => {
-              const isLogged = loggedExercises.has(exercise.id);
+              const isLogged = exercisesLoggedToday.has(exercise.id);
               const isSkipped = skippedExercises.has(exercise.id);
               const currentExerciseData = exerciseData[exercise.id] || {};
 
@@ -437,6 +549,11 @@ export default function LogTodaysWorkoutModal({
                 distance_unit: 'km', // Default to km (hidden in UI)
                 category: exercise.logging_category
               };
+              
+              // Debug logging for auto-population
+              console.log(`🔍 [LOG TODAY'S WORKOUT] Exercise: ${exercise.exercise_name}`);
+              console.log(`🔍 [LOG TODAY'S WORKOUT] Current data:`, currentExerciseData);
+              console.log(`🔍 [LOG TODAY'S WORKOUT] Form data:`, exerciseForForm);
 
               return (
                 <View key={exercise.id} style={[styles.exerciseCard, isLogged && styles.exerciseCardLogged]}>
@@ -452,7 +569,7 @@ export default function LogTodaysWorkoutModal({
                           <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
                             <Ionicons 
                               name={categoryConfig.icon as any} 
-                              size={14} 
+                              size={12} 
                               color={categoryConfig.color} 
                             />
                             <Text style={[styles.categoryText, { color: categoryConfig.color }]}>
@@ -652,15 +769,15 @@ const styles = StyleSheet.create({
   categoryBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 6,
   },
   categoryText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
-    marginLeft: 4,
+    marginLeft: 3,
     textTransform: 'capitalize',
   },
   exerciseActions: {

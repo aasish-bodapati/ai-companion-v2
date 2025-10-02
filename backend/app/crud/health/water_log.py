@@ -2,20 +2,46 @@
 Water Log CRUD operations
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from app.crud.common.user_logging import UserLoggingCRUD
+from app.crud.common.generic_health_logging import GenericHealthLoggingCRUD
 from app.models.health.water_log import WaterLog
 from app.schemas.health.water_log import WaterLogCreate, WaterLogUpdate
 
-class CRUDWaterLog(UserLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUpdate]):
-    """CRUD operations for WaterLog using UserLoggingCRUD base class."""
+class CRUDWaterLog(GenericHealthLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUpdate]):
+    """CRUD operations for WaterLog using GenericHealthLoggingCRUD base class."""
     
     def __init__(self):
-        super().__init__(WaterLog, date_field="log_date")
+        super().__init__(
+            WaterLog, 
+            date_field="log_date",
+            stats_calculator=self._calculate_water_stats
+        )
+    
+    def _calculate_water_stats(self, logs: List[WaterLog]) -> Dict[str, Any]:
+        """Calculate water-specific statistics."""
+        if not logs:
+            return {
+                "total_count": 0,
+                "total_ml": 0,
+                "total_oz": 0,
+                "current_streak": 0,
+                "longest_streak": 0
+            }
+        
+        total_ml = sum(log.amount_ml or 0 for log in logs)
+        total_oz = sum(log.amount_oz or 0 for log in logs)
+        
+        return {
+            "total_count": len(logs),
+            "total_ml": total_ml,
+            "total_oz": round(total_oz, 2),
+            "current_streak": self.calculate_user_streak(None, None),  # Will be calculated properly in context
+            "longest_streak": self.calculate_user_streak(None, None)   # Will be calculated properly in context
+        }
 
     def get_user_logs_today(self, db: Session, *, user_id: int) -> List[WaterLog]:
         """Get user's water logs for today"""

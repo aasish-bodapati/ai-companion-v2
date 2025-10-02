@@ -93,76 +93,63 @@ export default function WorkoutLoggingModal({
       muscle_group: exercise.muscle_group
     });
     
-    setExercises(prevExercises => {
-      const existingItem = prevExercises.find(item => item.name === exercise.name);
-      if (existingItem) {
-        // Update sets if exercise already exists
-        return prevExercises.map(item =>
+    // Check if exercise already exists
+    const existingItem = exercises.find(item => item.name === exercise.name);
+    
+    if (existingItem) {
+      // Update sets if exercise already exists
+      setExercises(prevExercises => 
+        prevExercises.map(item =>
           item.name === exercise.name
             ? { ...item, sets: (item.sets || 0) + 1 }
             : item
-        );
-      } else {
-        // Add new exercise with empty values initially
-        const newItem: LoggingItemData = {
-          id: `exercise-${Date.now()}`,
-          name: exercise.name,
-          sets: undefined,
-          reps: '',
-          weight_kg: undefined,
-          duration_minutes: undefined,
-          rest_time: '',
-          notes: '',
-          category: exercise.category,
-          muscle_group: exercise.muscle_group,
-          equipment: exercise.equipment,
-          instructions: exercise.instructions,
-          difficulty: exercise.difficulty,
-        };
-        
-        console.log('🔍 WorkoutLoggingModal - Created new exercise item:', newItem);
-        
-        // Mark this item as newly added
-        setNewlyAddedIds(prev => new Set([...prev, newItem.id]));
-        
-        return [...prevExercises, newItem];
+        )
+      );
+    } else {
+      // Fetch latest workout data for this exercise first
+      let latestWorkout = null;
+      try {
+        console.log('🔍 Fetching latest workout data for exercise:', exercise.name);
+        latestWorkout = await fitnessService.getLatestExerciseData(exercise.name);
+        console.log('🔍 Raw API response for', exercise.name, ':', latestWorkout);
+      } catch (error) {
+        console.error('Error fetching latest workout data:', error);
       }
-    });
-    
-    // Fetch latest workout data for this exercise
-    try {
-      console.log('🔍 Fetching latest workout data for exercise:', exercise.name);
-      const latestWorkout = await fitnessService.getLatestWorkoutForExercise(exercise.name);
-      console.log('🔍 Raw API response for', exercise.name, ':', latestWorkout);
       
+      // Add new exercise with latest data if available
+      const newItem: LoggingItemData = {
+        id: `exercise-${Date.now()}`,
+        name: exercise.name,
+        sets: latestWorkout?.sets || undefined,
+        reps: latestWorkout?.reps || '',
+        weight_kg: (latestWorkout?.weight_kg || latestWorkout?.weight_used) || undefined,
+        duration_minutes: latestWorkout?.duration_minutes || undefined,
+        distance: latestWorkout?.distance || undefined,
+        rest_time: latestWorkout?.rest_time || '',
+        notes: latestWorkout?.notes || '',
+        category: exercise.category,
+        muscle_group: exercise.muscle_group,
+        equipment: exercise.equipment,
+        instructions: exercise.instructions,
+        difficulty: exercise.difficulty,
+      };
+      
+      console.log('🔍 WorkoutLoggingModal - Created new exercise item with latest data:', newItem);
+      
+      // Add the new exercise
+      setExercises(prevExercises => [...prevExercises, newItem]);
+      
+      // Mark this item as newly added
+      setNewlyAddedIds(prev => new Set([...prev, newItem.id]));
+      
+      // Show haptic feedback if data was populated
       if (latestWorkout) {
-        console.log('🔍 Latest workout data for', exercise.name, ':', latestWorkout);
-        console.log('🔍 Sets:', latestWorkout.sets, 'Reps:', latestWorkout.reps, 'Weight:', latestWorkout.weight_kg);
-        
-        setExercises(prevExercises => 
-          prevExercises.map(item => 
-            item.name === exercise.name
-              ? {
-                  ...item,
-                  sets: latestWorkout.sets || undefined,
-                  reps: latestWorkout.reps || '',
-                  weight_kg: latestWorkout.weight_kg || undefined,
-                  duration_minutes: latestWorkout.duration_minutes || undefined,
-                  rest_time: latestWorkout.rest_time || '',
-                  notes: latestWorkout.notes || '',
-                }
-              : item
-          )
-        );
-      } else {
-        console.log('🔍 No latest workout data found for', exercise.name);
+        hapticFeedback.light();
       }
-    } catch (error) {
-      console.error('Error fetching latest workout data:', error);
     }
     
     hapticFeedback.selection();
-  }, []);
+  }, [exercises]);
 
   const handleAddItem = useCallback((item: LoggingItemData) => {
     setExercises(prevExercises => [...prevExercises, item]);
@@ -184,7 +171,38 @@ export default function WorkoutLoggingModal({
   }, []);
 
   const isFormValid = () => {
-    return exercises.length > 0;
+    if (exercises.length === 0) return false;
+    
+    // Validate each exercise based on its category
+    return exercises.every(exercise => {
+      const category = exercise.category;
+      
+      switch (category) {
+        case 'weighted':
+        case 'bodyweight':
+          // Need sets and reps
+          const sets = parseInt(exercise.sets) || 0;
+          const reps = exercise.reps || '';
+          return sets > 0 && reps && reps.trim() !== '' && reps !== '0';
+          
+        case 'distance_based':
+          // Need distance
+          const distance = parseFloat(exercise.distance) || 0;
+          return distance > 0;
+          
+        case 'cardio_duration':
+          // Need duration
+          const duration = parseFloat(exercise.duration_minutes) || 0;
+          return duration > 0;
+          
+        default:
+          // For unknown types, check if any field has a value
+          const hasAnyValue = Object.values(exercise).some(value => 
+            value && value.toString().trim() !== '' && value !== '0'
+          );
+          return hasAnyValue;
+      }
+    });
   };
 
   const getFormData = () => {
@@ -200,7 +218,9 @@ export default function WorkoutLoggingModal({
         sets: item.sets,
         reps: item.reps,
         weight_kg: item.weight_kg,
+        weight_used: item.weight_used,
         duration_minutes: item.duration_minutes,
+        distance: item.distance,
         rest_time: item.rest_time,
         notes: item.notes,
       }))),
@@ -239,7 +259,7 @@ export default function WorkoutLoggingModal({
     
     return (
       <LoggingItem
-        key={item.id}
+        key={`${item.id}-${item.name}`}
         item={item}
         itemType="workout"
         index={index}

@@ -59,6 +59,16 @@ export interface NutritionStats {
   sodium_mg: number;
   meals_count: number;
   avg_calories_per_meal: number;
+  // Additional properties used in NutritionScreen
+  total_meals?: number;
+  average_daily_calories?: number;
+  macro_breakdown?: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  weekly_goal_progress?: number;
+  streak?: number;
 }
 
 export interface MealPlan {

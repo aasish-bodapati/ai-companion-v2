@@ -49,17 +49,33 @@ class ExerciseCategoryService {
       // Get all exercises to extract unique categories
       const response = await fitnessService.getExerciseTypes();
       
-      // Extract unique categories from exercises
+      // Extract unique categories from exercises using logging_category_info
       const categoryMap = new Map();
       response.forEach(exercise => {
-        if (exercise.category && !categoryMap.has(exercise.category)) {
-          categoryMap.set(exercise.category, {
-            id: exercise.category,
-            name: exercise.category,
-            display_name: this.getDisplayName(exercise.category),
-            color: this.getCategoryColor(exercise.category),
-            icon: this.getCategoryIcon(exercise.category),
-          });
+        // Use logging_category_info if available, otherwise fallback to manual mapping
+        if (exercise.logging_category_info) {
+          const category = exercise.logging_category_info;
+          if (!categoryMap.has(category.id)) {
+            categoryMap.set(category.id, {
+              id: category.id,
+              name: category.name,
+              display_name: category.display_name,
+              color: category.color || this.getCategoryColor(category.id),
+              icon: category.icon || this.getCategoryIcon(category.id),
+            });
+          }
+        } else {
+          // Fallback to manual mapping for exercises without logging_category_info
+          const category = exercise.logging_category || exercise.category;
+          if (category && !categoryMap.has(category)) {
+            categoryMap.set(category, {
+              id: category,
+              name: category,
+              display_name: this.getDisplayName(category),
+              color: this.getCategoryColor(category),
+              icon: this.getCategoryIcon(category),
+            });
+          }
         }
       });
       

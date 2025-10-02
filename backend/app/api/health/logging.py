@@ -376,6 +376,10 @@ async def create_fitness_log(
                 # If already timezone-aware, convert to UTC
                 fitness_log_in.activity_date = fitness_log_in.activity_date.astimezone(timezone.utc)
                 logger.info(f"🏋️ [FITNESS LOGGING] Converted activity_date to UTC: {fitness_log_in.activity_date}")
+        else:
+            # Set default activity_date to current time in UTC if not provided
+            fitness_log_in.activity_date = datetime.now(timezone.utc)
+            logger.info(f"🏋️ [FITNESS LOGGING] Set default activity_date to UTC: {fitness_log_in.activity_date}")
         
         fitness_log_entry = fitness_log.create_with_user(
             db, obj_in=fitness_log_in, user_id=current_user.id

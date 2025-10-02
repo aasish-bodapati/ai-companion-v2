@@ -12,7 +12,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService, NutritionStats } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
-import MealLoggingModal from '../../components/nutrition/MealLoggingModal';
+import MealLoggingModal from '../../components/nutrition/MealLoggingModalOriginal';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
 export default function NutritionScreen() {
@@ -40,8 +40,18 @@ export default function NutritionScreen() {
       
       // Transform the stats to match the expected format
       setWeekStats({
-        total_meals: stats.meals_count || 0,
+        // Required properties
         total_calories: stats.total_calories || 0,
+        protein_g: stats.protein_g || 0,
+        carbs_g: stats.carbs_g || 0,
+        fat_g: stats.fat_g || 0,
+        fiber_g: stats.fiber_g || 0,
+        sugar_g: stats.sugar_g || 0,
+        sodium_mg: stats.sodium_mg || 0,
+        meals_count: stats.meals_count || 0,
+        avg_calories_per_meal: stats.avg_calories_per_meal || 0,
+        // Additional properties
+        total_meals: stats.meals_count || 0,
         average_daily_calories: stats.avg_calories_per_meal || 0,
         macro_breakdown: {
           protein: stats.protein_g || 0,
@@ -55,8 +65,18 @@ export default function NutritionScreen() {
       console.error('Failed to load week stats:', error);
       // Set fallback stats
       setWeekStats({
-        total_meals: 0,
+        // Required properties
         total_calories: 0,
+        protein_g: 0,
+        carbs_g: 0,
+        fat_g: 0,
+        fiber_g: 0,
+        sugar_g: 0,
+        sodium_mg: 0,
+        meals_count: 0,
+        avg_calories_per_meal: 0,
+        // Additional properties
+        total_meals: 0,
         average_daily_calories: 0,
         macro_breakdown: {
           protein: 0,
@@ -75,7 +95,7 @@ export default function NutritionScreen() {
       const response = await nutritionService.getNutritionLogs({ period: 'week' });
       
       // Extract meals array from response
-      const meals = response?.meals || response || [];
+      const meals = response || [];
       
       // Group meals by day of week
       const weeklyData = {

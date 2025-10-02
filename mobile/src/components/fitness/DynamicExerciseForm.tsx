@@ -97,6 +97,11 @@ export default function DynamicExerciseForm({
   const renderField = (field: string, isHorizontal: boolean = false) => {
     const containerStyle = isHorizontal ? styles.horizontalFieldContainer : styles.fieldContainer;
     
+    console.log(`🔍 [DYNAMIC FORM] Rendering field: ${field}, isHorizontal: ${isHorizontal}`);
+    console.log(`🔍 [DYNAMIC FORM] Exercise data:`, exercise);
+    console.log(`🔍 [DYNAMIC FORM] Category:`, category);
+    console.log(`🔍 [DYNAMIC FORM] Field name check - is distance?:`, field === 'distance');
+    
     switch (field) {
       case 'sets':
         return (
@@ -104,7 +109,7 @@ export default function DynamicExerciseForm({
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Sets</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.sets && Number(exercise.sets) > 0 ? exercise.sets.toString() : ''}
+              value={exercise.sets ? exercise.sets.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -142,7 +147,9 @@ export default function DynamicExerciseForm({
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
               value={(() => {
                 const weight = exercise.weight_used || exercise.weight;
-                return weight && Number(weight) > 0 ? weight.toString() : '';
+                console.log(`🔍 [DYNAMIC FORM] Weight field - exercise.weight_used: ${exercise.weight_used}, exercise.weight: ${exercise.weight}, final weight: ${weight}`);
+                console.log(`🔍 [DYNAMIC FORM] Weight field - Number(weight): ${Number(weight)}, condition: ${weight && Number(weight) > 0}`);
+                return weight ? weight.toString() : '';
               })()}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
@@ -163,7 +170,7 @@ export default function DynamicExerciseForm({
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dur (min)</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.duration && Number(exercise.duration) > 0 ? exercise.duration.toString() : ''}
+              value={exercise.duration ? exercise.duration.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers
                 const numericValue = text.replace(/[^0-9]/g, '');
@@ -176,15 +183,20 @@ export default function DynamicExerciseForm({
         );
 
       case 'distance':
+        const distanceLabel = "Distance (km)";
+        console.log('🔍 [DYNAMIC FORM] Distance field - Label text:', distanceLabel);
+        console.log('🔍 [DYNAMIC FORM] Distance field - Exercise data:', exercise);
+        console.log('🔍 [DYNAMIC FORM] Distance field - Category:', category);
         return (
           <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
-            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>Dist (km)</Text>
+            <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>{distanceLabel}</Text>
             <TextInput
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
-              value={exercise.distance && Number(exercise.distance) > 0 ? exercise.distance.toString() : ''}
+              value={exercise.distance ? exercise.distance.toString() : ''}
               onChangeText={(text) => {
                 // Only allow integers and decimal point
                 const numericValue = text.replace(/[^0-9.]/g, '');
+                console.log('🔍 [DYNAMIC FORM] Distance field - Input changed:', { text, numericValue });
                 onUpdate(index, 'distance', numericValue);
               }}
               keyboardType="numeric"
@@ -200,6 +212,10 @@ export default function DynamicExerciseForm({
         return null;
     }
   };
+
+  console.log('🔍 [DYNAMIC FORM] Main render - Exercise:', exercise);
+  console.log('🔍 [DYNAMIC FORM] Main render - Category:', category);
+  console.log('🔍 [DYNAMIC FORM] Main render - Category check for distance_based:', category === 'distance_based');
 
   return (
     <View style={styles.container}>

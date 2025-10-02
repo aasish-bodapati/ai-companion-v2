@@ -1,41 +1,10 @@
 from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
 from pydantic import BaseModel, Field
-from enum import Enum
 
-class ActivityType(str, Enum):
-    RUNNING = "running"
-    WALKING = "walking"
-    CYCLING = "cycling"
-    WEIGHTLIFTING = "weightlifting"
-    YOGA = "yoga"
-    PILATES = "pilates"
-    SWIMMING = "swimming"
-    DANCING = "dancing"
-    HIKING = "hiking"
-    CARDIO = "cardio"
-    STRENGTH_TRAINING = "strength_training"
-    FLEXIBILITY = "flexibility"
-    SPORTS = "sports"
-    OTHER = "other"
-
-class IntensityLevel(str, Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-
-class MealType(str, Enum):
-    BREAKFAST = "breakfast"
-    LUNCH = "lunch"
-    DINNER = "dinner"
-    SNACK = "snack"
-
-class MoodLevel(str, Enum):
-    VERY_LOW = "very_low"
-    LOW = "low"
-    NEUTRAL = "neutral"
-    HIGH = "high"
-    VERY_HIGH = "very_high"
+from app.schemas.common.health_enums import (
+    ActivityType, IntensityLevel, MealType, MoodLevel
+)
 
 # Base schemas
 class FitnessLogBase(BaseModel):

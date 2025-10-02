@@ -197,9 +197,10 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     <View style={styles.container}>
       <StatsCard
         title="Water Intake"
+        value={`${displayStats.total_ml_today}ml`}
+        subtitle={`${displayStats.total_oz_today.toFixed(1)} fl oz`}
         icon="water"
         iconColor={COLORS.primary}
-        stats={statsData}
         progress={progressData}
         achievement={achievementData}
         style={styles.card}

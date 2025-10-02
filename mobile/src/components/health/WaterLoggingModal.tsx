@@ -1,17 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import LoggingModal from '../ui/LoggingModal';
+import GenericLoggingModal from '../ui/GenericLoggingModal';
 import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { waterService } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { BaseLog } from '../../types/BaseLog';
 
 interface WaterLoggingModalProps {
   visible: boolean;
   onClose: () => void;
   onWaterLogged: () => void;
 }
+
+// Mock search service for water (since water doesn't need search)
+const mockSearchService = {
+  search: async (query: string) => [],
+  create: async (data: any) => data,
+};
 
 export default function WaterLoggingModal({
   visible,
@@ -39,7 +46,7 @@ export default function WaterLoggingModal({
       quantity: amount,
       quantity_unit: 'ml',
     };
-    setWaterEntries([...waterEntries, newEntry]);
+    setWaterEntries(prev => [...prev, newEntry]);
     hapticFeedback.selection();
   };
 
@@ -56,18 +63,18 @@ export default function WaterLoggingModal({
       quantity: amount,
       quantity_unit: 'ml',
     };
-    setWaterEntries([...waterEntries, newEntry]);
+    setWaterEntries(prev => [...prev, newEntry]);
     setCustomAmount('');
     hapticFeedback.selection();
   };
 
   const handleRemoveItem = (id: number | string) => {
-    setWaterEntries(waterEntries.filter(item => item.id !== id));
+    setWaterEntries(prev => prev.filter(item => item.id !== id));
     hapticFeedback.light();
   };
 
   const handleUpdateItem = (id: number | string, updates: Partial<LoggingItemData>) => {
-    setWaterEntries(waterEntries.map(item =>
+    setWaterEntries(prev => prev.map(item =>
       item.id === id ? { ...item, ...updates } : item
     ));
   };
@@ -181,17 +188,19 @@ export default function WaterLoggingModal({
   };
 
   return (
-    <LoggingModal
+    <GenericLoggingModal
       visible={visible}
       onClose={onClose}
       onSave={handleSave}
       title="Log Water"
       subtitle="Track your hydration"
       formType="water"
+      searchService={mockSearchService}
       searchPlaceholder=""
       searchResults={[]}
       onSearch={() => {}}
       onSelectItem={() => {}}
+      onClearSearch={() => {}}
       items={waterEntries}
       onAddItem={() => {}}
       onRemoveItem={handleRemoveItem}
@@ -215,106 +224,106 @@ export default function WaterLoggingModal({
 
 const styles = StyleSheet.create({
   quickAddSection: {
-    marginBottom: SPACING.large,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
-    fontSize: FONT_SIZE.large,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text.primary,
-    marginBottom: SPACING.medium,
+    marginBottom: SPACING.md,
   },
   quickAddButtons: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: SPACING.small,
+    gap: SPACING.sm,
   },
   quickAddButton: {
     flex: 1,
     minWidth: '45%',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: SPACING.medium,
-    paddingHorizontal: SPACING.small,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
     backgroundColor: COLORS.background.secondary,
-    borderRadius: BORDER_RADIUS.medium,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border.primary,
-    gap: SPACING.small,
+    gap: SPACING.sm,
   },
   quickAddText: {
     flex: 1,
-    fontSize: FONT_SIZE.small,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.text.primary,
     fontWeight: '500',
   },
   quickAddAmount: {
-    fontSize: FONT_SIZE.small,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.text.secondary,
   },
   customAmountSection: {
-    marginBottom: SPACING.large,
+    marginBottom: SPACING.lg,
   },
   customAmountRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.small,
+    gap: SPACING.sm,
   },
   customAmountInput: {
     flex: 1,
     backgroundColor: COLORS.background.secondary,
     borderWidth: 1,
     borderColor: COLORS.border.primary,
-    borderRadius: BORDER_RADIUS.medium,
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    fontSize: FONT_SIZE.medium,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.md,
     color: COLORS.text.primary,
   },
   unitLabel: {
-    fontSize: FONT_SIZE.medium,
+    fontSize: FONT_SIZE.md,
     color: COLORS.text.secondary,
     fontWeight: '500',
   },
   addCustomButton: {
-    padding: SPACING.small,
+    padding: SPACING.sm,
     backgroundColor: COLORS.primary + '20',
-    borderRadius: BORDER_RADIUS.medium,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.primary,
   },
   addCustomButtonDisabled: {
-    backgroundColor: COLORS.background.disabled,
-    borderColor: COLORS.border.disabled,
+    backgroundColor: COLORS.gray[200],
+    borderColor: COLORS.gray[300],
   },
   summarySection: {
-    marginBottom: SPACING.large,
+    marginBottom: SPACING.lg,
   },
   summaryCard: {
     backgroundColor: COLORS.background.secondary,
-    borderRadius: BORDER_RADIUS.medium,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border.primary,
-    padding: SPACING.medium,
+    padding: SPACING.md,
   },
   summaryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.small,
+    marginBottom: SPACING.sm,
   },
   summaryDetails: {
-    marginLeft: SPACING.medium,
+    marginLeft: SPACING.md,
   },
   summaryAmount: {
-    fontSize: FONT_SIZE.large,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text.primary,
   },
   summaryUnit: {
-    fontSize: FONT_SIZE.small,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.text.secondary,
   },
   summaryEntries: {
-    fontSize: FONT_SIZE.small,
+    fontSize: FONT_SIZE.sm,
     color: COLORS.text.tertiary,
     textAlign: 'center',
   },

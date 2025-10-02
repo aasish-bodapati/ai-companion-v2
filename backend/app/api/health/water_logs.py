@@ -15,42 +15,18 @@ from app.schemas.health.water_log import (
     WaterLog, WaterLogCreate, WaterLogUpdate, 
     WaterLogStats, WaterLogSummary
 )
-from app.utils.timezone_service import TimezoneService
-# from app.api.common.water_endpoints import water_endpoints  # Not used in this implementation
+from app.utils.timezone_handler import TimezoneHandler
+from app.api.common.response_formatter import HealthLogResponseFormatter
 
 router = APIRouter()
 
-def get_user_timezone_range(date_obj: datetime, user_timezone: str = "UTC"):
-    """Get start and end of day in user's timezone, converted to UTC for database queries."""
-    # Common timezone mappings
-    timezone_offsets = {
-        "UTC": 0,
-        "Asia/Kolkata": 5.5,  # IST
-        "America/New_York": -5,  # EST
-        "America/Los_Angeles": -8,  # PST
-        "Europe/London": 0,  # GMT
-        "Asia/Tokyo": 9,  # JST
-        "Australia/Sydney": 10,  # AEST
-    }
-    
-    offset_hours = timezone_offsets.get(user_timezone, 0)
-    user_tz = timezone(timedelta(hours=offset_hours))
-    
-    # Get start and end of day in user's timezone
-    start_of_day_user = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=user_tz)
-    end_of_day_user = datetime.combine(date_obj, datetime.max.time()).replace(tzinfo=user_tz)
-    
-    # Convert to UTC for database queries
-    start_of_day_utc = start_of_day_user.astimezone(timezone.utc)
-    end_of_day_utc = end_of_day_user.astimezone(timezone.utc)
-    
-    return start_of_day_utc, end_of_day_utc
+# Removed duplicated timezone function - now using TimezoneHandler
 
 # Note: Generic endpoints are available but not included to avoid conflicts
 # Use water_endpoints.create_water_router() if you want to use the generic patterns
 
 # Keep the original endpoints for backward compatibility
-@router.get("/", response_model=List[WaterLog])
+@router.get("/", response_model=List[dict])
 def get_water_logs(
     *,
     db: Session = Depends(get_db),
@@ -65,26 +41,26 @@ def get_water_logs(
         db, user_id=current_user.id, 
         start_date=start_date, end_date=end_date
     )
-    return logs
+    return [HealthLogResponseFormatter.format_water_log_response(log) for log in logs]
 
-@router.get("/today", response_model=List[WaterLog])
+@router.get("/today", response_model=List[dict])
 def get_todays_water_logs(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get user's water logs for today"""
-    # Use TimezoneService for proper timezone handling
+    # Use TimezoneHandler for proper timezone handling
     user_timezone = current_user.timezone or "UTC"
     
     # Get today's date range in user's timezone
-    start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+    start_of_day, end_of_day = TimezoneHandler.get_user_timezone_range(datetime.now(), user_timezone)
     
     logs = water_log.get_user_logs_by_date_range(
         db, user_id=current_user.id,
         start_date=start_of_day.date(), end_date=end_of_day.date()
     )
-    return logs
+    return [HealthLogResponseFormatter.format_water_log_response(log) for log in logs]
 
 @router.get("/stats", response_model=WaterLogStats)
 def get_water_stats(
@@ -93,11 +69,11 @@ def get_water_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Get water intake statistics for today"""
-    # Use TimezoneService for proper timezone handling
+    # Use TimezoneHandler for proper timezone handling
     user_timezone = current_user.timezone or "UTC"
     
     # Get today's date range in user's timezone
-    start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+    start_of_day, end_of_day = TimezoneHandler.get_user_timezone_range(datetime.now(), user_timezone)
     
     # Get logs for today in user's timezone using datetime comparison
     from sqlalchemy import and_
@@ -131,7 +107,7 @@ def get_water_stats(
     
     return WaterLogStats(**stats)
 
-@router.post("/", response_model=WaterLog)
+@router.post("/", response_model=dict)
 def create_water_log(
     *,
     db: Session = Depends(get_db),
@@ -139,7 +115,8 @@ def create_water_log(
     water_log_in: WaterLogCreate
 ):
     """Create a new water log entry"""
-    return water_log.create_with_user(db, obj_in=water_log_in, user_id=current_user.id)
+    log = water_log.create_with_user(db, obj_in=water_log_in, user_id=current_user.id)
+    return HealthLogResponseFormatter.format_water_log_response(log)
 
 @router.post("/quick-log")
 def quick_log_water(
@@ -166,7 +143,7 @@ def quick_log_water(
         "stats": stats
     }
 
-@router.get("/{id}", response_model=WaterLog)
+@router.get("/{id}", response_model=dict)
 def get_water_log(
     *,
     db: Session = Depends(get_db),
@@ -181,9 +158,9 @@ def get_water_log(
     if log_entry.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to access this water log")
     
-    return log_entry
+    return HealthLogResponseFormatter.format_water_log_response(log_entry)
 
-@router.put("/{id}", response_model=WaterLog)
+@router.put("/{id}", response_model=dict)
 def update_water_log(
     *,
     db: Session = Depends(get_db),
@@ -203,7 +180,8 @@ def update_water_log(
     if water_log_in.amount_ml is not None:
         water_log_in.amount_oz = water_log_in.amount_ml * 0.033814
     
-    return water_log.update(db, db_obj=log_entry, obj_in=water_log_in)
+    updated_log = water_log.update(db, db_obj=log_entry, obj_in=water_log_in)
+    return HealthLogResponseFormatter.format_water_log_response(updated_log)
 
 @router.delete("/{id}")
 def delete_water_log(

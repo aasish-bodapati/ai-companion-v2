@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -15,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { useToast } from '../../contexts/ToastContext';
 import { 
   formatTimeInUserTimezone, 
   formatDateInUserTimezone, 
@@ -45,6 +45,7 @@ interface FitnessLogsViewProps {
 }
 
 export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
+  const { showToast, showRapidToast } = useToast();
   const [logs, setLogs] = useState<WorkoutLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,6 +89,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const loadCategories = async () => {
     try {
       const categoriesData = await exerciseCategoryService.getCategories();
+      console.log('🔍 [FITNESS LOGS] Loaded categories:', categoriesData);
       setCategories(categoriesData);
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -114,17 +116,58 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
 
   // Look up exercise category from database
   const getExerciseCategory = (exerciseName: string) => {
-    const exercise = exerciseDatabase.find(ex => 
+    console.log('🔍 [FITNESS LOGS] Looking up category for exercise:', exerciseName);
+    
+    // First try exact match
+    let exercise = exerciseDatabase.find(ex => 
       ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
     );
-    const category = exercise?.category;
+    
+    // If no exact match, try fuzzy matching
+    if (!exercise) {
+      const normalizedSearchName = exerciseName.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+        .replace(/\s+/g, ' ') // Normalize spaces
+        .trim();
+      
+      exercise = exerciseDatabase.find(ex => {
+        if (!ex.name) return false;
+        
+        const normalizedDbName = ex.name.toLowerCase()
+          .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+          .replace(/\s+/g, ' ') // Normalize spaces
+          .trim();
+        
+        // Check if the search name is contained in the DB name or vice versa
+        return normalizedDbName.includes(normalizedSearchName) || 
+               normalizedSearchName.includes(normalizedDbName) ||
+               // Check for common variations
+               (normalizedSearchName.includes('arnold') && normalizedDbName.includes('arnold')) ||
+               (normalizedSearchName.includes('rear delt') && normalizedDbName.includes('rear delt')) ||
+               (normalizedSearchName.includes('tricep') && normalizedDbName.includes('tricep'));
+      });
+    }
+    
+    console.log('🔍 [FITNESS LOGS] Found exercise:', exercise);
+    
+    // Use logging_category first, then fallback to category
+    const category = exercise?.logging_category || exercise?.category;
+    console.log('🔍 [FITNESS LOGS] Category from exercise:', category);
     
     // Check if category exists in our loaded categories from DB
     if (category && categories.find(cat => cat.id === category)) {
+      console.log('🔍 [FITNESS LOGS] Found category in categories list:', category);
       return category;
     }
     
-    return 'unknown'; // Show "Category Not Found" badge for unknown categories
+    // Default to 'weighted' for exercises that exist but don't have category info
+    if (exercise) {
+      console.log('🔍 [FITNESS LOGS] Exercise found, defaulting to weighted');
+      return 'weighted';
+    }
+    
+    console.log('🔍 [FITNESS LOGS] Exercise not found, returning unknown');
+    return 'unknown'; // Show "Category Not Found" badge for unknown exercises
   };
 
   const loadLogs = async (date?: Date) => {
@@ -187,7 +230,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setLogs(sortedLogs);
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
-      Alert.alert('Error', 'Failed to load fitness logs. Please try again.');
+      showToast('Failed to load fitness logs. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -249,7 +292,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setLogs(processedLogs);
     } catch (error) {
       console.error('Failed to load fitness logs:', error);
-      Alert.alert('Error', 'Failed to load fitness logs. Please try again.');
+      showToast('Failed to load fitness logs. Please try again.', 'error');
     } finally {
       setNavigating(false);
     }
@@ -309,34 +352,18 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     setEditModalVisible(true);
   };
 
-  const handleDeleteLog = (logId: number) => {
-    Alert.alert(
-      'Delete Workout',
-      'Are you sure you want to delete this workout? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setDeletingLogId(logId);
-              await fitnessService.deleteWorkout(logId);
-              await loadLogs(); // Refresh the logs
-              Alert.alert('Success', 'Workout deleted successfully');
-            } catch (error) {
-              console.error('Failed to delete workout:', error);
-              Alert.alert('Error', 'Failed to delete workout. Please try again.');
-            } finally {
-              setDeletingLogId(null);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteLog = async (logId: number) => {
+    try {
+      setDeletingLogId(logId);
+      await fitnessService.deleteWorkout(logId);
+      await loadLogs(); // Refresh the logs
+      showRapidToast('Workout deleted successfully', 'success');
+    } catch (error) {
+      console.error('Failed to delete workout:', error);
+      showToast('Failed to delete workout. Please try again.', 'error');
+    } finally {
+      setDeletingLogId(null);
+    }
   };
 
   const handleExerciseUpdate = (exerciseIndex: number, field: string, value: string) => {
@@ -374,29 +401,15 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setEditingLog(null);
       setEditExercises([]);
 
-      Alert.alert('Success', 'Workout log updated successfully!');
+      showToast('Workout log updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update log:', error);
-      Alert.alert('Error', 'Failed to update workout log. Please try again.');
+      showToast('Failed to update workout log. Please try again.', 'error');
     }
   };
 
   const handleDeleteExercise = (logId: number, exerciseIndex: number) => {
-    Alert.alert(
-      'Delete Exercise',
-      'Are you sure you want to delete this exercise from your workout log? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => confirmDeleteExercise(logId, exerciseIndex),
-        },
-      ]
-    );
+    confirmDeleteExercise(logId, exerciseIndex);
   };
 
   const confirmDeleteExercise = async (logId: number, exerciseIndex: number) => {
@@ -406,7 +419,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       // Find the log and remove the specific exercise
       const logToUpdate = logs.find(log => log.id === logId);
       if (!logToUpdate || !logToUpdate.exercises) {
-        Alert.alert('Error', 'Exercise not found.');
+        showToast('Exercise not found.', 'error');
         return;
       }
       
@@ -425,7 +438,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       if (updatedExercises.length === 0) {
         await fitnessService.deleteWorkout(logId);
         setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-        Alert.alert('Success', 'Exercise deleted. Workout log removed as it had no remaining exercises.');
+        showRapidToast('Exercise deleted. Workout log removed as it had no remaining exercises.', 'success');
       } else {
         // Update the log with remaining exercises
         await routineService.updateWorkoutLogExercises(logId, updatedExercises);
@@ -442,11 +455,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
           )
         );
         
-        Alert.alert('Success', 'Exercise deleted successfully!');
+        showRapidToast('Exercise deleted successfully!', 'success');
       }
     } catch (error) {
       console.error('Failed to delete exercise:', error);
-      Alert.alert('Error', 'Failed to delete exercise. Please try again.');
+      showToast('Failed to delete exercise. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);
     }
@@ -462,10 +475,10 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       // Remove from logs array
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
-      Alert.alert('Success', 'Workout log deleted successfully!');
+      showRapidToast('Workout log deleted successfully!', 'success');
     } catch (error) {
       console.error('Failed to delete log:', error);
-      Alert.alert('Error', 'Failed to delete workout log. Please try again.');
+      showToast('Failed to delete workout log. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);
     }
@@ -663,10 +676,38 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                     </View>
                   </View>
                   
-                  {/* Sets/reps and time on same line */}
+                  {/* Exercise stats and time on same line */}
                   <View style={styles.exerciseStatsRow}>
                     <Text style={styles.exerciseStatText}>
-                      {String(exercise.sets || 0)} sets x {String(exercise.reps || 0)} reps
+                      {(() => {
+                        // Determine exercise type based on available data
+                        const hasDistance = exercise.distance && Number(exercise.distance) > 0;
+                        const hasDuration = exercise.duration_minutes && Number(exercise.duration_minutes) > 0;
+                        const hasSets = exercise.sets && Number(exercise.sets) > 0;
+                        const hasReps = exercise.reps && exercise.reps.trim() !== '';
+                        
+                        if (hasDistance && hasDuration) {
+                          // Distance-based exercises with both distance and duration
+                          return `${exercise.distance}km in ${exercise.duration_minutes}min`;
+                        } else if (hasDistance) {
+                          // Distance-based exercises with only distance
+                          return `${exercise.distance}km`;
+                        } else if (hasDuration) {
+                          // Duration-based exercises
+                          return `${exercise.duration_minutes}min`;
+                        } else if (hasSets && hasReps) {
+                          // Weight/bodyweight exercises with both sets and reps
+                          return `${exercise.sets} sets x ${exercise.reps} reps`;
+                        } else if (hasSets) {
+                          // Only sets available
+                          return `${exercise.sets} sets`;
+                        } else if (hasReps) {
+                          // Only reps available
+                          return `${exercise.reps} reps`;
+                        } else {
+                          return 'No data';
+                        }
+                      })()}
                     </Text>
                     <View style={styles.exerciseTimeContainer}>
                       <Text style={styles.exerciseTimeText}>

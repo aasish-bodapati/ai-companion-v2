@@ -4,8 +4,11 @@ Simplified Routine API endpoints - Only what we actually need
 
 from typing import List
 import uuid
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
@@ -778,11 +781,11 @@ def get_today_workout(
         
         print(f"📅 [TODAY WORKOUT] Today is: {today_name} (weekday: {day_of_week})")
         
-        # Get today's workout day
+        # Get today's workout day (case-insensitive)
         from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
         workout_day = db.query(RoutineWorkoutDay).filter(
             RoutineWorkoutDay.routine_id == routine.id,
-            RoutineWorkoutDay.day_name == today_name
+            RoutineWorkoutDay.day_name.ilike(today_name)
         ).first()
         
         if not workout_day:
@@ -1054,7 +1057,8 @@ def update_routine_with_workout_plan(
         if not routine:
             raise HTTPException(status_code=404, detail="Routine not found")
 
-        if routine.created_by_user_id != current_user.id:
+        # Allow users to edit their own routines OR system-created routines (templates)
+        if routine.created_by_user_id is not None and routine.created_by_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this routine")
 
         # Filter out tags field since the model doesn't support it
@@ -1062,9 +1066,17 @@ def update_routine_with_workout_plan(
         if "tags" in routine_data_dict:
             del routine_data_dict["tags"]
         
-        routine_data = SimpleRoutineUpdate(**routine_data_dict)
+        try:
+            routine_data = SimpleRoutineUpdate(**routine_data_dict)
+        except Exception as validation_error:
+            logger.error(f"❌ [ROUTINE UPDATE] Validation error: {str(validation_error)}")
+            logger.error(f"❌ [ROUTINE UPDATE] Request data: {request_data}")
+            logger.error(f"❌ [ROUTINE UPDATE] Routine data dict: {routine_data_dict}")
+            raise HTTPException(status_code=422, detail=f"Validation error: {str(validation_error)}")
         workout_days = request_data.get("workout_days", [])
-
+        
+        logger.info(f"🔍 [ROUTINE UPDATE] Processing {len(workout_days)} workout days")
+        logger.info(f"🔍 [ROUTINE UPDATE] Workout days data: {workout_days}")
 
         # Update routine basic info
         routine.name = routine_data.name
@@ -1074,11 +1086,16 @@ def update_routine_with_workout_plan(
         # Note: tags field not supported in model
 
         # Delete existing workout days and exercises
-        from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
-        existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == int(id)).all()
-        for day in existing_workout_days:
-            db.query(RoutineExercise).filter(RoutineExercise.workout_day_id == day.id).delete()
-            db.delete(day)
+        try:
+            from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
+            existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == int(id)).all()
+            logger.info(f"🔍 [ROUTINE UPDATE] Found {len(existing_workout_days)} existing workout days to delete")
+            for day in existing_workout_days:
+                db.query(RoutineExercise).filter(RoutineExercise.workout_day_id == day.id).delete()
+                db.delete(day)
+        except Exception as e:
+            logger.error(f"❌ [ROUTINE UPDATE] Error deleting existing workout days: {str(e)}")
+            raise
 
         # Add new workout days and exercises
         if workout_days and len(workout_days) > 0:
@@ -1129,7 +1146,12 @@ def update_routine_with_workout_plan(
         db.refresh(routine)
         return routine
 
+    except HTTPException as e:
+        # Re-raise HTTP exceptions (like 403, 404) as-is
+        raise e
     except Exception as e:
+        logger.error(f"❌ [ROUTINE UPDATE] Full error details: {str(e)}", exc_info=True)
+        logger.error(f"❌ [ROUTINE UPDATE] Request data: {request_data}")
         raise HTTPException(status_code=422, detail=f"Failed to update routine: {str(e)}")
 
 @router.put("/{id}", response_model=SimpleRoutine)
@@ -1145,8 +1167,8 @@ def update_routine(
     if not routine_obj:
         raise HTTPException(status_code=404, detail="Routine not found")
 
-    # Check if user owns this routine
-    if routine_obj.created_by_user_id != current_user.id:
+    # Check if user owns this routine OR if it's a system-created routine (template)
+    if routine_obj.created_by_user_id is not None and routine_obj.created_by_user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized to update this routine")
 
     return simple_routine.update(db, db_obj=routine_obj, obj_in=routine_in)

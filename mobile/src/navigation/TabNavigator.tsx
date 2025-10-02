@@ -11,7 +11,7 @@ import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
 import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
-import MealLoggingModal from '../components/nutrition/MealLoggingModal';
+import MealLoggingModal from '../components/nutrition/MealLoggingModalOriginal';
 
 export type TabParamList = {
   Dashboard: undefined;

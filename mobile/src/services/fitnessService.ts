@@ -36,6 +36,14 @@ export interface ExerciseType {
   equipment?: string;
   instructions?: string;
   difficulty: string;
+  logging_category: string;
+  logging_category_info?: {
+    id: string;
+    name: string;
+    display_name: string;
+    color?: string;
+    icon?: string;
+  };
 }
 
 export interface WorkoutCategory {
@@ -47,6 +55,17 @@ export interface WorkoutCategory {
   icon?: string;
   color?: string;
   logging_attributes?: any;
+}
+
+export interface LatestExerciseData {
+  exercise_name: string;
+  sets?: number;
+  reps?: string;
+  weight_kg?: number;
+  duration_minutes?: number;
+  rest_time?: number;
+  notes?: string;
+  workout_date?: string;
 }
 
 class FitnessService extends BaseService {
@@ -193,18 +212,43 @@ class FitnessService extends BaseService {
     return response.exercises || [];
   }
 
-  async getLatestWorkoutForExercise(exerciseName: string): Promise<any> {
+  async getLatestExerciseData(exerciseName: string): Promise<LatestExerciseData | null> {
     try {
       const response = await this.makeRequest(
         () => apiClient.get('/health/fitness-logs/latest-exercise', {
           params: { exercise_name: exerciseName }
         }),
-        'FITNESS SERVICE - getLatestWorkoutForExercise'
+        'FITNESS SERVICE - getLatestExerciseData'
       );
+      
+      // Check if response contains exercise data or just a message
+      if (response.message) {
+        console.log(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
+        return null;
+      }
+      
+      console.log(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
       return response;
     } catch (error) {
-      console.error('Error fetching latest workout for exercise:', error);
+      console.log(`🔍 [FITNESS SERVICE] Error fetching latest exercise data for ${exerciseName}:`, error);
       return null;
+    }
+  }
+
+  async isExerciseLoggedToday(exerciseName: string): Promise<boolean> {
+    try {
+      const response = await this.makeRequest(
+        () => apiClient.get('/health/fitness-logs/exercise-logged-today', {
+          params: { exercise_name: exerciseName }
+        }),
+        'FITNESS SERVICE - isExerciseLoggedToday'
+      );
+      
+      console.log(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
+      return response.logged_today || false;
+    } catch (error) {
+      console.log(`🔍 [FITNESS SERVICE] Error checking if exercise was logged today:`, error);
+      return false;
     }
   }
 }

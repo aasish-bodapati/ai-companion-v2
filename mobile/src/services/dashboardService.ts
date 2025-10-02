@@ -4,13 +4,10 @@ export interface TodayStats {
   workouts: number;
   meals: number;
   water_ml: number;
-  calories_burned: number;
-  calories_consumed: number;
   total_minutes: number;
   protein_g: number;
   carbs_g: number;
   fat_g: number;
-  net_calories: number;
 }
 
 export interface WeeklyProgress {

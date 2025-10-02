@@ -16,17 +16,17 @@ from app.schemas.health.fitness_log import FitnessLog as FitnessLogSchema, Fitne
 from app.crud.health.fitness_log import fitness_log
 # from app.api.common.fitness_endpoints import fitness_endpoints  # Not used in this implementation
 
-# Import our stable utilities (same as fitness)
+# Import our centralized utilities
 from app.utils.date_helpers import DateRangeCalculator, DateValidator
-from app.api.common.response_formatters import LoggingResponseFormatter
+from app.api.common.response_formatter import HealthLogResponseFormatter
 from app.services.common.statistics import HealthStatisticsCalculator
-from app.utils.timezone_service import TimezoneService
+from app.utils.timezone_handler import TimezoneHandler
 
 router = APIRouter()
 
 @router.get("/latest-exercise")
 async def get_latest_workout_for_exercise(
-    exercise_name: str = Query(..., description="Name of the exercise"),
+    exercise_name: str = Query(..., description="Name of the exercise", min_length=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -34,61 +34,82 @@ async def get_latest_workout_for_exercise(
     try:
         from sqlalchemy import text
         
-        print(f"🔍 [BACKEND] Looking for exercise: '{exercise_name}' for user_id: {current_user.id}")
+        # Validate exercise name
+        if not exercise_name or not exercise_name.strip():
+            return {"message": "Exercise name is required"}
         
-        # Query for the most recent fitness log containing this exercise
-        # Use PostgreSQL JSONB operators to search within the JSON array
+        exercise_name = exercise_name.strip()
+        print(f"[BACKEND] Looking for exercise: '{exercise_name}' for user_id: {current_user.id}")
+        
+        # Query for the most recent fitness log containing this exact exercise
+        # Use PostgreSQL JSONB operators to search for exact exercise name match
         query = text("""
             SELECT id, exercises, activity_date, created_at
             FROM fitness_logs 
-            WHERE user_id = :user_id AND exercises::text ILIKE :exercise_pattern
+            WHERE user_id = :user_id 
+            AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements(exercises) AS exercise
+                WHERE exercise->>'exercise_name' ILIKE :exercise_name
+            )
             ORDER BY created_at DESC 
             LIMIT 1
         """)
         
-        exercise_pattern = f'%{exercise_name}%'
-        print(f"🔍 [BACKEND] Search pattern: '{exercise_pattern}'")
+        print(f"[BACKEND] Searching for exact exercise name: '{exercise_name}'")
         
         result = db.execute(query, {
             "user_id": current_user.id,
-            "exercise_pattern": exercise_pattern
+            "exercise_name": exercise_name
         })
         row = result.fetchone()
         
-        print(f"🔍 [BACKEND] Query result: {row}")
+        print(f"[BACKEND] Query result: {row}")
         
         if not row:
-            print(f"🔍 [BACKEND] No rows found for exercise: '{exercise_name}'")
+            print(f"[BACKEND] No rows found for exercise: '{exercise_name}'")
             return {"message": "No previous workouts found for this exercise"}
         
         # Parse the exercises JSON to find the specific exercise
         try:
             exercises_data = json.loads(row.exercises) if isinstance(row.exercises, str) else row.exercises
-            print(f"🔍 [BACKEND] Parsed exercises data: {exercises_data}")
+            print(f"[BACKEND] Parsed exercises data: {exercises_data}")
             
             if isinstance(exercises_data, list) and exercises_data:
-                # Find the exercise with matching name
+                # Find the exercise with matching name - normalize both names for comparison
+                def normalize_exercise_name(name):
+                    """Normalize exercise name for comparison"""
+                    if not name:
+                        return ""
+                    # Convert to lowercase, remove extra spaces, and standardize hyphens
+                    return name.lower().strip().replace('_', '-').replace(' ', '-')
+                
+                normalized_search_name = normalize_exercise_name(exercise_name)
+                print(f"[BACKEND] Normalized search name: '{normalized_search_name}'")
+                
                 for exercise in exercises_data:
                     exercise_name_in_data = exercise.get('exercise_name', '')
-                    print(f"🔍 [BACKEND] Comparing '{exercise_name_in_data.lower()}' with '{exercise_name.lower()}'")
+                    normalized_data_name = normalize_exercise_name(exercise_name_in_data)
+                    print(f"[BACKEND] Comparing '{normalized_data_name}' with '{normalized_search_name}'")
                     
-                    if exercise_name_in_data.lower() == exercise_name.lower():
+                    if normalized_data_name == normalized_search_name:
                         result_data = {
                             "exercise_name": exercise.get('exercise_name'),
                             "sets": exercise.get('sets'),
                             "reps": exercise.get('reps'),
                             "weight_kg": exercise.get('weight_kg'),
+                            "weight_used": exercise.get('weight_used'),  # Alternative weight field
                             "duration_minutes": exercise.get('duration_minutes'),
+                            "distance": exercise.get('distance'),
                             "rest_time": exercise.get('rest_time'),
                             "notes": exercise.get('notes'),
                             "workout_date": row.activity_date.isoformat() if row.activity_date else None
                         }
-                        print(f"🔍 [BACKEND] Found matching exercise: {result_data}")
+                        print(f"[BACKEND] Found matching exercise: {result_data}")
                         return result_data
                         
-            print(f"🔍 [BACKEND] No matching exercise found in data")
+            print(f"[BACKEND] No matching exercise found in data")
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"🔍 [BACKEND] Error parsing exercises data: {e}")
+            print(f"[BACKEND] Error parsing exercises data: {e}")
             pass
         
         return {"message": "No previous workouts found for this exercise"}
@@ -96,32 +117,67 @@ async def get_latest_workout_for_exercise(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get latest workout: {str(e)}")
 
+@router.get("/exercise-logged-today")
+async def check_exercise_logged_today(
+    exercise_name: str = Query(..., description="Name of the exercise", min_length=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Check if a specific exercise was logged today."""
+    try:
+        from sqlalchemy import text
+        from datetime import datetime, timezone
+        
+        # Validate exercise name
+        if not exercise_name or not exercise_name.strip():
+            return {"logged_today": False, "message": "Exercise name is required"}
+        
+        exercise_name = exercise_name.strip()
+        
+        # Get today's date range in user's timezone (assuming UTC for now)
+        today = datetime.now(timezone.utc).date()
+        start_of_day = datetime.combine(today, datetime.min.time()).replace(tzinfo=timezone.utc)
+        end_of_day = datetime.combine(today, datetime.max.time()).replace(tzinfo=timezone.utc)
+        
+        print(f"[BACKEND] Checking if exercise '{exercise_name}' was logged today for user_id: {current_user.id}")
+        print(f"[BACKEND] Date range: {start_of_day} to {end_of_day}")
+        
+        # Query for today's fitness logs containing this exact exercise
+        query = text("""
+            SELECT id, exercises, activity_date, created_at
+            FROM fitness_logs 
+            WHERE user_id = :user_id 
+            AND activity_date >= :start_date
+            AND activity_date <= :end_date
+            AND EXISTS (
+                SELECT 1 FROM jsonb_array_elements(exercises) AS exercise
+                WHERE exercise->>'exercise_name' ILIKE :exercise_name
+            )
+            ORDER BY created_at DESC 
+            LIMIT 1
+        """)
+        
+        result = db.execute(query, {
+            "user_id": current_user.id,
+            "exercise_name": exercise_name,
+            "start_date": start_of_day,
+            "end_date": end_of_day
+        })
+        row = result.fetchone()
+        
+        if not row:
+            print(f"[BACKEND] Exercise '{exercise_name}' was NOT logged today")
+            return {"logged_today": False, "message": "Exercise not logged today"}
+        
+        print(f"[BACKEND] Exercise '{exercise_name}' WAS logged today")
+        return {"logged_today": True, "message": "Exercise was logged today"}
+        
+    except Exception as e:
+        print(f"[BACKEND] Error checking if exercise was logged today: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to check exercise status: {str(e)}")
 
-def get_user_timezone_range(date_obj: datetime, user_timezone: str = "UTC"):
-    """Get start and end of day in user's timezone, converted to UTC for database queries."""
-    # Common timezone mappings
-    timezone_offsets = {
-        "UTC": 0,
-        "Asia/Kolkata": 5.5,  # IST
-        "America/New_York": -5,  # EST
-        "America/Los_Angeles": -8,  # PST
-        "Europe/London": 0,  # GMT
-        "Asia/Tokyo": 9,  # JST
-        "Australia/Sydney": 10,  # AEST
-    }
-    
-    offset_hours = timezone_offsets.get(user_timezone, 0)
-    user_tz = timezone(timedelta(hours=offset_hours))
-    
-    # Get start and end of day in user's timezone
-    start_of_day_user = datetime.combine(date_obj, datetime.min.time()).replace(tzinfo=user_tz)
-    end_of_day_user = datetime.combine(date_obj, datetime.max.time()).replace(tzinfo=user_tz)
-    
-    # Convert to UTC for database queries
-    start_of_day_utc = start_of_day_user.astimezone(timezone.utc)
-    end_of_day_utc = end_of_day_user.astimezone(timezone.utc)
-    
-    return start_of_day_utc, end_of_day_utc
+
+# Removed duplicated timezone function - now using TimezoneHandler
 
 # Note: Generic endpoints are available but not included to avoid conflicts
 # Use fitness_endpoints.create_fitness_router() if you want to use the generic patterns
@@ -175,38 +231,13 @@ def get_fitness_logs(
         # Use the generic endpoint logic
         # from app.api.common.fitness_endpoints import fitness_endpoints  # Not used
         
-        # Parse date filters - handle both ISO format and YYYY-MM-DD format
-        start_date_obj = None
-        end_date_obj = None
+        # Parse date filters using centralized handler
+        start_date_obj = TimezoneHandler.parse_date_string(start_date) if start_date else None
+        end_date_obj = TimezoneHandler.parse_date_string(end_date) if end_date else None
         
-        if start_date:
-            try:
-                # Try ISO format first (from mobile app)
-                start_date_obj = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
-            except ValueError:
-                try:
-                    # Fall back to YYYY-MM-DD format - make it timezone-aware
-                    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-                    # Convert to UTC to match database timezone
-                    start_date_obj = start_date_obj.replace(tzinfo=timezone.utc)
-                except ValueError:
-                    # If both fail, skip the filter
-                    pass
-        
-        if end_date:
-            try:
-                # Try ISO format first (from mobile app)
-                end_date_obj = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
-            except ValueError:
-                try:
-                    # Fall back to YYYY-MM-DD format - make it timezone-aware
-                    end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
-                    # Set to end of day and convert to UTC
-                    end_date_obj = end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
-                    end_date_obj = end_date_obj.replace(tzinfo=timezone.utc)
-                except ValueError:
-                    # If both fail, skip the filter
-                    pass
+        # If end_date is provided, set it to end of day
+        if end_date_obj:
+            end_date_obj = end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
         
         # Use period-based filtering if no custom dates
         if not start_date_obj and not end_date_obj:
@@ -255,35 +286,8 @@ def get_fitness_logs(
         
         stats = HealthStatisticsCalculator.calculate_fitness_stats(all_logs)
         
-        # Format response using the formatter
-        formatter = LoggingResponseFormatter()
-        logs_data = []
-        for log in logs:
-            # Parse exercises from JSON string
-            exercises = []
-            if log.exercises:
-                try:
-                    exercises = json.loads(log.exercises) if isinstance(log.exercises, str) else log.exercises
-                except (json.JSONDecodeError, TypeError):
-                    exercises = []
-            
-            log_dict = {
-                "id": str(log.id),
-                "user_id": str(log.user_id),
-                "routine_id": None,  # Not available in current structure
-                "routine_name": None,  # Not available in current structure
-                "workout_name": log.activity_name,  # Use activity_name as workout_name
-                "exercises": exercises,  # Include exercises data
-                "unit": getattr(log, 'unit', 'kg'),  # Include unit field
-                "duration_minutes": int(log.duration_minutes) if log.duration_minutes else 0,
-                "calories_burned": int(log.calories_burned) if log.calories_burned else 0,
-                "difficulty_rating": 0,  # Not tracked in current structure
-                "notes": log.notes,
-                "logged_at": log.activity_date.isoformat() if log.activity_date else None,
-                "activity_date": log.activity_date.isoformat() if log.activity_date else None,
-                "created_at": log.created_at.isoformat() if log.created_at else None
-            }
-            logs_data.append(log_dict)
+        # Format response using centralized formatter
+        logs_data = [HealthLogResponseFormatter.format_fitness_log_response(log) for log in logs]
 
         print(f"🏋️ [FITNESS LOGS ENDPOINT] Returning {len(logs_data)} logs")
         for i, log in enumerate(logs_data):
@@ -313,15 +317,15 @@ def get_fitness_stats(
 ):
     """Get fitness statistics."""
     try:
-        # Use TimezoneService for proper timezone handling
+        # Use TimezoneHandler for proper timezone handling
         user_timezone = current_user.timezone or "UTC"
         
         if period == "week":
-            # Get week range using TimezoneService
-            start_date, end_date = TimezoneService.get_user_week_range(user_timezone)
+            # Get week range using TimezoneHandler
+            start_date, end_date = TimezoneHandler.get_user_week_range(user_timezone)
         elif period == "month":
-            # Get month range using TimezoneService
-            start_date, end_date = TimezoneService.get_user_month_range(user_timezone)
+            # Get month range using TimezoneHandler
+            start_date, end_date = TimezoneHandler.get_user_month_range(user_timezone)
         else:
             # Use existing logic for all
             start_date, end_date = DateRangeCalculator.get_period_range(period)
@@ -348,11 +352,11 @@ def get_todays_fitness_logs(
 ):
     """Get today's fitness logs."""
     try:
-        # Use TimezoneService for proper timezone handling
+        # Use TimezoneHandler for proper timezone handling
         user_timezone = current_user.timezone or "UTC"
         
         # Get today's date range in user's timezone
-        start_of_day, end_of_day = TimezoneService.get_user_date_range(user_timezone)
+        start_of_day, end_of_day = TimezoneHandler.get_user_timezone_range(datetime.now(), user_timezone)
         
         logs = fitness_log.get_user_logs(
             db,
@@ -361,29 +365,7 @@ def get_todays_fitness_logs(
             end_date=end_of_day
         )
         
-        logs_data = []
-        for log in logs:
-            exercises = []
-            if log.exercises:
-                try:
-                    exercises = json.loads(log.exercises) if isinstance(log.exercises, str) else log.exercises
-                except (json.JSONDecodeError, TypeError):
-                    exercises = []
-            
-            log_dict = {
-                "id": str(log.id),
-                "user_id": str(log.user_id),
-                "activity_type": log.activity_type,
-                "activity_name": log.activity_name,
-                "exercises": exercises,
-                "duration_minutes": log.duration_minutes,
-                "calories_burned": log.calories_burned,
-                "unit": getattr(log, 'unit', 'kg'),
-                "notes": log.notes,
-                "activity_date": log.activity_date.isoformat() if log.activity_date else None,
-                "created_at": log.created_at.isoformat() if log.created_at else None
-            }
-            logs_data.append(log_dict)
+        logs_data = [HealthLogResponseFormatter.format_fitness_log_response(log) for log in logs]
         
         return logs_data
         
@@ -402,29 +384,7 @@ def get_recent_fitness_logs(
     try:
         logs = fitness_log.get_recent_logs(db, user_id=current_user.id, limit=limit)
         
-        logs_data = []
-        for log in logs:
-            exercises = []
-            if log.exercises:
-                try:
-                    exercises = json.loads(log.exercises) if isinstance(log.exercises, str) else log.exercises
-                except (json.JSONDecodeError, TypeError):
-                    exercises = []
-            
-            log_dict = {
-                "id": str(log.id),
-                "user_id": str(log.user_id),
-                "activity_type": log.activity_type,
-                "activity_name": log.activity_name,
-                "exercises": exercises,
-                "duration_minutes": log.duration_minutes,
-                "calories_burned": log.calories_burned,
-                "unit": getattr(log, 'unit', 'kg'),
-                "notes": log.notes,
-                "activity_date": log.activity_date.isoformat() if log.activity_date else None,
-                "created_at": log.created_at.isoformat() if log.created_at else None
-            }
-            logs_data.append(log_dict)
+        logs_data = [HealthLogResponseFormatter.format_fitness_log_response(log) for log in logs]
         
         return logs_data
         
@@ -462,30 +422,7 @@ def create_fitness_log(
         
         log = fitness_log.create_with_user(db, obj_in=processed_log_data, user_id=current_user.id)
 
-        # Parse exercises from JSON string
-        exercises = []
-        if log.exercises:
-            try:
-                exercises = json.loads(log.exercises) if isinstance(log.exercises, str) else log.exercises
-            except (json.JSONDecodeError, TypeError):
-                exercises = []
-
-        return {
-            "id": str(log.id),
-            "user_id": str(log.user_id),
-            "routine_id": None,  # Not available in current model
-            "routine_name": None,  # Not available in current model
-            "workout_name": log.activity_name,  # Map activity_name to workout_name for frontend
-            "exercises": exercises,  # Return actual exercises from database
-            "duration_minutes": log.duration_minutes,
-            "calories_burned": log.calories_burned,
-            "difficulty_rating": None,  # Not available in current model
-            "notes": log.notes,
-            "logged_at": log.activity_date.isoformat() if log.activity_date else None,  # Map activity_date to logged_at
-            "activity_date": log.activity_date.isoformat() if log.activity_date else None,
-            "created_at": log.created_at.isoformat() if log.created_at else None,
-            "unit": log.unit  # Include unit field
-        }
+        return HealthLogResponseFormatter.format_fitness_log_response(log)
     except Exception as e:
         import traceback
         logger.error(f"Error creating fitness log: {str(e)}")
@@ -513,20 +450,7 @@ def update_fitness_log(
 
         updated_log = fitness_log.update(db, db_obj=log, obj_in=log_data)
 
-        return {
-            "id": str(updated_log.id),
-            "user_id": str(updated_log.user_id),
-            "activity_type": updated_log.activity_type,
-            "activity_name": updated_log.activity_name,
-            "exercises": json.loads(updated_log.exercises) if isinstance(updated_log.exercises, str) else updated_log.exercises,
-            "duration_minutes": updated_log.duration_minutes,
-            "calories_burned": updated_log.calories_burned,
-            "unit": updated_log.unit,
-            "notes": updated_log.notes,
-            "activity_date": updated_log.activity_date.isoformat() if updated_log.activity_date else None,
-            "created_at": updated_log.created_at.isoformat() if updated_log.created_at else None,
-            "updated_at": updated_log.updated_at.isoformat() if updated_log.updated_at else None
-        }
+        return HealthLogResponseFormatter.format_fitness_log_response(updated_log)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to update fitness log")
 

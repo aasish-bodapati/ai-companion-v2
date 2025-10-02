@@ -17,10 +17,11 @@ from app.models.health.fitness_log import NutritionLog
 from app.schemas.health.fitness_log import NutritionLog as NutritionLogSchema, NutritionLogCreate, NutritionLogUpdate
 from app.crud.health.fitness_log import nutrition_log
 
-# Import our stable utilities (same as fitness)
+# Import our centralized utilities
 from app.utils.date_helpers import DateRangeCalculator, DateValidator
-from app.api.common.response_formatters import LoggingResponseFormatter
+from app.api.common.response_formatter import HealthLogResponseFormatter
 from app.services.common.statistics import HealthStatisticsCalculator
+from app.utils.timezone_handler import TimezoneHandler
 
 router = APIRouter()
 
@@ -47,23 +48,9 @@ def get_nutrition_logs(
         custom_start = None
         custom_end = None
         
-        if start_date:
-            custom_start = DateValidator.parse_date_string(start_date)
-            if not custom_start:
-                raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD")
-            # Convert to timezone-aware datetime in user's timezone
-            from app.utils.timezone_service import TimezoneService
-            user_tz = TimezoneService.get_user_timezone(user_timezone)
-            custom_start = user_tz.localize(custom_start)
-        
-        if end_date:
-            custom_end = DateValidator.parse_date_string(end_date)
-            if not custom_end:
-                raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD")
-            # Convert to timezone-aware datetime in user's timezone
-            from app.utils.timezone_service import TimezoneService
-            user_tz = TimezoneService.get_user_timezone(user_timezone)
-            custom_end = user_tz.localize(custom_end)
+        # Parse date filters using centralized handler
+        custom_start = TimezoneHandler.parse_date_string(start_date) if start_date else None
+        custom_end = TimezoneHandler.parse_date_string(end_date) if end_date else None
         
         # If both start_date and end_date are provided, treat as custom period
         if custom_start and custom_end:
@@ -71,10 +58,6 @@ def get_nutrition_logs(
             # For single-day queries, set end_date to end of day
             if custom_start.date() == custom_end.date():
                 custom_end = custom_end.replace(hour=23, minute=59, second=59, microsecond=999999)
-            
-            # Convert to UTC for database queries
-            custom_start = custom_start.astimezone(pytz.UTC)
-            custom_end = custom_end.astimezone(pytz.UTC)
         
         print(f"🔍 [NUTRITION LOGS] Date filtering - period: {period}, custom_start: {custom_start}, custom_end: {custom_end}")
         
@@ -111,16 +94,20 @@ def get_nutrition_logs(
         # Use stable statistics calculator (same as fitness)
         stats = HealthStatisticsCalculator.calculate_nutrition_stats(all_logs)
 
-        # Convert logs to response format using stable formatter (same as fitness)
-        logs_data = [LoggingResponseFormatter.format_nutrition_log(log) for log in logs]
+        # Format response using centralized formatter
+        logs_data = [HealthLogResponseFormatter.format_nutrition_log_response(log) for log in logs]
+        
+        # Calculate pagination
+        total_count = len(all_logs)
+        pagination = {
+            "page": page,
+            "size": size,
+            "total": total_count,
+            "totalPages": (total_count + size - 1) // size
+        }
 
-        # Format pagination using stable formatter (same as fitness)
-        pagination = LoggingResponseFormatter.format_pagination_response(
-            page, size, len(all_logs)
-        )
-
-        return LoggingResponseFormatter.format_logs_response(
-            logs_data, stats, pagination, "logs"
+        return HealthLogResponseFormatter.format_logs_response(
+            logs_data, stats, pagination, "nutrition"
         )
 
     except Exception as e:
@@ -147,29 +134,15 @@ def get_nutrition_stats(
         
         if period == "week":
             print(f"🔍 [NUTRITION STATS] Calculating week range...")
-            # Get current week range in user's timezone
-            now_utc = datetime.now(timezone.utc)
-            offset_hours = {
-                "UTC": 0, "Asia/Kolkata": 5.5, "America/New_York": -5, 
-                "America/Los_Angeles": -8, "Europe/London": 0, 
-                "Asia/Tokyo": 9, "Australia/Sydney": 10
-            }.get(user_timezone, 0)
-            
-            user_tz = timezone(timedelta(hours=offset_hours))
-            now_user = now_utc.astimezone(user_tz)
-            
-            # Get start of week (Monday) in user's timezone
-            week_start = now_user - timedelta(days=now_user.weekday())
-            week_start = datetime.combine(week_start.date(), datetime.min.time()).replace(tzinfo=user_tz)
-            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
-            
-            # Convert to UTC
-            start_date_obj = week_start.astimezone(timezone.utc)
-            end_date_obj = week_end.astimezone(timezone.utc)
+            start_date_obj, end_date_obj = TimezoneHandler.get_user_week_range(user_timezone)
             print(f"🔍 [NUTRITION STATS] Week range: {start_date_obj} to {end_date_obj}")
+        elif period == "month":
+            print(f"🔍 [NUTRITION STATS] Calculating month range...")
+            start_date_obj, end_date_obj = TimezoneHandler.get_user_month_range(user_timezone)
+            print(f"🔍 [NUTRITION STATS] Month range: {start_date_obj} to {end_date_obj}")
         else:
             print(f"🔍 [NUTRITION STATS] Using DateRangeCalculator for period: {period}")
-            # Use existing logic for month/all
+            # Use existing logic for all
             start_date_obj, end_date_obj = DateRangeCalculator.get_period_range(period)
             print(f"🔍 [NUTRITION STATS] Period range: {start_date_obj} to {end_date_obj}")
 
@@ -189,7 +162,7 @@ def get_nutrition_stats(
         print(f"🔍 [NUTRITION STATS] Calculated stats: {stats}")
 
         print(f"🔍 [NUTRITION STATS] Formatting response...")
-        formatted_stats = LoggingResponseFormatter.format_stats_response(stats)
+        formatted_stats = stats
         print(f"🔍 [NUTRITION STATS] Formatted stats: {formatted_stats}")
 
         return formatted_stats
@@ -212,7 +185,7 @@ def get_nutrition_log(
     if not log or log.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Nutrition log not found")
 
-    return LoggingResponseFormatter.format_nutrition_log(log)
+    return HealthLogResponseFormatter.format_nutrition_log_response(log)
 
 @router.post("/", response_model=dict)
 def create_nutrition_log(
@@ -244,7 +217,7 @@ def create_nutrition_log(
         
         log = nutrition_log.create_with_user(db, obj_in=processed_log_data, user_id=current_user.id)
 
-        return LoggingResponseFormatter.format_nutrition_log(log)
+        return HealthLogResponseFormatter.format_nutrition_log_response(log)
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -270,7 +243,7 @@ def update_nutrition_log(
 
         updated_log = nutrition_log.update(db, db_obj=log, obj_in=log_data)
 
-        return LoggingResponseFormatter.format_nutrition_log(updated_log)
+        return HealthLogResponseFormatter.format_nutrition_log_response(updated_log)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to update nutrition log")
 
@@ -328,7 +301,7 @@ def get_recent_meals(
         )
 
         # Use stable response formatter (same as fitness)
-        return [LoggingResponseFormatter.format_nutrition_log(log) for log in logs]
+        return [HealthLogResponseFormatter.format_nutrition_log_response(log) for log in logs]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve recent meals")

@@ -213,28 +213,46 @@ async def get_exercise_categories(
 
 
 def _get_logging_category_info(logging_category: str, db: Session) -> dict:
-    """Get logging category information from database"""
+    """Get logging category information - using hardcoded data since categories are in exercises table"""
     if not logging_category:
-        return {"icon": "🏋️", "display_name": "Unknown", "color": "gray"}
+        return {"id": "unknown", "name": "unknown", "display_name": "Unknown", "color": "gray", "icon": "help-outline"}
     
-    category_record = db.query(ExerciseLoggingCategory).filter(
-        ExerciseLoggingCategory.name == logging_category
-    ).first()
-    
-    if category_record:
-        return {
-            "id": category_record.id,
-            "name": category_record.name,
-            "display_name": category_record.display_name,
-            "description": category_record.description,
-            "logging_attributes": get_form_schema(ExerciseLoggingCategoryEnum(logging_category)) if logging_category in [e.value for e in ExerciseLoggingCategoryEnum] else {},
-            "icon": category_record.icon or "🏋️",
-            "color": category_record.color or "blue"
+    # Hardcoded category data based on the actual categories in the exercises table
+    category_data = {
+        "weighted": {
+            "id": "weighted",
+            "name": "weighted", 
+            "display_name": "Weighted",
+            "color": "#ef4444",
+            "icon": "barbell-outline"
+        },
+        "bodyweight": {
+            "id": "bodyweight",
+            "name": "bodyweight",
+            "display_name": "Bodyweight", 
+            "color": "#3b82f6",
+            "icon": "person-outline"
+        },
+        "cardio_duration": {
+            "id": "cardio_duration",
+            "name": "cardio_duration",
+            "display_name": "Cardio & Duration",
+            "color": "#10b981", 
+            "icon": "heart-outline"
+        },
+        "distance_based": {
+            "id": "distance_based",
+            "name": "distance_based",
+            "display_name": "Distance-Based",
+            "color": "#8b5cf6",
+            "icon": "walk-outline"
         }
-    
-    # Fallback for missing category records
-    return {
-        "icon": "🏋️",
-        "display_name": logging_category.replace("_", " ").title(),
-        "color": "gray"
     }
+    
+    return category_data.get(logging_category, {
+        "id": logging_category,
+        "name": logging_category,
+        "display_name": logging_category.replace('_', ' ').title(),
+        "color": "#6b7280",
+        "icon": "fitness-outline"
+    })

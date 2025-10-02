@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Modal,
   TextInput,
   ActivityIndicator,
@@ -14,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
 import { getDateLocal } from '../../utils/dateUtils';
+import { useToast } from '../../contexts/ToastContext';
 
 interface MealLog {
   id: number;
@@ -45,6 +45,7 @@ export interface NutritionLogsViewRef {
 
 const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProps>((props, ref) => {
   const { onRefresh } = props;
+  const { showToast, showRapidToast } = useToast();
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,10 +100,18 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         });
       });
       
-      setLogs(logs);
+      // Sort logs by time (earliest to latest) for chronological order
+      // All dates from backend are in UTC, so we can compare them directly
+      const sortedLogs = logs.sort((a: any, b: any) => {
+        const timeA = new Date(a.meal_date || a.created_at || 0).getTime();
+        const timeB = new Date(b.meal_date || b.created_at || 0).getTime();
+        return timeA - timeB; // Chronological order: earliest first
+      });
+      
+      setLogs(sortedLogs);
     } catch (error) {
       console.error('🍽️ [NUTRITION LOGS] Failed to load nutrition logs:', error);
-      Alert.alert('Error', 'Failed to load nutrition logs. Please try again.');
+      showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -126,7 +135,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setLogs(response || []);
     } catch (error) {
       console.error('Failed to load nutrition logs:', error);
-      Alert.alert('Error', 'Failed to load nutrition logs. Please try again.');
+      showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setNavigating(false);
     }
@@ -286,29 +295,15 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setEditingLog(null);
       setEditingSingleFood(null);
       setEditFoodItems([]);
-      Alert.alert('Success', 'Meal log updated successfully!');
+      showToast('Meal log updated successfully!', 'success');
     } catch (error) {
       console.error('Failed to update log:', error);
-      Alert.alert('Error', 'Failed to update meal log. Please try again.');
+      showToast('Failed to update meal log. Please try again.', 'error');
     }
   };
 
   const handleDeleteLog = async (logId: number) => {
-    Alert.alert(
-      'Delete Meal Log',
-      'Are you sure you want to delete this meal log? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => confirmDeleteLog(logId),
-        },
-      ]
-    );
+    confirmDeleteLog(logId);
   };
 
   const handleDeleteFoodItem = async (logId: number, foodItemId: string) => {
@@ -321,21 +316,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       handleDeleteLog(logId);
     } else {
       // If multiple food items, remove just this one
-      Alert.alert(
-        'Remove Food Item',
-        'Are you sure you want to remove this food item from the meal?',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: () => confirmDeleteFoodItem(logId, foodItemId),
-          },
-        ]
-      );
+      confirmDeleteFoodItem(logId, foodItemId);
     }
   };
 
@@ -355,7 +336,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         // If no food items left, delete the entire log
         await nutritionService.deleteMeal(logId);
         setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-        Alert.alert('Success', 'Meal log deleted successfully!');
+        showRapidToast('Meal log deleted successfully!', 'success');
       } else {
         // Update the log with remaining food items
         const updatedLog = {
@@ -388,11 +369,11 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
         // Update the local state
         setLogs(prevLogs => prevLogs.map(l => l.id === logId ? updatedLog : l));
-        Alert.alert('Success', 'Food item removed successfully!');
+        showRapidToast('Food item removed successfully!', 'success');
       }
     } catch (error) {
       console.error('Failed to remove food item:', error);
-      Alert.alert('Error', 'Failed to remove food item. Please try again.');
+      showToast('Failed to remove food item. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);
     }
@@ -406,10 +387,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
-      Alert.alert('Success', 'Meal log deleted successfully!');
+      showRapidToast('Meal log deleted successfully!', 'success');
     } catch (error) {
       console.error('Failed to delete log:', error);
-      Alert.alert('Error', 'Failed to delete meal log. Please try again.');
+      showToast('Failed to delete meal log. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);
     }

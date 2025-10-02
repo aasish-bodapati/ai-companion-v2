@@ -6,6 +6,7 @@ import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { nutritionService, FoodItem } from '../../services/nutritionService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { useToast } from '../../contexts/ToastContext';
 
 interface MealData {
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -35,6 +36,7 @@ export default function MealLoggingModal({
   onMealLogged,
   initialMealType = 'breakfast',
 }: MealLoggingModalProps) {
+  const { showToast } = useToast();
   const [mealType, setMealType] = useState<'breakfast' | 'lunch' | 'dinner' | 'snack'>(initialMealType);
   const [foodItems, setFoodItems] = useState<LoggingItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -198,10 +200,12 @@ export default function MealLoggingModal({
     setSaving(true);
     try {
       await nutritionService.logMeal(data);
+      showToast('Meal logged successfully!', 'success');
       onMealLogged();
       onClose();
     } catch (error) {
       console.error('Error logging meal:', error);
+      showToast('Failed to log meal. Please try again.', 'error');
       throw error;
     } finally {
       setSaving(false);

@@ -77,13 +77,10 @@ export default function DashboardScreen() {
               workouts: todayWorkoutData.workouts || 0,
               meals: todayNutritionData.meals_count || 0,
               water_ml: 0, // Will be updated when water logging is implemented
-              calories_burned: todayWorkoutData.calories_burned || 0,
-              calories_consumed: todayNutritionData.total_calories || 0,
               total_minutes: todayWorkoutData.total_duration || 0,
               protein_g: todayNutritionData.protein_g || 0,
               carbs_g: todayNutritionData.carbs_g || 0,
               fat_g: todayNutritionData.fat_g || 0,
-              net_calories: (todayNutritionData.total_calories || 0) - (todayWorkoutData.calories_burned || 0),
             },
             weekly_progress: {
               workouts_completed: workouts.length,
@@ -344,24 +341,14 @@ export default function DashboardScreen() {
         {/* Day at a Glance */}
         <DayAtAGlance
           todayStats={{
-            workouts: data.summary?.today_stats?.workouts || 0,
             meals: data.summary?.today_stats?.meals || 0,
-            water_ml: data.summary?.today_stats?.water_ml || 0,
-            calories_burned: data.summary?.today_stats?.calories_burned || 0,
             calories_consumed: data.summary?.today_stats?.calories_consumed || 0,
-            streak: data.summary?.streak || 0,
             protein_g: data.summary?.today_stats?.protein_g || 0,
             carbs_g: data.summary?.today_stats?.carbs_g || 0,
             fat_g: data.summary?.today_stats?.fat_g || 0,
           }}
-          onWorkoutPress={() => {
-            // Navigate to fitness screen or open workout modal
-          }}
           onMealPress={() => {
             // Navigate to nutrition screen or open meal modal
-          }}
-          onWaterPress={() => {
-            // Open water logging modal
           }}
         />
       </View>

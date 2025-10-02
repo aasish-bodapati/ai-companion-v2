@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc, func
 import json
 
-from app.crud.common.user_logging import UserLoggingCRUD
+from app.crud.common.generic_health_logging import GenericHealthLoggingCRUD
+from app.services.common.statistics import HealthStatisticsCalculator
 from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
 from app.schemas.health.fitness_log import (
     FitnessLogCreate, FitnessLogUpdate,
@@ -13,11 +14,15 @@ from app.schemas.health.fitness_log import (
     DailySummary, WeeklySummary, LoggingInsight
 )
 
-class CRUDFitnessLog(UserLoggingCRUD[FitnessLog, FitnessLogCreate, FitnessLogUpdate]):
-    """CRUD operations for FitnessLog using UserLoggingCRUD base class."""
+class CRUDFitnessLog(GenericHealthLoggingCRUD[FitnessLog, FitnessLogCreate, FitnessLogUpdate]):
+    """CRUD operations for FitnessLog using GenericHealthLoggingCRUD base class."""
     
     def __init__(self):
-        super().__init__(FitnessLog, date_field="activity_date")
+        super().__init__(
+            FitnessLog, 
+            date_field="activity_date",
+            stats_calculator=HealthStatisticsCalculator.calculate_fitness_stats
+        )
     
     def get_weekly_summary(self, db: Session, user_id: int, week_start: datetime) -> Dict[str, Any]:
         """Get weekly summary for fitness logs."""
@@ -47,11 +52,15 @@ class CRUDFitnessLog(UserLoggingCRUD[FitnessLog, FitnessLogCreate, FitnessLogUpd
             "average_workout_duration": total_minutes / total_workouts if total_workouts > 0 else 0
         }
 
-class CRUDNutritionLog(UserLoggingCRUD[NutritionLog, NutritionLogCreate, NutritionLogUpdate]):
-    """CRUD operations for NutritionLog using UserLoggingCRUD base class."""
+class CRUDNutritionLog(GenericHealthLoggingCRUD[NutritionLog, NutritionLogCreate, NutritionLogUpdate]):
+    """CRUD operations for NutritionLog using GenericHealthLoggingCRUD base class."""
     
     def __init__(self):
-        super().__init__(NutritionLog, date_field="meal_date")
+        super().__init__(
+            NutritionLog, 
+            date_field="meal_date",
+            stats_calculator=HealthStatisticsCalculator.calculate_nutrition_stats
+        )
     
     def get_daily_summary(self, db: Session, user_id: int, date: datetime) -> Dict[str, Any]:
         """Get daily summary for nutrition logs."""
@@ -113,11 +122,35 @@ class CRUDNutritionLog(UserLoggingCRUD[NutritionLog, NutritionLogCreate, Nutriti
             "meals_logged": len(logs)
         }
 
-class CRUDMoodLog(UserLoggingCRUD[MoodLog, MoodLogCreate, MoodLogUpdate]):
-    """CRUD operations for MoodLog using UserLoggingCRUD base class."""
+class CRUDMoodLog(GenericHealthLoggingCRUD[MoodLog, MoodLogCreate, MoodLogUpdate]):
+    """CRUD operations for MoodLog using GenericHealthLoggingCRUD base class."""
     
     def __init__(self):
-        super().__init__(MoodLog, date_field="log_date")
+        super().__init__(
+            MoodLog, 
+            date_field="log_date",
+            stats_calculator=self._calculate_mood_stats
+        )
+    
+    def _calculate_mood_stats(self, logs: List[MoodLog]) -> Dict[str, Any]:
+        """Calculate mood-specific statistics."""
+        if not logs:
+            return {
+                "total_count": 0,
+                "average_mood": 0,
+                "current_streak": 0,
+                "longest_streak": 0
+            }
+        
+        total_count = len(logs)
+        average_mood = sum(log.mood_rating for log in logs) / total_count
+        
+        return {
+            "total_count": total_count,
+            "average_mood": round(average_mood, 1),
+            "current_streak": self.calculate_user_streak(None, None),  # Will be calculated properly in context
+            "longest_streak": self.calculate_user_streak(None, None)   # Will be calculated properly in context
+        }
     
     def get_daily_log(self, db: Session, user_id: int, date: datetime) -> Optional[MoodLog]:
         """Get mood log for a specific day (only one per day)."""

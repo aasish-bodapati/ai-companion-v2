@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   TextInput,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
@@ -22,6 +21,7 @@ export interface LoggingItemData {
   carbs_g?: number;
   fat_g?: number;
   duration_minutes?: number;
+  distance?: number | string;
   sets?: number;
   reps?: string;
   weight_kg?: number;
@@ -40,7 +40,7 @@ interface LoggingItemProps {
   testID?: string;
 }
 
-export default function LoggingItem({
+const LoggingItem = React.memo(function LoggingItem({
   item,
   itemType,
   onUpdate,
@@ -53,15 +53,6 @@ export default function LoggingItem({
   index = 0,
 }: LoggingItemProps & { index?: number }) {
   
-  // Debug logging for exercise name issue
-  if (itemType === 'workout') {
-    console.log('🔍 LoggingItem - Exercise data:', {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      itemType
-    });
-  }
   const [servingCount, setServingCount] = useState(
     itemType === 'workout' 
       ? (item.sets?.toString() || '') 
@@ -87,6 +78,16 @@ export default function LoggingItem({
     loadCategories();
   }, []);
 
+  // Update local state when item prop changes (for auto-population)
+  useEffect(() => {
+    if (itemType === 'workout') {
+      setServingCount(item.sets?.toString() || '');
+      setRepsCount(item.reps || '');
+    } else {
+      setServingCount(item.quantity?.toString() || '1');
+    }
+  }, [item.sets, item.reps, item.quantity, item.weight_kg, item.duration_minutes, item.distance, itemType]);
+
   const handleServingChange = (text: string) => {
     setServingCount(text);
     const quantity = parseFloat(text);
@@ -99,21 +100,8 @@ export default function LoggingItem({
   };
 
   const handleRemove = () => {
-    Alert.alert(
-      'Remove Item',
-      `Are you sure you want to remove "${item.name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: () => {
-            onRemove(item.id);
-            hapticFeedback.medium();
-          }
-        },
-      ]
-    );
+    onRemove(item.id);
+    hapticFeedback.medium();
   };
 
   const getQuantityDisplay = () => {
@@ -168,7 +156,8 @@ export default function LoggingItem({
   };
 
   const getExerciseCategory = (): string => {
-    // Use database category first (highest priority)
+    // Use logging_category first (highest priority), then category
+    if (item.logging_category) return item.logging_category;
     if (item.category) return item.category;
     
     // Default to weighted for unknown categories
@@ -184,6 +173,22 @@ export default function LoggingItem({
         displayName: categoryData.display_name,
       };
     }
+    
+    // Try alternative matching - maybe the category is stored differently
+    const alternativeMatch = categories.find(cat => 
+      cat.category === category || 
+      cat.name === category ||
+      cat.display_name?.toLowerCase() === category?.toLowerCase()
+    );
+    
+    if (alternativeMatch) {
+      return {
+        color: alternativeMatch.color,
+        icon: alternativeMatch.icon,
+        displayName: alternativeMatch.display_name,
+      };
+    }
+    
     // Return "Category Not Found" config
     return {
       color: '#6b7280',
@@ -209,12 +214,14 @@ export default function LoggingItem({
 
   const renderDynamicWorkoutFields = () => {
     const category = getExerciseCategory();
+    console.log('🔍 [LOGGING ITEM] getExerciseCategory() returned:', category);
+    console.log('🔍 [LOGGING ITEM] Item category:', item.category);
     
     switch (category) {
       case 'bodyweight':
         return (
           <View style={styles.fieldRow}>
-            <View style={[styles.fieldContainer, styles.fieldPosition1]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Sets</Text>
               <TextInput
                 style={styles.workoutInputCompact}
@@ -231,7 +238,7 @@ export default function LoggingItem({
                 testID={`${testID}-sets-input`}
               />
             </View>
-            <View style={[styles.fieldContainer, styles.fieldPosition2]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Reps</Text>
               <TextInput
                 style={styles.workoutInputCompact}
@@ -250,7 +257,7 @@ export default function LoggingItem({
       case 'weighted':
         return (
           <View style={styles.fieldRow}>
-            <View style={[styles.fieldContainer, styles.fieldPosition1]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Sets</Text>
               <TextInput
                 style={styles.workoutInputCompact}
@@ -267,7 +274,7 @@ export default function LoggingItem({
                 testID={`${testID}-sets-input`}
               />
             </View>
-            <View style={[styles.fieldContainer, styles.fieldPosition2]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Reps</Text>
               <TextInput
                 style={styles.workoutInputCompact}
@@ -280,7 +287,7 @@ export default function LoggingItem({
                 testID={`${testID}-reps-input`}
               />
             </View>
-            <View style={[styles.fieldContainer, styles.fieldPosition3]}>
+            <View style={styles.fieldContainer}>
               <Text style={styles.fieldLabel}>Weight (kg)</Text>
               <TextInput
                 style={styles.workoutInputCompact}
@@ -303,7 +310,7 @@ export default function LoggingItem({
         return (
           <View style={styles.fieldRow}>
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Duration (min)</Text>
+              <Text style={styles.fieldLabel}>Time (min)</Text>
               <TextInput
                 style={styles.workoutInputCompact}
                 value={item.duration_minutes?.toString() || ''}
@@ -322,10 +329,11 @@ export default function LoggingItem({
         );
 
       case 'distance_based':
+        const distanceLabel = "Distance (km)";
         return (
           <View style={styles.fieldRow}>
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Distance (km)</Text>
+              <Text style={[styles.fieldLabel, { fontFamily: 'System' }]}>{distanceLabel}</Text>
               <TextInput
                 style={styles.workoutInputCompact}
                 value={item.distance?.toString() || ''}
@@ -341,7 +349,7 @@ export default function LoggingItem({
               />
             </View>
             <View style={styles.fieldContainer}>
-              <Text style={styles.fieldLabel}>Duration (min)</Text>
+              <Text style={styles.fieldLabel}>Time (min)</Text>
               <TextInput
                 style={styles.workoutInputCompact}
                 value={item.duration_minutes?.toString() || ''}
@@ -354,6 +362,15 @@ export default function LoggingItem({
                 placeholder="30"
                 keyboardType="numeric"
                 testID={`${testID}-duration-input`}
+              />
+            </View>
+            <View style={[styles.fieldContainer, { opacity: 0 }]}>
+              <Text style={styles.fieldLabel}>-</Text>
+              <TextInput
+                style={styles.workoutInputCompact}
+                value=""
+                editable={false}
+                placeholder=""
               />
             </View>
           </View>
@@ -403,32 +420,36 @@ export default function LoggingItem({
       <View style={styles.content}>
         <View style={styles.header}>
           <View style={styles.exerciseTitleRow}>
-            <Text style={styles.exerciseNumber}>#{index + 1}</Text>
-            <Text style={styles.exerciseName} numberOfLines={1} ellipsizeMode="tail">
-              {item.name || 'Exercise Name Missing'}
-            </Text>
-            {itemType === 'workout' && item.category && (
-              <View style={[styles.categoryBadge, { backgroundColor: getCategoryConfig(item.category).color }]}>
-                <Ionicons 
-                  name={getCategoryConfig(item.category).icon as any} 
-                  size={6} 
-                  color="#ffffff"
-                  style={styles.badgeIcon}
-                />
-                <Text style={styles.categoryText}>
-                  {getCategoryConfig(item.category).displayName.toUpperCase()}
-                </Text>
-              </View>
-            )}
-            {editable && (
-              <TouchableOpacity
-                onPress={handleRemove}
-                style={styles.actionButton}
-                testID={`${testID}-remove`}
-              >
-                <Ionicons name="trash" size={16} color={COLORS.error} />
-              </TouchableOpacity>
-            )}
+            <View style={styles.exerciseTitleLeft}>
+              <Text style={styles.exerciseNumber}>#{index + 1}</Text>
+              <Text style={styles.exerciseName} numberOfLines={1} ellipsizeMode="tail">
+                {item.name || 'Exercise Name Missing'}
+              </Text>
+            </View>
+            <View style={styles.exerciseTitleRight}>
+              {itemType === 'workout' && (
+                <View style={[styles.categoryBadge, { backgroundColor: getCategoryConfig(getExerciseCategory()).color }]}>
+                  <Ionicons 
+                    name={getCategoryConfig(getExerciseCategory()).icon as any} 
+                    size={6} 
+                    color="#ffffff"
+                    style={styles.badgeIcon}
+                  />
+                  <Text style={styles.categoryText}>
+                    {getCategoryConfig(getExerciseCategory()).displayName.toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              {editable && (
+                <TouchableOpacity
+                  onPress={handleRemove}
+                  style={styles.actionButton}
+                  testID={`${testID}-remove`}
+                >
+                  <Ionicons name="trash" size={16} color={COLORS.error} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
@@ -466,7 +487,7 @@ export default function LoggingItem({
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -507,12 +528,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    padding: SPACING.xs,
+    padding: 2,
     borderRadius: BORDER_RADIUS.small,
     backgroundColor: COLORS.background.primary,
     flexShrink: 0,
     marginTop: -1,
-    minWidth: 32,
+    minWidth: 20,
   },
   editContainer: {
     marginTop: SPACING.small,
@@ -561,15 +582,17 @@ const styles = StyleSheet.create({
   },
   fieldRow: {
     flexDirection: 'row',
-    position: 'relative',
+    justifyContent: 'space-around',
+    alignItems: 'center',
     height: 28,
+    paddingHorizontal: 8,
   },
   fieldContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.xs,
-    position: 'absolute',
-    top: 0,
+    flex: 1,
+    minWidth: 0,
   },
   fieldPosition1: {
     left: 0,
@@ -585,15 +608,18 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.small,
     fontWeight: '500',
     color: COLORS.text.secondary,
-    flexShrink: 0,
+    flexShrink: 1,
+    minWidth: 0,
   },
   workoutInputCompact: {
-    width: 30,
+    flex: 1,
+    minWidth: 25,
+    maxWidth: 35,
     borderWidth: 1,
     borderColor: COLORS.border.primary,
     borderRadius: BORDER_RADIUS.small,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: 1,
+    paddingVertical: 0,
     fontSize: FONT_SIZE.small,
     color: COLORS.text.primary,
     backgroundColor: COLORS.background.primary,
@@ -606,9 +632,22 @@ const styles = StyleSheet.create({
   exerciseTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    justifyContent: 'space-between',
     flex: 1,
     flexWrap: 'nowrap',
+  },
+  exerciseTitleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    flex: 1,
+    minWidth: 0,
+  },
+  exerciseTitleRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+    flexShrink: 0,
   },
   exerciseNumber: {
     fontSize: FONT_SIZE.medium,
@@ -626,7 +665,6 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     margin: 0,
     padding: 0,
-    maxWidth: '60%',
   },
   categoryBadge: {
     borderRadius: 4,
@@ -649,3 +687,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+
+export default LoggingItem;

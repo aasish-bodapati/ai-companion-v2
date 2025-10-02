@@ -2,10 +2,12 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
 
+from app.schemas.common.health_enums import WaterLogType
+
 class WaterLogBase(BaseModel):
     amount_ml: int = Field(..., gt=0, le=10000, description="Amount in milliliters")
     amount_oz: Optional[float] = Field(None, ge=0, description="Amount in ounces (calculated)")
-    log_type: str = Field("manual", description="Type of log: manual, goal, reminder")
+    log_type: WaterLogType = Field(WaterLogType.MANUAL, description="Type of log: manual, goal, reminder")
     notes: Optional[str] = None
     log_date: Optional[datetime] = None
 
@@ -15,7 +17,7 @@ class WaterLogCreate(WaterLogBase):
 class WaterLogUpdate(BaseModel):
     amount_ml: Optional[int] = Field(None, gt=0, le=10000)
     amount_oz: Optional[float] = Field(None, ge=0)
-    log_type: Optional[str] = None
+    log_type: Optional[WaterLogType] = None
     notes: Optional[str] = None
     log_date: Optional[datetime] = None
 

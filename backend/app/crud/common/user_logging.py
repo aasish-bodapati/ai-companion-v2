@@ -86,7 +86,7 @@ class UserLoggingCRUD(CRUDBase[ModelType, CreateSchemaType, UpdateSchemaType], G
             if hasattr(self.model, field) and value is not None:
                 query = query.filter(getattr(self.model, field) == value)
         
-        return query.order_by(desc(getattr(self.model, self.date_field))).offset(skip).limit(limit).all()
+        return query.order_by(getattr(self.model, self.date_field)).offset(skip).limit(limit).all()
     
     def get_daily_logs(self, db: Session, user_id: int, date: datetime) -> List[ModelType]:
         """Get all logs for a specific day."""

@@ -139,6 +139,34 @@ export default function EnhancedWorkoutLogger({
     setShowExerciseForm(true);
   };
 
+  const handleExerciseNameChange = async (index: number, exerciseName: string) => {
+    // Update the exercise name
+    updateExercise(index, { exercise_name: exerciseName });
+    
+    // If exercise name is not empty, try to get previous data
+    if (exerciseName.trim()) {
+      try {
+        const latestData = await fitnessService.getLatestExerciseData(exerciseName.trim());
+        if (latestData) {
+          console.log(`🔄 [ENHANCED WORKOUT LOGGER] Auto-populating data for ${exerciseName}:`, latestData);
+          
+          // Auto-populate the exercise with previous data
+          updateExercise(index, {
+            sets: latestData.sets || 1,
+            reps: latestData.reps || '10',
+            weight_used: latestData.weight_kg || 0,
+            notes: latestData.notes || ''
+          });
+          
+          // Show a subtle indication that data was auto-populated
+          hapticFeedback.light();
+        }
+      } catch (error) {
+        console.log(`🔍 [ENHANCED WORKOUT LOGGER] No previous data found for ${exerciseName}`);
+      }
+    }
+  };
+
   const updateExercise = (index: number, field: keyof ExerciseData, value: any) => {
     setExercises(prev => prev.map((exercise, i) => 
       i === index ? { ...exercise, [field]: value } : exercise
