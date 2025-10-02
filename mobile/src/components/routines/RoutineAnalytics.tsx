@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface RoutineAnalyticsProps {
   routine: SimpleRoutineWithProgress;
@@ -303,13 +304,13 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingText: {
     fontSize: 16,
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     paddingHorizontal: 32,
   },
   errorTitle: {
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
   progressCard: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: {
@@ -463,7 +464,7 @@ const styles = StyleSheet.create({
   weeklyProgressCard: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -495,7 +496,7 @@ const styles = StyleSheet.create({
   exerciseBreakdownCard: {
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -537,7 +538,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '45%',
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     alignItems: 'center',
     shadowColor: '#000',

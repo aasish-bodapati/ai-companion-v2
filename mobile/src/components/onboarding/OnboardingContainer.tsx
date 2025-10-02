@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface OnboardingContainerProps {
   children: React.ReactNode;
@@ -162,7 +163,7 @@ export default function OnboardingContainer({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   content: {
     flex: 1,

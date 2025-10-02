@@ -7,6 +7,7 @@ import { fitnessService, ExerciseType } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { useToast } from '../../contexts/ToastContext';
 
 interface WorkoutData {
   duration_minutes: number;
@@ -35,6 +36,7 @@ export default function WorkoutLoggingModal({
   onWorkoutLogged,
   todaysWorkout,
 }: WorkoutLoggingModalProps) {
+  const { showToast } = useToast();
   const [exercises, setExercises] = useState<LoggingItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
@@ -238,10 +240,12 @@ export default function WorkoutLoggingModal({
     setSaving(true);
     try {
       await fitnessService.logWorkout(data);
+      showToast('Workout logged successfully!', 'success');
       onWorkoutLogged();
       onClose();
     } catch (error) {
       console.error('Error logging workout:', error);
+      showToast('Failed to log workout. Please try again.', 'error');
       throw error;
     } finally {
       setSaving(false);

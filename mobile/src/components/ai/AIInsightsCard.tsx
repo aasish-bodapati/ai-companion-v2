@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { aiInsightsService, AIInsight, HealthPattern, HealthRecommendation } from '../../services/aiInsightsService';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface AIInsightsCardProps {
   onInsightPress?: (insight: AIInsight) => void;
@@ -352,9 +353,9 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 4,
   },
   tab: {
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -408,7 +409,7 @@ const styles = StyleSheet.create({
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   priorityText: {
     fontSize: 12,
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
   },
   patternCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -458,7 +459,7 @@ const styles = StyleSheet.create({
   impactBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   impactText: {
     fontSize: 12,
@@ -502,7 +503,7 @@ const styles = StyleSheet.create({
   },
   recommendationCard: {
     backgroundColor: '#f0f9ff',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -529,7 +530,7 @@ const styles = StyleSheet.create({
   difficultyBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   difficultyText: {
     fontSize: 12,

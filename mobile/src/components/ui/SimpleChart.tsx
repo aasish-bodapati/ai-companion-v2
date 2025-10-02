@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -331,7 +332,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     borderWidth: 3,
     borderColor: '#ffffff',
   },

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface TouchOptimizedButtonProps {
   title: string;
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     borderWidth: 1,
     // Ensure minimum touch target size
     minHeight: touchUtils.MIN_TOUCH_TARGET_SIZE,

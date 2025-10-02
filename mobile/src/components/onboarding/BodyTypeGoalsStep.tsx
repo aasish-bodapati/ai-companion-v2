@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 import { 
   getAvailableBodyTypes, 
   getBodyTypeCategories,
@@ -750,7 +751,7 @@ export default function BodyTypeGoalsStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   content: {
     flex: 1,
@@ -871,7 +872,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   calculationPreview: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     padding: 8,
     borderRadius: 6,
     gap: 4,
@@ -964,7 +965,7 @@ const styles = StyleSheet.create({
   templateBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     marginLeft: 8,
   },
   systemBadge: {

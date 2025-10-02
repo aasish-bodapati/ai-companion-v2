@@ -15,6 +15,7 @@ import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface Exercise {
   id: number;
@@ -659,7 +660,7 @@ const styles = StyleSheet.create({
   },
   modal: {
     backgroundColor: '#fed7aa', // More vibrant orange background for fitness
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     width: '95%',
     height: '80%', // Further reduced to 80%
     padding: 0,
@@ -811,7 +812,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   loggedText: {
     fontSize: 12,

@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface MobileOptimizedModalProps {
   visible: boolean;
@@ -286,8 +287,8 @@ export default function MobileOptimizedModal({
 
 const styles = StyleSheet.create({
   modal: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

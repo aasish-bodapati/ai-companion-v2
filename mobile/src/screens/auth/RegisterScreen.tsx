@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { showToast } from '../../utils/toast';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -20,21 +20,22 @@ export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { showToast } = useToast();
   const navigation = useNavigation();
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !fullName) {
-      showToast.error('Error', 'Please fill in all fields');
+      showToast('Please fill in all fields', 'error');
       return;
     }
 
     if (password !== confirmPassword) {
-      showToast.error('Error', 'Passwords do not match');
+      showToast('Passwords do not match', 'error');
       return;
     }
 
     if (password.length < 8) {
-      showToast.error('Error', 'Password must be at least 8 characters');
+      showToast('Password must be at least 8 characters', 'error');
       return;
     }
 
@@ -42,13 +43,13 @@ export default function RegisterScreen() {
     try {
       const result = await register(email, password, fullName);
       if (result.success) {
-        showToast.success('Success!', 'Account created successfully! Please sign in.');
+        showToast('Account created successfully! Please sign in.', 'success');
         navigation.navigate('Login' as never);
       } else {
-        showToast.error('Registration Failed', result.error || 'Registration failed. Please try again.');
+        showToast(result.error || 'Registration failed. Please try again.', 'error');
       }
     } catch (error) {
-      showToast.error('Error', 'Registration failed. Please try again.');
+      showToast('Registration failed. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }

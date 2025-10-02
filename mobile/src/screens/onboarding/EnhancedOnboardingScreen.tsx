@@ -16,11 +16,25 @@ import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import { profileService } from '../../services/profileService';
 
+// Helper function to check if health data actually has meaningful values
+const hasActualHealthData = (healthData: any): boolean => {
+  if (!healthData) return false;
+  
+  // Check if any of the main health fields have actual values
+  const hasAge = healthData.age && healthData.age.trim() !== '';
+  const hasHeight = healthData.height && healthData.height.trim() !== '';
+  const hasWeight = healthData.weight && healthData.weight.trim() !== '';
+  const hasGender = healthData.gender && healthData.gender.trim() !== '';
+  
+  // Return true if at least one main field has data
+  return hasAge || hasHeight || hasWeight || hasGender;
+};
+
 interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female' | 'other' | '';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
@@ -38,28 +52,35 @@ interface OnboardingData {
   };
 }
 
-const ONBOARDING_STEPS = [
+// Dynamic onboarding steps based on whether user has existing data
+const getOnboardingSteps = (hasExistingData: boolean) => [
   {
     id: 'welcome',
-    title: 'Update Your Profile',
-    subtitle: 'Edit Your Health Data and Goals',
-    description: 'Review and update your health information, body type goals, and preferences. Your existing data has been pre-filled for easy editing.',
-    icon: 'create-outline',
+    title: hasExistingData ? 'Update Your Profile' : 'Welcome to HealthLog!',
+    subtitle: hasExistingData ? 'Edit Your Health Data and Goals' : 'Let\'s Set Up Your Health Profile',
+    description: hasExistingData 
+      ? 'Review and update your health information, body type goals, and preferences. Your existing data has been pre-filled for easy editing.'
+      : 'We\'ll help you set up your health profile with your basic information, goals, and preferences to get you started.',
+    icon: hasExistingData ? 'create-outline' : 'rocket-outline',
     variant: 'centered' as const,
   },
   {
     id: 'health_data',
-    title: 'Update Your Health Info',
-    subtitle: 'Review and Edit Your Health Data',
-    description: 'Review and update your health information. Your existing data has been pre-filled for easy editing.',
+    title: hasExistingData ? 'Update Your Health Info' : 'Your Health Information',
+    subtitle: hasExistingData ? 'Review and Edit Your Health Data' : 'Tell Us About Yourself',
+    description: hasExistingData 
+      ? 'Review and update your health information. Your existing data has been pre-filled for easy editing.'
+      : 'Please provide your basic health information so we can personalize your experience.',
     icon: 'person-outline',
     variant: 'minimal' as const,
   },
   {
     id: 'body_type_goal',
-    title: 'Update Your Body Type Goal',
-    subtitle: 'Review and Edit Your Body Type Goal',
-    description: 'Review and update your body type goal. Your current selection has been pre-filled for easy editing.',
+    title: hasExistingData ? 'Update Your Body Type Goal' : 'Your Body Type Goal',
+    subtitle: hasExistingData ? 'Review and Edit Your Body Type Goal' : 'What\'s Your Goal?',
+    description: hasExistingData 
+      ? 'Review and update your body type goal. Your current selection has been pre-filled for easy editing.'
+      : 'Choose your body type goal to help us create personalized recommendations for you.',
     icon: 'body-outline',
     variant: 'minimal' as const,
   },
@@ -81,7 +102,7 @@ export default function EnhancedOnboardingScreen() {
       age: '',
       height: '',
       weight: '',
-      gender: 'male',
+      gender: '', // No pre-selection for new users
       activityLevel: 'moderate',
       ffm: '',
       smm: '',
@@ -97,6 +118,7 @@ export default function EnhancedOnboardingScreen() {
   const [loading, setLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [hasExistingData, setHasExistingData] = useState(false);
   const { completeOnboarding } = useAuth();
   const completionRef = useRef(false);
 
@@ -107,15 +129,20 @@ export default function EnhancedOnboardingScreen() {
       
       const profileData = await profileService.getUserProfile();
       
-      if (profileData) {
+      if (profileData && profileData.health_data && hasActualHealthData(profileData.health_data)) {
         // Convert backend data to onboarding format
         const existingData = profileService.convertToOnboardingData(profileData);
         
         // Pre-populate the form with existing data
         setOnboardingData(existingData);
+        setHasExistingData(true);
+      } else {
+        // For new users, don't pre-select gender
+        setHasExistingData(false);
       }
     } catch (error) {
       // Keep default values if no existing data
+      setHasExistingData(false);
     } finally {
       setLoading(false);
       setDataLoaded(true);
@@ -167,11 +194,12 @@ export default function EnhancedOnboardingScreen() {
     };
   }, [currentStep]);
 
-  const currentStepData = ONBOARDING_STEPS[currentStep];
-  const isLastStep = currentStep === ONBOARDING_STEPS.length - 1;
+  const onboardingSteps = getOnboardingSteps(hasExistingData);
+  const currentStepData = onboardingSteps[currentStep];
+  const isLastStep = currentStep === onboardingSteps.length - 1;
   const isFirstStep = currentStep === 0;
   
-  console.log('📊 Step info - currentStep:', currentStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isLastStep:', isLastStep, 'currentStepData:', currentStepData?.id);
+  console.log('📊 Step info - currentStep:', currentStep, 'totalSteps:', onboardingSteps.length, 'isLastStep:', isLastStep, 'currentStepData:', currentStepData?.id);
 
   const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
@@ -181,7 +209,7 @@ export default function EnhancedOnboardingScreen() {
   }, [currentStep]);
 
   const handleNext = useCallback(() => {
-    console.log('🔄 handleNext called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
+    console.log('🔄 handleNext called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'totalSteps:', onboardingSteps.length, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
     
     if (hasCompleted || completionRef.current) {
       console.log('⚠️ Onboarding already completed, skipping navigation');
@@ -193,7 +221,7 @@ export default function EnhancedOnboardingScreen() {
       return;
     }
     
-    if (currentStep < ONBOARDING_STEPS.length - 1) {
+    if (currentStep < onboardingSteps.length - 1) {
       console.log('➡️ Moving to next step');
       hapticFeedback.medium();
       setCurrentStep(prev => prev + 1);
@@ -386,7 +414,7 @@ export default function EnhancedOnboardingScreen() {
       
         <OnboardingContainer
           currentStep={currentStep}
-          totalSteps={ONBOARDING_STEPS.length}
+          totalSteps={onboardingSteps.length}
           onNext={handleNext}
           onPrevious={handlePrevious}
           onComplete={handleComplete}

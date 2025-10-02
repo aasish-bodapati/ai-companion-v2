@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { NumericalGoal, getNumericalGoalsForHealthGoals, customizeGoalForUser } from '../../services/goalTemplates';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface NumericalGoalsModalProps {
   visible: boolean;
@@ -223,7 +224,7 @@ export default function NumericalGoalsModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   header: {
     flexDirection: 'row',
@@ -231,7 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -259,9 +260,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   introSection: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     padding: 20,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     marginVertical: 16,
     borderLeftWidth: 4,
     borderLeftColor: '#3b82f6',
@@ -278,8 +279,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   goalCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -306,7 +307,7 @@ const styles = StyleSheet.create({
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     marginLeft: 8,
   },
   priorityText: {
@@ -328,7 +329,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -354,7 +355,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',

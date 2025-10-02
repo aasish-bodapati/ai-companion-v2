@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface TimezoneSelectorProps {
   currentTimezone: string;
@@ -153,8 +154,8 @@ export default function TimezoneSelector({ currentTimezone, onTimezoneChange }: 
 
 const styles = StyleSheet.create({
   timezoneButton: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.secondaryBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginVertical: 4,
   },

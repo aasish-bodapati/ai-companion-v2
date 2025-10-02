@@ -9,6 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface HealthGoal {
   id: string;
@@ -385,7 +386,7 @@ export default function HealthGoalsStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   content: {
     flex: 1,
@@ -469,7 +470,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   summaryGoalText: {
     fontSize: 12,

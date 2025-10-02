@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface RoutineProgressTrackerProps {
   routine: SimpleRoutineWithProgress;
@@ -256,13 +257,13 @@ export default function RoutineProgressTracker({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingText: {
     fontSize: 16,
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
   progressOverview: {
     backgroundColor: '#ffffff',
     margin: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 20,
     shadowColor: '#000',
     shadowOffset: {
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     marginHorizontal: 16,
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   completedText: {
     fontSize: 12,
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingVertical: 16,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },

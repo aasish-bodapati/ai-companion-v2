@@ -13,6 +13,7 @@ import { analyticsService, DashboardData } from '../../services/analyticsService
 import { aiInsightsService } from '../../services/aiInsightsService';
 import EnhancedAnalyticsCard from './EnhancedAnalyticsCard';
 import ProgressCharts from './ProgressCharts';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -272,7 +273,7 @@ export default function AnalyticsDashboard({ refreshTrigger = 0 }: AnalyticsDash
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
   recommendationCard: {
     backgroundColor: '#ffffff',
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   correlationCard: {
     backgroundColor: '#ffffff',
     marginBottom: 12,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },

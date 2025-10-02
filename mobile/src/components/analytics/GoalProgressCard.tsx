@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { GoalProgress, GoalAnalytics, numericalGoalsService } from '../../services/numericalGoalsService';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface GoalProgressCardProps {
   onPress?: () => void;
@@ -225,8 +226,8 @@ const styles = StyleSheet.create({
   summaryContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.secondaryBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 16,
   },
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   goalItem: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderRadius: 8,
     padding: 12,
   },

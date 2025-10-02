@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface MobileOptimizedInputProps extends TextInputProps {
   label?: string;
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   filledInputContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 0,
   },
   underlinedInputContainer: {
