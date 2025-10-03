@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -91,11 +92,9 @@ const WeeklyNutritionChart: React.FC<WeeklyNutritionChartProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
-    borderRadius: 16,
+    borderRadius: COMMON_STYLES.largeRadius,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    ...COMMON_STYLES.standardShadow,
     shadowRadius: 4,
     elevation: 3,
   },

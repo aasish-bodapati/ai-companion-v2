@@ -1,7 +1,7 @@
-# HealthLog AI - Project Context & Ground Truths
+# AI Companion - Project Context & Ground Truths
 
 ## 🎯 **Project Overview**
-AI-powered health and wellness companion that combines manual logging with intelligent insights. Built for busy professionals who need simple, fast health tracking with clean data visualization.
+AI-powered health and wellness platform that combines manual logging with intelligent insights. Built for busy professionals who need simple, fast health tracking with clean data visualization across web and mobile platforms.
 
 ## 🏗️ **Architecture & Tech Stack**
 
@@ -10,7 +10,7 @@ AI-powered health and wellness companion that combines manual logging with intel
 - **Database**: PostgreSQL (REQUIRED - never use SQLite)
 - **Authentication**: JWT with bcrypt password hashing
 - **API Structure**: Feature-based organization (`/api/health/`, `/api/core/`)
-- **Key Services**: Indian food database
+- **Key Services**: Indian food database, AI insights
 - **Migration**: Alembic for database schema management
 
 ### Mobile (React Native + Expo)
@@ -64,22 +64,10 @@ AI-powered health and wellness companion that combines manual logging with intel
 - **Dev Mode Only** - All servers run in development mode
 
 ### Code Standards
-- **No Hardcoded Categories** - Don't hardcode exercise categories in frontend
 - **Feature-Based Organization** - Group related functionality together
 - **Type Safety** - Comprehensive TypeScript types throughout
 - **Error Handling** - Proper validation and error responses
-
-### API Design
-- **RESTful Endpoints** - Follow REST conventions
-- **Consistent Response Format** - Standardized API responses
-- **Authentication Required** - All endpoints require valid JWT tokens
-- **Rate Limiting** - Implemented for API protection
-
-### Mobile Development
-- **Expo Managed Workflow** - Use Expo CLI and managed workflow
-- **Cross-Platform** - Support both iOS and Android
-- **Offline Support** - AsyncStorage for local data persistence
-- **Haptic Feedback** - Enhanced user experience with haptics
+- **Cross-Platform Sync** - Seamless data synchronization between web and mobile
 
 ## 🎨 **User Experience Principles**
 

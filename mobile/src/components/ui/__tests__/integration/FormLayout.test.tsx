@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import FormLayout from '../../FormLayout';
 import FormField from '../../FormField';
-import { COLORS } from '../../../theme/constants';
+import { COLORS } from '../../../../theme/constants';
 
 // Mock TouchOptimizedButton
 jest.mock('../../TouchOptimizedButton', () => {

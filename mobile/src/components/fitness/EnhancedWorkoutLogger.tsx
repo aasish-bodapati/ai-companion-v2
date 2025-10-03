@@ -18,6 +18,7 @@ import { fitnessService, ExerciseData } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import DynamicExerciseForm from './DynamicExerciseForm';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -724,7 +725,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   stepContainer: {
     alignItems: 'center',
@@ -806,7 +807,7 @@ const styles = StyleSheet.create({
   },
   input: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
@@ -825,7 +826,7 @@ const styles = StyleSheet.create({
   unitSelector: {
     flexDirection: 'row',
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
@@ -865,7 +866,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
@@ -885,7 +886,7 @@ const styles = StyleSheet.create({
   },
   exerciseItem: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -939,7 +940,7 @@ const styles = StyleSheet.create({
   },
   exerciseSummary: {
     backgroundColor: '#f0f9ff',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginTop: 12,
     borderWidth: 1,
@@ -961,7 +962,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 24,
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     minWidth: 120,
@@ -982,14 +983,14 @@ const styles = StyleSheet.create({
   photo: {
     width: 100,
     height: 100,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   removePhotoButton: {
     position: 'absolute',
     top: 4,
     right: 4,
     backgroundColor: '#ef4444',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     width: 24,
     height: 24,
     justifyContent: 'center',
@@ -997,7 +998,7 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
@@ -1025,7 +1026,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -1037,7 +1038,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     backgroundColor: '#ffffff',
@@ -1052,7 +1053,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     backgroundColor: '#3b82f6',
   },
   nextButtonDisabled: {
@@ -1069,7 +1070,7 @@ const styles = StyleSheet.create({
   saveButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     backgroundColor: '#10b981',
     alignItems: 'center',
   },

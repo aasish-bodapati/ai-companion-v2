@@ -15,6 +15,7 @@ import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
+import { COMMON_STYLES } from '../../theme/constants';
 import { 
   formatTimeInUserTimezone, 
   formatDateInUserTimezone, 
@@ -935,13 +936,13 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingText: {
     fontSize: 16,
@@ -994,8 +995,8 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   logCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -1122,8 +1123,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
@@ -1154,8 +1155,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exerciseEditCard: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.secondaryBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -1182,7 +1183,7 @@ const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
     color: '#374151',
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     textAlign: 'center',
   },
   noExercisesContainer: {
@@ -1227,7 +1228,7 @@ const styles = StyleSheet.create({
   },
   // Exercise Card Styles
   exerciseCard: {
-    backgroundColor: 'white',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderRadius: 8,
     padding: 8, // Reduced from 12 to 8
     marginHorizontal: 16,
@@ -1345,7 +1346,7 @@ const styles = StyleSheet.create({
   exerciseActionButton: {
     padding: 4, // Reduced from 6 to 4
     borderRadius: 4,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
@@ -1372,7 +1373,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     marginRight: 6,
     marginBottom: 3,
   },
@@ -1384,7 +1385,7 @@ const styles = StyleSheet.create({
     lineHeight: 16, // Ensure consistent line height
   },
   exerciseNotesContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     padding: 8,
     borderRadius: 6,
     marginBottom: 8,
@@ -1429,7 +1430,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderWidth: 1,
     borderColor: '#d1d5db',
     alignItems: 'center',
@@ -1440,7 +1441,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 6,
@@ -1454,7 +1455,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   todayButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 6,
@@ -1483,8 +1484,8 @@ const styles = StyleSheet.create({
   },
   // Date Picker Modal Styles
   datePickerModal: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     margin: 20,
     maxHeight: '50%',
   },

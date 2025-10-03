@@ -15,6 +15,7 @@ import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { onboardingService, HealthData } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface EditHealthDataModalProps {
   visible: boolean;
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     paddingHorizontal: 16,
     fontSize: 16,
     backgroundColor: '#ffffff',

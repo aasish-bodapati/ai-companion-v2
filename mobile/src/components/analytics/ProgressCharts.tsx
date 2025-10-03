@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { aiInsightsService, ProgressAnalysis } from '../../services/aiInsightsService';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -372,7 +373,7 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
@@ -409,9 +410,9 @@ const styles = StyleSheet.create({
   },
   periodSelector: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   scoreCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     margin: 16,
     borderRadius: 16,
     padding: 20,
@@ -491,8 +492,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   trendsCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     flex: 1,
     minWidth: (width - 48) / 2,
@@ -563,9 +564,9 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   insightsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -586,9 +587,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   recommendationsCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     margin: 16,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },

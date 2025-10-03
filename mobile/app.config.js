@@ -18,7 +18,7 @@ export default {
       },
     },
     extra: {
-      apiUrl: process.env.API_URL || 'http://192.168.1.5:8000',
+      apiUrl: process.env.API_URL || 'https://republishable-nondisingenuously-brittaney.ngrok-free.dev',
     },
   },
 };

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface MobileOptimizedCardProps {
   children: React.ReactNode;
@@ -195,8 +196,8 @@ export default function MobileOptimizedCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
+    borderRadius: COMMON_STYLES.standardRadius,
+    backgroundColor: COMMON_STYLES.cardBackground,
     // Ensure minimum touch target size
     minHeight: touchUtils.MIN_TOUCH_TARGET_SIZE,
   },
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
     elevation: 0,
   },
   filledCard: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     shadowColor: 'transparent',

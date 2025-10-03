@@ -63,8 +63,8 @@ CREATE INDEX ix_fitness_logs_user_id ON fitness_logs(user_id);
 ### Nutrition Logs Table
 ```sql
 CREATE TABLE nutrition_logs (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     meal_type VARCHAR(20) NOT NULL,
     meal_name VARCHAR(100),
     total_calories INTEGER NOT NULL,
@@ -90,8 +90,8 @@ CREATE INDEX ix_nutrition_logs_user_id ON nutrition_logs(user_id);
 ### Mood Logs Table
 ```sql
 CREATE TABLE mood_logs (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     mood_rating INTEGER NOT NULL,
     energy_level INTEGER,
     stress_level INTEGER,
@@ -118,14 +118,14 @@ CREATE INDEX ix_mood_logs_user_id ON mood_logs(user_id);
 ### Simple Routines Table
 ```sql
 CREATE TABLE simple_routines (
-    id VARCHAR(36) PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     difficulty VARCHAR(20) NOT NULL,
     duration_weeks INTEGER NOT NULL DEFAULT 4,
     tags JSON,
     is_template BOOLEAN NOT NULL DEFAULT TRUE,
-    created_by_user_id VARCHAR(36),
+    created_by_user_id INTEGER,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     workout_schedule JSON,
     total_workouts_per_week INTEGER DEFAULT 0,
@@ -138,9 +138,9 @@ CREATE TABLE simple_routines (
 ### Simple User Routine Progress Table
 ```sql
 CREATE TABLE simple_user_routine_progress (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
-    routine_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    routine_id INTEGER NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
@@ -156,8 +156,8 @@ CREATE TABLE simple_user_routine_progress (
 ### Routine Workout Days Table
 ```sql
 CREATE TABLE routine_workout_days (
-    id VARCHAR(36) PRIMARY KEY,
-    routine_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    routine_id INTEGER NOT NULL,
     day_name VARCHAR(20) NOT NULL,
     day_order INTEGER NOT NULL,
     workout_name VARCHAR(100) NOT NULL,
@@ -171,8 +171,8 @@ CREATE TABLE routine_workout_days (
 ### Routine Exercises Table
 ```sql
 CREATE TABLE routine_exercises (
-    id VARCHAR(36) PRIMARY KEY,
-    workout_day_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    workout_day_id INTEGER NOT NULL,
     exercise_name VARCHAR(200) NOT NULL,
     sets INTEGER NOT NULL,
     reps VARCHAR(50),
@@ -193,14 +193,14 @@ CREATE TABLE routine_exercises (
 ### Nutrition Routines Table
 ```sql
 CREATE TABLE nutrition_routines (
-    id VARCHAR(36) PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     description TEXT,
     difficulty VARCHAR(20) NOT NULL,
     duration_weeks INTEGER NOT NULL DEFAULT 4,
     tags JSON,
     is_template BOOLEAN NOT NULL DEFAULT TRUE,
-    created_by_user_id VARCHAR(36),
+    created_by_user_id INTEGER,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -211,8 +211,8 @@ CREATE TABLE nutrition_routines (
 ### Nutrition Meal Plans Table
 ```sql
 CREATE TABLE nutrition_meal_plans (
-    id VARCHAR(36) PRIMARY KEY,
-    routine_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    routine_id INTEGER NOT NULL,
     day_name VARCHAR(20) NOT NULL,
     day_order INTEGER NOT NULL,
     plan_name VARCHAR(100) NOT NULL,
@@ -226,8 +226,8 @@ CREATE TABLE nutrition_meal_plans (
 ### Nutrition Meals Table
 ```sql
 CREATE TABLE nutrition_meals (
-    id VARCHAR(36) PRIMARY KEY,
-    meal_plan_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    meal_plan_id INTEGER NOT NULL,
     meal_type VARCHAR(20) NOT NULL,
     meal_name VARCHAR(100) NOT NULL,
     total_calories INTEGER NOT NULL,
@@ -247,8 +247,8 @@ CREATE TABLE nutrition_meals (
 ### Nutrition Meal Foods Table
 ```sql
 CREATE TABLE nutrition_meal_foods (
-    id VARCHAR(36) PRIMARY KEY,
-    meal_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    meal_id INTEGER NOT NULL,
     food_name VARCHAR(200) NOT NULL,
     quantity VARCHAR(100) NOT NULL,
     calories INTEGER NOT NULL,
@@ -268,9 +268,9 @@ CREATE TABLE nutrition_meal_foods (
 ### Nutrition User Routine Progress Table
 ```sql
 CREATE TABLE nutrition_user_routine_progress (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
-    routine_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    routine_id INTEGER NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT FALSE,
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
@@ -290,8 +290,8 @@ CREATE TABLE nutrition_user_routine_progress (
 ### Conversations Table
 ```sql
 CREATE TABLE conversations (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
     title VARCHAR(255) NOT NULL,
     personalization_enabled BOOLEAN NOT NULL DEFAULT TRUE,
     incognito_mode BOOLEAN NOT NULL DEFAULT FALSE,
@@ -304,8 +304,8 @@ CREATE TABLE conversations (
 ### Messages Table
 ```sql
 CREATE TABLE messages (
-    id VARCHAR(36) PRIMARY KEY,
-    conversation_id VARCHAR(36) NOT NULL,
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL,
     role VARCHAR(20) NOT NULL,
     content TEXT NOT NULL,
     message_type VARCHAR(20) NOT NULL,
@@ -604,14 +604,13 @@ CREATE TABLE user_health_profile (
 ## Data Types Summary
 
 ### String Types
-- `VARCHAR(36)`: Short identifiers (legacy, being phased out)
 - `VARCHAR(50)`: Medium-length strings (activity types, difficulty levels)
 - `VARCHAR(100)`: Longer strings (names, locations)
 - `VARCHAR(255)`: Long strings (full names, routine names)
 - `TEXT`: Very long strings (notes, JSON data)
 
 ### Numeric Types
-- `SERIAL`: Auto-incrementing primary keys (replaces UUIDs)
+- `SERIAL`: Auto-incrementing primary keys (standardized across all tables)
 - `INTEGER`: Whole numbers (durations, counts, ratings, foreign keys)
 - `FLOAT`: Decimal numbers (weights, measurements, percentages)
 - `BOOLEAN`: True/false values

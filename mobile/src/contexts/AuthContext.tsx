@@ -110,9 +110,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
       // Login endpoint expects form-encoded data, not JSON
-      const formData = new URLSearchParams();
-      formData.append('username', email);
-      formData.append('password', password);
+      const formData = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+      
+      console.log('🔍 [AUTH] Login form data:', formData);
       
       const response = await apiClient.post('/login/access-token', formData, {
         headers: {

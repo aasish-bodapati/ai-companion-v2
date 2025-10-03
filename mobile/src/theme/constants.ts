@@ -161,6 +161,46 @@ export const SHADOWS = {
   },
 };
 
+// Common style patterns for frequently used combinations
+export const COMMON_STYLES = {
+  // Background patterns (using existing color constants)
+  secondaryBackground: COLORS.background.secondary, // '#f8fafc'
+  cardBackground: COLORS.background.primary, // '#ffffff'
+  modalBackground: COLORS.background.primary, // '#ffffff'
+  
+  // Border patterns (using existing radius constants)
+  standardRadius: BORDER_RADIUS.lg, // 12
+  smallRadius: BORDER_RADIUS.md, // 8
+  largeRadius: BORDER_RADIUS.xl, // 16
+  
+  // Shadow patterns (using existing shadow constants)
+  standardShadow: SHADOWS.small,
+  elevatedShadow: SHADOWS.medium,
+  
+  // Loading states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background.secondary,
+  } as ViewStyle,
+  
+  // Modal patterns (extending existing modal styles)
+  modalOverlayCenter: {
+    flex: 1,
+    backgroundColor: COLORS.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  } as ViewStyle,
+  
+  modalContentCenter: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    ...SHADOWS.large,
+  } as ViewStyle,
+};
+
 // Common style mixins
 export const MIXINS = {
   // Card styles
@@ -295,6 +335,7 @@ export default {
   FONT_SIZE,
   FONT_WEIGHT,
   SHADOWS,
+  COMMON_STYLES,
   MIXINS,
   ANIMATION,
   TOUCH_TARGET,

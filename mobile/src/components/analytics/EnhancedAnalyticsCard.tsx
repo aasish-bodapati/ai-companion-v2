@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -111,7 +112,7 @@ export default function EnhancedAnalyticsCard({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },

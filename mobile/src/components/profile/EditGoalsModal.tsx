@@ -12,6 +12,7 @@ import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { onboardingService } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface EditGoalsModalProps {
   visible: boolean;
@@ -422,7 +423,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   summaryGoalText: {
     fontSize: 12,

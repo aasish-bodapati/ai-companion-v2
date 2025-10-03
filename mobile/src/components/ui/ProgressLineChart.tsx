@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -305,8 +306,8 @@ const styles = StyleSheet.create({
   },
   chart: {
     position: 'relative',
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    backgroundColor: COMMON_STYLES.secondaryBackground,
+    borderRadius: COMMON_STYLES.smallRadius,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { OnboardingData, HealthData } from '../../services/onboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface EditPreferencesModalProps {
   visible: boolean;
@@ -348,7 +349,7 @@ export default function EditPreferencesModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   header: {
     flexDirection: 'row',
@@ -372,7 +373,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
   },
   saveButtonDisabled: {
     backgroundColor: '#9ca3af',
@@ -413,7 +414,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     paddingVertical: 12,
     alignItems: 'center',
   },
@@ -451,7 +452,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     padding: 12,
   },
   activityButtonSelected: {
@@ -505,7 +506,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: '#ffffff',
     padding: 16,
-    borderRadius: 8,
+    borderRadius: COMMON_STYLES.smallRadius,
     marginBottom: 8,
   },
   preferenceInfo: {

@@ -1,10 +1,10 @@
-# HealthLog AI - Your Personal Wellness Assistant
+# AI Companion - Health & Wellness Platform
 
-A comprehensive AI-powered health and wellness companion that combines manual logging with intelligent insights. Track your fitness, nutrition, and mood while receiving personalized coaching and pattern recognition from your AI assistant.
+A comprehensive health and wellness platform with AI-powered insights, featuring both web and mobile applications for tracking fitness, nutrition, and mood.
 
 ## 🎯 Core Vision
 
-Transform your health journey with intelligent logging and AI-powered insights. HealthLog AI combines the precision of manual data entry with the intelligence of AI analysis to provide personalized wellness coaching, pattern recognition, and actionable recommendations.
+Transform your health journey with intelligent logging and AI-powered insights. AI Companion combines precise manual data entry with AI analysis to provide personalized wellness coaching, pattern recognition, and actionable recommendations.
 
 ## ✨ Key Features
 
@@ -20,11 +20,11 @@ Transform your health journey with intelligent logging and AI-powered insights. 
 - **Goal Tracking**: Set and monitor health and wellness objectives
 - **Memory System**: Learn from your preferences and past behaviors
 
-### 🎨 **Intuitive User Experience**
-- **Manual Logging**: Precise data entry through beautiful, responsive forms
-- **Quick Actions**: Fast logging for common activities
-- **Real-time Validation**: Instant feedback and error prevention
-- **Mobile-First Design**: Log anywhere, anytime
+### 📱 **Cross-Platform Experience**
+- **Web Application**: Full-featured web interface for comprehensive tracking
+- **Mobile App**: React Native app for on-the-go logging
+- **Real-time Sync**: Seamless data synchronization across platforms
+- **Offline Support**: Log activities even without internet connection
 
 ## 🚀 Quick Start
 
@@ -43,18 +43,19 @@ python -m alembic upgrade head
 python -m uvicorn app.main:app --reload
 ```
 
-### Frontend Setup
+### Mobile App Setup
 ```bash
-cd frontend
+cd mobile
 npm install
-npm run dev
+npm start
+# Scan QR code with Expo Go app
 ```
 
 ### First Steps
-1. **Register** your account at `http://localhost:3000/register`
-2. **Complete** the health onboarding to set your goals
-3. **Start Logging** your daily activities in the Health Log
-4. **Get Insights** from your AI assistant based on your data
+1. **Start Backend** - Run the FastAPI server
+2. **Launch Mobile App** - Use Expo Go to scan QR code
+3. **Complete Onboarding** - Set your health goals and preferences
+4. **Start Logging** - Track your daily activities and get AI insights
 
 ## 🔧 Configuration
 
@@ -91,9 +92,9 @@ Copy `backend/.env.example` to `backend/.env` and configure:
 cd backend
 python -m pytest
 
-# Frontend tests
-cd frontend
-npm run test:all
+# Mobile app tests
+cd mobile
+npm test
 ```
 
 ## 📚 Documentation
@@ -101,6 +102,8 @@ npm run test:all
 - [API Documentation](http://localhost:8000/docs)
 - [Health Logging Guide](docs/HEALTH_LOGGING.md)
 - [AI Assistant Features](docs/AI_FEATURES.md)
+- [Database Schemas](docs/DATABASE_SCHEMAS.md)
+- [API Examples](docs/API_EXAMPLES.md)
 
 ## 🔒 Security & Privacy
 
@@ -113,7 +116,7 @@ npm run test:all
 ## 🏗️ Technical Architecture
 
 - **Backend**: FastAPI + SQLAlchemy + Pydantic
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
+- **Mobile**: React Native + Expo SDK 54 + TypeScript
 - **Database**: PostgreSQL with health-optimized schemas
 - **AI Engine**: Configurable LLM providers (OpenRouter, OpenAI, Anthropic)
 - **Memory System**: FAISS vector store for pattern recognition

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
 import { getDateLocal } from '../../utils/dateUtils';
 import { useToast } from '../../contexts/ToastContext';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface MealLog {
   id: number;
@@ -759,13 +760,13 @@ export default NutritionLogsView;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingText: {
     fontSize: 16,
@@ -810,7 +811,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   mealCard: {
-    backgroundColor: 'white',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderRadius: 8,
     padding: 8,
     marginHorizontal: 16,
@@ -906,7 +907,7 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 4,
     borderRadius: 4,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     alignItems: 'center',
@@ -924,7 +925,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   mealStatText: {
     fontSize: 12,
@@ -942,7 +943,7 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
   mealNotesContainer: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     padding: 6,
     borderRadius: 4,
     marginTop: 4,
@@ -1038,8 +1039,8 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     width: '100%',
     maxWidth: 400,
     maxHeight: '80%',
@@ -1128,7 +1129,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     fontSize: 14,
     color: '#374151',
-    backgroundColor: 'white',
+    backgroundColor: COMMON_STYLES.cardBackground,
     minWidth: 60,
     textAlign: 'center',
   },

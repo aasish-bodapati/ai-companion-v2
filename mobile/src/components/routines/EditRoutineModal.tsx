@@ -15,6 +15,7 @@ import { routineService, CreateRoutineData, SimpleRoutineWithProgress } from '..
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface Exercise {
   id: number;
@@ -665,7 +666,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -707,7 +708,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
@@ -738,7 +739,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 16,
@@ -752,8 +753,8 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   dayWorkouts: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
   },
   dayHeader: {
@@ -841,7 +842,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
   },
   workoutCategoryText: {
     fontSize: 12,
@@ -877,7 +878,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -889,7 +890,7 @@ const styles = StyleSheet.create({
   categoryFilter: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
   },
   categoryChip: {
     flexDirection: 'row',
@@ -899,7 +900,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     marginRight: 8,
   },
   categoryChipSelected: {
@@ -918,7 +919,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,
@@ -937,7 +938,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,

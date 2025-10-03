@@ -219,11 +219,6 @@ class NumericalGoalsService {
         currentValue = 0; // Placeholder
         break;
 
-      // Lifestyle Goals
-      case 'hydration_consistency':
-        // Already handled above
-        break;
-
       default:
         currentValue = 0;
     }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface DayAtAGlanceProps {
   todayStats: {
@@ -78,7 +79,7 @@ export default function DayAtAGlance({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COMMON_STYLES.cardBackground,
     borderRadius: 12,
     padding: 12,
     marginHorizontal: 16,
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 8,
     borderRadius: 12,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     minHeight: 80,

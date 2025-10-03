@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedInput from '../ui/MobileOptimizedInput';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface HealthData {
   age: string;
@@ -43,7 +44,7 @@ export default function HealthDataStep({
     age: '',
     height: '',
     weight: '',
-    gender: 'male',
+    gender: initialData.gender || '', // No pre-selection for new users
     ffm: '',
     smm: '',
     bodyFat: '',
@@ -137,6 +138,10 @@ export default function HealthDataStep({
       newErrors.weight = 'Please enter a valid weight (30-300 kg)';
     }
 
+    if (!data.gender || data.gender === '') {
+      newErrors.gender = 'Please select your gender';
+    }
+
     // Optional field validation - only validate if provided
     if (data.ffm && (isNaN(Number(data.ffm)) || Number(data.ffm) < 20 || Number(data.ffm) > 100)) {
       newErrors.ffm = 'Please enter a valid FFM (20-100 kg)';
@@ -205,6 +210,7 @@ export default function HealthDataStep({
           </TouchableOpacity>
         ))}
       </View>
+      {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
     </View>
   );
 
@@ -412,7 +418,7 @@ export default function HealthDataStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   content: {
     flex: 1,
@@ -447,7 +453,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderWidth: 1.5,
     borderColor: '#d1d5db',
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     paddingHorizontal: 16,
     fontSize: 16,
     backgroundColor: '#ffffff',
@@ -482,7 +488,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     paddingHorizontal: 12,
-    borderRadius: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface RoutineDashboardProps {
   onRoutineSelected?: () => void;
@@ -313,13 +314,13 @@ export default function RoutineDashboard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COMMON_STYLES.secondaryBackground,
   },
   loadingText: {
     fontSize: 16,
@@ -366,8 +367,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   routineCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COMMON_STYLES.cardBackground,
+    borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     marginHorizontal: 16,
     marginBottom: 12,
