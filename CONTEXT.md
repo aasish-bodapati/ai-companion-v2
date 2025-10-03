@@ -34,6 +34,16 @@ AI-powered health and wellness platform that combines manual logging with intell
 - **Personalized Insights**: Tailored recommendations based on user data
 - **Memory System**: FAISS vector store for learning user preferences
 
+### Dashboard & Analytics (Latest)
+- **Personalized Dashboard**: Dynamic welcome, micro-goals, quick stats, body type hero card
+- **Integrated Stats**: Combined nutrition, water, mood tracking with progress indicators
+- **Health Logging Cards**: Consolidated activity and wellness logging with circular progress
+- **Priority AI Insights**: Color-coded, actionable recommendations with one-tap actions
+- **Weekly Summary**: Trend visualization with gamification and motivational feedback
+- **Analytics Redesign**: Time period filters, goal alignment tracking, comparison insights
+- **Achievement System**: Progress-based badges, streaks, and gamification elements
+- **Interactive Charts**: Time-based trends with data point interaction and statistics
+
 ## 📊 **Database Schema**
 
 ### Core Tables
@@ -58,10 +68,11 @@ AI-powered health and wellness platform that combines manual logging with intell
 - **Data Validation** - Comprehensive field constraints and validation
 
 ### Development Environment
-- **Servers Always Running** - Assume backend and mobile dev servers are running
-- **Never Restart Servers** - Don't stop/start servers without explicit permission
+- **Servers Always Running** - Assume backend and mobile dev servers are running in dev mode
+- **No Server Control** - AI assistant has NO authority to stop/start/restart servers
+- **Never Restart Servers** - Don't stop/start servers without explicit user permission
 - **PowerShell Commands** - Use PowerShell syntax for Windows commands
-- **Dev Mode Only** - All servers run in development mode
+- **Dev Mode Only** - All servers run in development mode by default
 
 ### Code Standards
 - **Feature-Based Organization** - Group related functionality together
@@ -96,17 +107,19 @@ AI-powered health and wellness platform that combines manual logging with intell
 ## 📱 **Mobile App Structure**
 
 ### Main Screens
-- **Dashboard**: Overview with quick stats and AI insights
+- **Dashboard**: Redesigned with personalized welcome, body type hero card, integrated stats, and gamification
 - **Fitness**: Workout logging and routine management
 - **Nutrition**: Meal logging and nutrition tracking
-- **Analytics**: Progress visualization and trends
+- **Analytics**: Comprehensive analytics with time period filters, trend visualization, and comparison insights
 - **Profile**: User settings and health profile
 
 ### Key Components
+- **Dashboard Components**: Personalized welcome, quick stats, body type hero card, integrated stats, health logging cards, AI insights, weekly summary
+- **Analytics Components**: Time period selector, goal alignment hero, time-based trends, comparison insights, achievement system
 - **Modals**: Workout logging, meal logging, routine creation
-- **Charts**: Weekly activity, nutrition trends, progress tracking
+- **Charts**: Interactive trend charts, progress visualization, comparison graphs
 - **Forms**: Comprehensive logging with validation
-- **Cards**: Quick stats, insights, and progress indicators
+- **Cards**: Quick stats, insights, progress indicators, gamification elements
 
 ## 🚀 **Development Guidelines**
 
