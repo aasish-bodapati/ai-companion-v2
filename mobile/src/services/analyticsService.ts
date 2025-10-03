@@ -76,7 +76,7 @@ export const analyticsService = {
       const response = await apiClient.get(`/health/analytics/trends?weeks=${weeks}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch weekly trends:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWeeklyTrends();
     }
   },
@@ -87,7 +87,7 @@ export const analyticsService = {
       const response = await apiClient.get(`/health/analytics/correlations?days=${days}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch correlation insights:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCorrelationData();
     }
   },
@@ -98,7 +98,7 @@ export const analyticsService = {
       const response = await apiClient.get('/health/analytics/recommendations');
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch recommendations:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
     }
   },
@@ -109,7 +109,7 @@ export const analyticsService = {
       const response = await apiClient.get('/health/analytics/dashboard');
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockDashboardData();
     }
   },
@@ -120,7 +120,7 @@ export const analyticsService = {
       const response = await apiClient.get('/health/analytics/data-quality');
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch data quality score:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return { score: 85, suggestions: ['Log more detailed workout information'] };
     }
   },

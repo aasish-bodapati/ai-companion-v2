@@ -5,17 +5,46 @@
 
 import { apiClient } from './api';
 
+export interface RangeValue {
+  min: number;
+  max: number;
+  recommended: number;
+  unit: string;
+}
+
 export interface BodyTypeGoalTargetAttributes {
-  target_weight: number;
-  weight_change: number;
-  water_goal: number; // ml per day
-  calorie_target: number;
-  protein_target: number; // g per day
-  workout_frequency: number; // days per week
-  cardio_minutes: number; // minutes per week
-  timeline: number; // weeks to reach goal
-  waist_to_height_ratio?: number; // Waist-to-height ratio
-  fat_free_mass_index?: number; // Fat-Free Mass Index
+  // BMI ranges
+  target_bmi_range: RangeValue;
+  
+  // Gender-specific body fat ranges
+  body_fat_range_men: RangeValue;
+  body_fat_range_women: RangeValue;
+  
+  // Gender-specific FFMI ranges
+  ffmi_range_men: RangeValue;
+  ffmi_range_women: RangeValue;
+  
+  // SMM level
+  smm_level: string;
+  
+  // Gender-specific protein requirements
+  protein_per_kg_men: RangeValue;
+  protein_per_kg_women: RangeValue;
+  
+  // Calorie targets
+  calorie_target: string;
+  
+  // Workout focus
+  workout_focus: string;
+  workout_frequency: RangeValue;
+  cardio_minutes: RangeValue;
+  strength_sessions: RangeValue;
+  
+  // Additional metrics
+  water_goal: RangeValue;
+  sleep_duration: RangeValue;
+  daily_steps: RangeValue;
+  recovery_days: RangeValue;
 }
 
 export interface BodyTypeGoal {
@@ -27,7 +56,7 @@ export interface BodyTypeGoal {
   color: string;
   target_bmi: number;
   target_body_fat?: number;
-  target_attributes: BodyTypeGoalTargetAttributes;
+  target_attributes: BodyTypeGoalTargetAttributes | string; // Can be JSON string or object
   created_by: string;
   is_active: boolean;
   sort_order: number;
@@ -50,7 +79,7 @@ class BodyTypeGoalsApiService {
       console.log('🎯 Body type goals fetched successfully:', response.data.body_type_goals.length);
       return response.data.body_type_goals;
     } catch (error) {
-      console.error('❌ Failed to fetch body type goals:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error('Failed to fetch body type goals');
     }
   }
@@ -66,7 +95,7 @@ class BodyTypeGoalsApiService {
       console.log('🎯 System body type goals fetched successfully:', response.data.body_type_goals.length);
       return response.data.body_type_goals;
     } catch (error) {
-      console.error('❌ Failed to fetch system body type goals:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error('Failed to fetch system body type goals');
     }
   }
@@ -82,7 +111,7 @@ class BodyTypeGoalsApiService {
       console.log(`🎯 Body type goals for category ${category} fetched successfully:`, response.data.body_type_goals.length);
       return response.data.body_type_goals;
     } catch (error) {
-      console.error(`❌ Failed to fetch body type goals for category ${category}:`, error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error(`Failed to fetch body type goals for category ${category}`);
     }
   }
@@ -98,7 +127,7 @@ class BodyTypeGoalsApiService {
       console.log(`🎯 Body type goal ${id} fetched successfully`);
       return response.data;
     } catch (error) {
-      console.error(`❌ Failed to fetch body type goal ${id}:`, error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
   }

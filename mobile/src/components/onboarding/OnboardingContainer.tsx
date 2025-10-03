@@ -4,8 +4,10 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  Text,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface OnboardingContainerProps {
@@ -50,9 +52,13 @@ export default function OnboardingContainer({
       const shouldSwipeNext = translationX < -threshold || velocityX < -500;
       const shouldSwipePrevious = translationX > threshold || velocityX > 500;
 
+      console.log('🎬 Swipe gesture - shouldSwipeNext:', shouldSwipeNext, 'canGoNext:', canGoNext, 'shouldSwipePrevious:', shouldSwipePrevious, 'canGoPrevious:', canGoPrevious);
+      
       if (shouldSwipeNext && canGoNext) {
+        console.log('🎬 Swipe next allowed - calling handleNext');
         handleNext();
       } else if (shouldSwipePrevious && canGoPrevious) {
+        console.log('🎬 Swipe previous allowed - calling handlePrevious');
         handlePrevious();
       } else {
         // Snap back
@@ -70,9 +76,11 @@ export default function OnboardingContainer({
     console.log('🎬 OnboardingContainer handleNext - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
     
     if (!canGoNext || isAnimating) {
-      console.log('❌ OnboardingContainer handleNext blocked');
+      console.log('❌ OnboardingContainer handleNext blocked - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
       return;
     }
+    
+    console.log('✅ OnboardingContainer handleNext proceeding');
 
     hapticFeedback.light();
     
@@ -155,6 +163,15 @@ export default function OnboardingContainer({
       ) : (
         content
       )}
+      
+      {/* Swipe Instruction */}
+      {enableSwipe && (
+        <View style={styles.swipeInstruction}>
+          <Ionicons name="chevron-back" size={16} color="#9ca3af" />
+          <Text style={styles.swipeText}>Swipe to navigate</Text>
+          <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+        </View>
+      )}
     </View>
   );
 }
@@ -166,5 +183,21 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  swipeInstruction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8fafc',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  swipeText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginHorizontal: 8,
+    fontWeight: '500',
   },
 });

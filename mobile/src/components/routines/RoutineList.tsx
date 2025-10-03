@@ -67,7 +67,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       })));
       setRoutines(allRoutines);
     } catch (err: any) {
-      console.error('Failed to load routines:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       setError(err.response?.data?.detail || err.message || 'Failed to load routines');
     } finally {
       setLoading(false);
@@ -111,12 +111,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       console.log('✅ Routine list refreshed');
       onRoutineSelected?.();
     } catch (err: any) {
-      console.error('❌ Failed to start routine:', err);
-      console.error('Error details:', {
-        message: err.message,
-        status: err.response?.status,
-        data: err.response?.data
-      });
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', err.response?.data?.detail || err.message || 'Failed to set routine as active');
     } finally {
       setActionLoading(null);
@@ -130,7 +125,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       showToast.success('Success!', 'Routine set to inactive');
       await loadRoutines();
     } catch (err: any) {
-      console.error('Failed to stop routine:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', err.response?.data?.detail || err.message || 'Failed to set routine to inactive');
     } finally {
       setActionLoading(null);
@@ -163,12 +158,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       }
       setShowEditModal(true);
     } catch (error) {
-      console.error('❌ Failed to prepare routine for editing:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to prepare routine for editing. Please try again.');
     }
   };
@@ -187,7 +177,7 @@ export default function RoutineList({ onRoutineSelected, onCreateRoutine }: Rout
       showToast.success('Success!', 'Routine deleted successfully');
       await loadRoutines();
     } catch (err: any) {
-      console.error('Failed to delete routine:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       
       let errorMessage = 'Failed to delete routine. Please try again.';
       if (err.response?.status === 403) {

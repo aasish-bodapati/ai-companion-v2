@@ -119,7 +119,7 @@ export default function EditPreferencesModal({
       showToast.success('Success', 'Preferences updated successfully');
       onClose();
     } catch (error) {
-      console.error('Failed to save preferences:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to save preferences');
     } finally {
       setLoading(false);

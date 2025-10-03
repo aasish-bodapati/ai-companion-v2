@@ -208,7 +208,7 @@ export default function EditGoalsModal({
       
       showToast.success('Success!', 'Goals updated successfully');
     } catch (error) {
-      console.error('Failed to save goals:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       showToast.error('Error', 'Failed to save goals');
     } finally {

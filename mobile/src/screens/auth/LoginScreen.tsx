@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { showToast } from '../../utils/toast';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -19,11 +19,12 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
   const { login } = useAuth();
+  const { showToast } = useToast();
   const navigation = useNavigation();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      showToast.error('Error', 'Please fill in all fields');
+      showToast('Error: Please fill in all fields', 'error', 5000);
       return;
     }
 
@@ -33,12 +34,12 @@ export default function LoginScreen() {
       const result = await login(email, password);
       if (!result.success) {
         setLoginError(result.error || 'Invalid email or password');
-        showToast.error('Login Failed', result.error || 'Invalid email or password');
+        // Toast notification is now handled in AuthContext
       }
     } catch (error) {
       const errorMessage = 'Login failed. Please try again.';
       setLoginError(errorMessage);
-      showToast.error('Error', errorMessage);
+      // Toast notification is now handled in AuthContext
     } finally {
       setIsLoading(false);
     }

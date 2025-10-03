@@ -70,7 +70,7 @@ export default function LogTodaysWorkoutModal({
       const categoriesData = await exerciseCategoryService.getCategories();
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
 
@@ -96,6 +96,15 @@ export default function LogTodaysWorkoutModal({
       setLoading(true);
       const response = await routineService.getTodaysWorkout();
       
+      // Handle the case where no workout is scheduled for today
+      if (!response) {
+        console.log('ℹ️ No workout scheduled for today');
+        setLoading(false); // Stop loading immediately
+        setWorkoutData(null);
+        // Don't show toast here - we'll show a proper UI instead
+        return;
+      }
+      
       // Handle the API response structure - data might be nested
       const data = response.data || response;
       
@@ -105,7 +114,7 @@ export default function LogTodaysWorkoutModal({
       const initialData: { [key: number]: any } = {};
       const loggedTodaySet = new Set<number>();
       
-      if (data.exercises && Array.isArray(data.exercises)) {
+      if (data && data.exercises && Array.isArray(data.exercises)) {
         // Fetch latest data and check if logged today for each exercise in parallel
         const exercisePromises = data.exercises.map(async (exercise: Exercise) => {
           try {
@@ -150,7 +159,7 @@ export default function LogTodaysWorkoutModal({
               };
             }
           } catch (error) {
-            console.log(`🔍 [LOG TODAY'S WORKOUT] Error fetching data for ${exercise.exercise_name}:`, error);
+            // Silent error handling - no console logging to prevent Expo Go notifications
             return {
               id: exercise.id,
               data: {
@@ -177,7 +186,7 @@ export default function LogTodaysWorkoutModal({
       setExerciseData(initialData);
       setExercisesLoggedToday(loggedTodaySet);
     } catch (error) {
-      console.error('Failed to load today\'s workout:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       
       // Handle different error types
       if (error.response?.status === 404) {
@@ -461,7 +470,7 @@ export default function LogTodaysWorkoutModal({
       onWorkoutLogged();
       onClose();
     } catch (error) {
-      console.error('Failed to log workout:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to log workout. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -477,7 +486,7 @@ export default function LogTodaysWorkoutModal({
       onWorkoutLogged();
       onClose();
     } catch (error) {
-      console.error('Failed to skip workout:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to skip workout. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -488,15 +497,9 @@ export default function LogTodaysWorkoutModal({
   const getTotalExercises = () => workoutData?.exercises?.length || 0;
 
   if (!workoutData) {
-    return (
-      <Modal visible={visible} animationType="slide" transparent>
-        <View style={styles.overlay}>
-          <View style={styles.modal}>
-            <Text style={styles.loadingText}>Loading workout...</Text>
-          </View>
-        </View>
-      </Modal>
-    );
+    // This should not happen anymore since we check before opening the modal
+    // But keep this as a fallback
+    return null;
   }
 
   return (
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modal: {
-    backgroundColor: '#fed7aa', // More vibrant orange background for fitness
+    backgroundColor: '#ffffff', // Clean white background to match rest of app
     borderRadius: 12,
     width: '95%',
     height: '80%', // Further reduced to 80%
@@ -730,7 +733,7 @@ const styles = StyleSheet.create({
     padding: 6,
     marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#fed7aa', // Light orange border
+    borderColor: '#E5E7EB', // Light gray border to match white theme
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

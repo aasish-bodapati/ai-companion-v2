@@ -79,7 +79,7 @@ export default function CreateRoutineModal({
       onClose();
       onRoutineCreated();
     } catch (err: any) {
-      console.error('Failed to create routine:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       Alert.alert('Error', err.response?.data?.detail || err.message || 'Failed to create routine');
     } finally {
       setLoading(false);

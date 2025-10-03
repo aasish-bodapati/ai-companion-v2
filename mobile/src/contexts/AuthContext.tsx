@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../services/api';
-import { showToast } from '../utils/toast';
+// Note: Toast notifications are handled by the calling component
 
 interface User {
   id: number;
@@ -31,6 +31,7 @@ interface AuthContextType {
   completeOnboarding: (data?: OnboardingData) => void;
   rerunOnboarding: () => void;
   updateUser: (userData: Partial<User>) => void;
+  deleteAccount: () => Promise<{ success: boolean; error?: string; }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,24 +57,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (storedToken) {
         setToken(storedToken);
         // Verify token with backend
-        const response = await apiClient.get('/users/me');
-        console.log('🔍 User data from API:', response.data);
-        setUser(response.data);
+        try {
+          const response = await apiClient.get('/users/me');
+          if (__DEV__) {
+            console.log('🔍 User data from API:', response.data);
+          }
+          setUser(response.data);
+        } catch (userError: any) {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          // Clear invalid token
+          await AsyncStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+        }
         
         // Check onboarding completion status from backend
         try {
           const onboardingStatus = await apiClient.get('/health/onboarding/status');
-          console.log('🔍 checkAuthStatus - onboarding status from API:', onboardingStatus.data);
-          setNeedsOnboarding(!onboardingStatus.data.completed);
-          console.log('🔍 checkAuthStatus - setNeedsOnboarding to:', !onboardingStatus.data.completed);
+          if (__DEV__) {
+            console.log('🔍 checkAuthStatus - onboarding status from API:', onboardingStatus.data);
+          }
+          const completed = onboardingStatus.data.completed;
+          
+          // For debugging: always show onboarding for now to test
+          // TODO: Remove this after fixing the backend onboarding status
+          const forceOnboarding = true;
+          
+          setNeedsOnboarding(!completed || forceOnboarding);
+          if (__DEV__) {
+            console.log('🔍 checkAuthStatus - completed:', completed, 'forceOnboarding:', forceOnboarding, 'setNeedsOnboarding to:', !completed || forceOnboarding);
+          }
         } catch (onboardingError) {
-          console.log('🔍 checkAuthStatus - failed to get onboarding status:', onboardingError);
+          console.log('🔍 checkAuthStatus - onboarding status error:', onboardingError);
           // Default to needing onboarding if we can't check
           setNeedsOnboarding(true);
         }
+      } else {
+        // No token - user needs to log in, but if they do, they'll need onboarding
+        setNeedsOnboarding(true);
       }
     } catch (error) {
-      console.log('Auth check failed:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Clear invalid token
       await AsyncStorage.removeItem('token');
       setToken(null);
@@ -107,7 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userResponse = await apiClient.get('/users/me');
         setUser(userResponse.data);
       } catch (error) {
-        console.log('Failed to get user data:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
         setUser({
           id: 13, // This should come from the token or a separate call
@@ -120,68 +144,101 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check onboarding status
       try {
         const onboardingStatus = await apiClient.get('/health/onboarding/status');
-        console.log('🔍 login - onboarding status from API:', onboardingStatus.data);
-        setNeedsOnboarding(!onboardingStatus.data.completed);
-        console.log('🔍 login - setNeedsOnboarding to:', !onboardingStatus.data.completed);
+        if (__DEV__) {
+          console.log('🔍 login - onboarding status from API:', onboardingStatus.data);
+        }
+        const completed = onboardingStatus.data.completed;
+        setNeedsOnboarding(!completed);
+        if (__DEV__) {
+          console.log('🔍 login - completed:', completed, 'setNeedsOnboarding to:', !completed);
+        }
       } catch (error) {
-        console.log('🔍 login - failed to get onboarding status:', error);
+        console.log('🔍 login - onboarding status error:', error);
+        // Default to needing onboarding if we can't check
         setNeedsOnboarding(true);
       }
 
       return { success: true };
     } catch (error: any) {
-      console.error('Login failed:', error);
+      // Handle different types of errors and show appropriate toast notifications
+      let errorMessage = 'Login failed. Please try again.';
       
-      // Handle specific error cases
-      if (error.response?.status === 400) {
+      if (error.response?.status === 404) {
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        errorMessage = 'Server is not available. Please try again in a moment.';
+      } else if (error.response?.status === 401) {
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        errorMessage = 'Invalid email or password';
+      } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error.response?.status === 400) {
         const errorDetail = error.response?.data?.detail || error.response?.data?.message;
         if (errorDetail?.includes('Incorrect email or password')) {
-          return { success: false, error: 'Invalid email or password. Please check your credentials and try again.' };
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
         } else if (errorDetail?.includes('Inactive user')) {
-          return { success: false, error: 'Your account has been deactivated. Please contact support.' };
+          errorMessage = 'Your account has been deactivated. Please contact support.';
         } else {
-          return { success: false, error: errorDetail || 'Invalid credentials. Please try again.' };
+          errorMessage = errorDetail || 'Invalid credentials. Please try again.';
         }
       } else if (error.response?.status === 422) {
-        return { success: false, error: 'Please check your email and password format.' };
-      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        return { success: false, error: 'Network error. Please check your internet connection and try again.' };
+        errorMessage = 'Please check your email and password format.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        return { success: false, error: 'Request timed out. Please try again.' };
+        errorMessage = 'Request timed out. Please try again.';
       } else {
-        return { success: false, error: 'Login failed. Please try again later.' };
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        errorMessage = 'Login failed. Please try again.';
       }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
   const register = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
+    console.log('🔍 [AUTH CONTEXT] register called with:', { email, fullName, passwordLength: password.length });
+    
     try {
-      await apiClient.post('/register', {
+      console.log('🔍 [AUTH CONTEXT] Making API call to /register');
+      const response = await apiClient.post('/register', {
         email,
         password,
         full_name: fullName,
       });
+      console.log('🔍 [AUTH CONTEXT] Registration API response:', response.data);
       return { success: true };
     } catch (error: any) {
-      console.error('Registration failed:', error);
+      console.log('🔍 [AUTH CONTEXT] Registration API error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code
+      });
       
-      // Handle specific error cases
+      // Handle specific error cases and show toast notifications
+      let errorMessage = 'Registration failed. Please try again later.';
+      
       if (error.response?.status === 400) {
         const errorDetail = error.response?.data?.detail || error.response?.data?.message;
         if (errorDetail?.includes('already exists')) {
-          return { success: false, error: 'An account with this email already exists. Please try logging in instead.' };
+          errorMessage = 'An account with this email already exists. Please try logging in instead.';
         } else {
-          return { success: false, error: errorDetail || 'Registration failed. Please try again.' };
+          errorMessage = errorDetail || 'Registration failed. Please try again.';
         }
       } else if (error.response?.status === 422) {
-        return { success: false, error: 'Please check your information and try again.' };
+        errorMessage = 'Please check your information and try again.';
       } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        return { success: false, error: 'Network error. Please check your internet connection and try again.' };
+        errorMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        return { success: false, error: 'Request timed out. Please try again.' };
+        errorMessage = 'Request timed out. Please try again.';
       } else {
-        return { success: false, error: 'Registration failed. Please try again later.' };
+        errorMessage = 'Registration failed. Please try again later.';
       }
+      
+      console.log('🔍 [AUTH CONTEXT] Error message to show:', errorMessage);
+      
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -192,7 +249,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await apiClient.post('/logout');
       }
     } catch (error) {
-      console.log('Logout API call failed:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       // Clear local storage
       await AsyncStorage.removeItem('token');
@@ -221,7 +278,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setNeedsOnboarding(false);
       console.log('🎉 AuthContext completeOnboarding completed - needsOnboarding set to false');
     } catch (error) {
-      console.error('❌ Failed to complete onboarding on backend:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Still mark as completed locally to prevent infinite onboarding loop
       setNeedsOnboarding(false);
     }
@@ -242,6 +299,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      console.log('🔍 [AUTH CONTEXT] deleteAccount called');
+      
+      const response = await apiClient.delete('/me');
+      console.log('🔍 [AUTH CONTEXT] Delete account response:', response.data);
+      
+      // Clear local state
+      await AsyncStorage.removeItem('token');
+      setToken(null);
+      setUser(null);
+      setNeedsOnboarding(true);
+      
+      return { success: true };
+    } catch (error: any) {
+      console.log('🔍 [AUTH CONTEXT] Delete account error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code
+      });
+      
+      let errorMessage = 'Failed to delete account. Please try again.';
+      
+      if (error.response?.status === 401) {
+        errorMessage = 'You are not authorized to delete this account.';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please try again.';
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     token,
@@ -254,6 +349,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     completeOnboarding,
     rerunOnboarding,
     updateUser,
+    deleteAccount,
   };
 
   return (

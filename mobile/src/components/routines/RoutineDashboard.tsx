@@ -72,7 +72,7 @@ export default function RoutineDashboard({
       
       setRoutines(allRoutines);
     } catch (error) {
-      console.error('Failed to load routine data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
@@ -117,12 +117,7 @@ export default function RoutineDashboard({
       await loadData();
       onRoutineSelected?.();
     } catch (error) {
-      console.error('❌ Failed to start routine:', error);
-      console.error('Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setActionLoading(null);
     }
@@ -134,7 +129,7 @@ export default function RoutineDashboard({
       await routineService.stopRoutine(routineId);
       await loadData();
     } catch (error) {
-      console.error('Failed to stop routine:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setActionLoading(null);
     }
@@ -156,7 +151,7 @@ export default function RoutineDashboard({
               await loadData();
               onDeleteRoutine?.(routineId);
             } catch (error) {
-              console.error('Failed to delete routine:', error);
+              // Silent error handling - no console logging to prevent Expo Go notifications
               Alert.alert('Error', 'Failed to delete routine. Please try again.');
             } finally {
               setActionLoading(null);

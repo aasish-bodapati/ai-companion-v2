@@ -17,8 +17,6 @@ export default function DayAtAGlance({
   todayStats,
   onMealPress,
 }: DayAtAGlanceProps) {
-
-
   return (
     <View style={styles.container}>
       {/* Header */}

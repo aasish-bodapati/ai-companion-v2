@@ -31,8 +31,6 @@ export default function ProgressLineChart({
   size = 'medium',
   data = [],
 }: ProgressLineChartProps) {
-  console.log(`📊 ProgressLineChart ${title}:`, { current, goal, unit });
-  
   const progress = Math.min(current / goal, 1);
   const percentage = Math.round(progress * 100);
 

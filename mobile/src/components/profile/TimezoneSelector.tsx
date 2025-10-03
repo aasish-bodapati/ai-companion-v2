@@ -56,7 +56,7 @@ export default function TimezoneSelector({ currentTimezone, onTimezoneChange }: 
         throw new Error('Failed to update timezone');
       }
     } catch (error) {
-      console.error('Failed to update timezone:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to update timezone. Please try again.');
     } finally {
       setLoading(false);

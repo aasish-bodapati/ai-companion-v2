@@ -97,7 +97,7 @@ const Toast: React.FC<ToastProps> = ({
         };
       case 'info':
         return {
-          backgroundColor: '#3b82f6',
+          backgroundColor: '#06b6d4',
           icon: 'information-circle' as const,
           iconColor: '#ffffff',
         };

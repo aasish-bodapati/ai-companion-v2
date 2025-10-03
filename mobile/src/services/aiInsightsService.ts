@@ -85,7 +85,7 @@ export const aiInsightsService = {
       const response = await apiClient.get(`/health/insights/suggestions?limit=${limit}`);
       return Array.isArray(response.data) ? response.data : this.getMockInsights();
     } catch (error) {
-      console.error('Failed to fetch health insights:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Return mock data for development
       return this.getMockInsights();
     }
@@ -97,7 +97,7 @@ export const aiInsightsService = {
       const response = await apiClient.get('/health/insights/patterns');
       return Array.isArray(response.data) ? response.data : this.getMockPatterns();
     } catch (error) {
-      console.error('Failed to fetch health patterns:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockPatterns();
     }
   },
@@ -109,7 +109,7 @@ export const aiInsightsService = {
       const response = await apiClient.get(`/health/insights/suggestions${params}`);
       return Array.isArray(response.data) ? response.data : this.getMockRecommendations();
     } catch (error) {
-      console.error('Failed to fetch recommendations:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
     }
   },
@@ -125,7 +125,7 @@ export const aiInsightsService = {
       }
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch progress analysis:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockProgressAnalysis(period);
     }
   },
@@ -167,7 +167,7 @@ export const aiInsightsService = {
       const response = await apiClient.get(`/health/insights/goals/progress${params}`);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch goal analysis:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockGoalAnalysis();
     }
   },
@@ -179,7 +179,7 @@ export const aiInsightsService = {
       const response = await apiClient.get(`/health/insights/motivation${params}`);
       return response.data.message;
     } catch (error) {
-      console.error('Failed to fetch coaching message:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCoachingMessage();
     }
   },
@@ -193,7 +193,7 @@ export const aiInsightsService = {
     try {
       await apiClient.post(`/health/insights/${insightId}/feedback`, feedback);
     } catch (error) {
-      console.error('Failed to submit insight feedback:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   },
 
@@ -208,7 +208,7 @@ export const aiInsightsService = {
       const response = await apiClient.post('/health/insights/workout-suggestions', preferences || {});
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch workout suggestions:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWorkoutSuggestions();
     }
   },
@@ -224,7 +224,7 @@ export const aiInsightsService = {
       const response = await apiClient.post('/health/insights/nutrition-suggestions', data);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch nutrition suggestions:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockNutritionSuggestions();
     }
   },

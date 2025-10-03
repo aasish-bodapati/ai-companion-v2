@@ -42,7 +42,7 @@ export default function AIInsightsCard({
       setPatterns(patternsData || []);
       setRecommendations(Array.isArray(recommendationsData) ? recommendationsData.slice(0, 3) : []);
     } catch (error) {
-      console.error('Failed to load AI insights:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set empty arrays as fallback
       setInsights([]);
       setPatterns([]);

@@ -31,7 +31,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       setStats(moodStats);
       setTodaysLog(todaysLogs.length > 0 ? todaysLogs[0] : null);
     } catch (error) {
-      console.error('Failed to load mood stats:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
 
@@ -89,7 +89,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       
       hapticFeedback.success();
     } catch (error) {
-      console.error('Failed to log mood:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       
       // Add to retry queue for later sync

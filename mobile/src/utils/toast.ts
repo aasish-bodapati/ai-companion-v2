@@ -1,43 +1,48 @@
-import Toast from 'react-native-toast-message';
+import { useToast as useToastContext } from '../contexts/ToastContext';
+
+// This is a fallback implementation that will be replaced by the actual toast context
+// when used within a component that has access to the ToastProvider
+let toastContext: any = null;
 
 export const showToast = {
   success: (message: string, description?: string) => {
-    Toast.show({
-      type: 'success',
-      text1: message,
-      text2: description,
-      position: 'top',
-      visibilityTime: 4000,
-    });
+    const fullMessage = description ? `${message}: ${description}` : message;
+    if (toastContext) {
+      toastContext.showToast(fullMessage, 'success', 4000);
+    } else {
+      console.log('🔍 [TOAST] Success:', fullMessage);
+    }
   },
 
   error: (message: string, description?: string) => {
-    Toast.show({
-      type: 'error',
-      text1: message,
-      text2: description,
-      position: 'top',
-      visibilityTime: 5000,
-    });
+    const fullMessage = description ? `${message}: ${description}` : message;
+    if (toastContext) {
+      toastContext.showToast(fullMessage, 'error', 5000);
+    } else {
+      console.log('🔍 [TOAST] Error:', fullMessage);
+    }
   },
 
   info: (message: string, description?: string) => {
-    Toast.show({
-      type: 'info',
-      text1: message,
-      text2: description,
-      position: 'top',
-      visibilityTime: 3000,
-    });
+    const fullMessage = description ? `${message}: ${description}` : message;
+    if (toastContext) {
+      toastContext.showToast(fullMessage, 'info', 3000);
+    } else {
+      console.log('🔍 [TOAST] Info:', fullMessage);
+    }
   },
 
   warning: (message: string, description?: string) => {
-    Toast.show({
-      type: 'error', // Using error type for warning since there's no warning type
-      text1: message,
-      text2: description,
-      position: 'top',
-      visibilityTime: 4000,
-    });
+    const fullMessage = description ? `${message}: ${description}` : message;
+    if (toastContext) {
+      toastContext.showToast(fullMessage, 'warning', 4000);
+    } else {
+      console.log('🔍 [TOAST] Warning:', fullMessage);
+    }
   },
+};
+
+// Function to set the toast context (called from components that have access to it)
+export const setToastContext = (context: any) => {
+  toastContext = context;
 };

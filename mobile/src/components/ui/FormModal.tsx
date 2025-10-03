@@ -86,7 +86,7 @@ export default function FormModal({
         await result;
       }
     } catch (error) {
-      console.error('Form modal action error:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
     } finally {
       setActionLoading(false);

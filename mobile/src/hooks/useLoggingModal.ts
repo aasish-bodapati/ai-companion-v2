@@ -125,7 +125,7 @@ export function useLoggingModal<T extends BaseLog, S>(
       await onSave(formData);
       resetModal();
     } catch (error) {
-      console.error('Error saving:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     } finally {
       setSaving(false);

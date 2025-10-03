@@ -21,12 +21,15 @@ export const apiClient = axios.create({
 // Request interceptor for adding auth tokens if needed
 apiClient.interceptors.request.use(
   async config => {
-    console.log('🔍 [API CLIENT] Making request to:', config.url, 'Method:', config.method);
-    
-    // Log request body for POST requests
-    if (config.method === 'post' && config.data) {
-      console.log('🔍 [API CLIENT] Request body size:', JSON.stringify(config.data).length, 'characters');
-      console.log('🔍 [API CLIENT] Request body preview:', JSON.stringify(config.data).substring(0, 200) + '...');
+    // Only log requests in development mode
+    if (__DEV__) {
+      console.log('🔍 [API CLIENT] Making request to:', config.url, 'Method:', config.method);
+      
+      // Log request body for POST requests
+      if (config.method === 'post' && config.data) {
+        console.log('🔍 [API CLIENT] Request body size:', JSON.stringify(config.data).length, 'characters');
+        console.log('🔍 [API CLIENT] Request body preview:', JSON.stringify(config.data).substring(0, 200) + '...');
+      }
     }
     
     // Add auth token for non-public endpoints
@@ -40,19 +43,21 @@ apiClient.interceptors.request.use(
         
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔍 [API CLIENT] Added token to request');
-        } else if (!token) {
-          console.warn('⚠️ [API CLIENT] No token found for authenticated endpoint:', config.url);
+          if (__DEV__) {
+            console.log('🔍 [API CLIENT] Added token to request');
+          }
+        } else if (!token && __DEV__) {
+          // Silent warning handling - no console logging to prevent Expo Go notifications
         }
       } catch (error) {
-        console.error('❌ [API CLIENT] Error retrieving token:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
     }
     
     return config;
   },
   error => {
-    console.error('❌ [API CLIENT] Request interceptor error:', error);
+    // Silent error handling - no console logging to prevent Expo Go notifications
     return Promise.reject(error);
   }
 );
@@ -60,19 +65,42 @@ apiClient.interceptors.request.use(
 // Response interceptor for handling errors
 apiClient.interceptors.response.use(
   response => {
-    console.log('✅ [API CLIENT] Response received:', response.status, response.config.url);
+    // Only log successful responses in development
+    if (__DEV__) {
+      console.log('✅ [API CLIENT] Response received:', response.status, response.config.url);
+    }
     return response;
   },
   error => {
-    console.error('❌ [API CLIENT] Response error:', {
+    // Log all errors for debugging registration issues
+    console.log('🔍 [API CLIENT] Response error:', {
       status: error.response?.status,
-      message: error.message,
-      url: error.config?.url,
       data: error.response?.data,
+      message: error.message,
       code: error.code,
-      timeout: error.code === 'ECONNABORTED',
-      networkError: error.message === 'Network Error'
+      url: error.config?.url
     });
+    
+    // Handle different error types more gracefully - NO CONSOLE LOGGING
+    // This prevents technical errors from showing in Expo Go notifications
+    if (error.response?.status === 404) {
+      // 404s are often expected (e.g., no workout scheduled, server starting up)
+      // Silent - no logging
+    } else if (error.response?.status === 401) {
+      // 401s are authentication issues, not critical errors
+      // Silent - no logging
+    } else if (error.response?.status === 403) {
+      // 403s are permission issues
+      // Silent - no logging
+    } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+      // Network errors are common and not critical
+      // Silent - no logging
+    } else if (error.code === 'ECONNABORTED') {
+      // Timeout errors
+      // Silent - no logging
+    } else {
+      // Silent error handling - no console logging to prevent Expo Go notifications
+    }
     return Promise.reject(error);
   }
 );

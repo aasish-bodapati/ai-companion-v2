@@ -51,7 +51,7 @@ export default function ExerciseDropdown({
       const exercises = await fitnessService.getExerciseTypes();
       setAllExercises(exercises);
     } catch (error: unknown) {
-      console.error('Failed to load exercises:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }

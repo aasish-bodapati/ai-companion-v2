@@ -135,7 +135,7 @@ export default function EditHealthDataModal({
       
       showToast.success('Success!', 'Health data updated successfully');
     } catch (error) {
-      console.error('Failed to save health data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       showToast.error('Error', 'Failed to save health data');
     } finally {

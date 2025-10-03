@@ -85,7 +85,7 @@ export default function FitnessScreen() {
         this_month_workouts: totalWorkouts, // Simplified for now
       });
     } catch (error) {
-      console.error('Failed to load week stats:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback stats
       setWeekStats({
         total_workouts: 0,
@@ -139,7 +139,7 @@ export default function FitnessScreen() {
       
       setWeeklyActivityData(weeklyData);
     } catch (error) {
-      console.error('Failed to load weekly activity data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -158,7 +158,7 @@ export default function FitnessScreen() {
       setLoading(true);
       await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
     } catch (error) {
-      console.error('Failed to load overview data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }

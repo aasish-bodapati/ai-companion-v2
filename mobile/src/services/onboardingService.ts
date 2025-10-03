@@ -5,7 +5,7 @@ export interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female' | 'other' | '';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
@@ -30,7 +30,7 @@ export const onboardingService = {
     try {
       await AsyncStorage.setItem(ONBOARDING_DATA_KEY, JSON.stringify(data));
     } catch (error) {
-      console.error('Failed to save onboarding data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -41,7 +41,7 @@ export const onboardingService = {
       const data = await AsyncStorage.getItem(ONBOARDING_DATA_KEY);
       return data ? JSON.parse(data) : null;
     } catch (error) {
-      console.error('Failed to load onboarding data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
   },
@@ -58,7 +58,7 @@ export const onboardingService = {
         await onboardingService.saveOnboardingData(updatedData);
       }
     } catch (error) {
-      console.error('Failed to update health data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -75,7 +75,7 @@ export const onboardingService = {
         await onboardingService.saveOnboardingData(updatedData);
       }
     } catch (error) {
-      console.error('Failed to update goals:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -92,7 +92,7 @@ export const onboardingService = {
         await onboardingService.saveOnboardingData(updatedData);
       }
     } catch (error) {
-      console.error('Failed to update preferences:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -114,7 +114,7 @@ export const onboardingService = {
     try {
       await AsyncStorage.removeItem(ONBOARDING_DATA_KEY);
     } catch (error) {
-      console.error('Failed to clear onboarding data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -125,7 +125,7 @@ export const onboardingService = {
       age: '',
       height: '',
       weight: '',
-      gender: 'male',
+      gender: '',
       activityLevel: 'moderate',
       ffm: '',
       smm: '',

@@ -53,7 +53,7 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
         const categoriesData = await exerciseCategoryService.getCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
     };
     loadCategories();
@@ -100,7 +100,7 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
         exerciseBreakdown,
       });
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }

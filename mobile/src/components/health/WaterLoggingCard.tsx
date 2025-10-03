@@ -26,7 +26,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       const waterStats = await waterService.getWaterStats();
       setStats(waterStats);
     } catch (error) {
-      console.error('Failed to load water stats:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
 
@@ -53,7 +53,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
         setWaterGoal(3000);
       }
     } catch (error) {
-      console.error('Failed to load water goal from profile:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       setWaterGoal(3000); // Fallback to default
     }
   };
@@ -85,7 +85,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       
       hapticFeedback.success();
     } catch (error) {
-      console.error('Failed to log water:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log water. Please try again.');
       // Reload stats on error to get accurate data
@@ -132,7 +132,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       
       hapticFeedback.success();
     } catch (error) {
-      console.error('Failed to remove water log:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to remove water log. Please try again.');
       // Reload stats on error to get accurate data

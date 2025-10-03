@@ -66,7 +66,7 @@ export default function EnhancedWorkoutLogger({
         const categoriesData = await exerciseCategoryService.getCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
     };
     loadCategories();

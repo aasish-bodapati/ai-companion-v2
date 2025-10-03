@@ -123,7 +123,7 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
       await onSave(formData);
     } catch (error) {
       hapticFeedback.error();
-      console.error('Error saving:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
 

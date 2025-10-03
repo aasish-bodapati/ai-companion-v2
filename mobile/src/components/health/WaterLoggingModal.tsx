@@ -98,7 +98,7 @@ export default function WaterLoggingModal({
       onWaterLogged();
       onClose();
     } catch (error) {
-      console.error('Error logging water:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     } finally {
       setSaving(false);

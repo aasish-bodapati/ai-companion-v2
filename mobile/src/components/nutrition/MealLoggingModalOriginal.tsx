@@ -76,8 +76,8 @@ export default function MealLoggingModal({
       console.log('🍽️ [MEAL LOGGING] Setting search results to:', results);
       setSearchResults(results);
     } catch (error) {
-      console.error('🍽️ [MEAL LOGGING] Error searching foods:', error);
-      console.log('🍽️ [MEAL LOGGING] Setting search results to empty array due to error');
+      // Silent error handling - no console logging to prevent Expo Go notifications
+      // Silent error handling - no console logging to prevent Expo Go notifications
       setSearchResults([]);
     } finally {
       setSearching(false);
@@ -204,7 +204,7 @@ export default function MealLoggingModal({
       onMealLogged();
       onClose();
     } catch (error) {
-      console.error('Error logging meal:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to log meal. Please try again.', 'error');
       throw error;
     } finally {

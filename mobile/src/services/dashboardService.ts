@@ -8,6 +8,7 @@ export interface TodayStats {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  calories_consumed?: number;
 }
 
 export interface WeeklyProgress {
@@ -68,6 +69,10 @@ export interface QuickStats {
   workouts_today: number;
   meals_today: number;
   last_updated: string;
+  total_workouts?: number;
+  total_meals?: number;
+  current_streak?: number;
+  weekly_goal_progress?: number;
 }
 
 export const dashboardService = {
@@ -76,7 +81,7 @@ export const dashboardService = {
       const response = await apiClient.get('/health/dashboard/summary');
       return response.data;
     } catch (error) {
-      console.error('📊 Dashboard Service: Error fetching summary:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -86,7 +91,7 @@ export const dashboardService = {
       const response = await apiClient.get('/health/dashboard/quick-stats');
       return response.data;
     } catch (error) {
-      console.error('📊 Dashboard Service: Error fetching quick stats:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   },
@@ -96,7 +101,7 @@ export const dashboardService = {
       const response = await apiClient.get('/health/analytics/dashboard');
       return response.data;
     } catch (error) {
-      console.error('📊 Dashboard Service: Error fetching analytics:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }

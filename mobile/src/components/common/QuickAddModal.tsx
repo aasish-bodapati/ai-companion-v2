@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
+import { routineService } from '../../services/routineService';
+import { useToast } from '../../contexts/ToastContext';
 
 interface QuickAddModalProps {
   visible: boolean;
@@ -29,6 +31,7 @@ export default function QuickAddModal({
   onLogMeal,
   onLogTodaysWorkout,
 }: QuickAddModalProps) {
+  const { showToast } = useToast();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
@@ -81,9 +84,25 @@ export default function QuickAddModal({
     },
   ];
 
-  const handleActionPress = (action: typeof quickActions[0]) => {
+  const handleActionPress = async (action: typeof quickActions[0]) => {
     console.log('🍽️ QuickAddModal: Action pressed:', action.title);
     onClose();
+    
+    // Special handling for "Log Today's Workout" - check if workout exists first
+    if (action.id === 'today-workout') {
+      try {
+        const todaysWorkout = await routineService.getTodaysWorkout();
+        if (!todaysWorkout) {
+          showToast('No workout scheduled for today', 'info');
+          return;
+        }
+      } catch (error) {
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        showToast('Unable to check today\'s workout', 'error');
+        return;
+      }
+    }
+    
     action.onPress();
   };
 

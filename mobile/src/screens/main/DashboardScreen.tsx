@@ -20,9 +20,13 @@ import { dashboardService, DashboardSummary, QuickStats } from '../../services/d
 import { nutritionService } from '../../services/nutritionService';
 import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
-import AIInsightsCard from '../../components/ai/AIInsightsCard';
-import WaterLoggingCard from '../../components/health/WaterLoggingCard';
-import MoodLoggingCard from '../../components/health/MoodLoggingCard';
+import PersonalizedWelcome from '../../components/dashboard/PersonalizedWelcome';
+import QuickStatsRow from '../../components/dashboard/QuickStatsRow';
+import BodyTypeHeroCard from '../../components/dashboard/BodyTypeHeroCard';
+import IntegratedStatsCard from '../../components/dashboard/IntegratedStatsCard';
+import HealthLoggingCards from '../../components/dashboard/HealthLoggingCards';
+import PriorityAIInsights from '../../components/dashboard/PriorityAIInsights';
+import WeeklySummaryCard from '../../components/dashboard/WeeklySummaryCard';
 
 const { width } = Dimensions.get('window');
 
@@ -47,6 +51,7 @@ export default function DashboardScreen() {
     try {
       setData(prev => ({ ...prev, loading: true, error: null }));
       
+      
       // Load dashboard summary and quick stats in parallel
       const [summaryResponse, quickStatsResponse] = await Promise.allSettled([
         dashboardService.getDashboardSummary(),
@@ -55,6 +60,7 @@ export default function DashboardScreen() {
 
       let summary = summaryResponse.status === 'fulfilled' ? summaryResponse.value : null;
       let quickStats = quickStatsResponse.status === 'fulfilled' ? quickStatsResponse.value : null;
+      
 
       // If dashboard API fails, try to get some real data from individual services
       if (!summary || !quickStats) {
@@ -74,13 +80,13 @@ export default function DashboardScreen() {
           
           summary = {
             today_stats: {
-              workouts: todayWorkoutData.workouts || 0,
-              meals: todayNutritionData.meals_count || 0,
+              workouts: (todayWorkoutData as any).workouts || 0,
+              meals: (todayNutritionData as any).meals_count || 0,
               water_ml: 0, // Will be updated when water logging is implemented
-              total_minutes: todayWorkoutData.total_duration || 0,
-              protein_g: todayNutritionData.protein_g || 0,
-              carbs_g: todayNutritionData.carbs_g || 0,
-              fat_g: todayNutritionData.fat_g || 0,
+              total_minutes: (todayWorkoutData as any).total_duration || 0,
+              protein_g: (todayNutritionData as any).protein_g || 0,
+              carbs_g: (todayNutritionData as any).carbs_g || 0,
+              fat_g: (todayNutritionData as any).fat_g || 0,
             },
             weekly_progress: {
               workouts_completed: workouts.length,
@@ -92,7 +98,7 @@ export default function DashboardScreen() {
               overall_progress: Math.min(((workouts.length / 5) + (meals.length / 21)) * 50, 100),
               days_in_week: 7,
               total_minutes_this_week: workouts.reduce((sum, w) => sum + (w.duration_minutes || 0), 0),
-              avg_calories_per_day: todayNutritionData.avg_calories_per_meal || 0,
+              avg_calories_per_day: (todayNutritionData as any).avg_calories_per_meal || 0,
             },
             active_routines: [],
             smart_suggestions: [],
@@ -103,13 +109,16 @@ export default function DashboardScreen() {
           };
 
           quickStats = {
+            workouts_today: workouts.length,
+            meals_today: meals.length,
+            last_updated: new Date().toISOString(),
             total_workouts: workouts.length,
             total_meals: meals.length,
             current_streak: workouts.length > 0 || meals.length > 0 ? 1 : 0,
             weekly_goal_progress: Math.min(((workouts.length / 5) + (meals.length / 21)) * 50, 100),
           };
         } catch (fallbackError) {
-          console.error('📊 Dashboard: Failed to load fallback data:', fallbackError);
+          // Silent error handling - no console logging to prevent Expo Go notifications
         }
       }
 
@@ -120,7 +129,7 @@ export default function DashboardScreen() {
         error: null,
       });
     } catch (error) {
-      console.error('📊 Dashboard: Failed to load dashboard data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Don't set error state, just show fallback data
       setData(prev => ({
         ...prev,
@@ -316,6 +325,78 @@ export default function DashboardScreen() {
   const weeklyProgress = data.summary?.weekly_progress;
   const smartSuggestions = data.summary?.smart_suggestions || [];
 
+  // Mock data for the new dashboard components
+  const quickStats = [
+    {
+      icon: 'flame-outline',
+      label: 'Calories Left',
+      value: `${2000 - (data.summary?.today_stats?.calories_consumed || 0)}`,
+      progress: 75,
+      color: '#f97316',
+    },
+    {
+      icon: 'fitness-outline',
+      label: 'Protein Target',
+      value: `${data.summary?.today_stats?.protein_g || 0}/150g`,
+      progress: 60,
+      color: '#3b82f6',
+    },
+    {
+      icon: 'water-outline',
+      label: 'Water Intake',
+      value: '2.5L/3L',
+      progress: 83,
+      color: '#3b82f6',
+    },
+    {
+      icon: 'happy-outline',
+      label: 'Mood Today',
+      value: 'Good',
+      progress: 80,
+      color: '#10b981',
+    },
+  ];
+
+  const aiInsights = [
+    {
+      id: '1',
+      priority: 'high' as const,
+      category: 'nutrition' as const,
+      title: 'Protein intake is 20% below goal',
+      description: 'Add a protein-rich snack to hit your daily target.',
+      actionText: 'Log Snack',
+      onAction: () => console.log('Log snack'),
+    },
+    {
+      id: '2',
+      priority: 'medium' as const,
+      category: 'workout' as const,
+      title: 'You\'re on track with strength workouts',
+      description: 'Maintain your current streak for optimal results.',
+      actionText: 'View Progress',
+      onAction: () => console.log('View progress'),
+    },
+    {
+      id: '3',
+      priority: 'low' as const,
+      category: 'wellness' as const,
+      title: 'Great sleep consistency this week',
+      description: 'Keep up the good work with your sleep schedule.',
+      actionText: 'View Details',
+      onAction: () => console.log('View details'),
+    },
+  ];
+
+  const weekData = [
+    { day: 'Mon', workouts: 1, meals: 3, proteinAdherence: 85, caloriesHit: true, alignmentScore: 78 },
+    { day: 'Tue', workouts: 0, meals: 2, proteinAdherence: 65, caloriesHit: false, alignmentScore: 45 },
+    { day: 'Wed', workouts: 1, meals: 4, proteinAdherence: 90, caloriesHit: true, alignmentScore: 82 },
+    { day: 'Thu', workouts: 1, meals: 3, proteinAdherence: 75, caloriesHit: true, alignmentScore: 70 },
+    { day: 'Fri', workouts: 0, meals: 2, proteinAdherence: 60, caloriesHit: false, alignmentScore: 40 },
+    { day: 'Sat', workouts: 1, meals: 3, proteinAdherence: 80, caloriesHit: true, alignmentScore: 75 },
+    { day: 'Sun', workouts: 1, meals: 4, proteinAdherence: 95, caloriesHit: true, alignmentScore: 88 },
+  ];
+
   return (
     <ScrollView
       style={styles.container}
@@ -324,102 +405,84 @@ export default function DashboardScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero Header */}
-      <View style={styles.heroHeader}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerContent}>
-            <Text style={styles.greeting}>{getGreeting()}</Text>
-            <Text style={styles.userName}>{user?.full_name || 'User'}</Text>
-            <Text style={styles.motivation}>{getMotivationalMessage()}</Text>
-          </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-            <Ionicons name="log-out-outline" size={20} color="#6b7280" />
-          </TouchableOpacity>
-        </View>
+      {/* Personalized Welcome */}
+      <PersonalizedWelcome
+        userName={user?.full_name || 'User'}
+        dailyMicroGoal="Hit 80% alignment today to stay on track for Strong & Steady"
+        alignmentPercentage={Math.round(weeklyProgress?.overall_progress || 0)}
+      />
 
+      {/* Quick Stats Row */}
+      <QuickStatsRow stats={quickStats} />
 
-        {/* Day at a Glance */}
-        <DayAtAGlance
-          todayStats={{
-            meals: data.summary?.today_stats?.meals || 0,
-            calories_consumed: data.summary?.today_stats?.calories_consumed || 0,
-            protein_g: data.summary?.today_stats?.protein_g || 0,
-            carbs_g: data.summary?.today_stats?.carbs_g || 0,
-            fat_g: data.summary?.today_stats?.fat_g || 0,
-          }}
-          onMealPress={() => {
-            // Navigate to nutrition screen or open meal modal
-          }}
-        />
-      </View>
+      {/* Body Type Hero Card */}
+      <BodyTypeHeroCard
+        goalName="Strong & Steady"
+        dailyScore={42}
+        weeklyAlignment={Math.round(weeklyProgress?.overall_progress || 0)}
+        weeklyTrend="up"
+        alignment="closer"
+        suggestions={[
+          "Add 1 strength workout today",
+          "Protein intake is low - log a snack"
+        ]}
+        onLogWorkout={() => console.log('Log workout')}
+        onLogMeal={() => console.log('Log meal')}
+        onViewAnalytics={() => console.log('View analytics')}
+      />
 
+      {/* Integrated Stats Card */}
+      <IntegratedStatsCard
+        nutrition={{
+          calories: { current: data.summary?.today_stats?.calories_consumed || 0, target: 2000 },
+          protein: { current: data.summary?.today_stats?.protein_g || 0, target: 150 },
+          carbs: { current: data.summary?.today_stats?.carbs_g || 0, target: 250 },
+          fat: { current: data.summary?.today_stats?.fat_g || 0, target: 80 },
+        }}
+        wellness={{
+          water: { current: 2.5, target: 3.0 },
+          mood: 'Good',
+          sleep: { current: 7.5, target: 8.0 },
+        }}
+        onLogMeal={() => console.log('Log meal')}
+        onLogWater={() => console.log('Log water')}
+        onLogMood={() => console.log('Log mood')}
+      />
 
-      {/* Water Logging */}
-      <WaterLoggingCard />
+      {/* Health Logging Cards */}
+      <HealthLoggingCards
+        lastActivities={[
+          { type: 'workout', name: 'Strength Training', time: '2h ago', calories: 300 },
+          { type: 'meal', name: 'Chicken Salad', time: '1h ago', calories: 450 },
+        ]}
+        wellness={{
+          water: { current: 2.5, target: 3.0 },
+          sleep: { current: 7.5, target: 8.0 },
+          mood: 'Good',
+          notes: 'Feeling energized today!',
+        }}
+        onLogWorkout={() => console.log('Log workout')}
+        onLogMeal={() => console.log('Log meal')}
+        onLogWater={() => console.log('Log water')}
+        onLogMood={() => console.log('Log mood')}
+        onLogSleep={() => console.log('Log sleep')}
+        onAddNote={() => console.log('Add note')}
+      />
 
-      {/* Mood Logging */}
-      <MoodLoggingCard />
-
-
-
-      {/* AI Health Insights */}
-      <View style={styles.section}>
-        <AIInsightsCard refreshTrigger={refreshing ? 1 : 0} />
-      </View>
-
-      {/* Smart Suggestions */}
-      {smartSuggestions.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Smart Suggestions</Text>
-          {smartSuggestions.map((suggestion, index) => (
-            <View key={index} style={styles.suggestionCard}>
-              <View style={styles.suggestionHeader}>
-                <Ionicons 
-                  name={suggestion.icon as any} 
-                  size={20} 
-                  color={getColorForAction(suggestion.type)} 
-                />
-                <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
-                <View style={[styles.priorityBadge, { 
-                  backgroundColor: suggestion.priority === 'high' ? '#ef4444' : 
-                                 suggestion.priority === 'medium' ? '#f59e0b' : '#10b981' 
-                }]}>
-                  <Text style={styles.priorityText}>{suggestion.priority}</Text>
-                </View>
-              </View>
-              <Text style={styles.suggestionMessage}>{suggestion.message}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* Priority AI Insights */}
+      <PriorityAIInsights
+        insights={aiInsights}
+        onInsightPress={(insight) => console.log('Insight pressed:', insight.title)}
+      />
 
       {/* Weekly Summary */}
-      {weeklyProgress && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>This Week</Text>
-          <View style={styles.weeklyStats}>
-            <View style={styles.weeklyStatItem}>
-              <Text style={styles.weeklyStatValue}>{weeklyProgress.workouts_completed}</Text>
-              <Text style={styles.weeklyStatLabel}>Workouts</Text>
-            </View>
-            <View style={styles.weeklyStatItem}>
-              <Text style={styles.weeklyStatValue}>{weeklyProgress.meals_logged}</Text>
-              <Text style={styles.weeklyStatLabel}>Meals</Text>
-            </View>
-            <View style={styles.weeklyStatItem}>
-              <Text style={styles.weeklyStatValue}>{Math.round(weeklyProgress.total_minutes_this_week / 60)}h</Text>
-              <Text style={styles.weeklyStatLabel}>Duration</Text>
-            </View>
-            <View style={styles.weeklyStatItem}>
-              <Text style={styles.weeklyStatValue}>{Math.round(weeklyProgress.overall_progress)}%</Text>
-              <Text style={styles.weeklyStatLabel}>Progress</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-
-
+      <WeeklySummaryCard
+        weekData={weekData}
+        weeklyTrend="up"
+        improvementPercentage={12}
+        motivationalMessage="You improved by 12% from last week — keep it up!"
+        onDayPress={(day) => console.log('Day pressed:', day)}
+      />
     </ScrollView>
   );
 }

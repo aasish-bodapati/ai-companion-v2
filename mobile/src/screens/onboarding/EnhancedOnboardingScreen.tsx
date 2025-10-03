@@ -20,7 +20,7 @@ interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female' | 'other' | '';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
@@ -41,25 +41,25 @@ interface OnboardingData {
 const ONBOARDING_STEPS = [
   {
     id: 'welcome',
-    title: 'Update Your Profile',
-    subtitle: 'Edit Your Health Data and Goals',
-    description: 'Review and update your health information, body type goals, and preferences. Your existing data has been pre-filled for easy editing.',
-    icon: 'create-outline',
+    title: 'Welcome to AI Companion!',
+    subtitle: 'Let\'s Set Up Your Health Profile',
+    description: 'We\'ll help you create a personalized health profile to track your fitness journey and achieve your goals.',
+    icon: 'heart-outline',
     variant: 'centered' as const,
   },
   {
     id: 'health_data',
-    title: 'Update Your Health Info',
-    subtitle: 'Review and Edit Your Health Data',
-    description: 'Review and update your health information. Your existing data has been pre-filled for easy editing.',
+    title: 'Your Health Information',
+    subtitle: 'Tell Us About Yourself',
+    description: 'Help us understand your current health status by providing some basic information about yourself.',
     icon: 'person-outline',
     variant: 'minimal' as const,
   },
   {
     id: 'body_type_goal',
-    title: 'Update Your Body Type Goal',
-    subtitle: 'Review and Edit Your Body Type Goal',
-    description: 'Review and update your body type goal. Your current selection has been pre-filled for easy editing.',
+    title: 'Choose Your Body Type Goal',
+    subtitle: 'What Do You Want to Achieve?',
+    description: 'Select the body type goal that best matches what you want to achieve with your fitness journey.',
     icon: 'body-outline',
     variant: 'minimal' as const,
   },
@@ -81,7 +81,7 @@ export default function EnhancedOnboardingScreen() {
       age: '',
       height: '',
       weight: '',
-      gender: 'male',
+      gender: '',
       activityLevel: 'moderate',
       ffm: '',
       smm: '',
@@ -96,9 +96,9 @@ export default function EnhancedOnboardingScreen() {
   });
   const [loading, setLoading] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [dataLoaded, setDataLoaded] = useState(false);
   const { completeOnboarding } = useAuth();
   const completionRef = useRef(false);
+
 
   // Load existing profile data to pre-populate onboarding
   const loadExistingProfileData = useCallback(async () => {
@@ -118,7 +118,6 @@ export default function EnhancedOnboardingScreen() {
       // Keep default values if no existing data
     } finally {
       setLoading(false);
-      setDataLoaded(true);
     }
   }, []);
 
@@ -214,7 +213,7 @@ export default function EnhancedOnboardingScreen() {
       return;
     }
     
-    if (isCompleting || loading) {
+    if (isCompleting) {
       console.log('⚠️ handleComplete already in progress, skipping');
       return;
     }
@@ -227,7 +226,6 @@ export default function EnhancedOnboardingScreen() {
       }
       setHasCompleted(true);
       setIsCompleting(true);
-      setLoading(true);
       
       console.log('🎯 Starting onboarding completion process');
       hapticFeedback.success();
@@ -249,7 +247,7 @@ export default function EnhancedOnboardingScreen() {
       
       showToast.success('Welcome!', 'Your profile has been set up successfully');
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to complete setup. Please try again.');
       // Reset flags on error
       completionRef.current = false;
@@ -259,10 +257,9 @@ export default function EnhancedOnboardingScreen() {
       setHasCompleted(false);
       setIsCompleting(false);
     } finally {
-      setLoading(false);
       setIsCompleting(false);
     }
-  }, [onboardingData, completeOnboarding, loading, currentStep, isLastStep, isCompleting, hasCompleted]);
+  }, [onboardingData, completeOnboarding, currentStep, isLastStep, isCompleting, hasCompleted]);
 
   const handleSkip = useCallback(() => {
     Alert.alert(
@@ -298,13 +295,33 @@ export default function EnhancedOnboardingScreen() {
     }));
   }, []);
 
+  const handleBodyTypeValidationChange = useCallback((isValid: boolean) => {
+    // Update validation state for this step
+    console.log('Body type validation changed:', isValid);
+  }, []);
+
   const canGoNext = () => {
     switch (currentStepData.id) {
       case 'health_data':
         const { age, height, weight } = onboardingData.healthData;
         return age && height && weight && !isNaN(Number(age)) && !isNaN(Number(height)) && !isNaN(Number(weight));
       case 'body_type_goal':
-        return onboardingData.bodyTypeGoal.length > 0;
+        // Check if body type goal is one of the valid options (using actual UUIDs)
+        const validBodyTypeIds = [
+          'e5a3f772-4d59-434e-bf06-da04e64ff756', // Sleek & Graceful
+          'eda6cd66-d5f8-44a9-8891-7d4ef4f4e5ec', // Strong & Steady
+          '76f3a745-02b9-4040-b90e-a1f94d9b91cf'  // Big & Bold
+        ];
+        const isValid = onboardingData.bodyTypeGoal && 
+                       onboardingData.bodyTypeGoal.length > 0 && 
+                       validBodyTypeIds.includes(onboardingData.bodyTypeGoal);
+        console.log('🔍 Body type validation check:', { 
+          bodyTypeGoal: onboardingData.bodyTypeGoal, 
+          length: onboardingData.bodyTypeGoal?.length, 
+          isValid,
+          validBodyTypeIds
+        });
+        return isValid;
       default:
         return true;
     }
@@ -317,7 +334,6 @@ export default function EnhancedOnboardingScreen() {
           <HealthDataStep
             onDataChange={handleHealthDataChange}
             initialData={onboardingData.healthData}
-            isPrePopulated={dataLoaded}
           />
         );
       case 'body_type_goal':
@@ -335,7 +351,7 @@ export default function EnhancedOnboardingScreen() {
               smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : undefined,
               bodyFat: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : undefined,
             }}
-            isPrePopulated={dataLoaded}
+            onValidationChange={handleBodyTypeValidationChange}
           />
         );
       default:
@@ -351,29 +367,30 @@ export default function EnhancedOnboardingScreen() {
     }
   };
 
-  // Show loading state during completion
+  // Show loading state while data is being loaded
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Setting up your profile...</Text>
+          <Text style={styles.loadingText}>Preparing your setup...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  // Show loading while data is being loaded
-  if (loading && !dataLoaded) {
+  // Show loading state during completion
+  if (isCompleting) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#1a1a1a" />
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading your data...</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
+        <View style={styles.completionLoadingContainer}>
+          <Text style={styles.completionLoadingText}>Setting up your profile...</Text>
         </View>
       </SafeAreaView>
     );
   }
+
 
   // If we should prevent rendering, return null but only after all hooks
   if (shouldPreventRender) {
@@ -390,7 +407,7 @@ export default function EnhancedOnboardingScreen() {
           onNext={handleNext}
           onPrevious={handlePrevious}
           onComplete={handleComplete}
-          canGoNext={canGoNext() || false}
+          canGoNext={canGoNext()}
           canGoPrevious={!isFirstStep}
           enableSwipe={true}
           isLastStep={isLastStep}
@@ -411,8 +428,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
+    backgroundColor: '#1a1a1a',
   },
   loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#ffffff',
+    textAlign: 'center',
+  },
+  completionLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: '#f8fafc',
+  },
+  completionLoadingText: {
     fontSize: 18,
     fontWeight: '600',
     color: '#3b82f6',

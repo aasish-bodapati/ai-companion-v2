@@ -110,7 +110,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       
       setLogs(sortedLogs);
     } catch (error) {
-      console.error('🍽️ [NUTRITION LOGS] Failed to load nutrition logs:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       });
       setLogs(response || []);
     } catch (error) {
-      console.error('Failed to load nutrition logs:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setNavigating(false);
@@ -297,7 +297,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setEditFoodItems([]);
       showToast('Meal log updated successfully!', 'success');
     } catch (error) {
-      console.error('Failed to update log:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to update meal log. Please try again.', 'error');
     }
   };
@@ -372,7 +372,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         showRapidToast('Food item removed successfully!', 'success');
       }
     } catch (error) {
-      console.error('Failed to remove food item:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to remove food item. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);
@@ -389,7 +389,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       
       showRapidToast('Meal log deleted successfully!', 'success');
     } catch (error) {
-      console.error('Failed to delete log:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete meal log. Please try again.', 'error');
     } finally {
       setDeletingLogId(null);

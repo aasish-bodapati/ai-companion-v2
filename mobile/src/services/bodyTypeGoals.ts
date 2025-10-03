@@ -16,6 +16,13 @@ export interface UserAttributes {
   bodyFat?: number; // Body Fat Percentage
 }
 
+export interface RangeValue {
+  min: number;
+  max: number;
+  recommended: number;
+  unit: string;
+}
+
 export interface BodyTypeGoal {
   id: string;
   name: string;
@@ -25,18 +32,40 @@ export interface BodyTypeGoal {
   color: string;
   targetBMI: number;
   targetBodyFat?: number;
-  waistToHeightRatio?: number;
-  fatFreeMassIndex?: number;
   createdBy: 'system' | 'user';
   targetAttributes: {
-    targetWeight: number;
-    weightChange: number;
-    waterGoal: number; // ml per day
-    calorieTarget: number;
-    proteinTarget: number; // g per day
-    workoutFrequency: number; // days per week
-    cardioMinutes: number; // minutes per week
-    timeline: number; // weeks to reach goal
+    // BMI ranges
+    targetBMIRange: RangeValue;
+    
+    // Gender-specific body fat ranges
+    bodyFatRangeMen: RangeValue;
+    bodyFatRangeWomen: RangeValue;
+    
+    // Gender-specific FFMI ranges
+    ffmiRangeMen: RangeValue;
+    ffmiRangeWomen: RangeValue;
+    
+    // SMM level
+    smmLevel: string;
+    
+    // Gender-specific protein requirements
+    proteinPerKgMen: RangeValue;
+    proteinPerKgWomen: RangeValue;
+    
+    // Calorie targets
+    calorieTarget: string;
+    
+    // Workout focus
+    workoutFocus: string;
+    workoutFrequency: RangeValue;
+    cardioMinutes: RangeValue;
+    strengthSessions: RangeValue;
+    
+    // Additional metrics
+    waterGoal: RangeValue;
+    sleepDuration: RangeValue;
+    dailySteps: RangeValue;
+    recoveryDays: RangeValue;
   };
 }
 
@@ -55,9 +84,30 @@ export interface BodyTypeCalculation {
 // Helper function to convert API body type goal to frontend format
 function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
   if (!apiGoal.target_attributes) {
-    console.error('❌ API goal missing target_attributes:', apiGoal);
+    // Silent error handling - no console logging to prevent Expo Go notifications
     throw new Error(`Body type goal ${apiGoal.id} is missing target_attributes`);
   }
+  
+  // Parse the JSON target_attributes if it's a string
+  let targetAttributes;
+  if (typeof apiGoal.target_attributes === 'string') {
+    try {
+      targetAttributes = JSON.parse(apiGoal.target_attributes);
+    } catch (e) {
+      // Silent error handling - no console logging to prevent Expo Go notifications
+      throw new Error(`Invalid target_attributes format for goal ${apiGoal.id}`);
+    }
+  } else {
+    targetAttributes = apiGoal.target_attributes;
+  }
+  
+  // Helper function to extract recommended value from range or return the value as-is
+  const getRecommendedValue = (value: any): number => {
+    if (value && typeof value === 'object' && 'recommended' in value) {
+      return value.recommended;
+    }
+    return value || 0;
+  };
   
   return {
     id: apiGoal.id,
@@ -68,18 +118,40 @@ function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
     color: apiGoal.color,
     targetBMI: apiGoal.target_bmi,
     targetBodyFat: apiGoal.target_body_fat,
-    waistToHeightRatio: apiGoal.target_attributes.waist_to_height_ratio,
-    fatFreeMassIndex: apiGoal.target_attributes.fat_free_mass_index,
     createdBy: apiGoal.created_by as 'system' | 'user',
     targetAttributes: {
-      targetWeight: apiGoal.target_attributes.target_weight,
-      weightChange: apiGoal.target_attributes.weight_change,
-      waterGoal: apiGoal.target_attributes.water_goal,
-      calorieTarget: apiGoal.target_attributes.calorie_target,
-      proteinTarget: apiGoal.target_attributes.protein_target,
-      workoutFrequency: apiGoal.target_attributes.workout_frequency,
-      cardioMinutes: apiGoal.target_attributes.cardio_minutes,
-      timeline: apiGoal.target_attributes.timeline,
+      // BMI ranges
+      targetBMIRange: targetAttributes.target_bmi_range || { min: 0, max: 0, recommended: 0, unit: 'kg/m²' },
+      
+      // Gender-specific body fat ranges
+      bodyFatRangeMen: targetAttributes.body_fat_range_men || { min: 0, max: 0, recommended: 0, unit: '%' },
+      bodyFatRangeWomen: targetAttributes.body_fat_range_women || { min: 0, max: 0, recommended: 0, unit: '%' },
+      
+      // Gender-specific FFMI ranges
+      ffmiRangeMen: targetAttributes.ffmi_range_men || { min: 0, max: 0, recommended: 0, unit: 'kg/m²' },
+      ffmiRangeWomen: targetAttributes.ffmi_range_women || { min: 0, max: 0, recommended: 0, unit: 'kg/m²' },
+      
+      // SMM level
+      smmLevel: targetAttributes.smm_level || 'Moderate',
+      
+      // Gender-specific protein requirements
+      proteinPerKgMen: targetAttributes.protein_per_kg_men || { min: 0, max: 0, recommended: 0, unit: 'g/kg' },
+      proteinPerKgWomen: targetAttributes.protein_per_kg_women || { min: 0, max: 0, recommended: 0, unit: 'g/kg' },
+      
+      // Calorie targets
+      calorieTarget: targetAttributes.calorie_target || 'Maintenance',
+      
+      // Workout focus
+      workoutFocus: targetAttributes.workout_focus || 'General fitness',
+      workoutFrequency: targetAttributes.workout_frequency || { min: 0, max: 0, recommended: 0, unit: 'days/week' },
+      cardioMinutes: targetAttributes.cardio_minutes || { min: 0, max: 0, recommended: 0, unit: 'minutes/week' },
+      strengthSessions: targetAttributes.strength_sessions || { min: 0, max: 0, recommended: 0, unit: 'sessions/week' },
+      
+      // Additional metrics
+      waterGoal: targetAttributes.water_goal || { min: 0, max: 0, recommended: 0, unit: 'L/day' },
+      sleepDuration: targetAttributes.sleep_duration || { min: 0, max: 0, recommended: 0, unit: 'hours/night' },
+      dailySteps: targetAttributes.daily_steps || { min: 0, max: 0, recommended: 0, unit: 'steps/day' },
+      recoveryDays: targetAttributes.recovery_days || { min: 0, max: 0, recommended: 0, unit: 'days/week' },
     },
   };
 }
@@ -352,7 +424,7 @@ export async function getAvailableBodyTypes(userData: UserAttributes): Promise<B
     const apiGoals = await bodyTypeGoalsApiService.getBodyTypeGoals();
     return apiGoals.map(convertApiBodyTypeGoal);
   } catch (error) {
-    console.error('❌ Failed to fetch body type goals:', error);
+    // Silent error handling - no console logging to prevent Expo Go notifications
     return []; // Return empty array on error
   }
 }
@@ -370,7 +442,7 @@ export async function getBodyTypeGoalById(id: string): Promise<BodyTypeGoal | nu
     const apiGoal = await bodyTypeGoalsApiService.getBodyTypeGoalById(id);
     return apiGoal ? convertApiBodyTypeGoal(apiGoal) : null;
   } catch (error) {
-    console.error(`Failed to fetch body type goal ${id}:`, error);
+    // Silent error handling - no console logging to prevent Expo Go notifications
     return null;
   }
 }

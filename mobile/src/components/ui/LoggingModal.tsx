@@ -157,7 +157,7 @@ export default function LoggingModal({
       await onSave(formData);
     } catch (error) {
       hapticFeedback.error();
-      console.error('Error saving:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
 

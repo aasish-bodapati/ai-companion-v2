@@ -72,7 +72,7 @@ const LoggingItem = React.memo(function LoggingItem({
         const categoriesData = await exerciseCategoryService.getCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Failed to load categories in LoggingItem:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
     };
     loadCategories();

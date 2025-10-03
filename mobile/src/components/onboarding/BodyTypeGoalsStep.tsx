@@ -13,48 +13,40 @@ import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
 import { 
   getAvailableBodyTypes, 
-  getBodyTypeCategories,
   calculateBodyTypeGoal,
   calculateWaterGoal,
-  calculateCalorieTarget,
-  calculateProteinTarget,
   calculateFFMI,
   UserAttributes,
   BodyTypeGoal
 } from '../../services/bodyTypeGoals';
 
 interface BodyTypeGoalsStepProps {
-  onBodyTypeChange: (bodyTypeId: string, editedGoal?: any) => void;
+  onBodyTypeChange: (bodyTypeId: string) => void;
   initialBodyType?: string;
   userData: UserAttributes;
-  isPrePopulated?: boolean;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export default function BodyTypeGoalsStep({ 
   onBodyTypeChange, 
   initialBodyType = '',
   userData,
-  isPrePopulated = false,
+  onValidationChange,
 }: BodyTypeGoalsStepProps) {
   const [selectedBodyType, setSelectedBodyType] = useState<string>(initialBodyType);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [availableBodyTypes, setAvailableBodyTypes] = useState<BodyTypeGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedGoal, setEditedGoal] = useState<any>(null);
-  const [editingError, setEditingError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get available body types based on user's current state
     const loadBodyTypes = async () => {
       try {
-        setLoading(true);
         setError(null);
         const available = await getAvailableBodyTypes(userData);
         setAvailableBodyTypes(available);
       } catch (err) {
-        console.error('Failed to load body types:', err);
+        // Silent error handling - no console logging to prevent Expo Go notifications
         setError('Failed to load body type goals');
       } finally {
         setLoading(false);
@@ -67,130 +59,58 @@ export default function BodyTypeGoalsStep({
   useEffect(() => {
     // Only call onBodyTypeChange when a body type is actually selected
     if (selectedBodyType) {
-      onBodyTypeChange(selectedBodyType, editedGoal);
+      onBodyTypeChange(selectedBodyType);
     }
-  }, [selectedBodyType, editedGoal, onBodyTypeChange]);
+  }, [selectedBodyType]);
+
+  useEffect(() => {
+    // Notify parent of validation state
+    if (onValidationChange) {
+      onValidationChange(selectedBodyType.length > 0);
+    }
+  }, [selectedBodyType, onValidationChange]);
 
   const handleBodyTypeSelect = (bodyTypeId: string) => {
     hapticFeedback.selection();
     setSelectedBodyType(bodyTypeId);
-    // Reset editing state when selecting a new body type
-    setIsEditing(false);
-    setEditedGoal(null);
-    setEditingError(null);
-  };
-
-  const handleEditGoal = () => {
-    const bodyType = availableBodyTypes.find(bt => bt.id === selectedBodyType);
-    if (!bodyType) return;
-
-    // Calculate personalized values based on user data
-    const waterGoal = calculateWaterGoal(userData.gender, userData.activityLevel);
-    const targetWeight = Math.round((userData.height / 100) ** 2 * bodyType.targetBMI);
-    const calorieTarget = calculateCalorieTarget(userData, targetWeight, bodyType.category === 'weight_loss');
-    const proteinTarget = calculateProteinTarget(
-      userData.weight, 
-      userData.ffm, 
-      userData.smm, 
-      userData.bodyFat
-    );
-
-    setEditedGoal({
-      ...bodyType,
-      targetAttributes: {
-        ...bodyType.targetAttributes,
-        waterGoal,
-        targetWeight,
-        calorieTarget,
-        proteinTarget,
-      }
-    });
-    setIsEditing(true);
-    setEditingError(null);
-  };
-
-  const handleSaveEditedGoal = () => {
-    if (!editedGoal) return;
-
-    // Validate that system templates have been renamed
-    if (editedGoal.createdBy === 'system' && editedGoal.name === availableBodyTypes.find(bt => bt.id === selectedBodyType)?.name) {
-      setEditingError('Please change the name to create a custom goal');
-      return;
-    }
-
-    // Pass the edited goal to parent
-    onBodyTypeChange(selectedBodyType, editedGoal);
-    setIsEditing(false);
-    setEditingError(null);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedGoal(null);
-    setEditingError(null);
-  };
-
-  const updateEditedGoal = (field: string, value: any) => {
-    if (!editedGoal) return;
-
-    setEditedGoal(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const updateEditedGoalAttribute = (field: string, value: any) => {
-    if (!editedGoal) return;
-
-    setEditedGoal(prev => ({
-      ...prev,
-      targetAttributes: {
-        ...prev.targetAttributes,
-        [field]: value
-      }
-    }));
-  };
-
-  const validateEditedGoal = (goal: any) => {
-    if (!goal) return false;
-    
-    // Check if it's a system template with unchanged name
-    const originalGoal = availableBodyTypes.find(bt => bt.id === selectedBodyType);
-    if (goal.createdBy === 'system' && goal.name === originalGoal?.name) {
-      return false;
-    }
-    
-    return true;
   };
 
 
-  const handleCategorySelect = (categoryId: string) => {
-    hapticFeedback.light();
-    setSelectedCategory(prev => prev === categoryId ? null : categoryId);
-  };
 
-  const getBodyTypesByCategory = (categoryId: string) => {
-    return availableBodyTypes.filter(bodyType => bodyType.category === categoryId);
-  };
+
+
+
+
 
   const getFilteredBodyTypes = () => {
-    if (selectedCategory) {
-      return getBodyTypesByCategory(selectedCategory);
-    }
     return availableBodyTypes.slice(0, 6);
   };
 
   const getTargetBodyFatForGender = (bodyType: any, gender: string) => {
+    if (!bodyType.targetAttributes) return 'N/A';
+    
+    if (gender === 'male' && bodyType.targetAttributes.bodyFatRangeMen) {
+      const range = bodyType.targetAttributes.bodyFatRangeMen;
+      return `${range.min}-${range.max}%`;
+    } else if (gender === 'female' && bodyType.targetAttributes.bodyFatRangeWomen) {
+      const range = bodyType.targetAttributes.bodyFatRangeWomen;
+      return `${range.min}-${range.max}%`;
+    } else if (bodyType.targetAttributes.bodyFatRangeMen && bodyType.targetAttributes.bodyFatRangeWomen) {
+      // For 'other' gender, show both targets
+      const menRange = bodyType.targetAttributes.bodyFatRangeMen;
+      const womenRange = bodyType.targetAttributes.bodyFatRangeWomen;
+      return `${menRange.min}-${womenRange.max}%`;
+    }
+    
+    // Fallback to old structure
     if (!bodyType.targetBodyFat) return 'N/A';
     
     if (gender === 'male') {
       return `${bodyType.targetBodyFat}%`;
     } else if (gender === 'female') {
-      // Add 6% to the male target for female
       const femaleTarget = bodyType.targetBodyFat + 6;
       return `${femaleTarget}%`;
     } else {
-      // For 'other' gender, show both targets
       const femaleTarget = bodyType.targetBodyFat + 6;
       return `${bodyType.targetBodyFat}% (M) / ${femaleTarget}% (F)`;
     }
@@ -224,6 +144,14 @@ export default function BodyTypeGoalsStep({
   };
 
   const getTargetBMIForGender = (bodyType: any, gender: string) => {
+    if (!bodyType.targetAttributes) return 'N/A';
+    
+    if (bodyType.targetAttributes.targetBMIRange) {
+      const range = bodyType.targetAttributes.targetBMIRange;
+      return `BMI ${range.min}-${range.max}`;
+    }
+    
+    // Fallback to old structure
     if (!bodyType.targetBMI) return 'N/A';
     
     const target = Math.round(bodyType.targetBMI * 10) / 10;
@@ -243,58 +171,6 @@ export default function BodyTypeGoalsStep({
     return `FFMI ${bodyType.fatFreeMassIndex}`;
   };
 
-  const renderCategoryFilter = () => {
-    const categories = getBodyTypeCategories();
-    
-    return (
-      <View style={styles.categoryFilter}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <TouchableOpacity
-            onPress={() => {
-              hapticFeedback.light();
-              setSelectedCategory(null);
-            }}
-            style={[
-              styles.categoryButton,
-              selectedCategory === null ? styles.categoryButtonSelected : styles.categoryButtonUnselected,
-            ]}
-          >
-            <Text style={[
-              styles.categoryButtonText,
-              selectedCategory === null ? styles.categoryButtonTextSelected : styles.categoryButtonTextUnselected,
-            ]}>
-              All
-            </Text>
-          </TouchableOpacity>
-          {categories.map(category => (
-            <TouchableOpacity
-              key={category.id}
-              onPress={() => {
-                hapticFeedback.light();
-                handleCategorySelect(category.id);
-              }}
-              style={[
-                styles.categoryButton,
-                selectedCategory === category.id ? styles.categoryButtonSelected : styles.categoryButtonUnselected,
-              ]}
-            >
-              <Ionicons 
-                name={category.icon as any} 
-                size={16} 
-                color={selectedCategory === category.id ? '#ffffff' : category.color} 
-              />
-              <Text style={[
-                styles.categoryButtonText,
-                selectedCategory === category.id ? styles.categoryButtonTextSelected : styles.categoryButtonTextUnselected,
-              ]}>
-                {category.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-    );
-  };
 
   const renderBodyTypeCard = (bodyType: any) => {
     const isSelected = selectedBodyType === bodyType.id;
@@ -374,7 +250,10 @@ export default function BodyTypeGoalsStep({
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Sleep:</Text>
                 <Text style={styles.calculationValue}>
-                  {bodyType.targetAttributes.sleepDuration} hours/night
+                  {typeof bodyType.targetAttributes.sleepDuration === 'object' 
+                    ? `${bodyType.targetAttributes.sleepDuration.recommended} hours/night`
+                    : `${bodyType.targetAttributes.sleepDuration} hours/night`
+                  }
                 </Text>
               </View>
             )}
@@ -382,7 +261,10 @@ export default function BodyTypeGoalsStep({
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Steps:</Text>
                 <Text style={styles.calculationValue}>
-                  {bodyType.targetAttributes.dailySteps.toLocaleString()}/day
+                  {typeof bodyType.targetAttributes.dailySteps === 'object'
+                    ? `${bodyType.targetAttributes.dailySteps.recommended.toLocaleString()}/day`
+                    : `${bodyType.targetAttributes.dailySteps.toLocaleString()}/day`
+                  }
                 </Text>
               </View>
             )}
@@ -390,93 +272,48 @@ export default function BodyTypeGoalsStep({
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Recovery:</Text>
                 <Text style={styles.calculationValue}>
-                  {bodyType.targetAttributes.recoveryDays} days/week
+                  {typeof bodyType.targetAttributes.recoveryDays === 'object'
+                    ? `${bodyType.targetAttributes.recoveryDays.recommended} days/week`
+                    : `${bodyType.targetAttributes.recoveryDays} days/week`
+                  }
                 </Text>
               </View>
             )}
-            <View style={styles.calculationRow}>
-              <Text style={styles.calculationLabel}>Calories:</Text>
-              <Text style={styles.calculationValue}>
-                {(() => {
-                  // Calculate calorie target based on user data
-                  const weight = userData.weight;
-                  const height = userData.height;
-                  const age = userData.age;
-                  const gender = userData.gender;
-                  const activityLevel = userData.activityLevel;
-                  
-                  // Basic BMR calculation (Mifflin-St Jeor Equation)
-                  let bmr;
-                  if (gender === 'male') {
-                    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-                  } else {
-                    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            {bodyType.targetAttributes.smmLevel && (
+              <View style={styles.calculationRow}>
+                <Text style={styles.calculationLabel}>SMM Level:</Text>
+                <Text style={styles.calculationValue}>
+                  {bodyType.targetAttributes.smmLevel}
+                </Text>
+              </View>
+            )}
+            {bodyType.targetAttributes.proteinPerKgMen && (
+              <View style={styles.calculationRow}>
+                <Text style={styles.calculationLabel}>Protein:</Text>
+                <Text style={styles.calculationValue}>
+                  {userData.gender === 'male' 
+                    ? `${bodyType.targetAttributes.proteinPerKgMen.min}-${bodyType.targetAttributes.proteinPerKgMen.max}g/kg`
+                    : `${bodyType.targetAttributes.proteinPerKgWomen.min}-${bodyType.targetAttributes.proteinPerKgWomen.max}g/kg`
                   }
-                  
-                  // Activity multipliers
-                  const activityMultipliers = {
-                    'sedentary': 1.2,
-                    'light': 1.375,
-                    'moderate': 1.55,
-                    'active': 1.725,
-                    'very_active': 1.9
-                  };
-                  
-                  const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
-                  return `${Math.round(tdee)} cal/day`;
-                })()}
-              </Text>
-            </View>
-            <View style={styles.calculationRow}>
-              <Text style={styles.calculationLabel}>Protein:</Text>
-              <Text style={styles.calculationValue}>
-                {(() => {
-                  // Calculate protein using comprehensive formula
-                  const weight = userData.weight;
-                  const ffm = userData.ffm;
-                  const smm = userData.smm;
-                  const bodyFat = userData.bodyFat;
-                  
-                  // Case 1: All optional metrics are provided (FFM, SMM, BF%)
-                  if (ffm && smm && bodyFat) {
-                    const ffmi = calculateFFMI(userData.height, ffm);
-                    const proteinTarget = ffm * 1.6 * (1 + 0.3 * smm / 30 + 0.1 * (ffmi - 20));
-                    return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                  }
-                  
-                  // Case 2: FFM provided, SMM and FFMI not provided
-                  if (ffm && !smm && !bodyFat) {
-                    const proteinTarget = ffm * 1.8;
-                    return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                  }
-                  
-                  // Case 3: SMM and BF% provided, FFM not provided
-                  if (smm && bodyFat && !ffm) {
-                    const estimatedFFM = weight * (1 - bodyFat / 100);
-                    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-                    return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                  }
-                  
-                  // Case 4: Only BF% provided, SMM and FFM not provided
-                  if (bodyFat && !smm && !ffm) {
-                    const estimatedFFM = weight * (1 - bodyFat / 100);
-                    const proteinTarget = estimatedFFM * 1.8;
-                    return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                  }
-                  
-                  // Case 5: Only SMM provided, FFM & BF% not provided
-                  if (smm && !ffm && !bodyFat) {
-                    const estimatedFFM = smm * 2; // Skeletal muscle is ~50% of FFM
-                    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-                    return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                  }
-                  
-                  // Case 6: None of the optional metrics provided (only height & weight)
-                  const proteinTarget = weight * 1.6;
-                  return `${Math.round(proteinTarget * 10) / 10}g/day`;
-                })()}
-              </Text>
-            </View>
+                </Text>
+              </View>
+            )}
+            {bodyType.targetAttributes.calorieTarget && (
+              <View style={styles.calculationRow}>
+                <Text style={styles.calculationLabel}>Calories:</Text>
+                <Text style={styles.calculationValue}>
+                  {bodyType.targetAttributes.calorieTarget}
+                </Text>
+              </View>
+            )}
+            {bodyType.targetAttributes.workoutFocus && (
+              <View style={styles.calculationRow}>
+                <Text style={styles.calculationLabel}>Focus:</Text>
+                <Text style={styles.calculationValue}>
+                  {bodyType.targetAttributes.workoutFocus}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </MobileOptimizedCard>
@@ -494,190 +331,9 @@ export default function BodyTypeGoalsStep({
     );
   };
 
-  const renderSelectedBodyTypeSummary = () => {
-    if (!selectedBodyType) return null;
-    
-    const bodyType = availableBodyTypes.find(bt => bt.id === selectedBodyType);
-    if (!bodyType) {
-      return null;
-    }
-    
-    if (!bodyType.targetAttributes) {
-      console.error('❌ Body type missing targetAttributes:', bodyType);
-      return null;
-    }
 
-    // Use edited goal if available, otherwise use the original body type
-    const displayGoal = editedGoal || bodyType;
-    
-    return (
-      <MobileOptimizedCard
-        variant="filled"
-        style={styles.summaryCard}
-      >
-        <View style={styles.summaryContent}>
-          <View style={styles.summaryHeader}>
-            <View style={styles.summaryTitleContainer}>
-              <Ionicons name="checkmark-circle" size={24} color="#10b981" />
-              <View style={styles.titleAndBadge}>
-                {isEditing ? (
-                  <View style={styles.nameInputContainer}>
-                    <TextInput
-                      style={[
-                        styles.editableTitle,
-                        editingError ? styles.nameInputError : {}
-                      ]}
-                      value={editedGoal?.name || ''}
-                      onChangeText={(text) => updateEditedGoal('name', text)}
-                      placeholder="Goal name"
-                    />
-                    {editingError && (
-                      <Text style={styles.nameInputWarning}>{editingError}</Text>
-                    )}
-                  </View>
-                ) : (
-                  <Text style={styles.summaryTitle}>
-                    {displayGoal.name} Selected
-                  </Text>
-                )}
-                <View style={[
-                  styles.templateBadge,
-                  displayGoal.createdBy === 'system' ? styles.systemBadge : styles.userBadge
-                ]}>
-                  <Text style={styles.templateBadgeText}>
-                    {displayGoal.createdBy === 'system' ? 'Template' : 'Custom'}
-                  </Text>
-                </View>
-              </View>
-            </View>
-            {!isEditing && (
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={handleEditGoal}
-              >
-                <Ionicons name="create-outline" size={14} color="#3b82f6" />
-                <Text style={styles.editButtonText}>Edit</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          <View style={styles.summaryDetails}>
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Goal BMI:</Text>
-              <Text style={styles.summaryValue}>
-                {getTargetBMIForGender(displayGoal, userData.gender)}
-              </Text>
-            </View>
-            {displayGoal.targetBodyFat && (
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Target Body Fat:</Text>
-                <Text style={styles.summaryValue}>
-                  {getTargetBodyFatForGender(displayGoal, userData.gender)}
-                </Text>
-              </View>
-            )}
-            {displayGoal.waistToHeightRatio && (
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Waist/Height Ratio:</Text>
-                <Text style={styles.summaryValue}>
-                  {getWaistToHeightRatio(displayGoal)}
-                </Text>
-              </View>
-            )}
-            {displayGoal.fatFreeMassIndex && (
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Fat-Free Mass Index:</Text>
-                <Text style={styles.summaryValue}>
-                  {getFatFreeMassIndex(displayGoal)}
-                </Text>
-              </View>
-            )}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Weight Change:</Text>
-              <Text style={[
-                styles.summaryValue,
-                { color: displayGoal.targetAttributes.weightChange > 0 ? '#10b981' : '#ef4444' }
-              ]}>
-                {displayGoal.targetAttributes.weightChange > 0 ? '+' : ''}
-                {displayGoal.targetAttributes.weightChange}kg
-              </Text>
-            </View>
-            
-            {/* Editable Fields */}
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Calorie Target:</Text>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editableValue}
-                  value={editedGoal?.targetAttributes?.calorieTarget?.toString() || ''}
-                  onChangeText={(text) => updateEditedGoalAttribute('calorieTarget', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              ) : (
-                <Text style={styles.summaryValue}>
-                  {displayGoal.targetAttributes.calorieTarget} cal/day
-                </Text>
-              )}
-            </View>
-            
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Workouts/Week:</Text>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editableValue}
-                  value={editedGoal?.targetAttributes?.workoutFrequency?.toString() || ''}
-                  onChangeText={(text) => updateEditedGoalAttribute('workoutFrequency', parseInt(text) || 0)}
-                  keyboardType="numeric"
-                />
-              ) : (
-                <Text style={styles.summaryValue}>
-                  {displayGoal.targetAttributes.workoutFrequency} days
-                </Text>
-              )}
-            </View>
-            
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Protein Target:</Text>
-              {isEditing ? (
-                <TextInput
-                  style={styles.editableValue}
-                  value={editedGoal?.targetAttributes?.proteinTarget?.toString() || ''}
-                  onChangeText={(text) => updateEditedGoalAttribute('proteinTarget', parseFloat(text) || 0)}
-                  keyboardType="numeric"
-                />
-              ) : (
-                <Text style={styles.summaryValue}>
-                  {displayGoal.targetAttributes.proteinTarget}g/day
-                </Text>
-              )}
-            </View>
-
-            {isEditing && (
-              <View style={styles.editActions}>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancelEdit}
-                >
-                  <Ionicons name="close" size={12} color="#6b7280" />
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.saveButton}
-                  onPress={handleSaveEditedGoal}
-                >
-                  <Ionicons name="checkmark" size={12} color="#ffffff" />
-                  <Text style={styles.saveButtonText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        </View>
-      </MobileOptimizedCard>
-    );
-  };
-
-  // Loading state
-  if (loading) {
+  // Loading state - only show if we don't have any data yet
+  if (loading && availableBodyTypes.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -718,13 +374,6 @@ export default function BodyTypeGoalsStep({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Pre-populated indicator */}
-        {isPrePopulated && (
-          <View style={styles.prePopulatedIndicator}>
-            <Ionicons name="information-circle-outline" size={16} color="#3b82f6" />
-            <Text style={styles.prePopulatedText}>Your current body type goal has been pre-selected</Text>
-          </View>
-        )}
 
         {/* Header */}
         <View style={styles.header}>
@@ -734,11 +383,7 @@ export default function BodyTypeGoalsStep({
           </Text>
         </View>
 
-        {/* Category Filter */}
-        {renderCategoryFilter()}
 
-        {/* Selected Body Type Summary */}
-        {renderSelectedBodyTypeSummary()}
 
         {/* Body Types Grid */}
         {renderBodyTypesGrid()}
@@ -771,35 +416,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     lineHeight: 20,
-  },
-  categoryFilter: {
-    marginBottom: 12,
-  },
-  categoryButton: {
-    marginRight: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  categoryButtonSelected: {
-    backgroundColor: '#3b82f6',
-  },
-  categoryButtonUnselected: {
-    backgroundColor: '#f3f4f6',
-  },
-  categoryButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  categoryButtonTextSelected: {
-    color: '#ffffff',
-  },
-  categoryButtonTextUnselected: {
-    color: '#6b7280',
   },
   summaryCard: {
     marginBottom: 16,

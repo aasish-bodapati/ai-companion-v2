@@ -82,7 +82,7 @@ class ExerciseCategoryService {
       this.categories = Array.from(categoryMap.values());
       this.loaded = true;
     } catch (error) {
-      console.error('Failed to load exercise categories:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Fallback to empty array if API fails
       this.categories = [];
       this.loaded = true;

@@ -89,10 +89,10 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Search failed');
     } catch (error) {
-      console.error('❌ Error searching Indian foods:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+        // Silent error handling - no console logging to prevent Expo Go notifications
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
       throw error;
     }
@@ -110,7 +110,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Food not found');
     } catch (error) {
-      console.error('Error getting food by code:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }
@@ -129,7 +129,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Nutrition data not found');
     } catch (error) {
-      console.error('Error getting food nutrition:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }
@@ -148,7 +148,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Failed to get popular foods');
     } catch (error) {
-      console.error('Error getting popular foods:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }
@@ -170,7 +170,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Failed to get foods by category');
     } catch (error) {
-      console.error('Error getting foods by category:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }
@@ -190,7 +190,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Failed to calculate meal nutrition');
     } catch (error) {
-      console.error('Error calculating meal nutrition:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }
@@ -207,7 +207,7 @@ class IndianFoodService {
       }
       throw new Error(response.data.message || 'Failed to get categories');
     } catch (error) {
-      console.error('Error getting food categories:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
   }

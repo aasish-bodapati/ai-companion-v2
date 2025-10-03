@@ -86,7 +86,7 @@ export default function EditRoutineModal({
         const categoriesData = await exerciseCategoryService.getCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
     };
     loadCategories();
@@ -182,14 +182,7 @@ export default function EditRoutineModal({
           console.log('🔍 [EDIT MODAL] Final converted day workouts:', convertedDayWorkouts);
           setDayWorkouts(convertedDayWorkouts);
         } catch (error) {
-          console.error('❌ [EDIT MODAL] Failed to load full routine data:', error);
-          console.error('❌ [EDIT MODAL] Error details:', {
-            message: error.message,
-            status: error.response?.status,
-            data: error.response?.data,
-            routineId: routine.id,
-            isTemplate: routine.is_template
-          });
+          // Silent error handling - no console logging to prevent Expo Go notifications
           showToast.error('Error', 'Failed to load routine details. Please try again.');
         } finally {
           setLoadingRoutineData(false);
@@ -231,7 +224,7 @@ export default function EditRoutineModal({
         setAllExercises(response.data.exercises || []);
         setFilteredExercises(response.data.exercises || []);
       } catch (error) {
-        console.error('Failed to load exercises:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
         showToast.error('Error', 'Failed to load exercises');
       } finally {
         setLoadingExercises(false);
@@ -370,7 +363,7 @@ export default function EditRoutineModal({
       onClose();
       onRoutineUpdated();
     } catch (err: any) {
-      console.error('Failed to update routine:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', err.response?.data?.detail || err.message || 'Failed to update routine');
     } finally {
       setLoading(false);

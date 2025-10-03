@@ -39,12 +39,7 @@ export abstract class BaseService {
    * Centralized error handling and logging
    */
   protected handleError(error: any, context: string): void {
-    console.error(`❌ [${context}] Error:`, error);
-    console.error(`❌ [${context}] Error details:`, {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
+    // Silent error handling - no console logging to prevent Expo Go notifications
   }
 
   /**

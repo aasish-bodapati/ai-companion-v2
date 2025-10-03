@@ -36,7 +36,7 @@ export const profileService = {
       const response = await apiClient.get('/profile');
       return response.data;
     } catch (error) {
-      console.error('ProfileService: Failed to get user profile:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
   },
@@ -47,7 +47,7 @@ export const profileService = {
       const response = await apiClient.put('/profile', profileData);
       return response.data;
     } catch (error) {
-      console.error('Failed to update user profile:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
   },
@@ -59,7 +59,7 @@ export const profileService = {
         age: profile.health_data.age || '',
         height: profile.health_data.height || '',
         weight: profile.health_data.weight || '',
-        gender: profile.health_data.gender as 'male' | 'female' | 'other' || 'male',
+        gender: profile.health_data.gender as 'male' | 'female' | 'other' || '',
         activityLevel: profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' || 'moderate',
         ffm: profile.health_data.ffm || '',
         smm: profile.health_data.smm || '',
@@ -69,7 +69,7 @@ export const profileService = {
         age: '',
         height: '',
         weight: '',
-        gender: 'male' as const,
+        gender: '' as const,
         activityLevel: 'moderate' as const,
         ffm: '',
         smm: '',

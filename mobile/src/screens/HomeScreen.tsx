@@ -36,14 +36,14 @@ export default function HomeScreen() {
         const fetchData = await fetchResponse.json();
         console.log('📱 HomeScreen: Fetch response data:', fetchData);
       } catch (fetchError) {
-        console.error('📱 HomeScreen: Fetch error:', fetchError);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
       
       const data = await healthService.getHealthData();
       console.log('📱 HomeScreen: Successfully received data:', data);
       setHealthData(data);
     } catch (err) {
-      console.error('📱 HomeScreen: Error in fetchHealthData:', err);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);

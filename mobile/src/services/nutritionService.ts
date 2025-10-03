@@ -143,7 +143,7 @@ class NutritionService extends BaseService {
     ).then(data => {
       const meals = data?.meals || data || [];
       if (!Array.isArray(meals)) {
-        console.warn('Nutrition Service: Expected array but got:', typeof meals);
+        // Silent warning handling - no console logging to prevent Expo Go notifications
         return [];
       }
       return meals;

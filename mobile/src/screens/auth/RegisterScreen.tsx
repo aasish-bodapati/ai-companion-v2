@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { showToast } from '../../utils/toast';
+import { useToast } from '../../contexts/ToastContext';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -20,35 +20,47 @@ export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuth();
+  const { showToast } = useToast();
   const navigation = useNavigation();
 
   const handleRegister = async () => {
+    console.log('🔍 [REGISTER] handleRegister called');
+    console.log('🔍 [REGISTER] Form data:', { email, password: password ? '***' : '', confirmPassword: confirmPassword ? '***' : '', fullName });
+    
     if (!email || !password || !confirmPassword || !fullName) {
-      showToast.error('Error', 'Please fill in all fields');
+      console.log('🔍 [REGISTER] Validation failed: missing fields');
+      showToast('Error: Please fill in all fields', 'error', 5000);
       return;
     }
 
     if (password !== confirmPassword) {
-      showToast.error('Error', 'Passwords do not match');
+      console.log('🔍 [REGISTER] Validation failed: passwords do not match');
+      showToast('Error: Passwords do not match', 'error', 5000);
       return;
     }
 
     if (password.length < 8) {
-      showToast.error('Error', 'Password must be at least 8 characters');
+      console.log('🔍 [REGISTER] Validation failed: password too short');
+      showToast('Error: Password must be at least 8 characters', 'error', 5000);
       return;
     }
 
+    console.log('🔍 [REGISTER] All validations passed, calling register function');
     setIsLoading(true);
     try {
       const result = await register(email, password, fullName);
+      console.log('🔍 [REGISTER] Register result:', result);
       if (result.success) {
-        showToast.success('Success!', 'Account created successfully! Please sign in.');
+        console.log('🔍 [REGISTER] Registration successful, navigating to login');
+        showToast('Success! Account created successfully! Please sign in.', 'success', 4000);
         navigation.navigate('Login' as never);
       } else {
-        showToast.error('Registration Failed', result.error || 'Registration failed. Please try again.');
+        console.log('🔍 [REGISTER] Registration failed:', result.error);
+        showToast(`Registration Failed: ${result.error || 'Registration failed. Please try again.'}`, 'error', 5000);
       }
     } catch (error) {
-      showToast.error('Error', 'Registration failed. Please try again.');
+      console.log('🔍 [REGISTER] Registration error:', error);
+      showToast('Error: Registration failed. Please try again.', 'error', 5000);
     } finally {
       setIsLoading(false);
     }
@@ -124,7 +136,10 @@ export default function RegisterScreen() {
 
             <TouchableOpacity
               style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
-              onPress={handleRegister}
+              onPress={() => {
+                console.log('🔍 [REGISTER] Button pressed!');
+                handleRegister();
+              }}
               disabled={isLoading}
             >
               <Text style={styles.registerButtonText}>

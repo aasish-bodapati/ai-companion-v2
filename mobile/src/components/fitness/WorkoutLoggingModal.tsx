@@ -78,7 +78,7 @@ export default function WorkoutLoggingModal({
       const results = await fitnessService.searchExercises(query);
       setSearchResults(results);
     } catch (error) {
-      console.error('Error searching exercises:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       setSearchResults([]);
     } finally {
       setSearching(false);
@@ -113,7 +113,7 @@ export default function WorkoutLoggingModal({
         latestWorkout = await fitnessService.getLatestExerciseData(exercise.name);
         console.log('🔍 Raw API response for', exercise.name, ':', latestWorkout);
       } catch (error) {
-        console.error('Error fetching latest workout data:', error);
+        // Silent error handling - no console logging to prevent Expo Go notifications
       }
       
       // Add new exercise with latest data if available
@@ -237,11 +237,46 @@ export default function WorkoutLoggingModal({
     
     setSaving(true);
     try {
-      await fitnessService.logWorkout(data);
+      // Parse exercises from the data
+      let exercises = [];
+      if (data.exercises) {
+        try {
+          exercises = typeof data.exercises === 'string' ? JSON.parse(data.exercises) : data.exercises;
+        } catch (error) {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          exercises = [];
+        }
+      }
+
+      if (exercises.length === 0) {
+        throw new Error('No exercises to log');
+      }
+
+      // Create separate log entries for each exercise
+      console.log('🔍 [WORKOUT MODAL] Creating separate log entries for each exercise');
+      
+      const logPromises = exercises.map((exercise: any, index: number) => {
+        const exerciseData = {
+          activity_type: 'strength_training',
+          activity_name: `${exercise.exercise_name} Workout`,
+          duration_minutes: exercise.duration_minutes || 10, // Default 10 minutes per exercise
+          exercises: JSON.stringify([exercise]), // Single exercise as array
+          notes: exercise.notes || '',
+          activity_date: data.activity_date || new Date().toISOString(),
+        };
+        
+        console.log(`🔍 [WORKOUT MODAL] Logging exercise ${index + 1}:`, exercise.exercise_name);
+        return fitnessService.logWorkout(exerciseData);
+      });
+
+      // Wait for all exercises to be logged
+      await Promise.all(logPromises);
+      
+      console.log('✅ [WORKOUT MODAL] All exercises logged successfully');
       onWorkoutLogged();
       onClose();
     } catch (error) {
-      console.error('Error logging workout:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     } finally {
       setSaving(false);

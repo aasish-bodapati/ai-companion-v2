@@ -35,7 +35,7 @@ export default function GoalProgressCard({ onPress }: GoalProgressCardProps) {
       setAnalytics(analyticsData);
       setProgressData(progressData);
     } catch (error) {
-      console.error('Error loading goal data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }

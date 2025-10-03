@@ -45,6 +45,12 @@ export default function RoutineProgressTracker({
       // Get today's workout from the routine
       const todaysWorkout = await routineService.getTodaysWorkout();
       
+      // Handle the case where no workout is scheduled for today
+      if (!todaysWorkout) {
+        console.log('ℹ️ No workout scheduled for today');
+        // Continue with progress tracking even if no workout is scheduled
+      }
+      
       // Get recent workout logs
       const recentLogs = await fitnessService.getRecentWorkouts(30);
       
@@ -64,7 +70,7 @@ export default function RoutineProgressTracker({
       
       setWorkoutProgress(progress);
     } catch (error) {
-      console.error('Failed to load workout progress:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
@@ -99,7 +105,7 @@ export default function RoutineProgressTracker({
         ]
       );
     } catch (error) {
-      console.error('Failed to complete workout:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       Alert.alert('Error', 'Failed to mark workout as completed. Please try again.');
     } finally {
       setActionLoading(null);

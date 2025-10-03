@@ -17,7 +17,7 @@ interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other';
+  gender: 'male' | 'female' | 'other' | '';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
   bodyFat?: string; // Body Fat Percentage (optional)
@@ -26,7 +26,6 @@ interface HealthData {
 interface HealthDataStepProps {
   onDataChange: (data: HealthData) => void;
   initialData?: Partial<HealthData>;
-  isPrePopulated?: boolean;
 }
 
 
@@ -39,7 +38,6 @@ const GENDER_OPTIONS = [
 export default function HealthDataStep({ 
   onDataChange, 
   initialData = {},
-  isPrePopulated = false,
 }: HealthDataStepProps) {
   const [data, setData] = useState<HealthData>({
     age: '',
@@ -285,13 +283,6 @@ export default function HealthDataStep({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Pre-populated indicator */}
-        {isPrePopulated && (
-          <View style={styles.prePopulatedIndicator}>
-            <Ionicons name="information-circle-outline" size={16} color="#3b82f6" />
-            <Text style={styles.prePopulatedText}>Your existing data has been pre-filled</Text>
-          </View>
-        )}
         
         {/* Basic Info */}
         <View style={styles.section}>

@@ -303,10 +303,11 @@ class RoutineService extends BaseService {
   // Get today's workout from active routine
   async getTodaysWorkout(): Promise<any> {
     console.log('🔍 Fetching today\'s workout from active routine...');
-    return this.makeRequest(
-      () => apiClient.get('/health/simple-routines/active/today-workout'),
-      'ROUTINE SERVICE - getTodaysWorkout'
-    ).then(data => {
+    try {
+      // Use direct API call instead of makeRequest to handle 404s gracefully
+      const response = await apiClient.get('/health/simple-routines/active/today-workout');
+      const data = this.extractData(response);
+      
       console.log('✅ Today\'s workout fetched successfully:', {
         dayName: data?.day_name,
         workoutName: data?.workout_name,
@@ -314,7 +315,17 @@ class RoutineService extends BaseService {
         exercisesCount: data?.exercises?.length || 0
       });
       return data;
-    });
+    } catch (error: any) {
+      // Handle 404 error gracefully (no workout scheduled for today)
+      if (error.response?.status === 404) {
+        console.log('ℹ️ No workout scheduled for today');
+        return null; // Return null instead of throwing
+      }
+      
+      // For other errors, log and re-throw
+      // Silent error handling - no console logging to prevent Expo Go notifications
+      throw error;
+    }
   }
 
   // Log today's workout

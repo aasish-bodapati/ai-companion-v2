@@ -62,7 +62,7 @@ export default function NutritionScreen() {
         weekly_goal_progress: 0, // Will be calculated separately
       });
     } catch (error) {
-      console.error('Failed to load week stats:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback stats
       setWeekStats({
         // Required properties
@@ -127,7 +127,7 @@ export default function NutritionScreen() {
       
       setWeeklyActivityData(weeklyData);
     } catch (error) {
-      console.error('Failed to load weekly activity data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -146,7 +146,7 @@ export default function NutritionScreen() {
       setLoading(true);
       await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
     } catch (error) {
-      console.error('Failed to load overview data:', error);
+      // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
