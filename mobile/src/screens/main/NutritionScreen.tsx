@@ -93,11 +93,24 @@ export default function NutritionScreen() {
 
   const loadWeeklyActivityData = async () => {
     try {
-      // Get recent meals for the week
-      const response = await nutritionService.getNutritionLogs({ period: 'week' });
+      console.log('🍽️ [NUTRITION SCREEN] Loading weekly activity data...');
       
-      // Extract meals array from response
-      const meals = response || [];
+      // Calculate date range for the past 7 days
+      const today = new Date();
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 7);
+      
+      const startDate = sevenDaysAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+      
+      console.log('🍽️ [NUTRITION SCREEN] Date range:', { startDate, endDate });
+      
+      // Get recent meals for the week using date range
+      const meals = await nutritionService.getNutritionLogs({ 
+        start_date: startDate, 
+        end_date: endDate 
+      });
+      console.log('🍽️ [NUTRITION SCREEN] Loaded meals for weekly chart:', meals);
       
       // Group meals by day of week
       const weeklyData = {
@@ -112,24 +125,35 @@ export default function NutritionScreen() {
       
       if (Array.isArray(meals)) {
         meals.forEach(meal => {
-        const date = new Date(meal.meal_date);
-        const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, etc.
-        
-        switch (dayOfWeek) {
-          case 0: weeklyData.sunday++; break;
-          case 1: weeklyData.monday++; break;
-          case 2: weeklyData.tuesday++; break;
-          case 3: weeklyData.wednesday++; break;
-          case 4: weeklyData.thursday++; break;
-          case 5: weeklyData.friday++; break;
-          case 6: weeklyData.saturday++; break;
-        }
+          // Parse the meal_date as UTC and convert to user's timezone
+          const mealDateUTC = new Date(meal.meal_date);
+          console.log('🍽️ [NUTRITION SCREEN] Processing meal:', {
+            meal_date: meal.meal_date,
+            parsed_utc: mealDateUTC.toISOString(),
+            local_time: mealDateUTC.toLocaleString(),
+            day_of_week_utc: mealDateUTC.getDay(),
+            day_of_week_local: mealDateUTC.getDay()
+          });
+          
+          // Use the local day of week (this handles timezone conversion automatically)
+          const dayOfWeek = mealDateUTC.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          
+          switch (dayOfWeek) {
+            case 0: weeklyData.sunday++; break;
+            case 1: weeklyData.monday++; break;
+            case 2: weeklyData.tuesday++; break;
+            case 3: weeklyData.wednesday++; break;
+            case 4: weeklyData.thursday++; break;
+            case 5: weeklyData.friday++; break;
+            case 6: weeklyData.saturday++; break;
+          }
         });
       }
       
+      console.log('🍽️ [NUTRITION SCREEN] Weekly activity data calculated:', weeklyData);
       setWeeklyActivityData(weeklyData);
     } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+      console.error('🍽️ [NUTRITION SCREEN] Error loading weekly activity data:', error);
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -208,36 +232,38 @@ export default function NutritionScreen() {
     >
       {/* Quick Add Meals */}
       <QuickAddMeals
-        onQuickAdd={(mealType, foodItems) => {
-          // Handle quick add - convert to meal data format
-          const mealData = {
-            meal_type: mealType,
-            total_calories: foodItems.reduce((sum, item) => sum + item.calories, 0),
-            protein_g: foodItems.reduce((sum, item) => sum + item.protein_g, 0),
-            carbs_g: foodItems.reduce((sum, item) => sum + item.carbs_g, 0),
-            fat_g: foodItems.reduce((sum, item) => sum + item.fat_g, 0),
-            food_items: JSON.stringify(foodItems.map(item => ({
-              food_id: Date.now(), // Temporary ID
-              food_name: item.name,
-              quantity: item.quantity,
-              quantity_unit: item.quantity_unit,
-              quantity_grams: item.quantity * 100,
-              calories: item.calories,
-              protein_g: item.protein_g,
-              carbs_g: item.carbs_g,
-              fat_g: item.fat_g,
-            }))),
-          };
-          
-          // Log the meal
-          nutritionService.logMeal(mealData).then(() => {
-            loadOverviewData();
+        onQuickAdd={async (mealType, foodItems) => {
+          try {
+            // Handle quick add - convert to meal data format
+            const mealData = {
+              meal_type: mealType,
+              total_calories: foodItems.reduce((sum, item) => sum + item.calories, 0),
+              protein_g: foodItems.reduce((sum, item) => sum + item.protein_g, 0),
+              carbs_g: foodItems.reduce((sum, item) => sum + item.carbs_g, 0),
+              fat_g: foodItems.reduce((sum, item) => sum + item.fat_g, 0),
+              food_items: JSON.stringify(foodItems.map(item => ({
+                food_id: Date.now(), // Temporary ID
+                food_name: item.name,
+                quantity: item.quantity,
+                quantity_unit: item.quantity_unit,
+                quantity_grams: item.quantity * 100,
+                calories: item.calories,
+                protein_g: item.protein_g,
+                carbs_g: item.carbs_g,
+                fat_g: item.fat_g,
+              }))),
+            };
+            
+            // Log the meal with proper async/await
+            await nutritionService.logMeal(mealData);
+            await loadOverviewData();
             if (nutritionLogsRef.current) {
               nutritionLogsRef.current.refreshLogs();
             }
-          }).catch(error => {
-            console.log('Error logging quick meal:', error);
-          });
+          } catch (error) {
+            console.error('Error logging quick meal:', error);
+            // You could add user-facing error handling here
+          }
         }}
         onCustomAdd={() => setShowLogMealModal(true)}
       />
@@ -258,7 +284,7 @@ export default function NutritionScreen() {
         <View style={styles.toolsGrid}>
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
-              <Ionicons name="calendar-outline" size={24} color="#3b82f6" />
+              <Ionicons name="calendar-outline" size={16} color="#3b82f6" />
             </View>
             <Text style={styles.toolTitle}>Weekly Planner</Text>
             <Text style={styles.toolDescription}>Plan your week</Text>
@@ -266,7 +292,7 @@ export default function NutritionScreen() {
           
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
-              <Ionicons name="list-outline" size={24} color="#10b981" />
+              <Ionicons name="list-outline" size={16} color="#10b981" />
             </View>
             <Text style={styles.toolTitle}>Shopping List</Text>
             <Text style={styles.toolDescription}>Auto-generate list</Text>
@@ -274,7 +300,7 @@ export default function NutritionScreen() {
           
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
-              <Ionicons name="restaurant-outline" size={24} color="#f59e0b" />
+              <Ionicons name="restaurant-outline" size={16} color="#f59e0b" />
             </View>
             <Text style={styles.toolTitle}>Meal Prep</Text>
             <Text style={styles.toolDescription}>Batch cooking</Text>
@@ -282,7 +308,7 @@ export default function NutritionScreen() {
           
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
-              <Ionicons name="nutrition-outline" size={24} color="#ef4444" />
+              <Ionicons name="nutrition-outline" size={16} color="#ef4444" />
             </View>
             <Text style={styles.toolTitle}>Nutrition Goals</Text>
             <Text style={styles.toolDescription}>Track macros</Text>
@@ -330,23 +356,6 @@ export default function NutritionScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
-          onPress={() => setActiveTab('logs')}
-        >
-          <Ionicons 
-            name="list-outline" 
-            size={20} 
-            color={activeTab === 'logs' ? '#10b981' : '#6b7280'} 
-          />
-          <Text style={[
-            styles.tabText,
-            activeTab === 'logs' && styles.activeTabText
-          ]}>
-            Logs
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
           style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
           onPress={() => setActiveTab('meals')}
         >
@@ -362,12 +371,29 @@ export default function NutritionScreen() {
             Meals
           </Text>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
+          onPress={() => setActiveTab('logs')}
+        >
+          <Ionicons 
+            name="list-outline" 
+            size={20} 
+            color={activeTab === 'logs' ? '#10b981' : '#6b7280'} 
+          />
+          <Text style={[
+            styles.tabText,
+            activeTab === 'logs' && styles.activeTabText
+          ]}>
+            Logs
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
       {activeTab === 'overview' ? renderOverview() : 
-       activeTab === 'logs' ? <NutritionLogsView ref={nutritionLogsRef} onRefresh={onRefresh} /> : 
-       renderMeals()}
+       activeTab === 'meals' ? renderMeals() : 
+       <NutritionLogsView ref={nutritionLogsRef} onRefresh={onRefresh} />}
 
       {/* Unified Nutrition Logger Modal */}
       <UnifiedNutritionLogger
@@ -738,18 +764,18 @@ const styles = StyleSheet.create({
   toolsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'space-between',
+    gap: 6,
   },
   toolCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    width: '48%',
+    borderRadius: 10,
+    padding: 10,
+    width: '22%',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    marginHorizontal: 8,
-    marginBottom: 12,
+    marginBottom: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -757,23 +783,23 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   toolIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: '#f3f4f6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   toolTitle: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     color: '#1f2937',
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   toolDescription: {
-    fontSize: 12,
+    fontSize: 9,
     color: '#6b7280',
     textAlign: 'center',
   },

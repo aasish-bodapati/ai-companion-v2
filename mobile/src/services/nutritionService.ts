@@ -124,30 +124,48 @@ class NutritionService extends BaseService {
     };
     console.log('🍽️ [NUTRITION SERVICE] Params with timezone:', paramsWithTimezone);
     
-    return this.makeRequest(
-      () => apiClient.get('/health/logging/nutrition/test', { params: paramsWithTimezone }),
+    // Use test endpoint for period-based queries, main endpoint for date-based queries
+    const endpoint = params?.period ? '/health/logging/nutrition/test' : '/health/logging/nutrition';
+    
+    const data = await this.makeRequest(
+      () => apiClient.get(endpoint, { params: paramsWithTimezone }),
       'NUTRITION SERVICE - getNutritionLogs'
-    ).then(data => {
-      console.log('🍽️ [NUTRITION SERVICE] Extracted logs:', data);
-      console.log('🍽️ [NUTRITION SERVICE] Number of logs:', data.length);
-      return data;
-    });
+    );
+    
+    console.log('🍽️ [NUTRITION SERVICE] Raw API response:', data);
+    
+    // Handle different response structures
+    let meals: NutritionLog[] = [];
+    if (Array.isArray(data)) {
+      meals = data;
+    } else if (data && Array.isArray(data.meals)) {
+      meals = data.meals;
+    } else if (data && Array.isArray(data.logs)) {
+      meals = data.logs;
+    } else {
+      console.warn('🍽️ [NUTRITION SERVICE] Unexpected response structure:', data);
+      meals = [];
+    }
+    
+    console.log('🍽️ [NUTRITION SERVICE] Extracted meals:', meals);
+    console.log('🍽️ [NUTRITION SERVICE] Number of meals:', meals.length);
+    return meals;
   }
 
   async getRecentMeals(limit: number = 5): Promise<NutritionLog[]> {
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/logging/nutrition', {
         params: { size: limit, page: 1 }
       }),
       'NUTRITION SERVICE - getRecentMeals'
-    ).then(data => {
-      const meals = data?.meals || data || [];
-      if (!Array.isArray(meals)) {
-        // Silent warning handling - no console logging to prevent Expo Go notifications
-        return [];
-      }
-      return meals;
-    });
+    );
+    
+    const meals = data?.meals || data || [];
+    if (!Array.isArray(meals)) {
+      // Silent warning handling - no console logging to prevent Expo Go notifications
+      return [];
+    }
+    return meals;
   }
 
   async getTodayNutritionSummary(): Promise<NutritionStats> {
@@ -226,6 +244,56 @@ class NutritionService extends BaseService {
     );
   }
 
+  async getFoodItems(): Promise<FoodItem[]> {
+    console.log('🔍 [NUTRITION SERVICE] Loading all food items');
+    
+    // Temporary workaround: use search endpoint with empty query to get all foods
+    // This works around the 405 error on the root endpoint until backend is restarted
+    const response = await this.makeRequest(
+      () => apiClient.get('/health/indian-foods/search', {
+        params: { q: '', limit: 100 }
+      }),
+      'NUTRITION SERVICE - getFoodItems'
+    );
+    
+    console.log('🔍 [NUTRITION SERVICE] Food items response:', response);
+    
+    // Transform API response to match FoodItem interface
+    // The API returns data directly as an array
+    const foods = response || [];
+    if (foods && Array.isArray(foods)) {
+      console.log('🔍 [NUTRITION SERVICE] Found data array with', foods.length, 'items');
+      const transformed = foods.map((item: any) => ({
+        id: item.food_code,
+        name: item.food_name,
+        brand: '',
+        category: 'Indian Food',
+        calories_per_100g: item.energy_kcal || 0,
+        protein_per_100g: item.protein_g || 0,
+        carbs_per_100g: item.carbs_g || 0,
+        fat_per_100g: item.fat_g || 0,
+        fiber_g: item.fiber_g || 0,
+        sugar_g: item.sugar_g || 0,
+        sodium_mg: 0, // Not available in current API
+        serving_size_g: 100,
+        serving_qty: 1,
+        serving_unit: item.serving_unit || 'serving',
+        serving_weight_g: 100,
+        type: 'indian_food',
+        // Add serving nutrition data
+        calories_per_serving: item.nutrition_per_serving?.energy_kcal || 0,
+        protein_per_serving: item.nutrition_per_serving?.protein_g || 0,
+        carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
+        fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
+      }));
+      console.log('🔍 [NUTRITION SERVICE] Transformed food items:', transformed);
+      return transformed;
+    }
+    
+    console.log('🔍 [NUTRITION SERVICE] No valid data found, returning empty array');
+    return [];
+  }
+
   async searchFoods(query: string): Promise<FoodItem[]> {
     console.log('🔍 [NUTRITION SERVICE] Searching for:', query);
     
@@ -239,10 +307,11 @@ class NutritionService extends BaseService {
     console.log('🔍 [NUTRITION SERVICE] Raw response:', JSON.stringify(response, null, 2));
     
     // Transform API response to match FoodItem interface
-    // The API returns the data array directly
-    if (response && Array.isArray(response)) {
-      console.log('🔍 [NUTRITION SERVICE] Found data array with', response.length, 'items');
-      const transformed = response.map((item: any) => ({
+    // The API returns data directly as an array
+    const foods = response || [];
+    if (foods && Array.isArray(foods)) {
+      console.log('🔍 [NUTRITION SERVICE] Found data array with', foods.length, 'items');
+      const transformed = foods.map((item: any) => ({
         id: item.food_code,
         name: item.food_name,
         brand: '',

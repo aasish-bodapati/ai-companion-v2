@@ -16,6 +16,7 @@ interface BodyTypeCardProps {
   alignment: 'closer' | 'further' | 'same';
   suggestions: string[];
   variant?: 'dashboard' | 'profile' | 'compact';
+  loading?: boolean;
   onLogWorkout?: () => void;
   onLogMeal?: () => void;
   onViewAnalytics?: () => void;
@@ -31,6 +32,7 @@ export default function BodyTypeCard({
   alignment,
   suggestions,
   variant = 'dashboard',
+  loading = false,
   onLogWorkout,
   onLogMeal,
   onViewAnalytics,
@@ -79,12 +81,14 @@ export default function BodyTypeCard({
         <View style={styles.titleContainer}>
           <Text style={styles.goalName}>{goalName}</Text>
           <Text style={styles.alignmentText}>
-            {getAlignmentText()}
+            {loading ? 'Calculating...' : getAlignmentText()}
           </Text>
         </View>
         
         <View style={styles.scoreContainer}>
-          <Text style={styles.dailyScore}>{dailyScore}</Text>
+          <Text style={styles.dailyScore}>
+            {loading ? '...' : dailyScore}
+          </Text>
           <Text style={styles.scoreLabel}>Today's Score</Text>
         </View>
       </View>
@@ -93,26 +97,30 @@ export default function BodyTypeCard({
         <View style={styles.weeklyProgress}>
           <Text style={styles.weeklyLabel}>Weekly Alignment</Text>
           <View style={styles.weeklyValueContainer}>
-            <Text style={styles.weeklyValue}>{weeklyAlignment}%</Text>
-            <Ionicons 
-              name={getTrendIcon() as any} 
-              size={16} 
-              color={getTrendColor()} 
-            />
+            <Text style={styles.weeklyValue}>
+              {loading ? '...' : `${weeklyAlignment}%`}
+            </Text>
+            {!loading && (
+              <Ionicons 
+                name={getTrendIcon() as any} 
+                size={16} 
+                color={getTrendColor()} 
+              />
+            )}
           </View>
         </View>
         
         <ProgressRing
-          value={weeklyAlignment}
+          value={loading ? 0 : weeklyAlignment}
           target={100}
           size={60}
-          color={getTrendColor()}
+          color={loading ? '#9ca3af' : getTrendColor()}
           icon="trophy"
           showPercentage={false}
         />
       </View>
 
-      {suggestions.length > 0 && (
+      {!loading && suggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
           <Text style={styles.suggestionsTitle}>Suggestions:</Text>
           {suggestions.map((suggestion, index) => (

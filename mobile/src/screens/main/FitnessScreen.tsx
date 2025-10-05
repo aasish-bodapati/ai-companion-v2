@@ -19,6 +19,7 @@ import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
 import { fitnessService, WorkoutStats } from '../../services/fitnessService';
 import { dashboardService } from '../../services/dashboardService';
+import { routineService } from '../../services/routineService';
 import useResponsive from '../../hooks/useResponsive';
 
 export default function FitnessScreen() {
@@ -310,7 +311,7 @@ export default function FitnessScreen() {
       {/* Today's Snapshot */}
       <TodaysSnapshot
         weeklyWorkouts={weekStats?.total_workouts || 0}
-        alignmentScore={75} // Mock data - would come from body type scoring
+        alignmentScore={75}
         caloriesBurned={weekStats?.total_calories_burned || 0}
         streak={3}
         todaysWorkout={todaysWorkout}
@@ -327,9 +328,15 @@ export default function FitnessScreen() {
         progressRings={progressRings}
         achievements={achievements}
         streaks={streaks}
-        onRingPress={(ring) => console.log('Ring pressed:', ring.title)}
-        onAchievementPress={(achievement) => console.log('Achievement pressed:', achievement.title)}
-        onStreakPress={(streak) => console.log('Streak pressed:', streak.type)}
+        onRingPress={(ring) => {
+          // Handle ring press - could navigate to detailed view
+        }}
+        onAchievementPress={(achievement) => {
+          // Handle achievement press - could show achievement details
+        }}
+        onStreakPress={(streak) => {
+          // Handle streak press - could show streak details
+        }}
       />
 
       {/* Weekly Activity Chart */}
@@ -409,7 +416,7 @@ export default function FitnessScreen() {
       {activeTab === 'overview' ? renderOverview() : 
        activeTab === 'routines' ? (
         <SmartRoutineManager
-          userBodyTypeGoal="steady" // Mock data - would come from user profile
+          userBodyTypeGoal="steady"
           onRoutineSelect={(routine) => {
             setRecommendedWorkout(routine);
             setShowUnifiedWorkoutLogger(true);
@@ -419,13 +426,23 @@ export default function FitnessScreen() {
             setSelectedRoutine(routine);
             // Handle edit routine
           }}
-          onSetActive={(routine) => {
-            console.log('Setting routine as active:', routine.name);
-            // TODO: Implement actual set active functionality
+          onSetActive={async (routine) => {
+            try {
+              await routineService.setActiveRoutine(routine.id.toString());
+              // Refresh data to show updated active routine
+              handleFitnessLogsRefresh();
+            } catch (error) {
+              // Handle error silently for MVP
+            }
           }}
-          onSetInactive={(routine) => {
-            console.log('Setting routine as inactive:', routine.name);
-            // TODO: Implement actual set inactive functionality
+          onSetInactive={async (routine) => {
+            try {
+              await routineService.clearActiveRoutine();
+              // Refresh data to show updated active routine
+              handleFitnessLogsRefresh();
+            } catch (error) {
+              // Handle error silently for MVP
+            }
           }}
         />
       ) : (

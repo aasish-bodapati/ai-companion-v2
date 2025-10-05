@@ -98,7 +98,8 @@ class FitnessService extends BaseService {
 
   async getTodayWorkoutSummary(): Promise<WorkoutSummary> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // Use user's timezone for today's date calculation
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
       const logs = await this.getFitnessLogs({ 
         start_date: today, 
         end_date: today 
@@ -187,10 +188,11 @@ class FitnessService extends BaseService {
   }
 
   async getExerciseTypes(): Promise<ExerciseType[]> {
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/exercises/all?limit=1000'),
       'FITNESS SERVICE - getExerciseTypes'
-    ).then(data => data.exercises || data);
+    );
+    return data.exercises || data;
   }
 
   async getWorkoutCategories(): Promise<WorkoutCategory[]> {

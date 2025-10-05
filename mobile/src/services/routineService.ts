@@ -15,7 +15,15 @@ export interface SimpleRoutine {
 export interface WorkoutDay {
   day: string;
   workouts: Workout[];
-  exercises?: any[]; // For backward compatibility
+  exercises?: Array<{
+    id: number;
+    name: string;
+    sets?: number;
+    reps?: number;
+    duration_minutes?: number;
+    weight_kg?: number;
+    distance_km?: number;
+  }>; // For backward compatibility
 }
 
 export interface Workout {
@@ -115,24 +123,22 @@ class RoutineService extends BaseService {
 
   // Get a specific template routine by ID (public access)
   async getTemplateRoutine(routineId: number): Promise<SimpleRoutineWithProgress> {
-    console.log('🔍 Fetching template routine:', routineId);
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get(`/health/simple-routines/templates/${routineId}`),
       'ROUTINE SERVICE - getTemplateRoutine'
-    ).then(data => {
-      console.log('✅ Template routine fetched successfully:', {
-        id: data.id,
-        name: data.name,
-        isTemplate: data.is_template
-      });
-      return data;
+    );
+    
+    console.log('✅ Template routine fetched successfully:', {
+      id: data.id,
+      name: data.name,
+      isTemplate: data.is_template
     });
+    return data;
   }
 
   // Get the user's currently active routine
   async getActiveRoutine(): Promise<SimpleRoutineWithProgress | null> {
     try {
-      console.log('🔍 Fetching active routine...');
       const data = await this.makeRequest(
         () => apiClient.get('/health/simple-routines/active'),
         'ROUTINE SERVICE - getActiveRoutine'
@@ -302,7 +308,6 @@ class RoutineService extends BaseService {
 
   // Get today's workout from active routine
   async getTodaysWorkout(): Promise<any> {
-    console.log('🔍 Fetching today\'s workout from active routine...');
     try {
       // Use the new active routine endpoint
       const response = await apiClient.get('/health/active-routine/today-workout');
@@ -315,7 +320,7 @@ class RoutineService extends BaseService {
         exercisesCount: data?.exercises?.length || 0
       });
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle 404 error gracefully (no workout scheduled for today)
       if (error.response?.status === 404) {
         console.log('ℹ️ No workout scheduled for today');
@@ -350,9 +355,26 @@ class RoutineService extends BaseService {
     page?: number;
     size?: number;
   }): Promise<{
-    logs: any[];
-    stats: any;
-    pagination: any;
+  logs: Array<{
+    id: number;
+    activity_name: string;
+    activity_type: string;
+    duration_minutes: number;
+    calories_burned?: number;
+    created_at: string;
+  }>;
+  stats: {
+    total_workouts: number;
+    total_duration: number;
+    total_calories: number;
+    average_duration: number;
+  };
+  pagination: {
+    page: number;
+    size: number;
+    total: number;
+    pages: number;
+  };
   }> {
     const queryParams = new URLSearchParams();
     if (params?.period) {
@@ -386,7 +408,6 @@ class RoutineService extends BaseService {
     
     // Check if this exact workout is already being processed
     if (this.pendingRequests.has(workoutKey)) {
-      console.log('🚫 [ROUTINE SERVICE] Duplicate workout request blocked:', workoutKey);
       throw new Error('Workout is already being processed. Please wait.');
     }
 
@@ -426,7 +447,18 @@ class RoutineService extends BaseService {
   }
 
   // Update workout log exercises - now uses fitnessService endpoint
-  async updateWorkoutLogExercises(logId: number, exercises: any[]): Promise<any> {
+  async updateWorkoutLogExercises(logId: number, exercises: Array<{
+    id: number;
+    name: string;
+    sets?: number;
+    reps?: number;
+    duration_minutes?: number;
+    weight_kg?: number;
+    distance_km?: number;
+  }>): Promise<{
+    success: boolean;
+    message: string;
+  }> {
     return this.makeRequest(
       () => apiClient.put(`/health/logging/fitness/${logId}`, {
         exercises: JSON.stringify(exercises)

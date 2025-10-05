@@ -160,10 +160,93 @@ function getTimezoneFromCoordinates(latitude: number, longitude: number): string
 export function getCurrentTimezone(): string {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    console.log('🌍 Browser timezone detected:', timezone);
     return timezone;
   } catch (error) {
     console.error('🌍 Error getting current timezone:', error);
     return 'UTC';
   }
+}
+
+/**
+ * Get user's timezone (alias for getCurrentTimezone for compatibility)
+ */
+export function getUserTimezone(): string {
+  return getCurrentTimezone();
+}
+
+/**
+ * Format a date string in the user's timezone
+ */
+export function formatDateInUserTimezone(
+  dateString: string, 
+  options?: Intl.DateTimeFormatOptions
+): string {
+  try {
+    const date = new Date(dateString);
+    const timezone = getCurrentTimezone();
+    
+    const defaultOptions: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      ...options
+    };
+    
+    return date.toLocaleDateString('en-US', {
+      ...defaultOptions,
+      timeZone: timezone
+    });
+  } catch (error) {
+    console.error('🌍 Error formatting date:', error);
+    return dateString;
+  }
+}
+
+/**
+ * Format a time string in the user's timezone
+ */
+export function formatTimeInUserTimezone(
+  dateString: string, 
+  options?: Intl.DateTimeFormatOptions
+): string {
+  try {
+    const date = new Date(dateString);
+    const timezone = getCurrentTimezone();
+    
+    const defaultOptions: Intl.DateTimeFormatOptions = {
+      hour: '2-digit',
+      minute: '2-digit',
+      ...options
+    };
+    
+    return date.toLocaleTimeString('en-US', {
+      ...defaultOptions,
+      timeZone: timezone
+    });
+  } catch (error) {
+    console.error('🌍 Error formatting time:', error);
+    return dateString;
+  }
+}
+
+/**
+ * Get date string in user's timezone
+ */
+export function getDateInUserTimezone(date: Date): string {
+  try {
+    const timezone = getCurrentTimezone();
+    return date.toLocaleDateString("en-CA", { timeZone: timezone });
+  } catch (error) {
+    console.error('🌍 Error getting date in user timezone:', error);
+    return date.toISOString().split('T')[0];
+  }
+}
+
+/**
+ * Check if a date is in user's timezone (placeholder function)
+ */
+export function isDateInUserTimezone(date: Date): boolean {
+  // This is a placeholder function - in practice, all dates should be handled
+  // in the user's timezone, so this always returns true
+  return true;
 }

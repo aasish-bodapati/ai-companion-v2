@@ -18,15 +18,27 @@ const { width, height } = Dimensions.get('window');
 interface FoodItem {
   id: string;
   name: string;
-  calories: number;
-  protein_g: number;
-  carbs_g: number;
-  fat_g: number;
+  brand?: string;
+  category: string;
+  calories_per_100g: number;
+  protein_per_100g: number;
+  carbs_per_100g: number;
+  fat_per_100g: number;
   fiber_g: number;
   sugar_g: number;
   sodium_mg: number;
-  serving_size: string;
+  serving_size_g: number;
+  serving_qty: number;
   serving_unit: string;
+  serving_weight_g: number;
+  photo?: string;
+  type?: string;
+  barcode?: string;
+  // Serving nutrition data
+  calories_per_serving?: number;
+  protein_per_serving?: number;
+  carbs_per_serving?: number;
+  fat_per_serving?: number;
 }
 
 interface MealLog {
@@ -41,46 +53,54 @@ interface MealLog {
   total_protein: number;
   total_carbs: number;
   total_fat: number;
-  notes: string;
   logged_at: string;
 }
 
 interface UnifiedNutritionLoggerProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (meal: MealLog) => void;
+  onMealLogged: () => void;
   initialMeal?: MealLog;
   mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
 }
 
+const getMealTypeByTime = (): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
+  const hour = new Date().getHours();
+  
+  if (hour >= 5 && hour < 11) {
+    return 'breakfast';
+  } else if (hour >= 11 && hour < 15) {
+    return 'lunch';
+  } else if (hour >= 15 && hour < 19) {
+    return 'snack';
+  } else if (hour >= 19 && hour < 24) {
+    return 'dinner';
+  } else {
+    return 'snack';
+  }
+};
+
 export default function UnifiedNutritionLogger({
   visible,
   onClose,
-  onSave,
+  onMealLogged,
   initialMeal,
-  mealType = 'breakfast',
+  mealType,
 }: UnifiedNutritionLoggerProps) {
-  const [currentStep, setCurrentStep] = useState(0);
   const [meal, setMeal] = useState<MealLog>({
-    meal_type: mealType,
+    meal_type: mealType || getMealTypeByTime(),
     food_items: [],
     total_calories: 0,
     total_protein: 0,
     total_carbs: 0,
     total_fat: 0,
-    notes: '',
     logged_at: new Date().toISOString(),
   });
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
+  const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const steps = [
-    { title: 'Meal Type', icon: 'restaurant' },
-    { title: 'Add Foods', icon: 'add-circle' },
-    { title: 'Quantities', icon: 'scale' },
-    { title: 'Review & Save', icon: 'checkmark' },
-  ];
 
   useEffect(() => {
     if (visible) {
@@ -90,6 +110,14 @@ export default function UnifiedNutritionLogger({
       }
     }
   }, [visible, initialMeal]);
+
+  useEffect(() => {
+    if (searchQuery.trim().length >= 2) {
+      searchFoods(searchQuery);
+    } else {
+      setSearchResults([]);
+    }
+  }, [searchQuery]);
 
   const loadFoodItems = async () => {
     try {
@@ -103,25 +131,64 @@ export default function UnifiedNutritionLogger({
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+  const searchFoods = async (query: string) => {
+    if (query.trim().length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    console.log('🔍 [NUTRITION LOGGER] Searching for:', query);
+    setSearching(true);
+    try {
+      const results = await nutritionService.searchFoods(query);
+      console.log('🔍 [NUTRITION LOGGER] Search results:', results);
+      // Limit to 5 results
+      setSearchResults(results.slice(0, 5));
+    } catch (error) {
+      console.error('Error searching foods:', error);
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
     }
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handleSelectFood = (foodItem: FoodItem) => {
+    addFoodItem(foodItem);
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   const handleSave = async () => {
     try {
       setLoading(true);
-      await onSave(meal);
+      // Save the meal using nutrition service
+      const mealData = {
+        meal_type: meal.meal_type,
+        total_calories: Math.round(meal.total_calories),
+        protein_g: Math.round(meal.total_protein * 10) / 10,
+        carbs_g: Math.round(meal.total_carbs * 10) / 10,
+        fat_g: Math.round(meal.total_fat * 10) / 10,
+        food_items: JSON.stringify(meal.food_items.map(item => ({
+          food_id: Date.now(), // Temporary ID
+          food_name: item.food_item.name,
+          quantity: item.quantity,
+          quantity_unit: item.unit,
+          quantity_grams: item.quantity * 100,
+          calories: Math.round((item.food_item.calories_per_100g || 0) * item.quantity),
+          protein_g: Math.round(((item.food_item.protein_per_100g || 0) * item.quantity) * 10) / 10,
+          carbs_g: Math.round(((item.food_item.carbs_per_100g || 0) * item.quantity) * 10) / 10,
+          fat_g: Math.round(((item.food_item.fat_per_100g || 0) * item.quantity) * 10) / 10,
+        }))),
+        notes: '',
+        meal_date: new Date().toISOString(), // Send current time in ISO format
+      };
+      
+      await nutritionService.logMeal(mealData);
+      onMealLogged();
       onClose();
       resetForm();
     } catch (error) {
+      console.error('Error saving meal:', error);
       Alert.alert('Error', 'Failed to save meal');
     } finally {
       setLoading(false);
@@ -129,18 +196,35 @@ export default function UnifiedNutritionLogger({
   };
 
   const resetForm = () => {
-    setCurrentStep(0);
     setMeal({
-      meal_type: mealType,
+      meal_type: mealType || getMealTypeByTime(),
       food_items: [],
       total_calories: 0,
       total_protein: 0,
       total_carbs: 0,
       total_fat: 0,
-      notes: '',
       logged_at: new Date().toISOString(),
     });
     setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const calculateTotals = (foodItems: Array<{food_item: FoodItem, quantity: number, unit: string}>) => {
+    const totals = foodItems.reduce((acc, item) => {
+      const calories = (item.food_item.calories_per_100g || 0) * item.quantity;
+      const protein = (item.food_item.protein_per_100g || 0) * item.quantity;
+      const carbs = (item.food_item.carbs_per_100g || 0) * item.quantity;
+      const fat = (item.food_item.fat_per_100g || 0) * item.quantity;
+      
+      return {
+        total_calories: acc.total_calories + calories,
+        total_protein: acc.total_protein + protein,
+        total_carbs: acc.total_carbs + carbs,
+        total_fat: acc.total_fat + fat,
+      };
+    }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 });
+    
+    return totals;
   };
 
   const addFoodItem = (foodItem: FoodItem) => {
@@ -157,323 +241,266 @@ export default function UnifiedNutritionLogger({
         unit: foodItem.serving_unit,
       };
       
+      const newFoodItems = [...meal.food_items, newFoodItem];
+      const totals = calculateTotals(newFoodItems);
+      
       setMeal(prev => ({
         ...prev,
-        food_items: [...prev.food_items, newFoodItem],
+        food_items: newFoodItems,
+        ...totals,
       }));
     }
   };
 
   const updateFoodQuantity = (foodId: string, quantity: number) => {
-    setMeal(prev => ({
-      ...prev,
-      food_items: prev.food_items.map(item => 
+    setMeal(prev => {
+      const updatedFoodItems = prev.food_items.map(item => 
         item.food_item.id === foodId ? { ...item, quantity } : item
-      ),
-    }));
+      );
+      const totals = calculateTotals(updatedFoodItems);
+      
+      return {
+        ...prev,
+        food_items: updatedFoodItems,
+        ...totals,
+      };
+    });
   };
 
   const removeFoodItem = (foodId: string) => {
-    setMeal(prev => ({
-      ...prev,
-      food_items: prev.food_items.filter(item => item.food_item.id !== foodId),
-    }));
-  };
-
-  const calculateTotals = () => {
-    const totals = meal.food_items.reduce((acc, item) => {
-      const multiplier = item.quantity;
+    setMeal(prev => {
+      const updatedFoodItems = prev.food_items.filter(item => item.food_item.id !== foodId);
+      const totals = calculateTotals(updatedFoodItems);
+      
       return {
-        calories: acc.calories + (item.food_item.calories * multiplier),
-        protein: acc.protein + (item.food_item.protein_g * multiplier),
-        carbs: acc.carbs + (item.food_item.carbs_g * multiplier),
-        fat: acc.fat + (item.food_item.fat_g * multiplier),
+        ...prev,
+        food_items: updatedFoodItems,
+        ...totals,
       };
-    }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
-
-    setMeal(prev => ({
-      ...prev,
-      total_calories: Math.round(totals.calories),
-      total_protein: Math.round(totals.protein * 10) / 10,
-      total_carbs: Math.round(totals.carbs * 10) / 10,
-      total_fat: Math.round(totals.fat * 10) / 10,
-    }));
+    });
   };
 
-  useEffect(() => {
-    calculateTotals();
-  }, [meal.food_items]);
 
-  const filteredFoodItems = foodItems.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
-  const renderStepContent = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Select Meal Type</Text>
-            
-            <View style={styles.mealTypeGrid}>
-              {[
-                { type: 'breakfast', label: 'Breakfast', icon: 'sunny', color: '#f59e0b' },
-                { type: 'lunch', label: 'Lunch', icon: 'sunny', color: '#10b981' },
-                { type: 'dinner', label: 'Dinner', icon: 'moon', color: '#3b82f6' },
-                { type: 'snack', label: 'Snack', icon: 'cafe', color: '#8b5cf6' },
-              ].map((mealTypeOption) => (
-                <TouchableOpacity
-                  key={mealTypeOption.type}
-                  style={[
-                    styles.mealTypeCard,
-                    { 
-                      borderColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color : '#e5e7eb',
-                      backgroundColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color + '10' : '#ffffff',
-                    }
-                  ]}
-                  onPress={() => setMeal(prev => ({ ...prev, meal_type: mealTypeOption.type as any }))}
-                >
-                  <Ionicons 
-                    name={mealTypeOption.icon as any} 
-                    size={32} 
-                    color={mealTypeOption.color} 
-                  />
-                  <Text style={[
-                    styles.mealTypeLabel,
-                    { color: meal.meal_type === mealTypeOption.type ? mealTypeOption.color : '#6b7280' }
-                  ]}>
-                    {mealTypeOption.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        );
+  const filteredFoodItems = searchQuery.trim().length >= 2 ? searchResults : foodItems;
 
-      case 1:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Add Foods</Text>
-            
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color="#6b7280" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search foods..."
-                placeholderTextColor="#9ca3af"
-              />
-            </View>
-
-            <ScrollView style={styles.foodItemsList} showsVerticalScrollIndicator={false}>
-              {filteredFoodItems.map((foodItem) => (
-                <TouchableOpacity
-                  key={foodItem.id}
-                  style={styles.foodItemCard}
-                  onPress={() => addFoodItem(foodItem)}
-                >
-                  <View style={styles.foodItemInfo}>
-                    <Text style={styles.foodItemName}>{foodItem.name}</Text>
-                    <Text style={styles.foodItemServing}>
-                      {foodItem.serving_size} {foodItem.serving_unit}
-                    </Text>
-                    <View style={styles.foodItemMacros}>
-                      <Text style={styles.macroText}>{foodItem.calories} cal</Text>
-                      <Text style={styles.macroText}>{foodItem.protein_g}g protein</Text>
-                      <Text style={styles.macroText}>{foodItem.carbs_g}g carbs</Text>
-                      <Text style={styles.macroText}>{foodItem.fat_g}g fat</Text>
-                    </View>
-                  </View>
-                  <Ionicons name="add-circle" size={24} color="#3b82f6" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Adjust Quantities</Text>
-            
-            <ScrollView style={styles.quantitiesList} showsVerticalScrollIndicator={false}>
-              {meal.food_items.map((item, index) => (
-                <View key={item.food_item.id} style={styles.quantityCard}>
-                  <View style={styles.quantityHeader}>
-                    <Text style={styles.quantityTitle}>{item.food_item.name}</Text>
-                    <TouchableOpacity
-                      onPress={() => removeFoodItem(item.food_item.id)}
-                      style={styles.removeButton}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#ef4444" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.quantityControls}>
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() => updateFoodQuantity(item.food_item.id, Math.max(0, item.quantity - 0.5))}
-                    >
-                      <Ionicons name="remove" size={20} color="#6b7280" />
-                    </TouchableOpacity>
-                    
-                    <View style={styles.quantityDisplay}>
-                      <Text style={styles.quantityValue}>{item.quantity}</Text>
-                      <Text style={styles.quantityUnit}>{item.unit}</Text>
-                    </View>
-                    
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() => updateFoodQuantity(item.food_item.id, item.quantity + 0.5)}
-                    >
-                      <Ionicons name="add" size={20} color="#6b7280" />
-                    </TouchableOpacity>
-                  </View>
-                  
-                  <View style={styles.quantityMacros}>
-                    <Text style={styles.quantityMacroText}>
-                      {Math.round(item.food_item.calories * item.quantity)} cal
-                    </Text>
-                    <Text style={styles.quantityMacroText}>
-                      {Math.round(item.food_item.protein_g * item.quantity * 10) / 10}g protein
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        );
-
-      case 3:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>Review & Save</Text>
-            
-            <View style={styles.reviewCard}>
-              <Text style={styles.reviewTitle}>
-                {meal.meal_type.charAt(0).toUpperCase() + meal.meal_type.slice(1)}
-              </Text>
-              
-              <View style={styles.reviewMacros}>
-                <View style={styles.reviewMacro}>
-                  <Text style={styles.reviewMacroValue}>{meal.total_calories}</Text>
-                  <Text style={styles.reviewMacroLabel}>Calories</Text>
-                </View>
-                <View style={styles.reviewMacro}>
-                  <Text style={styles.reviewMacroValue}>{meal.total_protein}g</Text>
-                  <Text style={styles.reviewMacroLabel}>Protein</Text>
-                </View>
-                <View style={styles.reviewMacro}>
-                  <Text style={styles.reviewMacroValue}>{meal.total_carbs}g</Text>
-                  <Text style={styles.reviewMacroLabel}>Carbs</Text>
-                </View>
-                <View style={styles.reviewMacro}>
-                  <Text style={styles.reviewMacroValue}>{meal.total_fat}g</Text>
-                  <Text style={styles.reviewMacroLabel}>Fat</Text>
-                </View>
-              </View>
-              
-              <View style={styles.reviewFoods}>
-                <Text style={styles.reviewFoodsTitle}>Food Items:</Text>
-                {meal.food_items.map((item, index) => (
-                  <Text key={index} style={styles.reviewFoodItem}>
-                    • {item.food_item.name} ({item.quantity} {item.unit})
-                  </Text>
-                ))}
-              </View>
-              
-              <View style={styles.notesContainer}>
-                <Text style={styles.notesLabel}>Notes (optional):</Text>
-                <TextInput
-                  style={styles.notesInput}
-                  value={meal.notes}
-                  onChangeText={(text) => setMeal(prev => ({ ...prev, notes: text }))}
-                  placeholder="Add any notes about this meal"
-                  placeholderTextColor="#9ca3af"
-                  multiline
-                  numberOfLines={3}
+  const renderContent = () => {
+    return (
+      <View style={styles.content}>
+        {/* Meal Type Selection */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Select Meal Type</Text>
+          <View style={styles.mealTypeGrid}>
+            {[
+              { type: 'breakfast', label: 'Breakfast', icon: 'sunny', color: '#f59e0b' },
+              { type: 'lunch', label: 'Lunch', icon: 'restaurant', color: '#10b981' },
+              { type: 'dinner', label: 'Dinner', icon: 'moon', color: '#3b82f6' },
+              { type: 'snack', label: 'Snack', icon: 'cafe', color: '#8b5cf6' },
+            ].map((mealTypeOption) => (
+              <TouchableOpacity
+                key={mealTypeOption.type}
+                style={[
+                  styles.mealTypeCard,
+                  { 
+                    borderColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color : '#e5e7eb',
+                    backgroundColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color + '10' : '#ffffff',
+                  }
+                ]}
+                onPress={() => setMeal(prev => ({ ...prev, meal_type: mealTypeOption.type as any }))}
+              >
+                <Ionicons 
+                  name={mealTypeOption.icon as any} 
+                  size={16} 
+                  color={mealTypeOption.color} 
                 />
-              </View>
-            </View>
+                <Text style={[
+                  styles.mealTypeLabel,
+                  { color: meal.meal_type === mealTypeOption.type ? mealTypeOption.color : '#6b7280' }
+                ]}>
+                  {mealTypeOption.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        );
+        </View>
 
-      default:
-        return null;
-    }
+        {/* Search and Add Foods */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Add Foods</Text>
+          
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={20} color="#6b7280" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search foods..."
+              placeholderTextColor="#9ca3af"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <Ionicons name="close-circle" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Search Results Dropdown */}
+          {searchQuery.length >= 2 && (
+            <View style={styles.searchResultsOverlay}>
+              {searching ? (
+                <View style={styles.searchResultItem}>
+                  <Text style={styles.searchResultName}>Searching...</Text>
+                </View>
+              ) : searchResults.length > 0 ? (
+                searchResults.map((foodItem, index) => (
+                  <TouchableOpacity
+                    key={foodItem.id}
+                    style={[
+                      styles.searchResultItem,
+                      index === searchResults.length - 1 && { borderBottomWidth: 0 }
+                    ]}
+                    onPress={() => handleSelectFood(foodItem)}
+                  >
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultName}>{foodItem.name}</Text>
+                    </View>
+                    <Ionicons name="add-circle" size={18} color="#3b82f6" />
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <View style={styles.searchResultItem}>
+                  <Text style={styles.searchResultName}>No results found</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Selected Foods Area */}
+          <View style={styles.selectedFoodsArea}>
+            {meal.food_items.length === 0 ? (
+              <View style={styles.placeholderContainer}>
+                <Ionicons name="restaurant-outline" size={32} color="#d1d5db" />
+                <Text style={styles.placeholderTitle}>Add foods to your meal</Text>
+                <Text style={styles.placeholderSubtitle}>
+                  Search and select foods above to add them here
+                </Text>
+              </View>
+            ) : (
+              <ScrollView style={styles.foodItemsList} showsVerticalScrollIndicator={false}>
+                {meal.food_items.map((item, index) => (
+                  <View key={item.food_item.id} style={styles.selectedFoodCard}>
+                    <View style={styles.foodNumber}>
+                      <Text style={styles.foodNumberText}>{index + 1}</Text>
+                    </View>
+                    <View style={styles.selectedFoodInfo}>
+                      <View style={styles.topRow}>
+                        <Text style={styles.selectedFoodName} numberOfLines={1} ellipsizeMode="tail">
+                          {item.food_item.name}
+                        </Text>
+                        <View style={styles.servingContainer}>
+                          <TextInput
+                            style={styles.servingInput}
+                            value={item.quantity.toString()}
+                            onChangeText={(text) => {
+                              const newQuantity = parseFloat(text) || 0;
+                              if (newQuantity >= 0) {
+                                updateFoodQuantity(item.food_item.id, newQuantity);
+                              }
+                            }}
+                            keyboardType="numeric"
+                            selectTextOnFocus
+                            placeholder="0"
+                          />
+                          <Text style={styles.servingUnit}>{item.unit}</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => removeFoodItem(item.food_item.id)}
+                          style={styles.removeFoodButton}
+                        >
+                          <Ionicons name="trash-outline" size={16} color="#ef4444" />
+                        </TouchableOpacity>
+                      </View>
+                      <View style={styles.macrosContainer}>
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {Math.round((item.food_item.calories_per_100g || 0) * item.quantity)}
+                          </Text>
+                          <Text style={styles.macroLabel}>cal</Text>
+                        </View>
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {Math.round(((item.food_item.protein_per_100g || 0) * item.quantity) * 10) / 10}g
+                          </Text>
+                          <Text style={styles.macroLabel}>protein</Text>
+                        </View>
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {Math.round(((item.food_item.carbs_per_100g || 0) * item.quantity) * 10) / 10}g
+                          </Text>
+                          <Text style={styles.macroLabel}>carbs</Text>
+                        </View>
+                        <View style={styles.macroItem}>
+                          <Text style={styles.macroValue}>
+                            {Math.round(((item.food_item.fat_per_100g || 0) * item.quantity) * 10) / 10}g
+                          </Text>
+                          <Text style={styles.macroLabel}>fat</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+        </View>
+
+
+      </View>
+    );
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#6b7280" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Log Meal</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Progress Steps */}
-        <View style={styles.progressContainer}>
-          {steps.map((step, index) => (
-            <View key={index} style={styles.stepContainer}>
-              <View style={[
-                styles.stepCircle,
-                { backgroundColor: index <= currentStep ? '#3b82f6' : '#e5e7eb' }
-              ]}>
-                <Ionicons 
-                  name={step.icon as any} 
-                  size={16} 
-                  color={index <= currentStep ? '#ffffff' : '#6b7280'} 
-                />
-              </View>
-              <Text style={[
-                styles.stepText,
-                { color: index <= currentStep ? '#3b82f6' : '#6b7280' }
-              ]}>
-                {step.title}
-              </Text>
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>Log Meal</Text>
+              <Text style={styles.subtitle}>Track your nutrition intake</Text>
             </View>
-          ))}
-        </View>
-
-        {/* Content */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {renderStepContent()}
-        </ScrollView>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          {currentStep > 0 && (
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handlePrevious}
-            >
-              <Text style={styles.secondaryButtonText}>Previous</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
-          )}
-          
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.primaryButton,
-              { flex: currentStep === 0 ? 1 : 0.6 }
-            ]}
-            onPress={currentStep === steps.length - 1 ? handleSave : handleNext}
-            disabled={loading}
+          </View>
+
+          {/* Content */}
+          <ScrollView 
+            style={styles.contentScrollView}
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.primaryButtonText}>
-              {currentStep === steps.length - 1 ? 'Save Meal' : 'Next'}
-            </Text>
-          </TouchableOpacity>
+            {renderContent()}
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.button, styles.primaryButton]}
+              onPress={handleSave}
+              disabled={loading || meal.food_items.length === 0}
+            >
+              <Text style={[
+                styles.primaryButtonText,
+                (loading || meal.food_items.length === 0) && styles.primaryButtonTextDisabled
+              ]}>
+                {loading ? 'Saving...' : 'Log Meal'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>
@@ -481,36 +508,65 @@ export default function UnifiedNutritionLogger({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  modal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    maxHeight: '70%',
+    marginHorizontal: 20,
+    marginVertical: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+    flex: 1,
+  },
+  contentScrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    alignItems: 'flex-start',
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
+  headerContent: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
   closeButton: {
     padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  placeholder: {
-    width: 32,
+    marginLeft: 16,
   },
   progressContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9fafb',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -532,8 +588,99 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   content: {
+    padding: 12,
+  },
+  section: {
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  searchResults: {
+    maxHeight: 200,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    marginTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  searchResultsOverlay: {
+    maxHeight: 150,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  searchResultContent: {
     flex: 1,
+  },
+  searchResultName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#111827',
+    lineHeight: 18,
+  },
+  searchResultCategory: {
+    fontSize: 13,
+    color: '#6b7280',
+    lineHeight: 18,
+  },
+  clearButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  selectedFoodsArea: {
+    flex: 1,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    borderStyle: 'dashed',
     padding: 20,
+    marginTop: 16,
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 12,
+  },
+  placeholderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  placeholderSubtitle: {
+    fontSize: 12,
+    color: '#9ca3af',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   stepContent: {
     flex: 1,
@@ -547,30 +694,43 @@ const styles = StyleSheet.create({
   mealTypeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   mealTypeCard: {
-    width: (width - 64) / 2,
+    width: '22%',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 2,
+    padding: 6,
+    borderRadius: 6,
+    borderWidth: 1,
     borderStyle: 'solid',
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   mealTypeLabel: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '500',
-    marginTop: 8,
+    marginTop: 2,
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 16,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   searchIcon: {
     marginRight: 8,
@@ -584,28 +744,129 @@ const styles = StyleSheet.create({
   foodItemsList: {
     maxHeight: 300,
   },
+  selectedFoodCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#ffffff',
+    padding: 8,
+    marginBottom: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  foodNumber: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+    marginTop: 1,
+  },
+  foodNumberText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  selectedFoodInfo: {
+    flex: 1,
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  selectedFoodName: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#111827',
+    flex: 1,
+    marginRight: 8,
+  },
+  servingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  servingInput: {
+    fontSize: 10,
+    color: '#1f2937',
+    fontWeight: '500',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 3,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    minWidth: 35,
+    textAlign: 'center',
+    height: 20,
+  },
+  servingUnit: {
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '500',
+    marginLeft: 3,
+  },
+  macrosContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+    paddingTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
+  },
+  macroItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  macroValue: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  macroLabel: {
+    fontSize: 8,
+    color: '#6b7280',
+    marginTop: 0,
+  },
+  removeFoodButton: {
+    padding: 2,
+  },
   foodItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   foodItemInfo: {
     flex: 1,
   },
   foodItemName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#1f2937',
-    marginBottom: 4,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
   },
   foodItemServing: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#6b7280',
     marginBottom: 4,
   },
@@ -614,8 +875,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   macroText: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: 10,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   quantitiesList: {
     maxHeight: 400,
@@ -678,81 +940,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
   },
-  reviewCard: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  reviewTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  reviewMacros: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  reviewMacro: {
-    alignItems: 'center',
-  },
-  reviewMacroValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#3b82f6',
-    marginBottom: 4,
-  },
-  reviewMacroLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  reviewFoods: {
-    marginBottom: 16,
-  },
-  reviewFoodsTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  reviewFoodItem: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  notesContainer: {
-    marginTop: 8,
-  },
-  notesLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
-  },
-  notesInput: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    color: '#1f2937',
-    height: 80,
-    textAlignVertical: 'top',
-  },
   footer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    gap: 12,
   },
   button: {
     paddingVertical: 12,
@@ -768,6 +961,9 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  primaryButtonTextDisabled: {
+    color: '#9ca3af',
   },
   secondaryButton: {
     backgroundColor: '#f3f4f6',

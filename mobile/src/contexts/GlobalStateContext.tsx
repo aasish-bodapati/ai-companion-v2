@@ -5,6 +5,7 @@ import { fitnessService } from '../services/fitnessService';
 import { nutritionService } from '../services/nutritionService';
 import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService';
 import stepTrackingService from '../services/stepTrackingService';
+import { useAuth } from './AuthContext';
 
 // Global State Types
 interface Achievement {
@@ -138,11 +139,14 @@ const GlobalStateContext = createContext<{
 // Provider Component
 export function GlobalStateProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(globalStateReducer, initialState);
+  const { isAuthenticated, isLoading } = useAuth();
 
-  // Load initial data
+  // Load initial data only when authenticated
   useEffect(() => {
-    loadInitialData();
-  }, []);
+    if (isAuthenticated && !isLoading) {
+      loadInitialData();
+    }
+  }, [isAuthenticated, isLoading]);
 
   const loadInitialData = async () => {
     try {

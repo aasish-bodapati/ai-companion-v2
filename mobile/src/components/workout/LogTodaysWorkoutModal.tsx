@@ -297,23 +297,24 @@ export default function LogTodaysWorkoutModal({
       const isSkipped = skippedExercises.has(exercise.id);
       const loggedData = exerciseData[exercise.id] || {};
       
-      console.log(`🔍 [FORM VALIDATION] Exercise ${exercise.exercise_name} (${exercise.logging_category}):`, {
+      const exerciseName = exercise.exercise_name || exercise.name || 'Unknown';
+      console.log(`🔍 [FORM VALIDATION] Exercise ${exerciseName} (${exercise.logging_category}):`, {
         isSkipped,
         loggedData
       });
       
       if (isSkipped) {
         // If skipped, that's OK regardless of input values
-        console.log(`✅ [FORM VALIDATION] Exercise ${exercise.exercise_name} is skipped - OK`);
+        console.log(`✅ [FORM VALIDATION] Exercise ${exerciseName} is skipped - OK`);
       } else {
         // Check completion based on exercise type
         const isCompleted = checkExerciseCompletion(exercise, loggedData);
         
         if (!isCompleted) {
-          console.log(`❌ [FORM VALIDATION] Exercise ${exercise.exercise_name} is not completed - INVALID`);
+          console.log(`❌ [FORM VALIDATION] Exercise ${exerciseName} is not completed - INVALID`);
           return false;
         } else {
-          console.log(`✅ [FORM VALIDATION] Exercise ${exercise.exercise_name} is completed - OK`);
+          console.log(`✅ [FORM VALIDATION] Exercise ${exerciseName} is completed - OK`);
         }
       }
     }
@@ -332,6 +333,9 @@ export default function LogTodaysWorkoutModal({
   // Check if an exercise is completed based on its type
   const checkExerciseCompletion = (exercise: Exercise, loggedData: any) => {
     const category = exercise.logging_category;
+    const exerciseName = exercise.exercise_name || exercise.name || 'Unknown';
+    
+    console.log(`🔍 [EXERCISE COMPLETION] Checking ${exerciseName} (${category}):`, loggedData);
     
     switch (category) {
       case 'weighted':
@@ -339,23 +343,30 @@ export default function LogTodaysWorkoutModal({
         // Weight/bodyweight exercises need sets and reps
         const sets = parseInt(loggedData.sets) || 0;
         const reps = loggedData.reps || '';
-        return sets > 0 && reps && reps.trim() !== '' && reps !== '0';
+        const isCompleted = sets > 0 && reps && reps.trim() !== '' && reps !== '0';
+        console.log(`🔍 [EXERCISE COMPLETION] ${exerciseName} - sets: ${sets}, reps: "${reps}", completed: ${isCompleted}`);
+        return isCompleted;
         
       case 'distance_based':
         // Distance-based exercises need distance
         const distance = parseFloat(loggedData.distance) || 0;
-        return distance > 0;
+        const isDistanceCompleted = distance > 0;
+        console.log(`🔍 [EXERCISE COMPLETION] ${exerciseName} - distance: ${distance}, completed: ${isDistanceCompleted}`);
+        return isDistanceCompleted;
         
       case 'cardio_duration':
         // Duration-based exercises need duration
         const duration = parseFloat(loggedData.duration) || 0;
-        return duration > 0;
+        const isDurationCompleted = duration > 0;
+        console.log(`🔍 [EXERCISE COMPLETION] ${exerciseName} - duration: ${duration}, completed: ${isDurationCompleted}`);
+        return isDurationCompleted;
         
       default:
         // For unknown types, check if any field has a value
         const hasAnyValue = Object.values(loggedData).some(value => 
           value && value.toString().trim() !== '' && value !== '0'
         );
+        console.log(`🔍 [EXERCISE COMPLETION] ${exerciseName} - hasAnyValue: ${hasAnyValue}`);
         return hasAnyValue;
     }
   };
@@ -404,17 +415,36 @@ export default function LogTodaysWorkoutModal({
       setLoading(true);
 
       // Prepare exercise data for logging - only include completed exercises
+      console.log('🔍 [SAVE WORKOUT] Starting to prepare exercise data...');
+      console.log('🔍 [SAVE WORKOUT] Workout data exercises:', workoutData!.exercises);
+      
+      // Debug: Log each exercise structure
+      workoutData!.exercises.forEach((exercise, index) => {
+        console.log(`🔍 [SAVE WORKOUT] Exercise ${index + 1} structure:`, {
+          id: exercise.id,
+          name: exercise.name,
+          exercise_name: exercise.exercise_name,
+          category: exercise.category,
+          logging_category: exercise.logging_category,
+          allKeys: Object.keys(exercise)
+        });
+      });
+      
       const exercises = workoutData!.exercises
         .filter(exercise => {
           const isSkipped = skippedExercises.has(exercise.id);
           const loggedData = exerciseData[exercise.id] || {};
           const isCompleted = checkExerciseCompletion(exercise, loggedData);
+          console.log(`🔍 [SAVE WORKOUT] Exercise ${exercise.exercise_name || exercise.name} - skipped: ${isSkipped}, completed: ${isCompleted}`);
           return !isSkipped && isCompleted;
         })
         .map(exercise => {
           const loggedData = exerciseData[exercise.id] || {};
+          const exerciseName = exercise.exercise_name || exercise.name || 'Unknown';
+          console.log(`🔍 [SAVE WORKOUT] Mapping exercise: ${exerciseName}`, loggedData);
           return {
-            exercise_name: exercise.exercise_name,
+            exercise_name: exerciseName,
+            exercise_id: exercise.id, // Add exercise ID for reference
             sets: parseInt(loggedData.sets) || 0,
             reps: loggedData.reps || '',
             weight_used: parseFloat(loggedData.weight) || null,
@@ -423,6 +453,8 @@ export default function LogTodaysWorkoutModal({
             notes: loggedData.notes || ''
           };
         });
+      
+      console.log('🔍 [SAVE WORKOUT] Filtered exercises for logging:', exercises);
 
       // Check if all exercises were skipped
       if (exercises.length === 0) {
@@ -472,7 +504,7 @@ export default function LogTodaysWorkoutModal({
       onWorkoutLogged();
       onClose();
     } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+      console.error('❌ [SAVE WORKOUT] Error saving workout:', error);
       showToast('Failed to log workout. Please try again.', 'error');
     } finally {
       setLoading(false);

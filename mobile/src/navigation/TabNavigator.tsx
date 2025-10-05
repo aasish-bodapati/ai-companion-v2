@@ -11,7 +11,7 @@ import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
 import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
-import MealLoggingModal from '../components/nutrition/MealLoggingModalOriginal';
+import UnifiedNutritionLogger from '../components/nutrition/UnifiedNutritionLogger';
 
 export type TabParamList = {
   Dashboard: undefined;
@@ -136,7 +136,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       />
 
       {/* Log Meal Modal */}
-      <MealLoggingModal
+      <UnifiedNutritionLogger
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
         onMealLogged={() => setShowLogMealModal(false)}

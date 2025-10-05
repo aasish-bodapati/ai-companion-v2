@@ -1,3 +1,5 @@
+import { apiClient } from './api';
+
 interface NotificationRule {
   id: string;
   type: 'workout_reminder' | 'meal_reminder' | 'water_reminder' | 'mood_check' | 'goal_reminder' | 'achievement' | 'insight';
@@ -33,7 +35,7 @@ interface SmartNotification {
   message: string;
   priority: 'high' | 'medium' | 'low';
   scheduled_for: string;
-  data?: any;
+  data?: Record<string, unknown>;
   actionable: boolean;
   action_buttons?: Array<{
     text: string;
@@ -59,7 +61,6 @@ interface NotificationPreferences {
 }
 
 class SmartNotificationsService {
-  private baseUrl = 'http://localhost:8000/api/v1';
   private notificationRules: NotificationRule[] = [];
   private preferences: NotificationPreferences = {
     workout_reminders: true,
@@ -80,20 +81,10 @@ class SmartNotificationsService {
   // Initialize notification rules
   async initializeRules(): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/notifications/rules`, {
-        timeout: 5000,
-      });
-      if (response.ok) {
-        this.notificationRules = await response.json();
-      } else {
-        // Silently fall back to default rules - this is expected behavior
-        if (__DEV__) {
-          console.log('🔔 Using default notification rules');
-        }
-        this.notificationRules = this.getDefaultRules();
-      }
+      const response = await apiClient.get('/notifications/rules');
+      this.notificationRules = response.data;
     } catch (error) {
-      console.warn('Network error for notification rules, using default rules:', error);
+        // Silently fall back to default rules - this is expected behavior
       this.notificationRules = this.getDefaultRules();
     }
   }
@@ -101,20 +92,10 @@ class SmartNotificationsService {
   // Get smart notifications based on current context
   async getSmartNotifications(): Promise<SmartNotification[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/notifications/smart`, {
-        timeout: 5000,
-      });
-      if (response.ok) {
-        return await response.json();
-      } else {
-        // Silently fall back to mock data - this is expected behavior
-        if (__DEV__) {
-          console.log('🔔 Using mock smart notifications data');
-        }
-        return this.generateMockNotifications();
-      }
+      const response = await apiClient.get('/notifications/smart');
+      return response.data;
     } catch (error) {
-      console.warn('Network error for smart notifications, using mock data:', error);
+      // Silently fall back to mock data - this is expected behavior
       return this.generateMockNotifications();
     }
   }
@@ -122,24 +103,10 @@ class SmartNotificationsService {
   // Schedule a notification
   async scheduleNotification(notification: SmartNotification): Promise<boolean> {
     try {
-      const response = await fetch(`${this.baseUrl}/notifications/schedule`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(notification),
-        timeout: 5000,
-      });
-      if (!response.ok) {
-        // Silently handle scheduling failure - this is expected behavior
-        if (__DEV__) {
-          console.log('🔔 Notification scheduling not available, using local scheduling');
-        }
-        return false;
-      }
+      const response = await apiClient.post('/notifications/schedule', notification);
       return true;
     } catch (error) {
-      console.warn('Network error scheduling notification:', error);
+      // Silently handle scheduling failure - this is expected behavior
       return false;
     }
   }
@@ -148,24 +115,10 @@ class SmartNotificationsService {
   async updatePreferences(preferences: Partial<NotificationPreferences>): Promise<boolean> {
     try {
       this.preferences = { ...this.preferences, ...preferences };
-      const response = await fetch(`${this.baseUrl}/notifications/preferences`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(this.preferences),
-        timeout: 5000,
-      });
-      if (!response.ok) {
-        // Silently fall back to local storage - this is expected behavior
-        if (__DEV__) {
-          console.log('🔔 Using local storage for notification preferences');
-        }
-        return true; // Still update locally
-      }
+      await apiClient.put('/notifications/preferences', this.preferences);
       return true;
     } catch (error) {
-      console.warn('Network error updating preferences, using local storage:', error);
+      // Silently fall back to local storage - this is expected behavior
       return true; // Still update locally
     }
   }
@@ -176,7 +129,7 @@ class SmartNotificationsService {
   }
 
   // Check if notification should be sent based on rules and context
-  shouldSendNotification(rule: NotificationRule, context: any): boolean {
+  shouldSendNotification(rule: NotificationRule, context: Record<string, unknown>): boolean {
     // Check if rule is enabled
     if (!rule.enabled) return false;
 
@@ -247,7 +200,7 @@ class SmartNotificationsService {
   }
 
   // Generate contextual notifications
-  generateContextualNotifications(userData: any): SmartNotification[] {
+  generateContextualNotifications(userData: Record<string, unknown>): SmartNotification[] {
     const notifications: SmartNotification[] = [];
     const now = new Date();
 
@@ -387,12 +340,12 @@ class SmartNotificationsService {
     return 'Snack';
   }
 
-  private checkInconsistency(metric: string, context: any): boolean {
+  private checkInconsistency(metric: string, context: Record<string, unknown>): boolean {
     // Simple inconsistency check - can be enhanced with more sophisticated logic
     const recentData = context[`${metric}_history`] || [];
     if (recentData.length < 3) return false;
     
-    const values = recentData.slice(-3).map((d: any) => d.value);
+    const values = recentData.slice(-3).map((d: Record<string, unknown>) => d.value as number);
     const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
     const variance = values.reduce((a: number, b: number) => a + Math.pow(b - avg, 2), 0) / values.length;
     

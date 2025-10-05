@@ -12,6 +12,7 @@ import { useProgressMetricsData } from '../hooks/useProgressMetrics';
 import { useAchievements, useStreaks, useAIInsights } from '../contexts/GlobalStateContext';
 import { useAuth } from '../contexts/AuthContext';
 import useResponsive from '../hooks/useResponsive';
+import { useBodyTypeGoalMetrics } from '../hooks/useBodyTypeGoalMetrics';
 
 interface DashboardModuleProps {
   onRefresh?: () => Promise<void>;
@@ -30,6 +31,7 @@ export default function DashboardModule({
   const { streaks } = useStreaks();
   const aiInsights = useAIInsights();
   const responsive = useResponsive();
+  const bodyTypeMetrics = useBodyTypeGoalMetrics();
 
   const quickStats = [
     {
@@ -110,17 +112,15 @@ export default function DashboardModule({
 
         {/* Body Type Goal */}
         <BodyTypeCard
-          goalName="Strong & Steady"
-          dailyScore={42}
-          weeklyAlignment={75}
-          weeklyTrend="up"
-          alignment="closer"
-          suggestions={[
-            "Add 1 strength workout today",
-            "Protein intake is low - log a snack"
-          ]}
-          onLogWorkout={() => console.log('Log workout')}
-          onLogMeal={() => console.log('Log meal')}
+          goalName={bodyTypeMetrics.goalName}
+          dailyScore={bodyTypeMetrics.dailyScore}
+          weeklyAlignment={bodyTypeMetrics.weeklyAlignment}
+          weeklyTrend={bodyTypeMetrics.weeklyTrend}
+          alignment={bodyTypeMetrics.alignment}
+          suggestions={bodyTypeMetrics.suggestions}
+          loading={bodyTypeMetrics.loading}
+          onLogWorkout={() => onNavigate?.('Fitness')}
+          onLogMeal={() => onNavigate?.('Nutrition')}
           onViewAnalytics={() => onNavigate?.('Analytics')}
         />
 

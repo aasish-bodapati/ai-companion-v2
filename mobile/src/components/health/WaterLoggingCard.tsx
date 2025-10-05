@@ -18,15 +18,28 @@ interface WaterLoggingCardProps {
 }
 
 export default function WaterLoggingCard({}: WaterLoggingCardProps) {
+  console.log('💧 [WATER CARD] Component rendering...');
   const [stats, setStats] = useState<WaterLogStats | null>(null);
   const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
 
   const loadStats = async () => {
     try {
+      console.log('💧 [WATER CARD] Loading water stats...');
       const waterStats = await waterService.getWaterStats();
+      console.log('💧 [WATER CARD] Water stats loaded:', waterStats);
       setStats(waterStats);
     } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+      console.error('💧 [WATER CARD] Error loading water stats:', error);
+      // Set default stats on error
+      setStats({
+        total_ml_today: 0,
+        total_oz_today: 0,
+        logs_today: 0,
+        goal_ml: 3000,
+        goal_oz: 101.4,
+        progress_percentage: 0,
+        average_per_log: 250,
+      });
     }
   };
 

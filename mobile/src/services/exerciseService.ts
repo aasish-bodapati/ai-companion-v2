@@ -2,7 +2,7 @@
  * Exercise service for fetching exercise data from the backend
  */
 
-import { API_BASE_URL } from '../config/api';
+import { apiClient } from './api';
 
 export interface Exercise {
   id: number;
@@ -11,33 +11,19 @@ export interface Exercise {
 }
 
 class ExerciseService {
-  private baseUrl = `${API_BASE_URL}/health`;
-
   /**
    * Get exercise by ID
    */
   async getExerciseById(id: string | number): Promise<Exercise | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/exercises/${id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        console.warn(`Exercise with ID ${id} not found`);
-        return null;
-      }
-
-      const data = await response.json();
+      const response = await apiClient.get(`/health/exercises/${id}`);
       return {
-        id: data.id,
-        name: data.name,
-        logging_category: data.logging_category
+        id: response.data.id,
+        name: response.data.name,
+        logging_category: response.data.logging_category
       };
     } catch (error) {
-      console.error(`Error fetching exercise ${id}:`, error);
+      console.warn(`Exercise with ID ${id} not found`);
       return null;
     }
   }
@@ -64,19 +50,8 @@ class ExerciseService {
    */
   async getAllExercises(): Promise<Exercise[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/exercises`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      const response = await apiClient.get('/health/exercises');
+      return response.data;
     } catch (error) {
       console.error('Error fetching all exercises:', error);
       return [];

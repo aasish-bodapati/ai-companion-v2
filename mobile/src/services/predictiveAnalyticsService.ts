@@ -1,4 +1,5 @@
 import NetworkUtils from '../utils/networkUtils';
+import { apiClient } from './api';
 
 interface TrendData {
   period: 'daily' | 'weekly' | 'monthly';
@@ -38,7 +39,7 @@ interface PatternInsight {
   impact: 'high' | 'medium' | 'low';
   actionable: boolean;
   suggestions: string[];
-  data: any;
+  data: Record<string, unknown>;
 }
 
 interface PredictiveInsight {
@@ -55,82 +56,48 @@ interface PredictiveInsight {
 }
 
 class PredictiveAnalyticsService {
-  private baseUrl = 'http://localhost:8000/api/v1';
-
   // Get trend analysis for a specific metric
   async getTrendAnalysis(metric: string, period: 'week' | 'month' | 'quarter' = 'week'): Promise<TrendData> {
-    const response = await NetworkUtils.fetchWithRetry<TrendData>(
-      `${this.baseUrl}/analytics/trends/${metric}?period=${period}`,
-      { method: 'GET' },
-      { timeout: 5000, retries: 1 }
-    );
-
-    if (response.data) {
+    try {
+      const response = await apiClient.get(`/analytics/trends/${metric}?period=${period}`);
       return response.data;
+    } catch (error) {
+      // Silently fall back to mock data - this is expected behavior
+      return this.getMockTrendData(metric, period);
     }
-
-    // Silently fall back to mock data - this is expected behavior
-    if (__DEV__) {
-      console.log(`📊 Using mock trend data for ${metric}`);
-    }
-    return this.getMockTrendData(metric, period);
   }
 
   // Get comprehensive health metrics with predictions
   async getHealthMetrics(): Promise<HealthMetric[]> {
-    const response = await NetworkUtils.fetchWithRetry<HealthMetric[]>(
-      `${this.baseUrl}/analytics/health-metrics`,
-      { method: 'GET' },
-      { timeout: 5000, retries: 1 }
-    );
-
-    if (response.data) {
+    try {
+      const response = await apiClient.get('/analytics/health-metrics');
       return response.data;
+    } catch (error) {
+      // Silently fall back to mock data - this is expected behavior
+      return this.getMockHealthMetrics();
     }
-
-    // Silently fall back to mock data - this is expected behavior
-    if (__DEV__) {
-      console.log('📊 Using mock health metrics data');
-    }
-    return this.getMockHealthMetrics();
   }
 
   // Get pattern insights from user data
   async getPatternInsights(): Promise<PatternInsight[]> {
-    const response = await NetworkUtils.fetchWithRetry<PatternInsight[]>(
-      `${this.baseUrl}/analytics/pattern-insights`,
-      { method: 'GET' },
-      { timeout: 5000, retries: 1 }
-    );
-
-    if (response.data) {
+    try {
+      const response = await apiClient.get('/analytics/pattern-insights');
       return response.data;
+    } catch (error) {
+      // Silently fall back to mock data - this is expected behavior
+      return this.getMockPatternInsights();
     }
-
-    // Silently fall back to mock data - this is expected behavior
-    if (__DEV__) {
-      console.log('📊 Using mock pattern insights data');
-    }
-    return this.getMockPatternInsights();
   }
 
   // Get AI-powered predictive insights
   async getPredictiveInsights(): Promise<PredictiveInsight[]> {
-    const response = await NetworkUtils.fetchWithRetry<PredictiveInsight[]>(
-      `${this.baseUrl}/analytics/predictive-insights`,
-      { method: 'GET' },
-      { timeout: 5000, retries: 1 }
-    );
-
-    if (response.data) {
+    try {
+      const response = await apiClient.get('/analytics/predictive-insights');
       return response.data;
+    } catch (error) {
+      // Silently fall back to mock data - this is expected behavior
+      return this.getMockPredictiveInsights();
     }
-
-    // Silently fall back to mock data - this is expected behavior
-    if (__DEV__) {
-      console.log('📊 Using mock predictive insights data');
-    }
-    return this.getMockPredictiveInsights();
   }
 
   // Get personalized recommendations based on patterns
@@ -141,19 +108,10 @@ class PredictiveAnalyticsService {
     goals: string[];
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/analytics/recommendations`, {
-        timeout: 5000,
-      });
-      if (!response.ok) {
-        // Silently fall back to mock data - this is expected behavior
-        if (__DEV__) {
-          console.log('📊 Using mock recommendations data');
-        }
-        return this.getMockRecommendations();
-      }
-      return await response.json();
+      const response = await apiClient.get('/analytics/recommendations');
+      return response.data;
     } catch (error) {
-      console.warn('Network error for recommendations, using mock data:', error);
+      // Silently fall back to mock data - this is expected behavior
       return this.getMockRecommendations();
     }
   }
@@ -166,19 +124,10 @@ class PredictiveAnalyticsService {
     recommendations: string[];
   }> {
     try {
-      const response = await fetch(`${this.baseUrl}/analytics/goal-probability/${goalType}`, {
-        timeout: 5000,
-      });
-      if (!response.ok) {
-        // Silently fall back to mock data - this is expected behavior
-        if (__DEV__) {
-          console.log(`📊 Using mock goal probability data for ${goalType}`);
-        }
-        return this.getMockGoalProbability(goalType);
-      }
-      return await response.json();
+      const response = await apiClient.get(`/analytics/goal-probability/${goalType}`);
+      return response.data;
     } catch (error) {
-      console.warn(`Network error for goal probability, using mock data:`, error);
+      // Silently fall back to mock data - this is expected behavior
       return this.getMockGoalProbability(goalType);
     }
   }
@@ -194,19 +143,10 @@ class PredictiveAnalyticsService {
     description: string;
   }>> {
     try {
-      const response = await fetch(`${this.baseUrl}/analytics/anomalies`, {
-        timeout: 5000,
-      });
-      if (!response.ok) {
-        // Silently fall back to mock data - this is expected behavior
-        if (__DEV__) {
-          console.log('📊 Using mock anomalies data');
-        }
-        return this.getMockAnomalies();
-      }
-      return await response.json();
+      const response = await apiClient.get('/analytics/anomalies');
+      return response.data;
     } catch (error) {
-      console.warn('Network error for anomalies, using mock data:', error);
+      // Silently fall back to mock data - this is expected behavior
       return this.getMockAnomalies();
     }
   }

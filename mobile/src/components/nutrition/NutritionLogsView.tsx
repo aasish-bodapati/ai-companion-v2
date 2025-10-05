@@ -181,12 +181,28 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   const handleEditLog = (log: MealLog) => {
     setEditingLog(log);
+    
+    // Parse food_items from JSON string
+    let foodItems = [];
+    try {
+      if (log.food_items) {
+        if (typeof log.food_items === 'string') {
+          foodItems = JSON.parse(log.food_items);
+        } else if (Array.isArray(log.food_items)) {
+          foodItems = log.food_items;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing food_items:', error);
+      foodItems = [];
+    }
+    
     setEditFoodItems(
-      log.food_items?.map(item => ({
+      foodItems.map(item => ({
         id: `${log.id}-${item.food_id || item.id}`,
         quantity: item.quantity || 1,
         quantity_unit: item.quantity_unit || 'serving',
-      })) || []
+      }))
     );
     setEditingSingleFood(null);
     setEditModalVisible(true);
@@ -222,8 +238,23 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         const originalCarbs = foodItem.carbs_g / (foodItem.quantity || 1);
         const originalFat = foodItem.fat_g / (foodItem.quantity || 1);
 
+        // Parse food_items from JSON string
+        let foodItems = [];
+        try {
+          if (log.food_items) {
+            if (typeof log.food_items === 'string') {
+              foodItems = JSON.parse(log.food_items);
+            } else if (Array.isArray(log.food_items)) {
+              foodItems = log.food_items;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing food_items:', error);
+          foodItems = [];
+        }
+
         // Update the specific food item
-        const updatedFoodItems = log.food_items?.map(item => {
+        const updatedFoodItems = foodItems.map(item => {
           if (item.food_id === foodItem.food_id || item.id === foodItem.id) {
             return {
               ...item,
@@ -235,7 +266,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             };
           }
           return item;
-        }) || [];
+        });
 
         const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
         const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
@@ -250,8 +281,23 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           fat_g: totalFat,
         });
       } else if (editingLog) {
+        // Parse food_items from JSON string
+        let foodItems = [];
+        try {
+          if (editingLog.food_items) {
+            if (typeof editingLog.food_items === 'string') {
+              foodItems = JSON.parse(editingLog.food_items);
+            } else if (Array.isArray(editingLog.food_items)) {
+              foodItems = editingLog.food_items;
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing food_items:', error);
+          foodItems = [];
+        }
+
         // Editing entire meal
-        const updatedFoodItems = editingLog.food_items?.map(item => {
+        const updatedFoodItems = foodItems.map(item => {
           const editItem = editFoodItems.find(editItem => 
             editItem.id === `${editingLog.id}-${item.food_id || item.id}`
           );
@@ -273,7 +319,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             };
           }
           return item;
-        }) || [];
+        });
 
         const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
         const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
@@ -310,9 +356,24 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const handleDeleteFoodItem = async (logId: number, foodItemId: string) => {
     // Find the log and check how many food items it has
     const log = logs.find(l => l.id === logId);
-    if (!log || !log.food_items) return;
+    if (!log) return;
 
-    if (log.food_items.length === 1) {
+    // Parse food_items from JSON string
+    let foodItems = [];
+    try {
+      if (log.food_items) {
+        if (typeof log.food_items === 'string') {
+          foodItems = JSON.parse(log.food_items);
+        } else if (Array.isArray(log.food_items)) {
+          foodItems = log.food_items;
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing food_items:', error);
+      foodItems = [];
+    }
+
+    if (foodItems.length === 1) {
       // If only one food item, delete the entire log
       handleDeleteLog(logId);
     } else {
@@ -327,10 +388,25 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       
       // Find the log and remove the specific food item
       const log = logs.find(l => l.id === logId);
-      if (!log || !log.food_items) return;
+      if (!log) return;
 
-      const updatedFoodItems = log.food_items.filter(item => 
-        `${log.id}-${item.id || log.food_items.indexOf(item)}` !== foodItemId
+      // Parse food_items from JSON string
+      let foodItems = [];
+      try {
+        if (log.food_items) {
+          if (typeof log.food_items === 'string') {
+            foodItems = JSON.parse(log.food_items);
+          } else if (Array.isArray(log.food_items)) {
+            foodItems = log.food_items;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing food_items:', error);
+        foodItems = [];
+      }
+
+      const updatedFoodItems = foodItems.filter(item => 
+        `${log.id}-${item.id || item.food_id || foodItems.indexOf(item)}` !== foodItemId
       );
 
       if (updatedFoodItems.length === 0) {
@@ -475,12 +551,27 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     }> = [];
 
     logs.forEach((log) => {
-      if (log.food_items && log.food_items.length > 0) {
-        log.food_items.forEach((item, index) => {
+      // Parse food_items from JSON string
+      let foodItems = [];
+      try {
+        if (log.food_items) {
+          if (typeof log.food_items === 'string') {
+            foodItems = JSON.parse(log.food_items);
+          } else if (Array.isArray(log.food_items)) {
+            foodItems = log.food_items;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing food_items:', error);
+        foodItems = [];
+      }
+
+      if (foodItems && foodItems.length > 0) {
+        foodItems.forEach((item, index) => {
           allFoodItems.push({
-            id: `${log.id}-${item.id || index}`,
+            id: `${log.id}-${item.id || item.food_id || index}`,
             food_name: item.food_name,
-            quantity_grams: item.quantity_grams,
+            quantity_grams: item.quantity_grams || (item.quantity * 100) || 100,
             calories: item.calories,
             protein_g: item.protein_g,
             carbs_g: item.carbs_g,
@@ -696,37 +787,54 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                 </View>
               ) : editingLog ? (
                 // Editing entire meal
-                editingLog.food_items?.map((foodItem, index) => {
-                  const editItem = editFoodItems.find(item => 
-                    item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
-                  );
-                  return (
-                    <View key={foodItem.id} style={styles.foodItemEditContainer}>
-                      <Text style={styles.foodItemName}>{foodItem.food_name}</Text>
-                      <View style={styles.servingRow}>
-                        <TextInput
-                          style={styles.servingInput}
-                          value={editItem?.quantity.toString() || '1'}
-                          onChangeText={(text) => {
-                            const quantity = parseFloat(text) || 1;
-                            setEditFoodItems(prev => 
-                              prev.map(item => 
-                                item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
-                                  ? { ...item, quantity: quantity }
-                                  : item
-                              )
-                            );
-                          }}
-                          placeholder="1"
-                          keyboardType="numeric"
-                        />
-                        <Text style={styles.servingUnit}>
-                          {editItem?.quantity_unit || foodItem.quantity_unit || 'serving'}
-                        </Text>
+                (() => {
+                  // Parse food_items from JSON string
+                  let foodItems = [];
+                  try {
+                    if (editingLog.food_items) {
+                      if (typeof editingLog.food_items === 'string') {
+                        foodItems = JSON.parse(editingLog.food_items);
+                      } else if (Array.isArray(editingLog.food_items)) {
+                        foodItems = editingLog.food_items;
+                      }
+                    }
+                  } catch (error) {
+                    console.error('Error parsing food_items:', error);
+                    foodItems = [];
+                  }
+
+                  return foodItems.map((foodItem, index) => {
+                    const editItem = editFoodItems.find(item => 
+                      item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
+                    );
+                    return (
+                      <View key={foodItem.id || foodItem.food_id || index} style={styles.foodItemEditContainer}>
+                        <Text style={styles.foodItemName}>{foodItem.food_name}</Text>
+                        <View style={styles.servingRow}>
+                          <TextInput
+                            style={styles.servingInput}
+                            value={editItem?.quantity.toString() || '1'}
+                            onChangeText={(text) => {
+                              const quantity = parseFloat(text) || 1;
+                              setEditFoodItems(prev => 
+                                prev.map(item => 
+                                  item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
+                                    ? { ...item, quantity: quantity }
+                                    : item
+                                )
+                              );
+                            }}
+                            placeholder="1"
+                            keyboardType="numeric"
+                          />
+                          <Text style={styles.servingUnit}>
+                            {editItem?.quantity_unit || foodItem.quantity_unit || 'serving'}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  );
-                }) || <Text style={styles.noFoodItems}>No food items found</Text>
+                    );
+                  });
+                })() || <Text style={styles.noFoodItems}>No food items found</Text>
               ) : (
                 <Text style={styles.noFoodItems}>No food items found</Text>
               )}

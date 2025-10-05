@@ -44,13 +44,12 @@ export interface HealthInsights {
 class HealthService extends BaseService {
   async getHealthData(): Promise<HealthData> {
     console.log('🏥 Health Service: Fetching health data...');
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health'),
       'HEALTH SERVICE - getHealthData'
-    ).then(data => {
-      console.log('🏥 Health Service: Health data received:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Health data received:', data);
+    return data;
   }
 
   async getHealthProfile(): Promise<HealthProfile | null> {
@@ -70,58 +69,53 @@ class HealthService extends BaseService {
 
   async updateHealthProfile(profileData: Partial<HealthProfile>): Promise<HealthProfile> {
     console.log('🏥 Health Service: Updating health profile...', profileData);
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.put('/health/profile/', profileData),
       'HEALTH SERVICE - updateHealthProfile'
-    ).then(data => {
-      console.log('🏥 Health Service: Profile updated:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Profile updated:', data);
+    return data;
   }
 
   async getHealthInsights(): Promise<HealthInsights> {
     console.log('🏥 Health Service: Fetching health insights...');
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/insights/suggestions'),
       'HEALTH SERVICE - getHealthInsights'
-    ).then(data => {
-      console.log('🏥 Health Service: Insights received:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Insights received:', data);
+    return data;
   }
 
   async getHealthScore(): Promise<{ score: number; breakdown: any }> {
     console.log('🏥 Health Service: Fetching health score...');
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/insights/health-score'),
       'HEALTH SERVICE - getHealthScore'
-    ).then(data => {
-      console.log('🏥 Health Service: Health score received:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Health score received:', data);
+    return data;
   }
 
   async getWeeklyReport(): Promise<any> {
     console.log('🏥 Health Service: Fetching weekly report...');
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/insights/weekly-report'),
       'HEALTH SERVICE - getWeeklyReport'
-    ).then(data => {
-      console.log('🏥 Health Service: Weekly report received:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Weekly report received:', data);
+    return data;
   }
 
   // Analytics
   async getAnalyticsData(): Promise<any> {
     console.log('🏥 Health Service: Fetching analytics data...');
-    return this.makeRequest(
+    const data = await this.makeRequest(
       () => apiClient.get('/health/analytics/dashboard'),
       'HEALTH SERVICE - getAnalyticsData'
-    ).then(data => {
-      console.log('🏥 Health Service: Analytics received:', data);
-      return data;
-    });
+    );
+    console.log('🏥 Health Service: Analytics received:', data);
+    return data;
   }
 
   // Water logging (delegated to waterService for consistency)
