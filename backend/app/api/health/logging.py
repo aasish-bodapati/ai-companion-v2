@@ -417,9 +417,9 @@ async def get_fitness_logs(
             from app.utils.timezone_handler import TimezoneHandler
             # Parse date in user's timezone, then convert to UTC
             end_date_obj = TimezoneHandler.parse_date_string_in_user_timezone(end_date, current_user.timezone)
-            # Set end_date to end of day in user's timezone
+            # Set end_date to end of day by adding 24 hours to start of day
             if end_date_obj:
-                end_date_obj = end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
+                end_date_obj = end_date_obj + timedelta(days=1) - timedelta(microseconds=1)
         
         logs = fitness_log.get_user_logs(
             db,
@@ -567,7 +567,11 @@ async def create_nutrition_log_test(
                 # Fallback to current time if parsing fails
                 meal_date = datetime.now(timezone.utc)
         else:
-            meal_date = datetime.now(timezone.utc)
+            # Use user's timezone for current time instead of UTC
+            user_timezone = current_user.timezone or "UTC"
+            from app.utils.timezone_service import TimezoneService
+            user_tz = TimezoneService.get_user_timezone(user_timezone)
+            meal_date = datetime.now(user_tz).astimezone(timezone.utc)
         
         nutrition_log_entry = NutritionLogModel(
             user_id=current_user.id,  # Use authenticated user ID
@@ -1010,11 +1014,11 @@ async def get_daily_analytics(
         fitness_activities = len(fitness_logs)
 
         # Calculate nutrition metrics
-        total_calories_consumed = sum(log.calories or 0 for log in nutrition_logs)
+        total_calories_consumed = sum(log.total_calories or 0 for log in nutrition_logs)
         total_protein_g = sum(log.protein_g or 0 for log in nutrition_logs)
         total_carbs_g = sum(log.carbs_g or 0 for log in nutrition_logs)
         total_fat_g = sum(log.fat_g or 0 for log in nutrition_logs)
-        water_intake_ml = sum(log.water_ml or 0 for log in nutrition_logs)
+        water_intake_ml = 0  # water_ml field doesn't exist in current model
         meals_logged = len(nutrition_logs)
 
         # Calculate mood metrics
@@ -1110,11 +1114,11 @@ async def get_weekly_analytics(
         avg_calories_per_workout = total_calories_burned / total_workouts if total_workouts > 0 else 0
 
         # Calculate nutrition metrics
-        total_calories_consumed = sum(log.calories or 0 for log in nutrition_logs)
+        total_calories_consumed = sum(log.total_calories or 0 for log in nutrition_logs)
         total_protein_g = sum(log.protein_g or 0 for log in nutrition_logs)
         total_carbs_g = sum(log.carbs_g or 0 for log in nutrition_logs)
         total_fat_g = sum(log.fat_g or 0 for log in nutrition_logs)
-        total_water_ml = sum(log.water_ml or 0 for log in nutrition_logs)
+        total_water_ml = 0  # water_ml field doesn't exist in current model
         total_meals = len(nutrition_logs)
 
         # Calculate mood metrics

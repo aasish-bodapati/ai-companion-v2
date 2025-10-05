@@ -254,9 +254,9 @@ def get_fitness_logs(
                 start_date=start_date_obj,
                 end_date=end_date_obj
             )
-            print(f"🔍 DEBUG: Retrieved {len(logs)} fitness logs for user {current_user.id}")
+            pass
         except Exception as e:
-            print(f"❌ DEBUG: Error getting fitness logs: {str(e)}")
+            pass
             raise e
         
         # Apply activity_type filter if provided
@@ -271,9 +271,9 @@ def get_fitness_logs(
                 start_date=start_date_obj,
                 end_date=end_date_obj
             )
-            print(f"🔍 DEBUG: Total count: {total_count}")
+            pass
         except Exception as e:
-            print(f"❌ DEBUG: Error getting count: {str(e)}")
+            pass
             total_count = len(logs)  # Fallback to logs length
         
         # Calculate statistics using the centralized calculator

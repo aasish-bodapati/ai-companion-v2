@@ -1075,8 +1075,6 @@ def update_routine_with_workout_plan(
             raise HTTPException(status_code=422, detail=f"Validation error: {str(validation_error)}")
         workout_days = request_data.get("workout_days", [])
         
-        logger.info(f"🔍 [ROUTINE UPDATE] Processing {len(workout_days)} workout days")
-        logger.info(f"🔍 [ROUTINE UPDATE] Workout days data: {workout_days}")
 
         # Update routine basic info
         routine.name = routine_data.name
@@ -1089,7 +1087,6 @@ def update_routine_with_workout_plan(
         try:
             from app.models.health.simple_routine import RoutineWorkoutDay, RoutineExercise
             existing_workout_days = db.query(RoutineWorkoutDay).filter(RoutineWorkoutDay.routine_id == int(id)).all()
-            logger.info(f"🔍 [ROUTINE UPDATE] Found {len(existing_workout_days)} existing workout days to delete")
             for day in existing_workout_days:
                 db.query(RoutineExercise).filter(RoutineExercise.workout_day_id == day.id).delete()
                 db.delete(day)

@@ -30,6 +30,15 @@ def update_user_me(
     """
     Update own user.
     """
-    # For now, just return the current user
-    # TODO: Implement user update functionality
+    # Update user fields
+    if "full_name" in user_in and user_in["full_name"] is not None:
+        current_user.full_name = user_in["full_name"]
+    if "timezone" in user_in and user_in["timezone"] is not None:
+        current_user.timezone = user_in["timezone"]
+    if "active_routine_id" in user_in and user_in["active_routine_id"] is not None:
+        current_user.active_routine_id = user_in["active_routine_id"]
+    
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
     return current_user

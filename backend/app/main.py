@@ -98,13 +98,7 @@ app = FastAPI(
 async def security_headers_middleware(request: Request, call_next):
     response = await call_next(request)
 
-    # CORS headers (manual fallback)
-    origin = request.headers.get("origin")
-    if origin and origin in ["http://localhost:3000", "http://127.0.0.1:3000"]:
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-Requested-With"
+    # CORS headers are now handled by CORSMiddleware
 
     # Security headers
     response.headers["X-Content-Type-Options"] = "nosniff"
@@ -133,15 +127,15 @@ async def rate_limiting_middleware(request: Request, call_next):
     """Apply rate limiting to all requests."""
     return await rate_limit_middleware(request, call_next)
 
-# Set up CORS FIRST (before other middleware) - TEMPORARILY ALLOW ALL ORIGINS FOR DEBUGGING
+# Set up CORS FIRST (before other middleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for debugging
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
-logger.info("CORS middleware configured to allow all origins for debugging")
+logger.info("CORS middleware configured with restricted origins")
 
 # Initialize lightweight metrics store in app state
 app.state.metrics = {
@@ -171,18 +165,7 @@ app.state.metrics = {
     },
 }
 
-# Add OPTIONS handler for CORS preflight requests
-@app.options("/{full_path:path}")
-async def options_handler(request: Request):
-    return JSONResponse(
-        content={},
-        headers={
-            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With",
-            "Access-Control-Allow-Credentials": "true",
-        }
-    )
+# CORS preflight requests are now handled by the CORSMiddleware
 
 # Import and include API router
 try:

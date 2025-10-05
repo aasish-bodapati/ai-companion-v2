@@ -12,6 +12,24 @@ from app.services.indian_food_service import IndianFoodService
 router = APIRouter()
 
 
+@router.get("/")
+async def get_all_indian_foods(
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results"),
+    db: Session = Depends(get_db)
+):
+    """Get all Indian foods (popular foods)"""
+    try:
+        service = IndianFoodService(db)
+        results = service.get_popular_foods(limit)
+        
+        return {
+            "success": True,
+            "data": results,
+            "count": len(results)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get foods: {str(e)}")
+
 @router.get("/search")
 async def search_indian_foods(
     q: str = Query(..., description="Search query for food name"),
