@@ -1,0 +1,109 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Fitness
+- tapOn: "Fitness"
+- assertVisible: "Fitness Hub"
+- tapOn: "Routines"
+- assertVisible: "Routines"
+- assertVisible: "Create Routine"
+
+# Test creating a new routine
+- tapOn: "Create Routine"
+- assertVisible: "Create Routine"
+- assertVisible: "Routine Name"
+- assertVisible: "Description"
+- assertVisible: "Difficulty"
+- assertVisible: "Duration"
+
+# Test routine form completion
+- inputText: "Morning Strength"
+- tapOn: "Description"
+- inputText: "A quick morning strength routine"
+- tapOn: "Difficulty"
+- tapOn: "Intermediate"
+- tapOn: "Duration (weeks)"
+- inputText: "4"
+- tapOn: "Add Workout Day"
+- assertVisible: "Workout Day"
+- assertVisible: "Day Name"
+- assertVisible: "Workout Name"
+
+# Test adding workout day
+- tapOn: "Day Name"
+- tapOn: "Monday"
+- tapOn: "Workout Name"
+- inputText: "Push Day"
+- tapOn: "Add Exercise"
+- assertVisible: "Exercise Name"
+- inputText: "Push-ups"
+- tapOn: "Sets"
+- inputText: "3"
+- tapOn: "Reps"
+- inputText: "15"
+- tapOn: "Add Exercise"
+- tapOn: "Save Routine"
+- assertVisible: "Routine created successfully"
+- assertVisible: "Routines"
+
+# Test routine validation
+- tapOn: "Create Routine"
+- assertVisible: "Create Routine"
+- tapOn: "Save Routine"
+- assertVisible: "Please fill in all required fields"
+- inputText: "Test Routine"
+- tapOn: "Difficulty"
+- tapOn: "Beginner"
+- tapOn: "Duration (weeks)"
+- inputText: "2"
+- tapOn: "Save Routine"
+- assertVisible: "Routine created successfully"
+
+# Test starting a routine
+- assertVisible: "Morning Strength"
+- tapOn: "Start Routine"
+- assertVisible: "Routine started successfully"
+- assertVisible: "Active"
+
+# Test routine progress
+- tapOn: "Morning Strength"
+- assertVisible: "Routine Details"
+- assertVisible: "Progress"
+- assertVisible: "Workouts Completed"
+- assertVisible: "Log Workout"
+- tapOn: "Log Workout"
+- assertVisible: "Log Workout"
+- tapOn: "Activity Type"
+- tapOn: "Weightlifting"
+- tapOn: "Duration (minutes)"
+- inputText: "45"
+- tapOn: "Save Workout"
+- assertVisible: "Workout logged successfully"
+
+# Test routine completion
+- tapOn: "Back"
+- assertVisible: "Routines"
+- tapOn: "Morning Strength"
+- assertVisible: "Routine Details"
+- tapOn: "Complete Routine"
+- assertVisible: "Routine completed successfully"
+- assertVisible: "Completed"
+
+# Test routine deletion
+- tapOn: "Test Routine"
+- assertVisible: "Routine Details"
+- tapOn: "Delete Routine"
+- assertVisible: "Are you sure you want to delete this routine?"
+- tapOn: "Yes"
+- assertVisible: "Routine deleted successfully"

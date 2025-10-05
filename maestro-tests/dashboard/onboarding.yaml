@@ -1,0 +1,86 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Test new user onboarding flow
+- tapOn: "Register"
+- inputText: "New User"
+- tapOn: "Email"
+- inputText: "newuser@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Create Account"
+- assertVisible: "Account created successfully"
+
+# Should redirect to onboarding
+- assertVisible: "Welcome to HealthLog AI"
+- assertVisible: "Let's set up your health profile"
+- assertVisible: "Age"
+- assertVisible: "Gender"
+- assertVisible: "Height"
+- assertVisible: "Weight"
+- assertVisible: "Activity Level"
+
+# Test onboarding form completion
+- inputText: "25"
+- tapOn: "Gender"
+- tapOn: "Male"
+- tapOn: "Height (cm)"
+- inputText: "175"
+- tapOn: "Weight (kg)"
+- inputText: "70"
+- tapOn: "Activity Level"
+- tapOn: "Moderate"
+- tapOn: "Complete Setup"
+- assertVisible: "Profile created successfully"
+- assertVisible: "Dashboard"
+
+# Test onboarding validation
+- tapOn: "Profile"
+- tapOn: "Logout"
+- assertVisible: "Welcome to HealthLog"
+- tapOn: "Register"
+- inputText: "Another User"
+- tapOn: "Email"
+- inputText: "anotheruser@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Create Account"
+- assertVisible: "Account created successfully"
+
+# Test incomplete onboarding
+- assertVisible: "Welcome to HealthLog AI"
+- tapOn: "Complete Setup"
+- assertVisible: "Please fill in all required fields"
+- inputText: "30"
+- tapOn: "Gender"
+- tapOn: "Female"
+- tapOn: "Height (cm)"
+- inputText: "165"
+- tapOn: "Weight (kg)"
+- inputText: "60"
+- tapOn: "Activity Level"
+- tapOn: "Active"
+- tapOn: "Complete Setup"
+- assertVisible: "Profile created successfully"
+- assertVisible: "Dashboard"
+
+# Test onboarding skip (if available)
+- tapOn: "Profile"
+- tapOn: "Logout"
+- assertVisible: "Welcome to HealthLog"
+- tapOn: "Register"
+- inputText: "Skip User"
+- tapOn: "Email"
+- inputText: "skipuser@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Create Account"
+- assertVisible: "Account created successfully"
+
+# Test skip onboarding
+- assertVisible: "Welcome to HealthLog AI"
+- tapOn: "Skip for now"
+- assertVisible: "Dashboard"

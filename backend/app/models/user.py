@@ -29,6 +29,7 @@ class User(Base):
     
     # User preferences
     timezone = Column(String(50), nullable=True, default="UTC")  # User's timezone (e.g., "America/New_York", "Asia/Kolkata")
+    active_routine_id = Column(String(100), nullable=True)  # Currently active routine ID
 
     # Relationships
     onboarding_profile = relationship(

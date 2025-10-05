@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { waterService, WaterLogStats } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
-import StatsCard from '../ui/StatsCard';
+import SectionHeader from '../layout/SectionHeader';
 import { COLORS, SPACING } from '../../theme/constants';
 
 interface WaterLoggingCardProps {
@@ -180,34 +180,50 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
     },
   ];
 
-  const progressData = {
-    current: displayStats.total_ml_today,
-    target: displayStats.goal_ml,
-    label: 'Daily Goal',
-    color: isGoalAchieved ? COLORS.success : COLORS.primary,
-  };
-
-  const achievementData = isGoalAchieved ? {
-    reached: true,
-    message: 'Goal Achieved! 🎉',
-    icon: 'trophy',
-  } : undefined;
 
   return (
     <View style={styles.container}>
-      <StatsCard
-        title="Water Intake"
-        value={`${displayStats.total_ml_today}ml`}
-        subtitle={`${displayStats.total_oz_today.toFixed(1)} fl oz`}
-        icon="water"
-        iconColor={COLORS.primary}
-        progress={progressData}
-        achievement={achievementData}
-        style={styles.card}
-      />
-      
-      {/* Action Buttons */}
-      <View style={styles.actionContainer}>
+      <View style={styles.card}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="water" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.headerText}>
+              <Text style={styles.title}>Water Intake</Text>
+              <Text style={styles.subtitle}>
+                {displayStats.total_ml_today}ml ({displayStats.total_oz_today.toFixed(1)} fl oz)
+              </Text>
+            </View>
+          </View>
+          <View style={[
+            styles.badge,
+            { backgroundColor: COLORS.primary }
+          ]}>
+            <Text style={styles.badgeText}>{Math.round(displayStats.progress_percentage)}%</Text>
+          </View>
+        </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <View 
+              style={[
+                styles.progressFill,
+                { 
+                  width: `${Math.min(displayStats.progress_percentage, 100)}%`,
+                  backgroundColor: COLORS.primary
+                }
+              ]} 
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {displayStats.total_ml_today}ml / {displayStats.goal_ml}ml
+          </Text>
+        </View>
+        
+        {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={[
@@ -244,27 +260,85 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
 const styles = StyleSheet.create({
   container: {
     marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   card: {
-    marginHorizontal: 0, // Override default margin since container handles it
-    marginBottom: 0,
-  },
-  actionContainer: {
     backgroundColor: COLORS.background.primary,
     borderRadius: 12,
     padding: SPACING.lg,
-    marginTop: SPACING.sm,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: COLORS.text.secondary,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  badgeText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  progressContainer: {
+    marginBottom: SPACING.md,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: SPACING.xs,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  progressText: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   logButton: {
     paddingHorizontal: SPACING.lg,

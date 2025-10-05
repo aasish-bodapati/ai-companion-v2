@@ -1,145 +1,169 @@
-/**
- * Timezone utility functions for consistent timezone handling across the app
- * All timezone operations should use the user's timezone from the backend
- */
+import * as Location from 'expo-location';
 
 /**
- * Get the user's timezone from context or default to UTC+5:30
- * This should be replaced with actual user timezone from backend
+ * Get timezone from coordinates using reverse geocoding
  */
-export function getUserTimezone(): string {
-  // For now, return UTC+5:30 as specified
-  // TODO: Get this from user context when available
-  // This should be fetched from the user's profile/context
-  return 'Asia/Kolkata'; // UTC+5:30
-}
-
-/**
- * Format a UTC datetime string for display in user's timezone
- */
-export function formatTimeInUserTimezone(dateString: string, options?: Intl.DateTimeFormatOptions): string {
-  if (!dateString) return 'Unknown Time';
-  
+export async function getTimezoneFromLocation(): Promise<string> {
   try {
-    const date = new Date(dateString);
-    const userTimezone = getUserTimezone();
-    
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: userTimezone,
-      ...options
+    console.log('🌍 Requesting location permission...');
+    // Request location permission
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      console.log('🌍 Location permission denied');
+      throw new Error('Location permission not granted');
+    }
+
+    console.log('🌍 Getting current location...');
+    // Get current location
+    const location = await Location.getCurrentPositionAsync({});
+    const { latitude, longitude } = location.coords;
+    console.log('🌍 Location coordinates:', { latitude, longitude });
+
+    console.log('🌍 Reverse geocoding...');
+    // Use reverse geocoding to get timezone
+    const reverseGeocode = await Location.reverseGeocodeAsync({
+      latitude,
+      longitude,
     });
+    console.log('🌍 Reverse geocode result:', reverseGeocode);
+
+    if (reverseGeocode.length > 0) {
+      const locationData = reverseGeocode[0];
+      console.log('🌍 Location data:', locationData);
+      
+      // Try to get timezone from region/city
+      if (locationData.region) {
+        console.log('🌍 Region found:', locationData.region);
+        // Map common regions to timezones
+        const timezoneMap: { [key: string]: string } = {
+          'California': 'America/Los_Angeles',
+          'New York': 'America/New_York',
+          'Texas': 'America/Chicago',
+          'Florida': 'America/New_York',
+          'Illinois': 'America/Chicago',
+          'Pennsylvania': 'America/New_York',
+          'Ohio': 'America/New_York',
+          'Georgia': 'America/New_York',
+          'North Carolina': 'America/New_York',
+          'Michigan': 'America/New_York',
+          'New Jersey': 'America/New_York',
+          'Virginia': 'America/New_York',
+          'Washington': 'America/Los_Angeles',
+          'Arizona': 'America/Phoenix',
+          'Massachusetts': 'America/New_York',
+          'Tennessee': 'America/Chicago',
+          'Indiana': 'America/New_York',
+          'Missouri': 'America/Chicago',
+          'Maryland': 'America/New_York',
+          'Wisconsin': 'America/Chicago',
+          'Colorado': 'America/Denver',
+          'Minnesota': 'America/Chicago',
+          'South Carolina': 'America/New_York',
+          'Alabama': 'America/Chicago',
+          'Louisiana': 'America/Chicago',
+          'Kentucky': 'America/New_York',
+          'Oregon': 'America/Los_Angeles',
+          'Oklahoma': 'America/Chicago',
+          'Connecticut': 'America/New_York',
+          'Utah': 'America/Denver',
+          'Iowa': 'America/Chicago',
+          'Nevada': 'America/Los_Angeles',
+          'Arkansas': 'America/Chicago',
+          'Mississippi': 'America/Chicago',
+          'Kansas': 'America/Chicago',
+          'New Mexico': 'America/Denver',
+          'Nebraska': 'America/Chicago',
+          'West Virginia': 'America/New_York',
+          'Idaho': 'America/Denver',
+          'Hawaii': 'Pacific/Honolulu',
+          'Alaska': 'America/Anchorage',
+          'Maine': 'America/New_York',
+          'New Hampshire': 'America/New_York',
+          'Rhode Island': 'America/New_York',
+          'Montana': 'America/Denver',
+          'Delaware': 'America/New_York',
+          'South Dakota': 'America/Chicago',
+          'North Dakota': 'America/Chicago',
+          'Vermont': 'America/New_York',
+          'Wyoming': 'America/Denver',
+        };
+
+        const timezone = timezoneMap[locationData.region];
+        if (timezone) {
+          console.log('🌍 Found timezone from region:', timezone);
+          return timezone;
+        } else {
+          console.log('🌍 Region not found in timezone map:', locationData.region);
+        }
+      }
+
+      // Fallback: try to determine timezone from coordinates
+      console.log('🌍 Using coordinate-based timezone detection...');
+      const timezone = getTimezoneFromCoordinates(latitude, longitude);
+      console.log('🌍 Coordinate-based timezone:', timezone);
+      return timezone;
+    }
+
+    // Ultimate fallback
+    console.log('🌍 No location data found, using UTC');
+    return 'UTC';
   } catch (error) {
-    return 'Invalid Time';
+    console.error('🌍 Error getting timezone from location:', error);
+    return 'UTC';
   }
 }
 
 /**
- * Format a UTC datetime string for display in user's timezone (date only)
+ * Get timezone from coordinates using a simple approximation
  */
-export function formatDateInUserTimezone(dateString: string, options?: Intl.DateTimeFormatOptions): string {
-  if (!dateString) return 'Unknown Date';
+function getTimezoneFromCoordinates(latitude: number, longitude: number): string {
+  // Simple timezone approximation based on longitude
+  // This is not 100% accurate but works for most cases
   
+  const timezoneOffset = Math.round(longitude / 15);
+  
+  // Map offset to common timezones
+  const timezoneMap: { [key: number]: string } = {
+    [-12]: 'Pacific/Midway',
+    [-11]: 'Pacific/Honolulu',
+    [-10]: 'Pacific/Honolulu',
+    [-9]: 'America/Anchorage',
+    [-8]: 'America/Los_Angeles',
+    [-7]: 'America/Denver',
+    [-6]: 'America/Chicago',
+    [-5]: 'America/New_York',
+    [-4]: 'America/Caracas',
+    [-3]: 'America/Sao_Paulo',
+    [-2]: 'Atlantic/South_Georgia',
+    [-1]: 'Atlantic/Azores',
+    0: 'UTC',
+    1: 'Europe/London',
+    2: 'Europe/Paris',
+    3: 'Europe/Moscow',
+    4: 'Asia/Dubai',
+    5: 'Asia/Karachi',
+    6: 'Asia/Dhaka',
+    7: 'Asia/Bangkok',
+    8: 'Asia/Shanghai',
+    9: 'Asia/Tokyo',
+    10: 'Australia/Sydney',
+    11: 'Pacific/Norfolk',
+    12: 'Pacific/Auckland',
+  };
+
+  return timezoneMap[timezoneOffset] || 'UTC';
+}
+
+/**
+ * Get user's current timezone using Intl API as fallback
+ */
+export function getCurrentTimezone(): string {
   try {
-    const date = new Date(dateString);
-    const userTimezone = getUserTimezone();
-    
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      timeZone: userTimezone,
-      ...options
-    });
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    console.log('🌍 Browser timezone detected:', timezone);
+    return timezone;
   } catch (error) {
-    return 'Invalid Date';
-  }
-}
-
-/**
- * Format a UTC datetime string for display in user's timezone (date and time)
- */
-export function formatDateTimeInUserTimezone(dateString: string, options?: Intl.DateTimeFormatOptions): string {
-  if (!dateString) return 'Unknown Date';
-  
-  try {
-    const date = new Date(dateString);
-    const userTimezone = getUserTimezone();
-    
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: userTimezone,
-      ...options
-    });
-  } catch (error) {
-    return 'Invalid Date';
-  }
-}
-
-/**
- * Get today's date in YYYY-MM-DD format in user's timezone for API calls
- * This ensures the date range query matches the user's local date
- */
-export function getTodayInUserTimezone(): string {
-  const now = new Date();
-  const userTimezone = getUserTimezone();
-  
-  // Use Intl.DateTimeFormat to get date components in user's timezone
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: userTimezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-  
-  return formatter.format(now);
-}
-
-/**
- * Get a date in YYYY-MM-DD format in user's timezone for API calls
- */
-export function getDateInUserTimezone(date: Date): string {
-  const userTimezone = getUserTimezone();
-  
-  // Use Intl.DateTimeFormat to get date components in user's timezone
-  const formatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: userTimezone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
-  
-  return formatter.format(date);
-}
-
-/**
- * Check if a UTC date string falls on a specific date in user's timezone
- */
-export function isDateInUserTimezone(utcDateString: string, targetDate: Date): boolean {
-  try {
-    const utcDate = new Date(utcDateString);
-    const userTimezone = getUserTimezone();
-    
-    // Use Intl.DateTimeFormat to get date components in user's timezone
-    const formatter = new Intl.DateTimeFormat('en-CA', {
-      timeZone: userTimezone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    });
-    
-    const utcDateStr = formatter.format(utcDate);
-    const targetDateStr = formatter.format(targetDate);
-    
-    return utcDateStr === targetDateStr;
-  } catch (error) {
-    return false;
+    console.error('🌍 Error getting current timezone:', error);
+    return 'UTC';
   }
 }

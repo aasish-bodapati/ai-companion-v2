@@ -1,0 +1,234 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Profile
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Health Profile"
+
+# Test health profile navigation
+- tapOn: "Health Profile"
+- assertVisible: "Health Profile"
+- assertVisible: "Basic Information"
+- assertVisible: "Health Metrics"
+- assertVisible: "Goals"
+- assertVisible: "Preferences"
+
+# Test basic information
+- tapOn: "Basic Information"
+- assertVisible: "Basic Information"
+- assertVisible: "Age"
+- assertVisible: "Gender"
+- assertVisible: "Height"
+- assertVisible: "Weight"
+- assertVisible: "Activity Level"
+
+# Test updating age
+- tapOn: "Age"
+- assertVisible: "Update Age"
+- assertVisible: "Current Age"
+- assertVisible: "New Age"
+- inputText: "26"
+- tapOn: "Update Age"
+- assertVisible: "Age updated successfully"
+- tapOn: "Back"
+- assertVisible: "Basic Information"
+
+# Test updating gender
+- tapOn: "Gender"
+- assertVisible: "Update Gender"
+- assertVisible: "Current Gender"
+- assertVisible: "New Gender"
+- tapOn: "Female"
+- tapOn: "Update Gender"
+- assertVisible: "Gender updated successfully"
+- tapOn: "Back"
+- assertVisible: "Basic Information"
+
+# Test updating height
+- tapOn: "Height"
+- assertVisible: "Update Height"
+- assertVisible: "Current Height"
+- assertVisible: "New Height (cm)"
+- inputText: "170"
+- tapOn: "Update Height"
+- assertVisible: "Height updated successfully"
+- tapOn: "Back"
+- assertVisible: "Basic Information"
+
+# Test updating weight
+- tapOn: "Weight"
+- assertVisible: "Update Weight"
+- assertVisible: "Current Weight"
+- assertVisible: "New Weight (kg)"
+- inputText: "65"
+- tapOn: "Update Weight"
+- assertVisible: "Weight updated successfully"
+- tapOn: "Back"
+- assertVisible: "Basic Information"
+
+# Test updating activity level
+- tapOn: "Activity Level"
+- assertVisible: "Update Activity Level"
+- assertVisible: "Current Activity Level"
+- assertVisible: "New Activity Level"
+- tapOn: "Active"
+- tapOn: "Update Activity Level"
+- assertVisible: "Activity level updated successfully"
+- tapOn: "Back"
+- assertVisible: "Basic Information"
+
+# Test health metrics
+- tapOn: "Back"
+- assertVisible: "Health Profile"
+- tapOn: "Health Metrics"
+- assertVisible: "Health Metrics"
+- assertVisible: "Body Fat Percentage"
+- assertVisible: "Muscle Mass"
+- assertVisible: "Waist Circumference"
+- assertVisible: "Hip Circumference"
+
+# Test updating body fat percentage
+- tapOn: "Body Fat Percentage"
+- assertVisible: "Update Body Fat Percentage"
+- assertVisible: "Current Body Fat Percentage"
+- assertVisible: "New Body Fat Percentage (%)"
+- inputText: "20"
+- tapOn: "Update Body Fat Percentage"
+- assertVisible: "Body fat percentage updated successfully"
+- tapOn: "Back"
+- assertVisible: "Health Metrics"
+
+# Test updating muscle mass
+- tapOn: "Muscle Mass"
+- assertVisible: "Update Muscle Mass"
+- assertVisible: "Current Muscle Mass"
+- assertVisible: "New Muscle Mass (kg)"
+- inputText: "25"
+- tapOn: "Update Muscle Mass"
+- assertVisible: "Muscle mass updated successfully"
+- tapOn: "Back"
+- assertVisible: "Health Metrics"
+
+# Test goals
+- tapOn: "Back"
+- assertVisible: "Health Profile"
+- tapOn: "Goals"
+- assertVisible: "Health Goals"
+- assertVisible: "Weight Goals"
+- assertVisible: "Fitness Goals"
+- assertVisible: "Nutrition Goals"
+- assertVisible: "Set New Goal"
+
+# Test weight goals
+- tapOn: "Weight Goals"
+- assertVisible: "Weight Goals"
+- assertVisible: "Current Weight"
+- assertVisible: "Target Weight"
+- assertVisible: "Target Date"
+- assertVisible: "Update Goal"
+- tapOn: "Target Weight"
+- inputText: "60"
+- tapOn: "Target Date"
+- inputText: "2024-06-01"
+- tapOn: "Update Goal"
+- assertVisible: "Weight goal updated successfully"
+- tapOn: "Back"
+- assertVisible: "Health Goals"
+
+# Test fitness goals
+- tapOn: "Fitness Goals"
+- assertVisible: "Fitness Goals"
+- assertVisible: "Weekly Workouts"
+- assertVisible: "Daily Steps"
+- assertVisible: "Cardio Minutes"
+- assertVisible: "Strength Sessions"
+- tapOn: "Weekly Workouts"
+- inputText: "4"
+- tapOn: "Update Goal"
+- assertVisible: "Fitness goal updated successfully"
+- tapOn: "Back"
+- assertVisible: "Health Goals"
+
+# Test nutrition goals
+- tapOn: "Nutrition Goals"
+- assertVisible: "Nutrition Goals"
+- assertVisible: "Daily Calories"
+- assertVisible: "Daily Protein"
+- assertVisible: "Daily Carbs"
+- assertVisible: "Daily Fat"
+- tapOn: "Daily Calories"
+- inputText: "2000"
+- tapOn: "Update Goal"
+- assertVisible: "Nutrition goal updated successfully"
+- tapOn: "Back"
+- assertVisible: "Health Goals"
+
+# Test preferences
+- tapOn: "Back"
+- assertVisible: "Health Profile"
+- tapOn: "Preferences"
+- assertVisible: "Preferences"
+- assertVisible: "Units"
+- assertVisible: "Timezone"
+- assertVisible: "Language"
+- assertVisible: "Theme"
+
+# Test units preferences
+- tapOn: "Units"
+- assertVisible: "Unit Preferences"
+- assertVisible: "Weight Unit"
+- assertVisible: "Height Unit"
+- assertVisible: "Temperature Unit"
+- tapOn: "Weight Unit"
+- tapOn: "lbs"
+- tapOn: "Update Units"
+- assertVisible: "Units updated successfully"
+- tapOn: "Back"
+- assertVisible: "Preferences"
+
+# Test timezone preferences
+- tapOn: "Timezone"
+- assertVisible: "Timezone Preferences"
+- assertVisible: "Current Timezone"
+- assertVisible: "Select Timezone"
+- tapOn: "Select Timezone"
+- tapOn: "America/New_York"
+- tapOn: "Update Timezone"
+- assertVisible: "Timezone updated successfully"
+- tapOn: "Back"
+- assertVisible: "Preferences"
+
+# Test language preferences
+- tapOn: "Language"
+- assertVisible: "Language Preferences"
+- assertVisible: "Current Language"
+- assertVisible: "Select Language"
+- tapOn: "Select Language"
+- tapOn: "Spanish"
+- tapOn: "Update Language"
+- assertVisible: "Language updated successfully"
+- tapOn: "Back"
+- assertVisible: "Preferences"
+
+# Test theme preferences
+- tapOn: "Theme"
+- assertVisible: "Theme Preferences"
+- assertVisible: "Current Theme"
+- assertVisible: "Light Theme"
+- assertVisible: "Dark Theme"
+- assertVisible: "System Theme"
+- tapOn: "Dark Theme"
+- tapOn: "Update Theme"
+- assertVisible: "Theme updated successfully"

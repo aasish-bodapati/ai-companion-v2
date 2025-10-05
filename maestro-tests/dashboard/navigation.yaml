@@ -1,0 +1,64 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Test navigation between main tabs
+- tapOn: "Fitness"
+- assertVisible: "Fitness Hub"
+- assertVisible: "Track your progress, build strength"
+- assertVisible: "Overview"
+- assertVisible: "Routines"
+- assertVisible: "Logs"
+
+- tapOn: "Nutrition"
+- assertVisible: "Nutrition"
+- assertVisible: "Track your meals and nutrition"
+- assertVisible: "Overview"
+- assertVisible: "Logs"
+- assertVisible: "Meals"
+
+- tapOn: "Analytics"
+- assertVisible: "Analytics"
+- assertVisible: "Your health insights"
+- assertVisible: "Trends"
+- assertVisible: "Goals"
+- assertVisible: "Insights"
+
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Settings"
+- assertVisible: "Account"
+- assertVisible: "Health Profile"
+
+- tapOn: "Dashboard"
+- assertVisible: "Dashboard"
+- assertVisible: "Welcome back"
+- assertVisible: "Quick Stats"
+- assertVisible: "Today's Summary"
+
+# Test floating action button
+- assertVisible: "+"
+- tapOn: "+"
+- assertVisible: "Quick Add"
+- assertVisible: "Log Workout"
+- assertVisible: "Log Meal"
+- assertVisible: "Log Today's Workout"
+- tapOn: "Cancel"
+- assertVisible: "Dashboard"
+
+# Test back navigation
+- tapOn: "Fitness"
+- tapOn: "Overview"
+- assertVisible: "Today's Snapshot"
+- tapOn: "Back"
+- assertVisible: "Fitness Hub"

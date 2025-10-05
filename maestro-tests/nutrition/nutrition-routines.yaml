@@ -1,0 +1,126 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Nutrition
+- tapOn: "Nutrition"
+- assertVisible: "Nutrition"
+- tapOn: "Meals"
+- assertVisible: "Meal Planning Tools"
+- assertVisible: "Weekly Planner"
+- assertVisible: "Shopping List"
+- assertVisible: "Meal Prep"
+- assertVisible: "Nutrition Goals"
+
+# Test creating nutrition routine
+- tapOn: "Create Nutrition Routine"
+- assertVisible: "Create Nutrition Routine"
+- assertVisible: "Routine Name"
+- assertVisible: "Description"
+- assertVisible: "Difficulty"
+- assertVisible: "Duration"
+
+# Test nutrition routine form completion
+- inputText: "High Protein Diet"
+- tapOn: "Description"
+- inputText: "Muscle building nutrition plan"
+- tapOn: "Difficulty"
+- tapOn: "Intermediate"
+- tapOn: "Duration (weeks)"
+- inputText: "8"
+- tapOn: "Add Meal Plan"
+- assertVisible: "Meal Plan"
+- assertVisible: "Day Name"
+- assertVisible: "Plan Name"
+
+# Test adding meal plan
+- tapOn: "Day Name"
+- tapOn: "Monday"
+- tapOn: "Plan Name"
+- inputText: "High Protein Monday"
+- tapOn: "Add Meal"
+- assertVisible: "Meal"
+- assertVisible: "Meal Type"
+- assertVisible: "Meal Name"
+- assertVisible: "Calories"
+
+# Test adding meal to plan
+- tapOn: "Meal Type"
+- tapOn: "Breakfast"
+- tapOn: "Meal Name"
+- inputText: "Protein Pancakes"
+- tapOn: "Calories"
+- inputText: "500"
+- tapOn: "Protein (g)"
+- inputText: "35"
+- tapOn: "Carbs (g)"
+- inputText: "40"
+- tapOn: "Fat (g)"
+- inputText: "20"
+- tapOn: "Add Meal"
+- tapOn: "Save Routine"
+- assertVisible: "Nutrition routine created successfully"
+- assertVisible: "Meal Planning Tools"
+
+# Test nutrition routine validation
+- tapOn: "Create Nutrition Routine"
+- assertVisible: "Create Nutrition Routine"
+- tapOn: "Save Routine"
+- assertVisible: "Please fill in all required fields"
+- inputText: "Test Nutrition Routine"
+- tapOn: "Difficulty"
+- tapOn: "Beginner"
+- tapOn: "Duration (weeks)"
+- inputText: "4"
+- tapOn: "Save Routine"
+- assertVisible: "Nutrition routine created successfully"
+
+# Test starting nutrition routine
+- assertVisible: "High Protein Diet"
+- tapOn: "Start Routine"
+- assertVisible: "Nutrition routine started successfully"
+- assertVisible: "Active"
+
+# Test nutrition routine progress
+- tapOn: "High Protein Diet"
+- assertVisible: "Nutrition Routine Details"
+- assertVisible: "Progress"
+- assertVisible: "Meals Completed"
+- assertVisible: "Log Meal"
+- tapOn: "Log Meal"
+- assertVisible: "Log Meal"
+- tapOn: "Meal Type"
+- tapOn: "Breakfast"
+- tapOn: "Meal Name"
+- inputText: "Protein Pancakes"
+- tapOn: "Calories"
+- inputText: "500"
+- tapOn: "Save Meal"
+- assertVisible: "Meal logged successfully"
+
+# Test nutrition routine completion
+- tapOn: "Back"
+- assertVisible: "Meal Planning Tools"
+- tapOn: "High Protein Diet"
+- assertVisible: "Nutrition Routine Details"
+- tapOn: "Complete Routine"
+- assertVisible: "Nutrition routine completed successfully"
+- assertVisible: "Completed"
+
+# Test nutrition routine deletion
+- tapOn: "Test Nutrition Routine"
+- assertVisible: "Nutrition Routine Details"
+- tapOn: "Delete Routine"
+- assertVisible: "Are you sure you want to delete this nutrition routine?"
+- tapOn: "Yes"
+- assertVisible: "Nutrition routine deleted successfully"

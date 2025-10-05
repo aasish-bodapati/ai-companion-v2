@@ -1,0 +1,146 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Analytics
+- tapOn: "Analytics"
+- assertVisible: "Analytics"
+- assertVisible: "Your health insights"
+- assertVisible: "Trends"
+- assertVisible: "Goals"
+- assertVisible: "Insights"
+
+# Test time period selection
+- tapOn: "Time Period"
+- assertVisible: "Last 7 days"
+- assertVisible: "Last 30 days"
+- assertVisible: "Last 3 months"
+- assertVisible: "Last 6 months"
+- assertVisible: "Last year"
+- tapOn: "Last 30 days"
+- assertVisible: "Analytics"
+
+# Test trends view
+- tapOn: "Trends"
+- assertVisible: "Health Trends"
+- assertVisible: "Fitness Trends"
+- assertVisible: "Nutrition Trends"
+- assertVisible: "Mood Trends"
+- assertVisible: "Weight Trends"
+
+# Test fitness trends
+- tapOn: "Fitness Trends"
+- assertVisible: "Workout Frequency"
+- assertVisible: "Calories Burned"
+- assertVisible: "Duration"
+- assertVisible: "Activity Types"
+- tapOn: "Back"
+- assertVisible: "Health Trends"
+
+# Test nutrition trends
+- tapOn: "Nutrition Trends"
+- assertVisible: "Calorie Intake"
+- assertVisible: "Macro Breakdown"
+- assertVisible: "Meal Frequency"
+- assertVisible: "Meal Types"
+- tapOn: "Back"
+- assertVisible: "Health Trends"
+
+# Test mood trends
+- tapOn: "Mood Trends"
+- assertVisible: "Mood Rating"
+- assertVisible: "Energy Levels"
+- assertVisible: "Sleep Quality"
+- assertVisible: "Stress Levels"
+- tapOn: "Back"
+- assertVisible: "Health Trends"
+
+# Test goals view
+- tapOn: "Goals"
+- assertVisible: "Health Goals"
+- assertVisible: "Fitness Goals"
+- assertVisible: "Nutrition Goals"
+- assertVisible: "Weight Goals"
+- assertVisible: "Set New Goal"
+
+# Test setting new goal
+- tapOn: "Set New Goal"
+- assertVisible: "Create Goal"
+- assertVisible: "Goal Type"
+- assertVisible: "Goal Name"
+- assertVisible: "Target Value"
+- assertVisible: "Timeline"
+- tapOn: "Goal Type"
+- tapOn: "Fitness"
+- tapOn: "Goal Name"
+- inputText: "Workout 3 times per week"
+- tapOn: "Target Value"
+- inputText: "3"
+- tapOn: "Timeline"
+- inputText: "4"
+- tapOn: "Create Goal"
+- assertVisible: "Goal created successfully"
+- assertVisible: "Health Goals"
+
+# Test insights view
+- tapOn: "Insights"
+- assertVisible: "AI Insights"
+- assertVisible: "Pattern Recognition"
+- assertVisible: "Recommendations"
+- assertVisible: "Correlations"
+- assertVisible: "Predictions"
+
+# Test pattern recognition
+- tapOn: "Pattern Recognition"
+- assertVisible: "Diet-Energy Correlations"
+- assertVisible: "Exercise-Mood Links"
+- assertVisible: "Sleep-Performance Patterns"
+- assertVisible: "Stress Triggers"
+- tapOn: "Back"
+- assertVisible: "AI Insights"
+
+# Test recommendations
+- tapOn: "Recommendations"
+- assertVisible: "Personalized Recommendations"
+- assertVisible: "Workout Suggestions"
+- assertVisible: "Nutrition Guidance"
+- assertVisible: "Mood Optimization"
+- tapOn: "Back"
+- assertVisible: "AI Insights"
+
+# Test correlations
+- tapOn: "Correlations"
+- assertVisible: "Health Correlations"
+- assertVisible: "Exercise vs Mood"
+- assertVisible: "Nutrition vs Energy"
+- assertVisible: "Sleep vs Performance"
+- tapOn: "Back"
+- assertVisible: "AI Insights"
+
+# Test predictions
+- tapOn: "Predictions"
+- assertVisible: "Health Predictions"
+- assertVisible: "Goal Achievement"
+- assertVisible: "Risk Factors"
+- assertVisible: "Optimal Timing"
+- tapOn: "Back"
+- assertVisible: "AI Insights"
+
+# Test export data
+- tapOn: "Export Data"
+- assertVisible: "Export Options"
+- assertVisible: "Export to CSV"
+- assertVisible: "Export to PDF"
+- assertVisible: "Export to JSON"
+- tapOn: "Export to CSV"
+- assertVisible: "Data exported successfully"

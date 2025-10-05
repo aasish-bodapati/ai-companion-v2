@@ -1,0 +1,119 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Test empty form submission
+- tapOn: "Login"
+- tapOn: "Login"
+- assertVisible: "Please fill in all required fields"
+
+# Test invalid email format
+- inputText: "invalid-email"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Login"
+- assertVisible: "Please check your email and password format"
+
+# Test weak password
+- tapOn: "Register"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "123"
+- tapOn: "Create Account"
+- assertVisible: "Password must be at least 8 characters"
+
+# Test password mismatch
+- inputText: "password123"
+- tapOn: "Confirm Password"
+- inputText: "password456"
+- tapOn: "Create Account"
+- assertVisible: "Passwords do not match"
+
+# Test empty workout form
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+- tapOn: "Fitness"
+- tapOn: "Quick Log"
+- tapOn: "Save Workout"
+- assertVisible: "Please fill in all required fields"
+
+# Test invalid workout duration
+- tapOn: "Activity Type"
+- tapOn: "Running"
+- tapOn: "Duration (minutes)"
+- inputText: "0"
+- tapOn: "Save Workout"
+- assertVisible: "Duration must be greater than 0"
+
+# Test invalid workout duration (too high)
+- inputText: "1441"
+- tapOn: "Save Workout"
+- assertVisible: "Duration must be less than 24 hours"
+
+# Test empty meal form
+- tapOn: "Nutrition"
+- tapOn: "Log Meal"
+- tapOn: "Save Meal"
+- assertVisible: "Please fill in all required fields"
+
+# Test invalid meal calories
+- tapOn: "Meal Type"
+- tapOn: "Breakfast"
+- tapOn: "Meal Name"
+- inputText: "Oatmeal"
+- tapOn: "Calories"
+- inputText: "-100"
+- tapOn: "Save Meal"
+- assertVisible: "Calories must be greater than 0"
+
+# Test invalid macro values
+- inputText: "300"
+- tapOn: "Protein (g)"
+- inputText: "-50"
+- tapOn: "Save Meal"
+- assertVisible: "Macro values must be greater than or equal to 0"
+
+# Test empty routine form
+- tapOn: "Fitness"
+- tapOn: "Routines"
+- tapOn: "Create Routine"
+- tapOn: "Save Routine"
+- assertVisible: "Please fill in all required fields"
+
+# Test invalid routine duration
+- inputText: "Test Routine"
+- tapOn: "Difficulty"
+- tapOn: "Beginner"
+- tapOn: "Duration (weeks)"
+- inputText: "0"
+- tapOn: "Save Routine"
+- assertVisible: "Duration must be greater than 0"
+
+# Test empty health profile form
+- tapOn: "Profile"
+- tapOn: "Health Profile"
+- tapOn: "Basic Information"
+- tapOn: "Age"
+- inputText: "0"
+- tapOn: "Update Age"
+- assertVisible: "Age must be between 13 and 120"
+
+# Test invalid height
+- tapOn: "Height"
+- inputText: "0"
+- tapOn: "Update Height"
+- assertVisible: "Height must be between 50 and 300 cm"
+
+# Test invalid weight
+- tapOn: "Weight"
+- inputText: "0"
+- tapOn: "Update Weight"
+- assertVisible: "Weight must be between 20 and 500 kg"

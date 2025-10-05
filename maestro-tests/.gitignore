@@ -1,0 +1,48 @@
+# Maestro test reports and logs
+test-reports/
+*.log
+*.xml
+*.json
+
+# Maestro cache and temporary files
+.maestro/
+maestro-cache/
+
+# Device-specific files
+device-*.yaml
+device-*.json
+
+# Test data files
+test-data/
+*.csv
+*.xlsx
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node modules (if using npm scripts)
+node_modules/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Screenshots and videos
+screenshots/
+videos/
+*.png
+*.jpg
+*.mp4
+*.mov
+
+# Test artifacts
+artifacts/
+temp/

@@ -88,21 +88,7 @@ export default function QuickAddModal({
     console.log('🍽️ QuickAddModal: Action pressed:', action.title);
     onClose();
     
-    // Special handling for "Log Today's Workout" - check if workout exists first
-    if (action.id === 'today-workout') {
-      try {
-        const todaysWorkout = await routineService.getTodaysWorkout();
-        if (!todaysWorkout) {
-          showToast('No workout scheduled for today', 'info');
-          return;
-        }
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        showToast('Unable to check today\'s workout', 'error');
-        return;
-      }
-    }
-    
+    // Let the modal handle the check for "Log Today's Workout"
     action.onPress();
   };
 

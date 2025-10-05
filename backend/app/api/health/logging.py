@@ -399,18 +399,35 @@ async def get_fitness_logs(
     current_user: User = Depends(get_current_user),
     skip: int = 0,
     limit: int = 100,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None
+    start_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    end_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)")
 ):
     """Get fitness logs for the current user."""
     try:
+        # Parse string dates to datetime objects
+        start_date_obj = None
+        end_date_obj = None
+        
+        if start_date:
+            from app.utils.timezone_handler import TimezoneHandler
+            # Parse date in user's timezone, then convert to UTC
+            start_date_obj = TimezoneHandler.parse_date_string_in_user_timezone(start_date, current_user.timezone)
+        
+        if end_date:
+            from app.utils.timezone_handler import TimezoneHandler
+            # Parse date in user's timezone, then convert to UTC
+            end_date_obj = TimezoneHandler.parse_date_string_in_user_timezone(end_date, current_user.timezone)
+            # Set end_date to end of day in user's timezone
+            if end_date_obj:
+                end_date_obj = end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999)
+        
         logs = fitness_log.get_user_logs(
             db,
             user_id=current_user.id,
             skip=skip,
             limit=limit,
-            start_date=start_date,
-            end_date=end_date
+            start_date=start_date_obj,
+            end_date=end_date_obj
         )
         
         # Convert the logs to match the Pydantic schema
@@ -527,6 +544,7 @@ async def delete_fitness_log(
 async def create_nutrition_log_test(
     *,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     meal_data: dict
 ):
     """Create a new nutrition log entry (test endpoint without auth)."""
@@ -552,7 +570,7 @@ async def create_nutrition_log_test(
             meal_date = datetime.now(timezone.utc)
         
         nutrition_log_entry = NutritionLogModel(
-            user_id=13,  # Use mobile app user ID
+            user_id=current_user.id,  # Use authenticated user ID
             meal_type=meal_data.get('meal_type', 'lunch'),
             meal_name=meal_data.get('meal_name'),
             total_calories=meal_data.get('total_calories', 0),
@@ -581,7 +599,8 @@ async def get_nutrition_logs_test(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=100, description="Page size"),
     timezone_offset: int = Query(0, description="Timezone offset in minutes from UTC"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Get nutrition logs (test endpoint without auth)."""
     try:
@@ -638,12 +657,12 @@ async def get_nutrition_logs_test(
                 start_date_obj = (now_local - timedelta(days=365)).astimezone(timezone.utc)
                 end_date_obj = now_local.astimezone(timezone.utc)
         
-        # Get logs from database (use user_id=13 for mobile app)
-        print(f"🍽️ [BACKEND NUTRITION] Querying database for user_id=13, start_date={start_date_obj}, end_date={end_date_obj}")
+        # Get logs from database for the authenticated user
+        print(f"🍽️ [BACKEND NUTRITION] Querying database for user_id={current_user.id}, start_date={start_date_obj}, end_date={end_date_obj}")
         
         logs = nutrition_log.get_user_logs(
             db,
-            user_id=13,  # Use mobile app user ID
+            user_id=current_user.id,  # Use authenticated user ID
             start_date=start_date_obj,
             end_date=end_date_obj,
             skip=(page - 1) * size,
@@ -1006,7 +1025,8 @@ async def get_daily_analytics(
         net_calories = total_calories_consumed - total_calories_burned
 
         # Mock data for missing fields (these would come from other sources in a real app)
-        total_steps = 8500  # Would come from fitness tracker
+        # TODO: Integrate with actual fitness tracker API (Google Fit, Apple Health, etc.)
+        total_steps = 0  # Would come from fitness tracker - currently no integration
         total_sleep_hours = 7.5  # Would come from sleep tracker
 
         return {

@@ -1,0 +1,96 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Fitness
+- tapOn: "Fitness"
+- assertVisible: "Fitness Hub"
+- assertVisible: "Overview"
+
+# Test quick workout logging via floating button
+- tapOn: "+"
+- assertVisible: "Quick Add"
+- tapOn: "Log Workout"
+- assertVisible: "Log Workout"
+- assertVisible: "Activity Type"
+- assertVisible: "Duration"
+- assertVisible: "Calories"
+
+# Test workout form completion
+- tapOn: "Activity Type"
+- tapOn: "Weightlifting"
+- tapOn: "Duration (minutes)"
+- inputText: "45"
+- tapOn: "Calories Burned"
+- inputText: "300"
+- tapOn: "Notes"
+- inputText: "Great workout today!"
+- tapOn: "Save Workout"
+- assertVisible: "Workout logged successfully"
+- assertVisible: "Fitness Hub"
+
+# Test workout logging from fitness screen
+- tapOn: "Overview"
+- assertVisible: "Today's Snapshot"
+- tapOn: "Quick Log"
+- assertVisible: "Log Workout"
+- tapOn: "Activity Type"
+- tapOn: "Running"
+- tapOn: "Duration (minutes)"
+- inputText: "30"
+- tapOn: "Calories Burned"
+- inputText: "250"
+- tapOn: "Distance (km)"
+- inputText: "5"
+- tapOn: "Save Workout"
+- assertVisible: "Workout logged successfully"
+
+# Test workout logging validation
+- tapOn: "Quick Log"
+- assertVisible: "Log Workout"
+- tapOn: "Save Workout"
+- assertVisible: "Please fill in all required fields"
+- tapOn: "Activity Type"
+- tapOn: "Yoga"
+- tapOn: "Duration (minutes)"
+- inputText: "60"
+- tapOn: "Save Workout"
+- assertVisible: "Workout logged successfully"
+
+# Test workout logging with exercises
+- tapOn: "Quick Log"
+- assertVisible: "Log Workout"
+- tapOn: "Activity Type"
+- tapOn: "Weightlifting"
+- tapOn: "Duration (minutes)"
+- inputText: "60"
+- tapOn: "Calories Burned"
+- inputText: "400"
+- tapOn: "Add Exercise"
+- assertVisible: "Exercise Name"
+- inputText: "Bench Press"
+- tapOn: "Sets"
+- inputText: "3"
+- tapOn: "Reps"
+- inputText: "10"
+- tapOn: "Weight (kg)"
+- inputText: "80"
+- tapOn: "Add Exercise"
+- tapOn: "Save Workout"
+- assertVisible: "Workout logged successfully"
+
+# Test workout logging cancellation
+- tapOn: "Quick Log"
+- assertVisible: "Log Workout"
+- tapOn: "Cancel"
+- assertVisible: "Fitness Hub"

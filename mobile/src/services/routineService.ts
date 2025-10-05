@@ -304,13 +304,13 @@ class RoutineService extends BaseService {
   async getTodaysWorkout(): Promise<any> {
     console.log('🔍 Fetching today\'s workout from active routine...');
     try {
-      // Use direct API call instead of makeRequest to handle 404s gracefully
-      const response = await apiClient.get('/health/simple-routines/active/today-workout');
+      // Use the new active routine endpoint
+      const response = await apiClient.get('/health/active-routine/today-workout');
       const data = this.extractData(response);
       
       console.log('✅ Today\'s workout fetched successfully:', {
         dayName: data?.day_name,
-        workoutName: data?.workout_name,
+        routineName: data?.routine_name,
         routineId: data?.routine_id,
         exercisesCount: data?.exercises?.length || 0
       });

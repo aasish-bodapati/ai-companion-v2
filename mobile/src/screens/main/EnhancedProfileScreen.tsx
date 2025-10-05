@@ -20,6 +20,7 @@ import { numericalGoalsService, GoalProgress } from '../../services/numericalGoa
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
+import { timezoneDetectionService } from '../../services/timezoneDetectionService';
 
 // Body Type Goals Display Component
 const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: { 
@@ -231,6 +232,13 @@ export default function EnhancedProfileScreen() {
         setOnboardingData(data);
       }
       
+      // Trigger independent timezone detection
+      timezoneDetectionService.detectAndUpdateTimezone().then(detectedTimezone => {
+        console.log('🌍 Profile screen timezone updated:', detectedTimezone);
+        // Update the UI with the detected timezone
+        setOnboardingData(prev => ({ ...prev, timezone: detectedTimezone }));
+      });
+      
       // Load numerical goals after onboarding data is loaded
       await loadNumericalGoals();
     } catch (error) {
@@ -344,7 +352,7 @@ export default function EnhancedProfileScreen() {
         <View style={styles.heroContent}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={32} color="#ffffff" />
+              <Ionicons name="person" size={24} color="#ffffff" />
             </View>
             <View style={styles.statusIndicator} />
           </View>
@@ -358,13 +366,25 @@ export default function EnhancedProfileScreen() {
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{onboardingData?.healthData?.height || '--'}cm</Text>
+                <Text style={styles.statValue}>{onboardingData?.healthData?.height ? Math.round(parseFloat(onboardingData.healthData.height)) : '--'}cm</Text>
                 <Text style={styles.statLabel}>Height</Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{onboardingData?.healthData?.weight || '--'}kg</Text>
                 <Text style={styles.statLabel}>Weight</Text>
+              </View>
+              <View style={styles.statDivider} />
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>
+                  {(() => {
+                    const timezone = onboardingData?.timezone || 'UTC';
+                    // Extract city name from timezone (e.g., "America/New_York" -> "New York")
+                    const cityName = timezone.split('/').pop()?.replace('_', ' ') || timezone;
+                    return cityName;
+                  })()}
+                </Text>
+                <Text style={styles.statLabel}>Timezone</Text>
               </View>
             </View>
           </View>
@@ -536,11 +556,13 @@ const styles = StyleSheet.create({
   // Hero Section
   heroSection: {
     backgroundColor: '#3b82f6',
-    paddingTop: 60,
-    paddingBottom: 30,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 12,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -553,12 +575,12 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 16,
+    marginRight: 12,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#1e40af',
     justifyContent: 'center',
     alignItems: 'center',
@@ -583,73 +605,75 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#e2e8f0',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   userStats: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 4,
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 12,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 2,
+    marginBottom: 1,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 9,
     color: '#cbd5e1',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.2,
   },
   statDivider: {
     width: 1,
-    height: 30,
+    height: 20,
     backgroundColor: '#94a3b8',
-    marginHorizontal: 12,
+    marginHorizontal: 6,
   },
   
   // Goal Section
   goalSection: {
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginLeft: 8,
-  },
-  goalCard: {
+    marginHorizontal: 16,
+    marginBottom: 12,
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginLeft: 8,
+  },
+  goalCard: {
+    // Removed redundant styling since it's already in goalSection
   },
   goalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   goalIconContainer: {
     width: 48,
@@ -690,8 +714,16 @@ const styles = StyleSheet.create({
   
   // Metrics Section
   metricsSection: {
-    marginTop: 24,
-    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   metricsGrid: {
     flexDirection: 'row',
@@ -729,8 +761,16 @@ const styles = StyleSheet.create({
   
   // Actions Section
   actionsSection: {
-    marginTop: 24,
-    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -739,26 +779,23 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   actionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1f2937',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 6,
+    marginBottom: 2,
   },
   actionSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#6b7280',
     textAlign: 'center',
   },

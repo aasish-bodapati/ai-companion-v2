@@ -12,7 +12,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService, NutritionStats } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
-import MealLoggingModal from '../../components/nutrition/MealLoggingModalOriginal';
+import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
+import NutritionOverviewDashboard from '../../components/nutrition/NutritionOverviewDashboard';
+import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
 export default function NutritionScreen() {
@@ -190,80 +192,13 @@ export default function NutritionScreen() {
 
 
   const renderOverview = () => (
-    <ScrollView
-      style={styles.content}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-      showsVerticalScrollIndicator={false}
-    >
-      {/* This Week's Nutrition Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>This Week's Nutrition</Text>
-        <View style={styles.weekOverviewCard}>
-          <View style={styles.weekMetricRow}>
-            <View style={styles.weekMetric}>
-              <Ionicons name="restaurant-outline" size={24} color="#10b981" />
-              <Text style={styles.weekMetricValue}>{weekStats?.total_meals || 0}</Text>
-              <Text style={styles.weekMetricLabel}>Meals</Text>
-            </View>
-            <View style={styles.weekMetric}>
-              <Ionicons name="flame-outline" size={24} color="#ef4444" />
-              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.total_calories || 0)}</Text>
-              <Text style={styles.weekMetricLabel}>Calories</Text>
-            </View>
-          </View>
-          
-          <View style={styles.weekMetricRow}>
-            <View style={styles.weekMetric}>
-              <Ionicons name="fitness-outline" size={24} color="#3b82f6" />
-              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.macro_breakdown?.protein || 0)}g</Text>
-              <Text style={styles.weekMetricLabel}>Protein</Text>
-            </View>
-            <View style={styles.weekMetric}>
-              <Ionicons name="analytics-outline" size={24} color="#f59e0b" />
-              <Text style={styles.weekMetricValue}>{Math.round(weekStats?.average_daily_calories || 0)}</Text>
-              <Text style={styles.weekMetricLabel}>Avg Daily</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Weekly Nutrition Breakdown */}
-      {weekStats && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
-          <View style={styles.breakdownCard}>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Macro Balance</Text>
-              <Text style={styles.breakdownValue}>
-                P: {Math.round(weekStats.macro_breakdown?.protein || 0)}g | 
-                C: {Math.round(weekStats.macro_breakdown?.carbs || 0)}g | 
-                F: {Math.round(weekStats.macro_breakdown?.fat || 0)}g
-              </Text>
-            </View>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Weekly Goal Progress</Text>
-              <Text style={styles.breakdownValue}>{Math.round(weekStats.weekly_goal_progress || 0)}%</Text>
-            </View>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Current Streak</Text>
-              <Text style={styles.breakdownValue}>{weekStats.streak || 0} days</Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Weekly Activity Chart */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weekly Activity</Text>
-        <WeeklyNutritionChart 
-          weeklyData={weeklyActivityData}
-          color="#10b981"
-          unit="meals"
-        />
-      </View>
-    </ScrollView>
+    <NutritionOverviewDashboard
+      onLogMeal={() => setShowLogMealModal(true)}
+      onViewLogs={() => setActiveTab('logs')}
+      onViewAnalytics={() => setActiveTab('meals')}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+    />
   );
 
   const renderMeals = () => (
@@ -271,123 +206,50 @@ export default function NutritionScreen() {
       style={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* Today's Meal Plan */}
+      {/* Quick Add Meals */}
+      <QuickAddMeals
+        onQuickAdd={(mealType, foodItems) => {
+          // Handle quick add - convert to meal data format
+          const mealData = {
+            meal_type: mealType,
+            total_calories: foodItems.reduce((sum, item) => sum + item.calories, 0),
+            protein_g: foodItems.reduce((sum, item) => sum + item.protein_g, 0),
+            carbs_g: foodItems.reduce((sum, item) => sum + item.carbs_g, 0),
+            fat_g: foodItems.reduce((sum, item) => sum + item.fat_g, 0),
+            food_items: JSON.stringify(foodItems.map(item => ({
+              food_id: Date.now(), // Temporary ID
+              food_name: item.name,
+              quantity: item.quantity,
+              quantity_unit: item.quantity_unit,
+              quantity_grams: item.quantity * 100,
+              calories: item.calories,
+              protein_g: item.protein_g,
+              carbs_g: item.carbs_g,
+              fat_g: item.fat_g,
+            }))),
+          };
+          
+          // Log the meal
+          nutritionService.logMeal(mealData).then(() => {
+            loadOverviewData();
+            if (nutritionLogsRef.current) {
+              nutritionLogsRef.current.refreshLogs();
+            }
+          }).catch(error => {
+            console.log('Error logging quick meal:', error);
+          });
+        }}
+        onCustomAdd={() => setShowLogMealModal(true)}
+      />
+
+      {/* Weekly Nutrition Chart */}
       <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Meals</Text>
-          <TouchableOpacity 
-            style={styles.addMealButton}
-            onPress={() => setShowLogMealModal(true)}
-          >
-            <Ionicons name="add" size={20} color="#10b981" />
-            <Text style={styles.addMealText}>Add Meal</Text>
-          </TouchableOpacity>
-        </View>
-        
-        <View style={styles.todaysMealsContainer}>
-          <TouchableOpacity style={styles.mealCard}>
-            <View style={styles.mealHeader}>
-              <View style={styles.mealIconContainer}>
-                <Ionicons name="sunny-outline" size={20} color="#f59e0b" />
-              </View>
-              <View style={styles.mealInfo}>
-                <Text style={styles.mealName}>Breakfast</Text>
-                <Text style={styles.mealTime}>8:00 AM</Text>
-              </View>
-              <View style={styles.mealCalories}>
-                <Text style={styles.mealCaloriesText}>450 cal</Text>
-              </View>
-            </View>
-            <View style={styles.mealItems}>
-              <Text style={styles.mealItemText}>• Oatmeal with berries</Text>
-              <Text style={styles.mealItemText}>• Greek yogurt</Text>
-              <Text style={styles.mealItemText}>• Green tea</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.mealCard}>
-            <View style={styles.mealHeader}>
-              <View style={styles.mealIconContainer}>
-                <Ionicons name="sunny" size={20} color="#f59e0b" />
-              </View>
-              <View style={styles.mealInfo}>
-                <Text style={styles.mealName}>Lunch</Text>
-                <Text style={styles.mealTime}>1:00 PM</Text>
-              </View>
-              <View style={styles.mealCalories}>
-                <Text style={styles.mealCaloriesText}>650 cal</Text>
-              </View>
-            </View>
-            <View style={styles.mealItems}>
-              <Text style={styles.mealItemText}>• Grilled chicken salad</Text>
-              <Text style={styles.mealItemText}>• Quinoa</Text>
-              <Text style={styles.mealItemText}>• Mixed vegetables</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.mealCard}>
-            <View style={styles.mealHeader}>
-              <View style={styles.mealIconContainer}>
-                <Ionicons name="moon-outline" size={20} color="#6366f1" />
-              </View>
-              <View style={styles.mealInfo}>
-                <Text style={styles.mealName}>Dinner</Text>
-                <Text style={styles.mealTime}>7:00 PM</Text>
-              </View>
-              <View style={styles.mealCalories}>
-                <Text style={styles.mealCaloriesText}>720 cal</Text>
-              </View>
-            </View>
-            <View style={styles.mealItems}>
-              <Text style={styles.mealItemText}>• Salmon fillet</Text>
-              <Text style={styles.mealItemText}>• Sweet potato</Text>
-              <Text style={styles.mealItemText}>• Steamed broccoli</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={styles.addMealCard}
-            onPress={() => setShowLogMealModal(true)}
-          >
-            <Ionicons name="add-circle-outline" size={32} color="#9ca3af" />
-            <Text style={styles.addMealCardText}>Add Snack</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Quick Meal Templates */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Meal Templates</Text>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.quickMealsScroll}
-        >
-          <TouchableOpacity style={styles.quickMealCard}>
-            <View style={styles.quickMealIcon}>
-              <Ionicons name="fitness" size={28} color="#10b981" />
-            </View>
-            <Text style={styles.quickMealTitle}>High Protein</Text>
-            <Text style={styles.quickMealCalories}>35g protein</Text>
-            <Text style={styles.quickMealCount}>Muscle building</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <View style={styles.quickMealIcon}>
-              <Ionicons name="leaf" size={28} color="#10b981" />
-            </View>
-            <Text style={styles.quickMealTitle}>Low Carb</Text>
-            <Text style={styles.quickMealCalories}>15g carbs</Text>
-            <Text style={styles.quickMealCount}>Weight loss</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.quickMealCard}>
-            <View style={styles.quickMealIcon}>
-              <Ionicons name="heart" size={28} color="#ef4444" />
-            </View>
-            <Text style={styles.quickMealTitle}>Heart Healthy</Text>
-            <Text style={styles.quickMealCalories}>Low sodium</Text>
-            <Text style={styles.quickMealCount}>Cardiovascular</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        <Text style={styles.sectionTitle}>Weekly Activity</Text>
+        <WeeklyNutritionChart 
+          weeklyData={weeklyActivityData}
+          color="#10b981"
+          unit="meals"
+        />
       </View>
 
       {/* Meal Planning Tools */}
@@ -507,8 +369,8 @@ export default function NutritionScreen() {
        activeTab === 'logs' ? <NutritionLogsView ref={nutritionLogsRef} onRefresh={onRefresh} /> : 
        renderMeals()}
 
-      {/* Log Meal Modal */}
-      <MealLoggingModal
+      {/* Unified Nutrition Logger Modal */}
+      <UnifiedNutritionLogger
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
         onMealLogged={() => {
@@ -594,7 +456,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   section: {
     marginBottom: 24,
@@ -625,6 +487,8 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -694,6 +558,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -798,6 +664,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -880,6 +748,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    marginHorizontal: 8,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -960,6 +830,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -993,6 +865,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

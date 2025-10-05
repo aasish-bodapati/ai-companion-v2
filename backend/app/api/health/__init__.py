@@ -17,7 +17,8 @@ from . import (
     profile,
     analytics,
     body_type_goals,
-    indian_foods
+    indian_foods,
+    active_routine
 )
 
 router = APIRouter()
@@ -42,3 +43,4 @@ router.include_router(profile.router, prefix="/profile", tags=["health-profile"]
 router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 router.include_router(body_type_goals.router, prefix="/body-type-goals", tags=["body-type-goals"])
 router.include_router(indian_foods.router, prefix="/indian-foods", tags=["indian-foods"])
+router.include_router(active_routine.router, tags=["active-routine"])

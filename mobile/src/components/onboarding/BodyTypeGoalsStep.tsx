@@ -166,10 +166,45 @@ export default function BodyTypeGoalsStep({
     return `WHR ${ratio}`;
   };
 
-  const getFatFreeMassIndex = (bodyType: any) => {
+  const getFatFreeMassIndex = (bodyType: any, gender: string) => {
+    if (!bodyType.targetAttributes) return 'N/A';
+    
+    if (gender === 'male' && bodyType.targetAttributes.ffmiRangeMen) {
+      const range = bodyType.targetAttributes.ffmiRangeMen;
+      return `FFMI ${range.min}-${range.max}`;
+    } else if (gender === 'female' && bodyType.targetAttributes.ffmiRangeWomen) {
+      const range = bodyType.targetAttributes.ffmiRangeWomen;
+      return `FFMI ${range.min}-${range.max}`;
+    } else if (bodyType.targetAttributes.ffmiRangeMen && bodyType.targetAttributes.ffmiRangeWomen) {
+      // For 'other' gender, show both targets
+      const menRange = bodyType.targetAttributes.ffmiRangeMen;
+      const womenRange = bodyType.targetAttributes.ffmiRangeWomen;
+      return `FFMI ${menRange.min}-${womenRange.max}`;
+    }
+    
+    // Fallback to old structure
     if (!bodyType.fatFreeMassIndex) return 'N/A';
     
     return `FFMI ${bodyType.fatFreeMassIndex}`;
+  };
+
+  const getSMMRange = (bodyType: any, gender: string) => {
+    if (!bodyType.targetAttributes) return 'N/A';
+    
+    if (gender === 'male' && bodyType.targetAttributes.smmRangeMen) {
+      const range = bodyType.targetAttributes.smmRangeMen;
+      return `SMM ${range.min}-${range.max}kg`;
+    } else if (gender === 'female' && bodyType.targetAttributes.smmRangeWomen) {
+      const range = bodyType.targetAttributes.smmRangeWomen;
+      return `SMM ${range.min}-${range.max}kg`;
+    } else if (bodyType.targetAttributes.smmRangeMen && bodyType.targetAttributes.smmRangeWomen) {
+      // For 'other' gender, show both targets
+      const menRange = bodyType.targetAttributes.smmRangeMen;
+      const womenRange = bodyType.targetAttributes.smmRangeWomen;
+      return `SMM ${menRange.min}-${womenRange.max}kg`;
+    }
+    
+    return 'N/A';
   };
 
 
@@ -223,7 +258,7 @@ export default function BodyTypeGoalsStep({
                 {getTargetBMIForGender(bodyType, userData.gender)}
               </Text>
             </View>
-            {bodyType.targetBodyFat && (
+            {(bodyType.targetAttributes?.bodyFatRangeMen || bodyType.targetAttributes?.bodyFatRangeWomen || bodyType.targetBodyFat) && (
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Body Fat:</Text>
                 <Text style={styles.calculationValue}>
@@ -239,14 +274,22 @@ export default function BodyTypeGoalsStep({
                 </Text>
               </View>
             )}
-            {bodyType.fatFreeMassIndex && (
+            {bodyType.targetAttributes?.ffmiRangeMen || bodyType.targetAttributes?.ffmiRangeWomen || bodyType.fatFreeMassIndex ? (
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>FFMI:</Text>
                 <Text style={styles.calculationValue}>
-                  {getFatFreeMassIndex(bodyType)}
+                  {getFatFreeMassIndex(bodyType, userData.gender)}
                 </Text>
               </View>
-            )}
+            ) : null}
+            {bodyType.targetAttributes?.smmRangeMen || bodyType.targetAttributes?.smmRangeWomen ? (
+              <View style={styles.calculationRow}>
+                <Text style={styles.calculationLabel}>SMM:</Text>
+                <Text style={styles.calculationValue}>
+                  {getSMMRange(bodyType, userData.gender)}
+                </Text>
+              </View>
+            ) : null}
             {bodyType.targetAttributes.sleepDuration && (
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Sleep:</Text>

@@ -5,20 +5,13 @@
 ### Stop Servers
 ```bash
 # Kill Python server (Windows)
+ngrok http 8000
 taskkill /f /im python.exe
-
-# Or kill by port (Windows)
 netstat -ano | findstr :8000
 taskkill /f /pid <PID_NUMBER>
-
-# Kill Node server (Windows)
 taskkill /f /im node.exe
-
 npx expo start --clear
-
-### Backend Development
-```bash
-# From backend/ directory
+npx expo start --tunnel --clear
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 # Alternative with specific host

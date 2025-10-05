@@ -256,3 +256,42 @@ def _get_logging_category_info(logging_category: str, db: Session) -> dict:
         "color": "#6b7280",
         "icon": "fitness-outline"
     })
+
+@router.get(
+    "/{exercise_id}",
+    response_model=ExerciseResponse,
+    summary="Get exercise by ID",
+    description="Retrieve a specific exercise by its ID.",
+    responses={
+        200: {
+            "description": "Exercise retrieved successfully",
+        },
+        404: {
+            "description": "Exercise not found",
+        }
+    }
+)
+async def get_exercise_by_id(
+    exercise_id: int,
+    db: Session = Depends(get_db)
+):
+    """Get a specific exercise by ID."""
+    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
+    
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Exercise not found")
+    
+    # Get logging category info
+    logging_category_info = _get_logging_category_info(exercise.logging_category, db)
+    
+    return ExerciseResponse(
+        id=exercise.id,
+        name=exercise.name,
+        category=exercise.logging_category or "unknown",
+        muscle_group="",  # Not available in current model
+        equipment=None,   # Not available in current model
+        instructions=None, # Not available in current model
+        difficulty="intermediate",  # Default value
+        logging_category=exercise.logging_category or "unknown",
+        logging_category_info=logging_category_info
+    )

@@ -1,0 +1,53 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+- assertVisible: "Login"
+
+# Test valid login
+- tapOn: "Login"
+- assertVisible: "Email"
+- assertVisible: "Password"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+- assertVisible: "Fitness"
+- assertVisible: "Nutrition"
+- assertVisible: "Analytics"
+- assertVisible: "Profile"
+
+# Test invalid login
+- tapOn: "Profile"
+- tapOn: "Logout"
+- assertVisible: "Welcome to HealthLog"
+- tapOn: "Login"
+- inputText: "invalid@example.com"
+- tapOn: "Password"
+- inputText: "wrongpassword"
+- tapOn: "Login"
+- assertVisible: "Invalid email or password"
+
+# Test empty form submission
+- clearText
+- tapOn: "Password"
+- clearText
+- tapOn: "Login"
+- assertVisible: "Please check your email and password format"
+
+# Test network error handling
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+# Simulate network error by turning off WiFi/data
+- tapOn: "Login"
+- assertVisible: "Network error. Please check your connection."
+
+# Test successful login after network recovery
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"

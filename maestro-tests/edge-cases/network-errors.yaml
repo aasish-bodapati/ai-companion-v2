@@ -1,0 +1,65 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Test network error during login
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+# Simulate network error by turning off WiFi/data
+- tapOn: "Login"
+- assertVisible: "Network error. Please check your connection."
+
+# Test network error during registration
+- tapOn: "Register"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+# Simulate network error
+- tapOn: "Create Account"
+- assertVisible: "Network error. Please check your connection."
+
+# Test network error during data loading
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+# Simulate network error during data fetch
+- assertVisible: "Unable to load data. Please check your connection."
+
+# Test network error during workout logging
+- tapOn: "Fitness"
+- tapOn: "Quick Log"
+- tapOn: "Activity Type"
+- tapOn: "Running"
+- tapOn: "Duration (minutes)"
+- inputText: "30"
+# Simulate network error
+- tapOn: "Save Workout"
+- assertVisible: "Network error. Please try again."
+
+# Test network error during meal logging
+- tapOn: "Nutrition"
+- tapOn: "Log Meal"
+- tapOn: "Meal Type"
+- tapOn: "Breakfast"
+- tapOn: "Meal Name"
+- inputText: "Oatmeal"
+- tapOn: "Calories"
+- inputText: "300"
+# Simulate network error
+- tapOn: "Save Meal"
+- assertVisible: "Network error. Please try again."
+
+# Test network recovery
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"

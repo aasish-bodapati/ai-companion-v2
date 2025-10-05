@@ -1,0 +1,186 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Navigate to Profile
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Settings"
+- assertVisible: "Account"
+- assertVisible: "Health Profile"
+
+# Test settings navigation
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- assertVisible: "Account"
+- assertVisible: "Privacy"
+- assertVisible: "Notifications"
+- assertVisible: "Data & Storage"
+- assertVisible: "About"
+
+# Test account settings
+- tapOn: "Account"
+- assertVisible: "Account Settings"
+- assertVisible: "Email"
+- assertVisible: "Password"
+- assertVisible: "Full Name"
+- assertVisible: "Delete Account"
+
+# Test email update
+- tapOn: "Email"
+- assertVisible: "Update Email"
+- assertVisible: "Current Email"
+- assertVisible: "New Email"
+- inputText: "newemail@example.com"
+- tapOn: "Update Email"
+- assertVisible: "Email updated successfully"
+- tapOn: "Back"
+- assertVisible: "Account Settings"
+
+# Test password update
+- tapOn: "Password"
+- assertVisible: "Update Password"
+- assertVisible: "Current Password"
+- assertVisible: "New Password"
+- assertVisible: "Confirm Password"
+- inputText: "currentpassword"
+- tapOn: "New Password"
+- inputText: "newpassword123"
+- tapOn: "Confirm Password"
+- inputText: "newpassword123"
+- tapOn: "Update Password"
+- assertVisible: "Password updated successfully"
+- tapOn: "Back"
+- assertVisible: "Account Settings"
+
+# Test full name update
+- tapOn: "Full Name"
+- assertVisible: "Update Full Name"
+- assertVisible: "Current Name"
+- assertVisible: "New Name"
+- inputText: "Updated Name"
+- tapOn: "Update Name"
+- assertVisible: "Name updated successfully"
+- tapOn: "Back"
+- assertVisible: "Account Settings"
+
+# Test privacy settings
+- tapOn: "Back"
+- assertVisible: "Settings"
+- tapOn: "Privacy"
+- assertVisible: "Privacy Settings"
+- assertVisible: "Data Sharing"
+- assertVisible: "Analytics"
+- assertVisible: "Location"
+- assertVisible: "Health Data"
+
+# Test data sharing settings
+- tapOn: "Data Sharing"
+- assertVisible: "Data Sharing Settings"
+- assertVisible: "Share with Health Apps"
+- assertVisible: "Share with Research"
+- assertVisible: "Share with AI"
+- tapOn: "Share with Health Apps"
+- assertVisible: "Data sharing updated"
+- tapOn: "Back"
+- assertVisible: "Privacy Settings"
+
+# Test notifications settings
+- tapOn: "Back"
+- assertVisible: "Settings"
+- tapOn: "Notifications"
+- assertVisible: "Notification Settings"
+- assertVisible: "Push Notifications"
+- assertVisible: "Email Notifications"
+- assertVisible: "Reminder Notifications"
+- assertVisible: "Achievement Notifications"
+
+# Test push notifications
+- tapOn: "Push Notifications"
+- assertVisible: "Push Notification Settings"
+- assertVisible: "Workout Reminders"
+- assertVisible: "Meal Reminders"
+- assertVisible: "Mood Check-ins"
+- assertVisible: "Goal Updates"
+- tapOn: "Workout Reminders"
+- assertVisible: "Workout reminders enabled"
+- tapOn: "Back"
+- assertVisible: "Notification Settings"
+
+# Test data & storage settings
+- tapOn: "Back"
+- assertVisible: "Settings"
+- tapOn: "Data & Storage"
+- assertVisible: "Data & Storage Settings"
+- assertVisible: "Storage Usage"
+- assertVisible: "Clear Cache"
+- assertVisible: "Export Data"
+- assertVisible: "Delete All Data"
+
+# Test storage usage
+- tapOn: "Storage Usage"
+- assertVisible: "Storage Usage Details"
+- assertVisible: "App Data"
+- assertVisible: "Cache"
+- assertVisible: "Logs"
+- assertVisible: "Images"
+- tapOn: "Back"
+- assertVisible: "Data & Storage Settings"
+
+# Test clear cache
+- tapOn: "Clear Cache"
+- assertVisible: "Are you sure you want to clear cache?"
+- tapOn: "Yes"
+- assertVisible: "Cache cleared successfully"
+- assertVisible: "Data & Storage Settings"
+
+# Test about section
+- tapOn: "Back"
+- assertVisible: "Settings"
+- tapOn: "About"
+- assertVisible: "About"
+- assertVisible: "App Version"
+- assertVisible: "Build Number"
+- assertVisible: "Terms of Service"
+- assertVisible: "Privacy Policy"
+- assertVisible: "Contact Support"
+
+# Test terms of service
+- tapOn: "Terms of Service"
+- assertVisible: "Terms of Service"
+- assertVisible: "Accept"
+- assertVisible: "Decline"
+- tapOn: "Back"
+- assertVisible: "About"
+
+# Test privacy policy
+- tapOn: "Privacy Policy"
+- assertVisible: "Privacy Policy"
+- assertVisible: "Accept"
+- assertVisible: "Decline"
+- tapOn: "Back"
+- assertVisible: "About"
+
+# Test contact support
+- tapOn: "Contact Support"
+- assertVisible: "Contact Support"
+- assertVisible: "Email"
+- assertVisible: "Subject"
+- assertVisible: "Message"
+- inputText: "test@example.com"
+- tapOn: "Subject"
+- inputText: "Test Support Request"
+- tapOn: "Message"
+- inputText: "This is a test support request"
+- tapOn: "Send"
+- assertVisible: "Support request sent successfully"

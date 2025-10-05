@@ -10,26 +10,25 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import RoutineDashboard from '../../components/routines/RoutineDashboard';
-import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
-import EditRoutineModal from '../../components/routines/EditRoutineModal';
-import LogTodaysWorkoutModal from '../../components/workout/LogTodaysWorkoutModal';
-import WorkoutLoggingModal from '../../components/fitness/WorkoutLoggingModal';
-import EnhancedWorkoutLogger from '../../components/fitness/EnhancedWorkoutLogger';
+import TodaysSnapshot from '../../components/fitness/TodaysSnapshot';
+import UnifiedWorkoutLogger from '../../components/fitness/UnifiedWorkoutLogger';
+import SmartRoutineManager from '../../components/fitness/SmartRoutineManager';
+import ProgressTracking from '../../components/fitness/ProgressTracking';
 import FitnessLogsView from '../../components/fitness/FitnessLogsView';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
+import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
 import { fitnessService, WorkoutStats } from '../../services/fitnessService';
 import { dashboardService } from '../../services/dashboardService';
+import useResponsive from '../../hooks/useResponsive';
 
 export default function FitnessScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
+  const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
   const [showCreateRoutineModal, setShowCreateRoutineModal] = useState(false);
-  const [showEditRoutineModal, setShowEditRoutineModal] = useState(false);
-  const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
-  const [showEnhancedWorkoutLogger, setShowEnhancedWorkoutLogger] = useState(false);
-  const [showLogTodaysWorkoutModal, setShowLogTodaysWorkoutModal] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
+  const [recommendedWorkout, setRecommendedWorkout] = useState<any>(null);
+  const responsive = useResponsive();
   
   // Overview state
   const [weekStats, setWeekStats] = useState<WorkoutStats | null>(null);
@@ -185,15 +184,9 @@ export default function FitnessScreen() {
     setShowCreateRoutineModal(false);
   };
 
-  const handleRoutineEdited = () => {
-    setShowEditRoutineModal(false);
-    setSelectedRoutine(null);
-  };
-
-  const handleWorkoutLogged = () => {
-    setShowLogWorkoutModal(false);
-    setShowEnhancedWorkoutLogger(false);
-    setShowLogTodaysWorkoutModal(false);
+  const handleWorkoutLogged = (workoutData: any) => {
+    setShowUnifiedWorkoutLogger(false);
+    setRecommendedWorkout(null);
     loadOverviewData(); // Refresh overview data after logging workout
     
     // Force component remount with new key
@@ -228,6 +221,84 @@ export default function FitnessScreen() {
   );
 
 
+  // No predefined workout - users create their own
+  const todaysWorkout = recommendedWorkout || null;
+
+  const progressRings = [
+    {
+      id: '1',
+      title: 'Weekly Goal',
+      current: weekStats?.total_workouts || 0,
+      target: 5,
+      color: '#3b82f6',
+      icon: 'fitness-outline',
+      unit: 'workouts',
+    },
+    {
+      id: '2',
+      title: 'Calories',
+      current: weekStats?.total_calories_burned || 0,
+      target: 2000,
+      color: '#f97316',
+      icon: 'flame-outline',
+      unit: 'cal',
+    },
+    {
+      id: '3',
+      title: 'Duration',
+      current: Math.round((weekStats?.total_duration || 0) / 60),
+      target: 300,
+      color: '#10b981',
+      icon: 'time-outline',
+      unit: 'min',
+    },
+  ];
+
+  const achievements = [
+    {
+      id: '1',
+      title: 'First Workout',
+      description: 'Complete your first workout',
+      icon: 'trophy',
+      color: '#f59e0b',
+      unlocked: true,
+      unlockedAt: '2024-01-15',
+    },
+    {
+      id: '2',
+      title: 'Week Warrior',
+      description: 'Complete 5 workouts in a week',
+      icon: 'flame',
+      color: '#ef4444',
+      unlocked: false,
+      progress: 80,
+    },
+    {
+      id: '3',
+      title: 'Consistency King',
+      description: 'Work out 7 days in a row',
+      icon: 'checkmark-circle',
+      color: '#10b981',
+      unlocked: false,
+      progress: 60,
+    },
+  ];
+
+  const streaks = [
+    {
+      type: 'Workout',
+      count: 3,
+      icon: 'fitness',
+      color: '#3b82f6',
+    },
+    {
+      type: 'Calories',
+      count: 5,
+      icon: 'flame',
+      color: '#f97316',
+    },
+  ];
+
   const renderOverview = () => (
     <ScrollView
       style={styles.content}
@@ -236,59 +307,30 @@ export default function FitnessScreen() {
       }
       showsVerticalScrollIndicator={false}
     >
-      {/* This Week's Fitness Overview */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>This Week's Fitness</Text>
-        <View style={styles.weekOverviewCard}>
-          <View style={styles.weekMetricRow}>
-            <View style={styles.weekMetric}>
-              <Ionicons name="fitness-outline" size={24} color="#ea580c" />
-              <Text style={styles.weekMetricValue}>{weekStats?.total_workouts || 0}</Text>
-              <Text style={styles.weekMetricLabel}>Workouts</Text>
-            </View>
-            <View style={styles.weekMetric}>
-              <Ionicons name="time-outline" size={24} color="#f97316" />
-              <Text style={styles.weekMetricValue}>{Math.round((weekStats?.total_duration || 0) / 60)}h</Text>
-              <Text style={styles.weekMetricLabel}>Duration</Text>
-            </View>
-          </View>
-          
-          <View style={styles.weekMetricRow}>
-            <View style={styles.weekMetric}>
-              <Ionicons name="flame-outline" size={24} color="#fb923c" />
-              <Text style={styles.weekMetricValue}>{weekStats?.total_calories_burned || 0}</Text>
-              <Text style={styles.weekMetricLabel}>Calories Burned</Text>
-            </View>
-            <View style={styles.weekMetric}>
-              <Ionicons name="barbell-outline" size={24} color="#f59e0b" />
-              <Text style={styles.weekMetricValue}>{Math.round((weekStats?.average_duration || 0) / 60)}m</Text>
-              <Text style={styles.weekMetricLabel}>Avg Duration</Text>
-            </View>
-          </View>
-        </View>
-      </View>
+      {/* Today's Snapshot */}
+      <TodaysSnapshot
+        weeklyWorkouts={weekStats?.total_workouts || 0}
+        alignmentScore={75} // Mock data - would come from body type scoring
+        caloriesBurned={weekStats?.total_calories_burned || 0}
+        streak={3}
+        todaysWorkout={todaysWorkout}
+        onQuickLog={() => setShowUnifiedWorkoutLogger(true)}
+        onViewWorkout={(workout) => {
+          setRecommendedWorkout(workout);
+          setShowUnifiedWorkoutLogger(true);
+        }}
+        onViewProgress={() => setActiveTab('logs')}
+      />
 
-
-      {/* Weekly Activity Breakdown */}
-      {weekStats && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Weekly Breakdown</Text>
-          <View style={styles.breakdownCard}>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Most Active Day</Text>
-              <Text style={styles.breakdownValue}>{weekStats.most_common_activity || 'No data'}</Text>
-            </View>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Longest Workout</Text>
-              <Text style={styles.breakdownValue}>{Math.round((weekStats.longest_workout || 0) / 60)}m</Text>
-            </View>
-            <View style={styles.breakdownItem}>
-              <Text style={styles.breakdownLabel}>Avg Calories/Workout</Text>
-              <Text style={styles.breakdownValue}>{Math.round(weekStats.average_calories || 0)}</Text>
-            </View>
-          </View>
-        </View>
-      )}
+      {/* Progress Tracking */}
+      <ProgressTracking
+        progressRings={progressRings}
+        achievements={achievements}
+        streaks={streaks}
+        onRingPress={(ring) => console.log('Ring pressed:', ring.title)}
+        onAchievementPress={(achievement) => console.log('Achievement pressed:', achievement.title)}
+        onStreakPress={(streak) => console.log('Streak pressed:', streak.type)}
+      />
 
       {/* Weekly Activity Chart */}
       <View style={styles.section}>
@@ -298,7 +340,6 @@ export default function FitnessScreen() {
           color="#f97316"
         />
       </View>
-
     </ScrollView>
   );
 
@@ -367,17 +408,24 @@ export default function FitnessScreen() {
       {/* Content */}
       {activeTab === 'overview' ? renderOverview() : 
        activeTab === 'routines' ? (
-        <RoutineDashboard
-          onRoutineSelected={() => {
-            // Handle routine selection if needed
+        <SmartRoutineManager
+          userBodyTypeGoal="steady" // Mock data - would come from user profile
+          onRoutineSelect={(routine) => {
+            setRecommendedWorkout(routine);
+            setShowUnifiedWorkoutLogger(true);
           }}
           onCreateRoutine={() => setShowCreateRoutineModal(true)}
           onEditRoutine={(routine) => {
             setSelectedRoutine(routine);
-            setShowEditRoutineModal(true);
+            // Handle edit routine
           }}
-          onDeleteRoutine={(routineId) => {
-            // Handle routine deletion if needed
+          onSetActive={(routine) => {
+            console.log('Setting routine as active:', routine.name);
+            // TODO: Implement actual set active functionality
+          }}
+          onSetInactive={(routine) => {
+            console.log('Setting routine as inactive:', routine.name);
+            // TODO: Implement actual set inactive functionality
           }}
         />
       ) : (
@@ -387,40 +435,20 @@ export default function FitnessScreen() {
         />
       )}
 
+      {/* Unified Workout Logger */}
+      <UnifiedWorkoutLogger
+        visible={showUnifiedWorkoutLogger}
+        onClose={() => setShowUnifiedWorkoutLogger(false)}
+        onSave={handleWorkoutLogged}
+        initialWorkout={recommendedWorkout}
+        routineId={recommendedWorkout?.routine_id}
+      />
+
       {/* Create Routine Modal */}
       <ComprehensiveRoutineModal
         isVisible={showCreateRoutineModal}
         onClose={() => setShowCreateRoutineModal(false)}
         onRoutineCreated={handleRoutineCreated}
-      />
-
-      {/* Edit Routine Modal */}
-      <EditRoutineModal
-        isVisible={showEditRoutineModal}
-        onClose={() => setShowEditRoutineModal(false)}
-        onRoutineUpdated={handleRoutineEdited}
-        routine={selectedRoutine}
-      />
-
-      {/* Enhanced Workout Logger */}
-      <EnhancedWorkoutLogger
-        visible={showEnhancedWorkoutLogger}
-        onClose={() => setShowEnhancedWorkoutLogger(false)}
-        onWorkoutLogged={handleWorkoutLogged}
-      />
-
-      {/* Log Workout Modal */}
-      <WorkoutLoggingModal
-        visible={showLogWorkoutModal}
-        onClose={() => setShowLogWorkoutModal(false)}
-        onWorkoutLogged={handleWorkoutLogged}
-      />
-
-      {/* Log Today's Workout Modal */}
-      <LogTodaysWorkoutModal
-        visible={showLogTodaysWorkoutModal}
-        onClose={() => setShowLogTodaysWorkoutModal(false)}
-        onWorkoutLogged={handleWorkoutLogged}
       />
     </View>
   );
@@ -486,7 +514,7 @@ const styles = StyleSheet.create({
   // Overview styles
   content: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
   },
   section: {
     marginBottom: 24,
@@ -506,6 +534,8 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     borderRadius: 12,
     padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -575,6 +605,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
@@ -604,6 +636,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -637,6 +671,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

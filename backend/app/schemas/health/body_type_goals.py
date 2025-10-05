@@ -3,24 +3,42 @@ Body Type Goals Schemas
 Pydantic schemas for body type goals API
 """
 
-from typing import Optional, Dict, Any
-from pydantic import BaseModel
+from typing import Optional, Dict, Any, Union
+from pydantic import BaseModel, field_validator
+import json
 
+
+class RangeValue(BaseModel):
+    """Represents a range of values with min, max, and recommended values"""
+    min: float
+    max: float
+    recommended: float
+    unit: str
 
 class BodyTypeGoalTargetAttributes(BaseModel):
-    target_weight: float
-    weight_change: float
-    water_goal: int  # ml per day
-    calorie_target: int
-    protein_target: float  # g per kg body weight
-    workout_frequency: int  # days per week
-    cardio_minutes: int  # minutes per week
-    timeline: int  # weeks to reach goal
-    waist_to_height_ratio: Optional[float] = None  # Waist-to-height ratio
-    fat_free_mass_index: Optional[float] = None  # Fat-Free Mass Index
-    sleep_duration: Optional[float] = None  # hours per night
-    daily_steps: Optional[int] = None  # steps per day
-    recovery_days: Optional[int] = None  # rest days per week
+    # Weight targets (ranges)
+    target_weight: RangeValue
+    weight_change: RangeValue  # kg per week
+    
+    # Nutrition targets (ranges)
+    water_goal: RangeValue  # ml per day
+    calorie_target: RangeValue  # calories per day
+    protein_target: RangeValue  # g per kg body weight
+    
+    # Exercise targets (ranges)
+    workout_frequency: RangeValue  # days per week
+    cardio_minutes: RangeValue  # minutes per week
+    strength_sessions: RangeValue  # strength training sessions per week
+    
+    # Body composition (ranges)
+    waist_to_height_ratio: Optional[RangeValue] = None
+    fat_free_mass_index: Optional[RangeValue] = None
+    target_body_fat_range: Optional[RangeValue] = None
+    
+    # Lifestyle (ranges)
+    sleep_duration: Optional[RangeValue] = None  # hours per night
+    daily_steps: Optional[RangeValue] = None  # steps per day
+    recovery_days: Optional[RangeValue] = None  # rest days per week
 
 
 class BodyTypeGoalBase(BaseModel):
@@ -31,10 +49,20 @@ class BodyTypeGoalBase(BaseModel):
     color: str
     target_bmi: float
     target_body_fat: Optional[float] = None
-    target_attributes: BodyTypeGoalTargetAttributes
+    target_attributes: Union[BodyTypeGoalTargetAttributes, str, Dict[str, Any]]
     created_by: Optional[int] = None
     is_active: bool = True
     sort_order: int = 0
+    
+    @field_validator('target_attributes', mode='before')
+    @classmethod
+    def parse_target_attributes(cls, v):
+        if isinstance(v, str):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                raise ValueError(f"Invalid JSON in target_attributes: {v}")
+        return v
 
 
 class BodyTypeGoalCreate(BodyTypeGoalBase):

@@ -1,0 +1,51 @@
+# Maestro Configuration for AI Companion
+# This file contains global configuration for all Maestro tests
+
+appId: com.healthlog.mobile
+timeout: 30000
+clearState: true
+clearKeychain: true
+
+# Global test data
+testData:
+  testUser:
+    email: "test@example.com"
+    password: "test123"
+    fullName: "Test User"
+  
+  adminUser:
+    email: "admin@example.com"
+    password: "admin123"
+    fullName: "Admin User"
+  
+  newUser:
+    email: "newuser@example.com"
+    password: "password123"
+    fullName: "New User"
+
+# Global assertions
+assertions:
+  loginSuccess: "Dashboard"
+  logoutSuccess: "Welcome to HealthLog"
+  errorMessage: "Please try again"
+  networkError: "Network error"
+  validationError: "Please fill in all required fields"
+
+# Global timeouts
+timeouts:
+  short: 5000
+  medium: 15000
+  long: 30000
+  veryLong: 60000
+
+# Global retry settings
+retries:
+  maxRetries: 3
+  retryDelay: 2000
+
+# Global test environment
+environment:
+  apiUrl: "http://localhost:8000"
+  appVersion: "1.0.0"
+  platform: "android"
+  deviceType: "emulator"

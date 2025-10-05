@@ -19,6 +19,7 @@ export default {
     },
     extra: {
       apiUrl: process.env.API_URL || 'https://republishable-nondisingenuously-brittaney.ngrok-free.dev',
+      OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY,
     },
   },
 };

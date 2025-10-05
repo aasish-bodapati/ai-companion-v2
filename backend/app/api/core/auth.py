@@ -94,3 +94,70 @@ def logout(response: Response, current_user: models.User = Depends(deps.get_curr
     Logout user (simplified for Milestone 1)
     """
     return {"message": "Successfully logged out"}
+
+@router.delete("/me")
+def delete_user_account(
+    *,
+    db: Session = Depends(deps.get_db),
+    current_user: models.User = Depends(deps.get_current_active_user)
+):
+    """
+    Delete user account and all associated data.
+    This is a permanent action that cannot be undone.
+    """
+    try:
+        # Delete all user-related data
+        # Note: This is a simplified version - in production, you might want to:
+        # 1. Soft delete (mark as inactive)
+        # 2. Anonymize data instead of deleting
+        # 3. Add a grace period before permanent deletion
+        
+        # Delete health profiles
+        from app.models.health.user_goals import UserHealthProfile
+        db.query(UserHealthProfile).filter(UserHealthProfile.user_id == current_user.id).delete()
+        
+        # Delete onboarding profiles
+        from app.models.onboarding import OnboardingProfile
+        db.query(OnboardingProfile).filter(OnboardingProfile.user_id == current_user.id).delete()
+        
+        # Delete fitness logs
+        from app.models.health.fitness_log import FitnessLog
+        db.query(FitnessLog).filter(FitnessLog.user_id == current_user.id).delete()
+        
+        # Delete nutrition logs
+        from app.models.health.fitness_log import NutritionLog
+        db.query(NutritionLog).filter(NutritionLog.user_id == current_user.id).delete()
+        
+        # Delete mood logs
+        from app.models.health.fitness_log import MoodLog
+        db.query(MoodLog).filter(MoodLog.user_id == current_user.id).delete()
+        
+        # Delete water logs
+        from app.models.health.water_log import WaterLog
+        db.query(WaterLog).filter(WaterLog.user_id == current_user.id).delete()
+        
+        # Delete user goals
+        from app.models.health.user_goal import UserGoal
+        db.query(UserGoal).filter(UserGoal.user_id == current_user.id).delete()
+        
+        # Delete user body type goals
+        from app.models.health.body_type_goals import BodyTypeGoal
+        db.query(BodyTypeGoal).filter(BodyTypeGoal.created_by == current_user.id).delete()
+        
+        # Delete simple routines and progress
+        from app.models.health.simple_routine import SimpleRoutine, SimpleUserRoutineProgress
+        db.query(SimpleUserRoutineProgress).filter(SimpleUserRoutineProgress.user_id == current_user.id).delete()
+        db.query(SimpleRoutine).filter(SimpleRoutine.created_by_user_id == current_user.id).delete()
+        
+        # Finally, delete the user
+        db.delete(current_user)
+        db.commit()
+        
+        return {"message": "Account and all associated data deleted successfully"}
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to delete account: {str(e)}"
+        )

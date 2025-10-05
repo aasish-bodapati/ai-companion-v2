@@ -1,0 +1,50 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+
+# Login first
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+
+# Test logout from profile screen
+- tapOn: "Profile"
+- assertVisible: "Profile"
+- assertVisible: "Settings"
+- assertVisible: "Logout"
+- tapOn: "Logout"
+- assertVisible: "Are you sure you want to logout?"
+- tapOn: "Yes"
+- assertVisible: "Welcome to HealthLog"
+- assertVisible: "Login"
+- assertVisible: "Register"
+
+# Test logout cancellation
+- tapOn: "Login"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "test123"
+- tapOn: "Login"
+- assertVisible: "Dashboard"
+- tapOn: "Profile"
+- tapOn: "Logout"
+- assertVisible: "Are you sure you want to logout?"
+- tapOn: "Cancel"
+- assertVisible: "Profile"
+- assertVisible: "Settings"
+
+# Test logout from settings
+- tapOn: "Settings"
+- assertVisible: "Settings"
+- assertVisible: "Account"
+- assertVisible: "Privacy"
+- assertVisible: "Logout"
+- tapOn: "Logout"
+- assertVisible: "Are you sure you want to logout?"
+- tapOn: "Yes"
+- assertVisible: "Welcome to HealthLog"

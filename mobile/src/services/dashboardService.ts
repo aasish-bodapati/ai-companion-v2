@@ -98,7 +98,7 @@ export const dashboardService = {
 
   async getAnalyticsData(): Promise<any> {
     try {
-      const response = await apiClient.get('/health/analytics/dashboard');
+      const response = await apiClient.get('/health/logging/analytics/daily');
       return response.data;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications

@@ -10,8 +10,7 @@ from sqlalchemy import func, and_, or_
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
-from app.models.health.fitness_log import FitnessLog
-from app.models.health.fitness_log import NutritionLog, MoodLog
+from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
 from app.models.health.water_log import WaterLog
 import logging
 from app.models.health.simple_routine import SimpleRoutine, SimpleUserRoutineProgress
@@ -20,7 +19,6 @@ from app.crud.health import fitness_log, nutrition_log, mood_log
 from app.core.config import settings
 from app.utils.timezone_service import TimezoneService
 from app.core.cache import cache_manager, CacheKey, CacheConfig, cache_invalidator
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +72,7 @@ async def get_dashboard_summary(
                 NutritionLog.meal_date <= end_of_day
             )
         ).all()
+        
 
         today_water = db.query(WaterLog).filter(
             and_(

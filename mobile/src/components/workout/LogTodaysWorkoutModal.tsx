@@ -17,22 +17,26 @@ import { exerciseCategoryService } from '../../services/exerciseCategoryService'
 import { useToast } from '../../contexts/ToastContext';
 
 interface Exercise {
-  id: number;
-  exercise_name: string;
-  logging_category: string;
+  id: string | number;
+  name?: string;
+  exercise_name?: string;
+  category?: string;
+  logging_category?: string;
   sets?: number;
   reps?: number;
   weight?: number;
   duration?: number;
   distance?: number;
+  difficulty?: string;
+  day?: string;
   notes?: string;
 }
 
 interface WorkoutData {
-  routine_id: number;
+  routine_id: string | number;
   routine_name: string;
   day_name: string;
-  workout_name: string;
+  workout_name?: string;
   description?: string;
   exercises: Exercise[];
 }
@@ -51,12 +55,12 @@ export default function LogTodaysWorkoutModal({
   const { showToast } = useToast();
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [exerciseData, setExerciseData] = useState<{ [key: number]: any }>({});
-  const [loggedExercises, setLoggedExercises] = useState<Set<number>>(new Set());
-  const [skippedExercises, setSkippedExercises] = useState<Set<number>>(new Set());
-  const [exercisesLoggedToday, setExercisesLoggedToday] = useState<Set<number>>(new Set());
+  const [exerciseData, setExerciseData] = useState<{ [key: string | number]: any }>({});
+  const [loggedExercises, setLoggedExercises] = useState<Set<string | number>>(new Set());
+  const [skippedExercises, setSkippedExercises] = useState<Set<string | number>>(new Set());
+  const [exercisesLoggedToday, setExercisesLoggedToday] = useState<Set<string | number>>(new Set());
   const [categories, setCategories] = useState<any[]>([]);
-  const weightInputRefs = useRef<{ [key: number]: TextInput | null }>({});
+  const weightInputRefs = useRef<{ [key: string | number]: TextInput | null }>({});
 
   useEffect(() => {
     if (visible) {
@@ -74,22 +78,19 @@ export default function LogTodaysWorkoutModal({
     }
   };
 
-  const getCategoryConfig = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-      return {
-        name: category.display_name,
-        icon: category.icon,
-        color: category.color,
-      };
-    }
-    // Return "Category Not Found" config
-    return {
-      name: 'Category Not Found',
-      icon: 'help-outline',
-      color: '#6b7280',
+  // Function to get category display info (same as other components)
+  const getCategoryInfo = (category: string) => {
+    const categoryMap: { [key: string]: { name: string; color: string; icon: string } } = {
+      'bodyweight': { name: 'Bodyweight', color: '#3b82f6', icon: 'person-outline' },
+      'weighted': { name: 'Weighted', color: '#f59e0b', icon: 'barbell-outline' },
+      'cardio_duration': { name: 'Cardio', color: '#ef4444', icon: 'heart-outline' },
+      'distance_based': { name: 'Distance', color: '#10b981', icon: 'walk-outline' },
+      'mixed': { name: 'Mixed', color: '#8b5cf6', icon: 'fitness-outline' }
     };
+    
+    return categoryMap[category] || { name: category, color: '#6b7280', icon: 'fitness-outline' };
   };
+
 
   const loadTodaysWorkout = async () => {
     try {
@@ -111,28 +112,29 @@ export default function LogTodaysWorkoutModal({
       setWorkoutData(data);
       
       // Auto-populate exercise data with previous logged values and check if logged today
-      const initialData: { [key: number]: any } = {};
-      const loggedTodaySet = new Set<number>();
+      const initialData: { [key: string | number]: any } = {};
+      const loggedTodaySet = new Set<string | number>();
       
       if (data && data.exercises && Array.isArray(data.exercises)) {
         // Fetch latest data and check if logged today for each exercise in parallel
         const exercisePromises = data.exercises.map(async (exercise: Exercise) => {
           try {
-            console.log(`🔍 [LOG TODAY'S WORKOUT] Fetching latest data for: ${exercise.exercise_name}`);
+            const exerciseName = exercise.name || exercise.exercise_name;
+            console.log(`🔍 [LOG TODAY'S WORKOUT] Fetching latest data for: ${exerciseName}`);
             
             // Check both latest data and if logged today in parallel
             const [latestData, isLoggedToday] = await Promise.all([
-              fitnessService.getLatestExerciseData(exercise.exercise_name),
-              fitnessService.isExerciseLoggedToday(exercise.exercise_name)
+              fitnessService.getLatestExerciseData(exerciseName),
+              fitnessService.isExerciseLoggedToday(exerciseName)
             ]);
             
             if (isLoggedToday) {
-              console.log(`✅ [LOG TODAY'S WORKOUT] Exercise ${exercise.exercise_name} was logged today`);
+              console.log(`✅ [LOG TODAY'S WORKOUT] Exercise ${exerciseName} was logged today`);
               loggedTodaySet.add(exercise.id);
             }
             
             if (latestData) {
-              console.log(`✅ [LOG TODAY'S WORKOUT] Found previous data for ${exercise.exercise_name}:`, latestData);
+              console.log(`✅ [LOG TODAY'S WORKOUT] Found previous data for ${exerciseName}:`, latestData);
               return {
                 id: exercise.id,
                 data: {
@@ -145,7 +147,7 @@ export default function LogTodaysWorkoutModal({
                 }
               };
             } else {
-              console.log(`🔍 [LOG TODAY'S WORKOUT] No previous data for ${exercise.exercise_name}`);
+              console.log(`🔍 [LOG TODAY'S WORKOUT] No previous data for ${exerciseName}`);
               return {
                 id: exercise.id,
                 data: {
@@ -497,9 +499,42 @@ export default function LogTodaysWorkoutModal({
   const getTotalExercises = () => workoutData?.exercises?.length || 0;
 
   if (!workoutData) {
-    // This should not happen anymore since we check before opening the modal
-    // But keep this as a fallback
-    return null;
+    // Show a proper message when no workout is scheduled
+    return (
+      <Modal visible={visible} animationType="slide" transparent>
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerContent}>
+                <Text style={styles.title}>Log Today's Workout</Text>
+              </View>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* No Workout Message */}
+            <View style={styles.noWorkoutContainer}>
+              <Ionicons name="fitness-outline" size={64} color="#9ca3af" />
+              <Text style={styles.noWorkoutTitle}>No Workout Scheduled</Text>
+              <Text style={styles.noWorkoutMessage}>
+                You don't have an active routine set. Please select a routine from the Fitness tab to start logging your workouts.
+              </Text>
+              <TouchableOpacity 
+                style={styles.goToRoutinesButton}
+                onPress={() => {
+                  onClose();
+                  // Navigate to routines tab - this would need to be passed as a prop
+                }}
+              >
+                <Text style={styles.goToRoutinesButtonText}>Go to Routines</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
   }
 
   return (
@@ -515,11 +550,15 @@ export default function LogTodaysWorkoutModal({
               </Text>
               {workoutData.exercises && workoutData.exercises.length > 0 && (
                 <View style={styles.workoutCategories}>
-                  {Array.from(new Set(workoutData.exercises.map(ex => ex.logging_category).filter(Boolean))).map((category, index) => (
-                    <View key={index} style={styles.workoutCategoryBadge}>
-                      <Text style={styles.workoutCategoryText}>{category}</Text>
-                    </View>
-                  ))}
+                  {Array.from(new Set(workoutData.exercises.map(ex => ex.category || ex.logging_category).filter(Boolean))).map((category, index) => {
+                    const categoryInfo = getCategoryInfo(category);
+                    return (
+                      <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
+                        <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
+                        <Text style={[styles.workoutCategoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -539,22 +578,23 @@ export default function LogTodaysWorkoutModal({
               const currentExerciseData = exerciseData[exercise.id] || {};
 
               // Convert exercise data to DynamicExerciseForm format
+              // Don't pre-populate sets/reps - let users enter their own values
               const exerciseForForm = {
-                exercise_name: exercise.exercise_name,
-                logging_category: exercise.logging_category,
-                sets: currentExerciseData.sets || '',
-                reps: currentExerciseData.reps || '',
-                weight: currentExerciseData.weight || '',
-                weight_used: currentExerciseData.weight || '',
+                exercise_name: exercise.name || exercise.exercise_name,
+                logging_category: exercise.category || exercise.logging_category,
+                sets: currentExerciseData.sets || '', // No pre-population
+                reps: currentExerciseData.reps || '', // No pre-population
+                weight: currentExerciseData.weight || '', // No pre-population
+                weight_used: currentExerciseData.weight || '', // No pre-population
                 weight_unit: 'kg', // Default to kg (hidden in UI)
-                duration: currentExerciseData.duration || '',
-                distance: currentExerciseData.distance || '',
+                duration: currentExerciseData.duration || exercise.duration || '', // Keep duration for cardio
+                distance: currentExerciseData.distance || exercise.distance || '', // Keep distance for distance-based
                 distance_unit: 'km', // Default to km (hidden in UI)
-                category: exercise.logging_category
+                category: exercise.category || exercise.logging_category
               };
               
               // Debug logging for auto-population
-              console.log(`🔍 [LOG TODAY'S WORKOUT] Exercise: ${exercise.exercise_name}`);
+              console.log(`🔍 [LOG TODAY'S WORKOUT] Exercise: ${exercise.name || exercise.exercise_name}`);
               console.log(`🔍 [LOG TODAY'S WORKOUT] Current data:`, currentExerciseData);
               console.log(`🔍 [LOG TODAY'S WORKOUT] Form data:`, exerciseForForm);
 
@@ -564,19 +604,19 @@ export default function LogTodaysWorkoutModal({
                   <View style={styles.exerciseHeader}>
                     <View style={styles.exerciseTitleRow}>
                       <Text style={styles.exerciseNumber}>#{index + 1}</Text>
-                      <Text style={styles.exerciseName}>{exercise.exercise_name}</Text>
-                      {exercise.logging_category && (() => {
-                        const categoryConfig = getCategoryConfig(exercise.logging_category);
+                      <Text style={styles.exerciseName}>{exercise.name || exercise.exercise_name}</Text>
+                      {(exercise.category || exercise.logging_category) && (() => {
+                        const categoryInfo = getCategoryInfo(exercise.category || exercise.logging_category);
                         
                         return (
-                          <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
+                          <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
                             <Ionicons 
-                              name={categoryConfig.icon as any} 
+                              name={categoryInfo.icon as any} 
                               size={12} 
-                              color={categoryConfig.color} 
+                              color={categoryInfo.color} 
                             />
-                            <Text style={[styles.categoryText, { color: categoryConfig.color }]}>
-                              {categoryConfig.name}
+                            <Text style={[styles.categoryText, { color: categoryInfo.color }]}>
+                              {categoryInfo.name}
                             </Text>
                           </View>
                         );
@@ -602,6 +642,7 @@ export default function LogTodaysWorkoutModal({
                       )}
                     </View>
                   </View>
+
 
                   {/* Dynamic Exercise Form */}
                   <DynamicExerciseForm
@@ -649,6 +690,7 @@ export default function LogTodaysWorkoutModal({
           </View>
         </View>
       </View>
+
     </Modal>
   );
 }
@@ -702,16 +744,19 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   workoutCategoryBadge: {
-    backgroundColor: '#3b82f6',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 8,
+    borderWidth: 1,
   },
   workoutCategoryText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#ffffff',
-    textTransform: 'capitalize',
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   closeButton: {
     padding: 4,
@@ -776,12 +821,14 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 8,
     marginLeft: 6,
+    borderWidth: 1,
   },
   categoryText: {
     fontSize: 10,
     fontWeight: '600',
     marginLeft: 3,
-    textTransform: 'capitalize',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   exerciseActions: {
     flexDirection: 'row',
@@ -918,5 +965,70 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     textAlign: 'center',
+  },
+  noWorkoutContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  noWorkoutTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noWorkoutMessage: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  goToRoutinesButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  goToRoutinesButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  guidanceContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    padding: 12,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  guidanceTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  guidanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  guidanceItem: {
+    width: '48%',
+    marginBottom: 6,
+  },
+  guidanceLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginBottom: 2,
+  },
+  guidanceText: {
+    fontSize: 11,
+    color: '#374151',
   },
 });

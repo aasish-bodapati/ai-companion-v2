@@ -31,6 +31,7 @@ interface OnboardingData {
   healthData: HealthData;
   bodyTypeGoal: string;
   editedBodyTypeGoal?: any; // Store the edited goal details
+  timezone: string;
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -88,6 +89,7 @@ export default function EnhancedOnboardingScreen() {
       bodyFat: '',
     },
     bodyTypeGoal: '',
+    timezone: 'UTC', // Default timezone, will be detected independently
     preferences: {
       notifications: true,
       reminders: true,
@@ -98,6 +100,7 @@ export default function EnhancedOnboardingScreen() {
   const [isCompleting, setIsCompleting] = useState(false);
   const { completeOnboarding } = useAuth();
   const completionRef = useRef(false);
+
 
 
   // Load existing profile data to pre-populate onboarding
@@ -240,7 +243,8 @@ export default function EnhancedOnboardingScreen() {
         smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : null,
         body_fat_percentage: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : null,
         ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : null,
-        bodyTypeGoal: onboardingData.bodyTypeGoal
+        bodyTypeGoal: onboardingData.bodyTypeGoal,
+        timezone: onboardingData.timezone
       };
       
       await completeOnboarding(backendData);
@@ -299,6 +303,7 @@ export default function EnhancedOnboardingScreen() {
     // Update validation state for this step
     console.log('Body type validation changed:', isValid);
   }, []);
+
 
   const canGoNext = () => {
     switch (currentStepData.id) {

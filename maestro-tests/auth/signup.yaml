@@ -1,0 +1,71 @@
+appId: com.healthlog.mobile
+
+---
+- launchApp
+- assertVisible: "Welcome to HealthLog"
+- assertVisible: "Register"
+
+# Test valid registration
+- tapOn: "Register"
+- assertVisible: "Create Account"
+- assertVisible: "Full Name"
+- assertVisible: "Email"
+- assertVisible: "Password"
+- inputText: "Test User"
+- tapOn: "Email"
+- inputText: "newuser@example.com"
+- tapOn: "Password"
+- inputText: "newpassword123"
+- tapOn: "Create Account"
+- assertVisible: "Account created successfully"
+- assertVisible: "Dashboard"
+
+# Test duplicate email registration
+- tapOn: "Profile"
+- tapOn: "Logout"
+- assertVisible: "Welcome to HealthLog"
+- tapOn: "Register"
+- inputText: "Another User"
+- tapOn: "Email"
+- inputText: "test@example.com"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Create Account"
+- assertVisible: "An account with this email already exists"
+
+# Test invalid email format
+- clearText
+- tapOn: "Email"
+- inputText: "invalid-email"
+- tapOn: "Password"
+- inputText: "password123"
+- tapOn: "Create Account"
+- assertVisible: "Please check your information and try again"
+
+# Test weak password
+- clearText
+- tapOn: "Email"
+- inputText: "user@example.com"
+- tapOn: "Password"
+- inputText: "123"
+- tapOn: "Create Account"
+- assertVisible: "Password must be at least 8 characters"
+
+# Test empty form submission
+- clearText
+- tapOn: "Email"
+- clearText
+- tapOn: "Password"
+- clearText
+- tapOn: "Create Account"
+- assertVisible: "Please fill in all required fields"
+
+# Test successful registration with valid data
+- inputText: "Valid User"
+- tapOn: "Email"
+- inputText: "validuser@example.com"
+- tapOn: "Password"
+- inputText: "validpassword123"
+- tapOn: "Create Account"
+- assertVisible: "Account created successfully"
+- assertVisible: "Dashboard"

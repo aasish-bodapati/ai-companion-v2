@@ -175,7 +175,7 @@ class TimezoneHandler:
         try:
             parsed_date = datetime.strptime(date_string, "%Y-%m-%d")
             # Make it timezone-aware (UTC)
-            return parsed_date.replace(tzinfo=pytz.UTC)
+            return parsed_date.replace(tzinfo=timezone.utc)
         except ValueError:
             pass
         
@@ -231,3 +231,40 @@ class TimezoneHandler:
             {"label": "Dubai (GST)", "value": "Asia/Dubai", "offset": "UTC+4"},
             {"label": "São Paulo (BRT)", "value": "America/Sao_Paulo", "offset": "UTC-3"},
         ]
+
+    @staticmethod
+    def parse_date_string_in_user_timezone(date_string: str, user_timezone: str) -> datetime:
+        """
+        Parse a date string and interpret it in the user's timezone, then convert to UTC.
+        
+        Args:
+            date_string: Date string in YYYY-MM-DD or ISO format
+            user_timezone: User's timezone (e.g., 'Asia/Kolkata')
+            
+        Returns:
+            timezone-aware datetime in UTC
+        """
+        if not date_string or not user_timezone:
+            return None
+            
+        try:
+            # Handle ISO format strings like '2025-10-03T00:00:00.000Z'
+            if 'T' in date_string:
+                # Extract just the date part (YYYY-MM-DD)
+                date_part = date_string.split('T')[0]
+            else:
+                date_part = date_string
+            
+            # Parse the date string as a naive datetime
+            parsed_date = datetime.strptime(date_part, '%Y-%m-%d')
+            
+            # Localize to user's timezone
+            user_tz = pytz.timezone(user_timezone)
+            localized_date = user_tz.localize(parsed_date)
+            
+            # Convert to UTC
+            utc_date = localized_date.astimezone(timezone.utc)
+            
+            return utc_date
+        except ValueError as e:
+            raise ValueError(f"Unable to parse date string '{date_string}' in timezone '{user_timezone}': {e}")

@@ -1,0 +1,44 @@
+# AI Companion - Complete Test Suite
+# This file defines the complete test suite for the AI Companion app
+
+appId: com.healthlog.mobile
+
+---
+# Authentication Tests
+- runFlow: "auth/login.yaml"
+- runFlow: "auth/signup.yaml"
+- runFlow: "auth/logout.yaml"
+
+---
+# Dashboard and Navigation Tests
+- runFlow: "dashboard/navigation.yaml"
+- runFlow: "dashboard/onboarding.yaml"
+
+---
+# Fitness Tracking Tests
+- runFlow: "fitness/workout-logging.yaml"
+- runFlow: "fitness/routines.yaml"
+
+---
+# Nutrition Tracking Tests
+- runFlow: "nutrition/meal-logging.yaml"
+- runFlow: "nutrition/nutrition-routines.yaml"
+
+---
+# Analytics and Insights Tests
+- runFlow: "analytics/insights.yaml"
+
+---
+# Profile and Settings Tests
+- runFlow: "profile/settings.yaml"
+- runFlow: "profile/health-profile.yaml"
+
+---
+# Notifications Tests
+- runFlow: "notifications/permissions.yaml"
+- runFlow: "notifications/reminders.yaml"
+
+---
+# Edge Cases and Error Handling Tests
+- runFlow: "edge-cases/network-errors.yaml"
+- runFlow: "edge-cases/form-validation.yaml"

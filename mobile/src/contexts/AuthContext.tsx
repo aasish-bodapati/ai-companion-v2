@@ -79,13 +79,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           const completed = onboardingStatus.data.completed;
           
-          // For debugging: always show onboarding for now to test
-          // TODO: Remove this after fixing the backend onboarding status
-          const forceOnboarding = true;
-          
-          setNeedsOnboarding(!completed || forceOnboarding);
+          // Check if onboarding is completed
+          setNeedsOnboarding(!completed);
           if (__DEV__) {
-            console.log('🔍 checkAuthStatus - completed:', completed, 'forceOnboarding:', forceOnboarding, 'setNeedsOnboarding to:', !completed || forceOnboarding);
+            console.log('🔍 checkAuthStatus - completed:', completed, 'setNeedsOnboarding to:', !completed);
           }
         } catch (onboardingError) {
           console.log('🔍 checkAuthStatus - onboarding status error:', onboardingError);

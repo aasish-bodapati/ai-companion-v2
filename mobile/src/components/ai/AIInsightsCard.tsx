@@ -98,9 +98,9 @@ export default function AIInsightsCard({
     }
   };
 
-  const renderInsight = (insight: AIInsight) => (
+  const renderInsight = (insight: AIInsight, index: number) => (
     <TouchableOpacity
-      key={insight.id}
+      key={insight.id || index}
       style={styles.insightCard}
       onPress={() => handleInsightPress(insight)}
       activeOpacity={0.7}
@@ -134,8 +134,8 @@ export default function AIInsightsCard({
     </TouchableOpacity>
   );
 
-  const renderPattern = (pattern: HealthPattern) => (
-    <View key={pattern.title} style={styles.patternCard}>
+  const renderPattern = (pattern: HealthPattern, index: number) => (
+    <View key={pattern.title || index} style={styles.patternCard}>
       <View style={styles.patternHeader}>
         <View style={styles.patternTitleContainer}>
           <Ionicons
@@ -171,9 +171,9 @@ export default function AIInsightsCard({
     </View>
   );
 
-  const renderRecommendation = (recommendation: HealthRecommendation) => (
+  const renderRecommendation = (recommendation: HealthRecommendation, index: number) => (
     <TouchableOpacity
-      key={recommendation.id}
+      key={recommendation.id || index}
       style={styles.recommendationCard}
       onPress={() => handleRecommendationPress(recommendation)}
       activeOpacity={0.7}
@@ -267,7 +267,7 @@ export default function AIInsightsCard({
         {activeTab === 'insights' && (
           <>
             {insights.length > 0 ? (
-              insights.map(renderInsight)
+              insights.map((insight, index) => renderInsight(insight, index))
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="bulb-outline" size={48} color="#9ca3af" />
@@ -281,7 +281,7 @@ export default function AIInsightsCard({
         {activeTab === 'patterns' && (
           <>
             {patterns.length > 0 ? (
-              patterns.map(renderPattern)
+              patterns.map((pattern, index) => renderPattern(pattern, index))
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="trending-up-outline" size={48} color="#9ca3af" />
@@ -295,7 +295,7 @@ export default function AIInsightsCard({
         {activeTab === 'recommendations' && (
           <>
             {recommendations.length > 0 ? (
-              recommendations.map(renderRecommendation)
+              recommendations.map((recommendation, index) => renderRecommendation(recommendation, index))
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="star-outline" size={48} color="#9ca3af" />

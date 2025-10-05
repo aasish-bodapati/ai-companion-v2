@@ -5,7 +5,7 @@ Data validation service for health logging data quality.
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
 from app.models.health.fitness_log import FitnessLog
-from app.models.health.nutrition_log import NutritionLog
+from app.models.health.fitness_log import NutritionLog
 from app.models.health.food_log_items import FoodLogItem
 
 
