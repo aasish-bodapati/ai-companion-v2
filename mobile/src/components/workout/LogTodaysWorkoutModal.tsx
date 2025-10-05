@@ -578,17 +578,17 @@ export default function LogTodaysWorkoutModal({
               const currentExerciseData = exerciseData[exercise.id] || {};
 
               // Convert exercise data to DynamicExerciseForm format
-              // Don't pre-populate sets/reps - let users enter their own values
+              // Pre-populate with latest logged data if available
               const exerciseForForm = {
                 exercise_name: exercise.name || exercise.exercise_name,
                 logging_category: exercise.category || exercise.logging_category,
-                sets: currentExerciseData.sets || '', // No pre-population
-                reps: currentExerciseData.reps || '', // No pre-population
-                weight: currentExerciseData.weight || '', // No pre-population
-                weight_used: currentExerciseData.weight || '', // No pre-population
+                sets: currentExerciseData.sets || '', // Pre-populate with latest data
+                reps: currentExerciseData.reps || '', // Pre-populate with latest data
+                weight: currentExerciseData.weight || '', // Pre-populate with latest data
+                weight_used: currentExerciseData.weight || '', // Pre-populate with latest data
                 weight_unit: 'kg', // Default to kg (hidden in UI)
-                duration: currentExerciseData.duration || exercise.duration || '', // Keep duration for cardio
-                distance: currentExerciseData.distance || exercise.distance || '', // Keep distance for distance-based
+                duration: currentExerciseData.duration || exercise.duration || '', // Pre-populate with latest data
+                distance: currentExerciseData.distance || exercise.distance || '', // Pre-populate with latest data
                 distance_unit: 'km', // Default to km (hidden in UI)
                 category: exercise.category || exercise.logging_category
               };

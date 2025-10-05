@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import LoggingModal from '../ui/LoggingModal';
 import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { fitnessService, ExerciseType } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { useToast } from '../../contexts/ToastContext';
 
 interface WorkoutData {
   duration_minutes: number;
@@ -92,6 +92,10 @@ export default function WorkoutLoggingModal({
       category: exercise.category,
       muscle_group: exercise.muscle_group
     });
+    
+    // Clear search and close dropdown
+    setSearchQuery('');
+    setSearchResults([]);
     
     // Check if exercise already exists
     const existingItem = exercises.find(item => item.name === exercise.name);
@@ -316,34 +320,465 @@ export default function WorkoutLoggingModal({
   }, [handleUpdateItem, handleRemoveItem, newlyAddedIds]);
 
 
+  const { showToast } = useToast();
+
+  // Function to get category display info
+  const getCategoryInfo = (category: string) => {
+    const categoryMap: { [key: string]: { name: string; color: string; icon: string } } = {
+      'bodyweight': { name: 'Bodyweight', color: '#3b82f6', icon: 'person-outline' },
+      'weighted': { name: 'Weighted', color: '#f59e0b', icon: 'barbell-outline' },
+      'cardio_duration': { name: 'Cardio', color: '#ef4444', icon: 'heart-outline' },
+      'distance_based': { name: 'Distance', color: '#10b981', icon: 'walk-outline' },
+      'mixed': { name: 'Mixed', color: '#8b5cf6', icon: 'fitness-outline' }
+    };
+    
+    return categoryMap[category] || { name: category, color: '#6b7280', icon: 'fitness-outline' };
+  };
+
+  const getTotalExercises = () => exercises.length;
+  const getTotalLogged = () => exercises.filter(ex => isFormValid()).length;
+
+  const handleSaveWorkout = async () => {
+    if (saving) {
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      const data = getFormData();
+      await handleSave(data);
+      showToast('Workout logged successfully!', 'success');
+    } catch (error) {
+      showToast('Failed to log workout. Please try again.', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!visible) return null;
+
   return (
-    <LoggingModal
-      visible={visible}
-      onClose={onClose}
-      onSave={handleSave}
-      title={todaysWorkout ? "Log Today's Workout" : "Log Workout"}
-      subtitle="Track your fitness progress"
-      formType="workout"
-      searchPlaceholder="Search for exercises..."
-      searchResults={searchResults}
-      onSearch={searchExercises}
-      onSelectItem={handleSelectExercise}
-      onClearSearch={handleClearSearch}
-      searchLoading={searching}
-      items={exercises}
-      onAddItem={handleAddItem}
-      onRemoveItem={handleRemoveItem}
-      onUpdateItem={handleUpdateItem}
-      renderItem={renderExerciseItem}
-      isFormValid={isFormValid}
-      getFormData={getFormData}
-      additionalFields={null}
-      saving={saving}
-      variant="fullScreen"
-      testID="workout-logging-modal"
-    />
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.overlay}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.modal}>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>
+                {todaysWorkout ? "Log Today's Workout" : "Log Workout"}
+              </Text>
+              <Text style={styles.subtitle}>
+                {todaysWorkout ? `${todaysWorkout.routine_name} - ${todaysWorkout.workout_name}` : "Track your fitness progress"}
+              </Text>
+              {exercises.length > 0 && (
+                <View style={styles.workoutCategories}>
+                  {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => {
+                    const categoryInfo = getCategoryInfo(category);
+                    return (
+                      <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
+                        <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
+                        <Text style={[styles.workoutCategoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#6b7280" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Section */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search for exercises..."
+                value={searchQuery}
+                onChangeText={(text) => {
+                  setSearchQuery(text);
+                  searchExercises(text);
+                }}
+                placeholderTextColor="#9ca3af"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }} style={styles.clearButton}>
+                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <ScrollView style={styles.searchResults} showsVerticalScrollIndicator={false}>
+                {searchResults.map((exercise, index) => (
+                  <TouchableOpacity
+                    key={exercise.id}
+                    style={styles.searchResultItem}
+                    onPress={() => handleSelectExercise(exercise)}
+                  >
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultName}>{exercise.name}</Text>
+                      <Text style={styles.searchResultCategory}>{exercise.category}</Text>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={24} color={COLORS.primary.main} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+
+          {/* Exercises List */}
+          <ScrollView style={styles.exercisesContainer} showsVerticalScrollIndicator={false}>
+            <Text style={styles.sectionTitle}>Exercises ({getTotalExercises()})</Text>
+            
+            {exercises.map((exercise, index) => (
+              <View key={exercise.id} style={styles.exerciseCard}>
+                <View style={styles.exerciseHeader}>
+                  <View style={styles.exerciseTitleRow}>
+                    <Text style={styles.exerciseNumber}>#{index + 1}</Text>
+                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                    {exercise.category && (() => {
+                      const categoryInfo = getCategoryInfo(exercise.category);
+                      return (
+                        <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
+                          <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
+                          <Text style={[styles.categoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
+                        </View>
+                      );
+                    })()}
+                  </View>
+                </View>
+
+                <LoggingItem
+                  item={exercise}
+                  itemType="workout"
+                  index={index}
+                  onUpdate={(id, updates) => {
+                    handleUpdateItem(id, updates);
+                    setNewlyAddedIds(prev => {
+                      const newSet = new Set(prev);
+                      newSet.delete(id);
+                      return newSet;
+                    });
+                  }}
+                  onRemove={handleRemoveItem}
+                  showExerciseDetails={true}
+                  isNewlyAdded={newlyAddedIds.has(exercise.id)}
+                  testID={`exercise-item-${index}`}
+                />
+              </View>
+            ))}
+
+            {exercises.length === 0 && (
+              <View style={styles.emptyState}>
+                <Ionicons name="fitness-outline" size={48} color="#d1d5db" />
+                <Text style={styles.emptyStateTitle}>No exercises added yet</Text>
+                <Text style={styles.emptyStateText}>Search and add exercises to start logging your workout</Text>
+              </View>
+            )}
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.completionText}>
+              {getTotalLogged()} / {getTotalExercises()} exercises logged - workout will be completed
+            </Text>
+            
+            <View style={styles.actionButtons}>
+              <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.saveButton, 
+                  (saving || !isFormValid()) && styles.saveButtonDisabled
+                ]}
+                onPress={handleSaveWorkout}
+                disabled={saving || !isFormValid()}
+              >
+                <Text style={[
+                  styles.saveButtonText,
+                  (saving || !isFormValid()) && styles.saveButtonTextDisabled
+                ]}>
+                  {saving ? 'Logging...' : 'Log Workout'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  modal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    width: '100%',
+    maxHeight: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  headerContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  workoutCategories: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  workoutCategoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  workoutCategoryText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginLeft: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  searchContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#111827',
+    paddingVertical: 4,
+  },
+  clearButton: {
+    padding: 4,
+  },
+  searchResults: {
+    maxHeight: 200,
+    marginTop: 8,
+    backgroundColor: '#ffffff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  searchResultCategory: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  exercisesContainer: {
+    padding: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  exerciseCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    padding: 6,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  exerciseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  exerciseTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  exerciseNumber: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginRight: 8,
+    minWidth: 20,
+  },
+  exerciseName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    flex: 1,
+  },
+  categoryBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: '#6b7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6b7280',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#9ca3af',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  footer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
+  },
+  completionText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    marginRight: 8,
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  cancelButtonText: {
+    color: '#374151',
+    fontWeight: '500',
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    backgroundColor: '#3b82f6',
+    borderWidth: 1,
+    borderColor: '#3b82f6',
+    marginLeft: 8,
+    alignItems: 'center',
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#9ca3af',
+    borderColor: '#9ca3af',
+  },
+  saveButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  saveButtonTextDisabled: {
+    color: '#ffffff',
+  },
 });
