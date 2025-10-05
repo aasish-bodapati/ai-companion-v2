@@ -16,6 +16,9 @@ import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionL
 import NutritionOverviewDashboard from '../../components/nutrition/NutritionOverviewDashboard';
 import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
+import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
+import { isFeatureEnabled } from '../../config/featureFlags';
+import { MigrationHelpers } from '../../utils/migrationHelpers';
 
 export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');

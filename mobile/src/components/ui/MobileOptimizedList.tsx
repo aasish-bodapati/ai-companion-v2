@@ -10,7 +10,7 @@ import {
   FlatListProps,
 } from 'react-native';
 import { performanceUtils, componentOptimization } from '../../utils/performance';
-import EnhancedLoadingState from './EnhancedLoadingState';
+import { UnifiedLoadingState } from './UnifiedLoadingState';
 
 interface MobileOptimizedListProps<T> extends Omit<FlatListProps<T>, 'renderItem'> {
   data: T[];
@@ -114,7 +114,7 @@ export default function MobileOptimizedList<T>({
 
   // Render loading state
   const renderLoadingState = () => (
-    <EnhancedLoadingState
+    <UnifiedLoadingState
       message="Loading items..."
       variant="default"
       size="medium"

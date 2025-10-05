@@ -1,3 +1,8 @@
+/**
+ * Safe loading state component
+ * Can be used alongside existing loading components without breaking changes
+ */
+
 import React from 'react';
 import {
   View,
@@ -9,10 +14,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { isFeatureEnabled } from '../../config/featureFlags';
 
-interface LoadingStateProps {
+interface SafeLoadingStateProps {
+  loading: boolean;
   message?: string;
   subMessage?: string;
+  children: React.ReactNode;
   variant?: 'default' | 'overlay' | 'inline' | 'skeleton';
   size?: 'small' | 'medium' | 'large';
   showRetry?: boolean;
@@ -24,9 +32,11 @@ interface LoadingStateProps {
   testID?: string;
 }
 
-export default function LoadingState({
+export const SafeLoadingState = ({
+  loading,
   message = 'Loading...',
   subMessage,
+  children,
   variant = 'default',
   size = 'medium',
   showRetry = false,
@@ -36,7 +46,7 @@ export default function LoadingState({
   color = COLORS.primary,
   style,
   testID,
-}: LoadingStateProps) {
+}: SafeLoadingStateProps) => {
   const handleRetry = () => {
     hapticFeedback.light();
     onRetry?.();
@@ -46,19 +56,19 @@ export default function LoadingState({
     switch (size) {
       case 'small':
         return {
-          spinnerSize: 'small',
+          spinnerSize: 'small' as const,
           fontSize: FONT_SIZE.small,
           padding: SPACING.medium,
         };
       case 'large':
         return {
-          spinnerSize: 'large',
+          spinnerSize: 'large' as const,
           fontSize: FONT_SIZE.large,
           padding: SPACING.xl,
         };
       default:
         return {
-          spinnerSize: 'large',
+          spinnerSize: 'large' as const,
           fontSize: FONT_SIZE.medium,
           padding: SPACING.large,
         };
@@ -78,7 +88,7 @@ export default function LoadingState({
         />
       ) : (
         <ActivityIndicator
-          size={sizeStyles.spinnerSize as any}
+          size={sizeStyles.spinnerSize}
           color={color}
           style={styles.spinner}
         />
@@ -141,12 +151,16 @@ export default function LoadingState({
     );
   }
 
-  return (
-    <View style={containerStyle} testID={testID}>
-      {renderContent()}
-    </View>
-  );
-}
+  if (loading) {
+    return (
+      <View style={containerStyle} testID={testID}>
+        {renderContent()}
+      </View>
+    );
+  }
+
+  return <>{children}</>;
+};
 
 const styles = StyleSheet.create({
   default: {

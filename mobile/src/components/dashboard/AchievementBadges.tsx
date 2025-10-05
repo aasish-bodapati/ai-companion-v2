@@ -7,6 +7,9 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
+import { isFeatureEnabled } from '../../config/featureFlags';
+import { MigrationHelpers } from '../../utils/migrationHelpers';
 
 interface Achievement {
   id: string;
@@ -224,7 +227,7 @@ export default function AchievementBadges({
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: MigrationHelpers.replaceStyle({
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 20,
@@ -235,7 +238,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
+  }, {
+    backgroundColor: DUPLICATE_STYLES.BACKGROUND_WHITE,
+    borderRadius: DUPLICATE_STYLES.BORDER_RADIUS_16,
+    padding: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  }),
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -262,17 +276,25 @@ const styles = StyleSheet.create({
   textContainer: {
     flex: 1,
   },
-  title: {
+  title: MigrationHelpers.replaceStyle({
     fontSize: 18,
     fontWeight: '600',
     color: '#1f2937',
-  },
-  subtitle: {
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_18,
+    fontWeight: '600',
+    color: DUPLICATE_STYLES.COLORS.TEXT_PRIMARY,
+  }),
+  subtitle: MigrationHelpers.replaceStyle({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 2,
-  },
-  actionButton: {
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_14,
+    color: DUPLICATE_STYLES.COLORS.TEXT_SECONDARY,
+    marginTop: 2,
+  }),
+  actionButton: MigrationHelpers.replaceStyle({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 12,
@@ -280,12 +302,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderRadius: 8,
     gap: 4,
-  },
-  actionText: {
+  }, {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: DUPLICATE_STYLES.BACKGROUND_F8FAFC,
+    borderRadius: DUPLICATE_STYLES.BORDER_RADIUS_8,
+    gap: 4,
+  }),
+  actionText: MigrationHelpers.replaceStyle({
     fontSize: 14,
     color: '#3b82f6',
     fontWeight: '500',
-  },
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_14,
+    color: DUPLICATE_STYLES.COLORS.PRIMARY,
+    fontWeight: '500',
+  }),
   achievementsContainer: {
     gap: 16,
   },

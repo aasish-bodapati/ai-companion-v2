@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProgressRing from './ProgressRing';
+import { UnifiedProgressRing } from '../ui/UnifiedProgressRing';
 
 interface StatItem {
   id: string;
@@ -73,7 +73,7 @@ export default function StatsCard({
           switch (stat.type) {
             case 'ring':
               return (
-                 <ProgressRing
+                 <UnifiedProgressRing
                    key={stat.id}
                    value={stat.value}
                    target={stat.target}
@@ -83,6 +83,7 @@ export default function StatsCard({
                    label={stat.label}
                    unit={stat.unit}
                    onPress={onStatPress ? () => onStatPress(stat) : undefined}
+                   variant="shared"
                  />
               );
             

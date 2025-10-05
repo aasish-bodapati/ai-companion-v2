@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProgressRing from './ProgressRing';
+import { UnifiedProgressRing } from '../ui/UnifiedProgressRing';
 
 interface BodyTypeCardProps {
   goalName: string;
@@ -110,13 +110,14 @@ export default function BodyTypeCard({
           </View>
         </View>
         
-        <ProgressRing
+        <UnifiedProgressRing
           value={loading ? 0 : weeklyAlignment}
           target={100}
           size={60}
           color={loading ? '#9ca3af' : getTrendColor()}
           icon="trophy"
           showPercentage={false}
+          variant="shared"
         />
       </View>
 

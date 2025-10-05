@@ -3,7 +3,7 @@ export { default as MobileOptimizedCard } from './MobileOptimizedCard';
 export { default as MobileOptimizedInput } from './MobileOptimizedInput';
 export { default as MobileOptimizedModal } from './MobileOptimizedModal';
 export { default as TouchOptimizedButton } from './TouchOptimizedButton';
-export { default as EnhancedLoadingState } from './EnhancedLoadingState';
+// EnhancedLoadingState removed - use UnifiedLoadingState instead
 export { default as MobileOptimizedList } from './MobileOptimizedList';
 
 // New reusable components

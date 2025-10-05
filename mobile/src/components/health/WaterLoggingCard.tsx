@@ -12,24 +12,27 @@ import { waterService, WaterLogStats } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
 import SectionHeader from '../layout/SectionHeader';
 import { COLORS, SPACING } from '../../theme/constants';
+import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
+import { isFeatureEnabled } from '../../config/featureFlags';
+import { MigrationHelpers } from '../../utils/migrationHelpers';
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface WaterLoggingCardProps {
   // No props needed - component manages its own state
 }
 
 export default function WaterLoggingCard({}: WaterLoggingCardProps) {
-  console.log('💧 [WATER CARD] Component rendering...');
   const [stats, setStats] = useState<WaterLogStats | null>(null);
   const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
 
   const loadStats = async () => {
     try {
-      console.log('💧 [WATER CARD] Loading water stats...');
+      MigrationHelpers.replaceConsoleLog('💧 [WATER CARD] Loading water stats...');
       const waterStats = await waterService.getWaterStats();
-      console.log('💧 [WATER CARD] Water stats loaded:', waterStats);
+      MigrationHelpers.replaceConsoleLog('💧 [WATER CARD] Water stats loaded:', waterStats);
       setStats(waterStats);
     } catch (error) {
-      console.error('💧 [WATER CARD] Error loading water stats:', error);
+      MigrationHelpers.replaceErrorHandling(error, 'WaterLoggingCard.loadStats');
       // Set default stats on error
       setStats({
         total_ml_today: 0,
@@ -308,16 +311,24 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
-  title: {
+  title: MigrationHelpers.replaceStyle({
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.text.primary,
     marginBottom: 2,
-  },
-  subtitle: {
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_18,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 2,
+  }),
+  subtitle: MigrationHelpers.replaceStyle({
     fontSize: 14,
     color: COLORS.text.secondary,
-  },
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_14,
+    color: COLORS.text.secondary,
+  }),
   badge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -342,11 +353,15 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
-  progressText: {
+  progressText: MigrationHelpers.replaceStyle({
     fontSize: 12,
     color: COLORS.text.secondary,
     textAlign: 'center',
-  },
+  }, {
+    fontSize: DUPLICATE_STYLES.FONT_SIZE_12,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+  }),
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',

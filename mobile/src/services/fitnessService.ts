@@ -1,5 +1,7 @@
 import { apiClient } from './api';
 import { BaseService } from './BaseService';
+import { DebugUtils } from '../utils/debugUtils';
+import { MigrationHelpers } from '../utils/migrationHelpers';
 
 export interface FitnessLog {
   id: number;
@@ -146,7 +148,7 @@ class FitnessService extends BaseService {
     
     // Check if this exact workout is already being processed
     if (this.pendingRequests.has(workoutKey)) {
-      console.log('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
+      MigrationHelpers.replaceConsoleLog('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
       throw new Error('Workout is already being processed. Please wait.');
     }
 
@@ -161,7 +163,7 @@ class FitnessService extends BaseService {
         timezone_offset: timezoneOffset
       };
       
-      console.log('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
+      MigrationHelpers.replaceConsoleLog('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
       const result = await this.makeRequest(
         () => apiClient.post('/health/logging/fitness', workoutDataWithTimezone),
         'FITNESS SERVICE - logWorkout'
@@ -225,14 +227,14 @@ class FitnessService extends BaseService {
       
       // Check if response contains exercise data or just a message
       if (response.message) {
-        console.log(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
+        MigrationHelpers.replaceConsoleLog(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
         return null;
       }
       
-      console.log(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
+      MigrationHelpers.replaceConsoleLog(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
       return response;
     } catch (error) {
-      console.log(`🔍 [FITNESS SERVICE] Error fetching latest exercise data for ${exerciseName}:`, error);
+      MigrationHelpers.replaceErrorHandling(error, `FITNESS SERVICE - getLatestExerciseData for ${exerciseName}`);
       return null;
     }
   }
@@ -246,10 +248,10 @@ class FitnessService extends BaseService {
         'FITNESS SERVICE - isExerciseLoggedToday'
       );
       
-      console.log(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
+      MigrationHelpers.replaceConsoleLog(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
       return response.logged_today || false;
     } catch (error) {
-      console.log(`🔍 [FITNESS SERVICE] Error checking if exercise was logged today:`, error);
+      MigrationHelpers.replaceErrorHandling(error, `FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}`);
       return false;
     }
   }

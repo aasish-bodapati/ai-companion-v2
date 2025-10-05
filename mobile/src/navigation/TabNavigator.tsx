@@ -8,6 +8,7 @@ import FitnessScreen from '../screens/main/FitnessScreen';
 import NutritionScreen from '../screens/main/NutritionScreen';
 import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
+import MigrationScreen from '../screens/admin/MigrationScreen';
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
 import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
@@ -19,6 +20,7 @@ export type TabParamList = {
   Nutrition: undefined;
   Analytics: undefined;
   Profile: undefined;
+  Migration: undefined;
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -74,6 +76,8 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               iconName = isFocused ? 'analytics' : 'analytics-outline';
             } else if (route.name === 'Profile') {
               iconName = isFocused ? 'person' : 'person-outline';
+            } else if (route.name === 'Migration') {
+              iconName = isFocused ? 'settings' : 'settings-outline';
             } else {
               iconName = 'help-outline';
             }
@@ -184,6 +188,11 @@ export default function TabNavigator() {
         name="Profile" 
         component={EnhancedProfileScreen} 
         options={{ title: 'Profile' }}
+      />
+      <Tab.Screen 
+        name="Migration" 
+        component={MigrationScreen} 
+        options={{ title: 'Migration' }}
       />
     </Tab.Navigator>
   );

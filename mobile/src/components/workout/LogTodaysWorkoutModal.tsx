@@ -15,6 +15,8 @@ import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
+import { createLoadingState } from '../../utils/duplicateCodeUtils';
+import { isFeatureEnabled } from '../../config/featureFlags';
 
 interface Exercise {
   id: string | number;
@@ -54,7 +56,15 @@ export default function LogTodaysWorkoutModal({
 }: LogTodaysWorkoutModalProps) {
   const { showToast } = useToast();
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
+  
+  // Always call hooks, but conditionally use the result
+  const newLoadingState = createLoadingState();
   const [loading, setLoading] = useState(false);
+  
+  // Use new loading state management if feature is enabled
+  const loadingState = isFeatureEnabled('USE_NEW_LOADING_UTILS') 
+    ? newLoadingState
+    : { loading, setLoading, withLoading: async (fn: () => Promise<any>) => fn(), resetError: () => {} };
   const [exerciseData, setExerciseData] = useState<{ [key: string | number]: any }>({});
   const [loggedExercises, setLoggedExercises] = useState<Set<string | number>>(new Set());
   const [skippedExercises, setSkippedExercises] = useState<Set<string | number>>(new Set());

@@ -21,6 +21,9 @@ import { fitnessService, WorkoutStats } from '../../services/fitnessService';
 import { dashboardService } from '../../services/dashboardService';
 import { routineService } from '../../services/routineService';
 import useResponsive from '../../hooks/useResponsive';
+import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
+import { isFeatureEnabled } from '../../config/featureFlags';
+import { MigrationHelpers } from '../../utils/migrationHelpers';
 
 export default function FitnessScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
@@ -474,22 +477,34 @@ export default function FitnessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: MigrationHelpers.replaceStyle(
+      '#f8fafc',
+      DUPLICATE_STYLES.BACKGROUND_F8FAFC
+    ),
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: MigrationHelpers.replaceStyle(
+      20,
+      DUPLICATE_STYLES.PADDING_HORIZONTAL_20
+    ),
     paddingTop: 20,
     paddingBottom: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: MigrationHelpers.replaceStyle(
+      '#1f2937',
+      DUPLICATE_STYLES.COLORS.TEXT_PRIMARY
+    ),
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: MigrationHelpers.replaceStyle(
+      '#6b7280',
+      DUPLICATE_STYLES.COLORS.TEXT_SECONDARY
+    ),
   },
   tabContainer: {
     flexDirection: 'row',

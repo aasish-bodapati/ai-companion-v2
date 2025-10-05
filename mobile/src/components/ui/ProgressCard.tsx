@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import ProgressRing from './ProgressRing';
+import { UnifiedProgressRing } from './UnifiedProgressRing';
 import { COMMON_STYLES } from '../../theme/constants';
 
 interface ProgressCardProps {
@@ -117,7 +117,7 @@ export default function ProgressCard({
       </View>
 
       <View style={styles.content}>
-        <ProgressRing
+        <UnifiedProgressRing
           progress={progress}
           goal={goal}
           current={current}
@@ -125,6 +125,7 @@ export default function ProgressCard({
           color={color}
           size={sizeStyles.ringSize}
           showIcon={false}
+          variant="ui"
         />
         
         <View style={styles.stats}>
