@@ -158,7 +158,7 @@ export default function BodyTypeProgressDashboard({
     // Calculate breakdown scores (simplified for demo)
     const workoutScore = dailyLog.workouts.reduce((sum, workout) => {
       // This would use the actual scoring service
-      return sum + (workout.type === 'strength' ? 12 : workout.type === 'cardio' ? 5 : 0);
+      return sum + (workout.type === 'moderate_strength' || workout.type === 'heavy_strength' ? 12 : workout.type === 'cardio' ? 5 : 0);
     }, 0);
 
     const nutritionScore = dailyLog.nutrition.reduce((sum, nutrition) => {

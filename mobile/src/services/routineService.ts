@@ -150,7 +150,7 @@ class RoutineService extends BaseService {
         isActive: data.user_progress?.is_active
       });
       return data;
-    } catch (error) {
+    } catch (error: any) {
       if (error.response?.status === 404) {
         console.log('ℹ️ No active routine found');
         return null;
@@ -186,23 +186,21 @@ class RoutineService extends BaseService {
       // Create the routine with workout plan
       const workoutDaysData = template.workout_schedule.map(day => ({
         day: day.day,
-        day_order: day.day_order || 0,
-        workout_name: day.workout_name,
-        description: day.description,
-        exercises: day.exercises.map(exercise => ({
-          exercise_name: exercise.exercise_name,
+        workouts: [],
+        exercises: day.exercises?.map(exercise => ({
+          id: exercise.id,
+          name: exercise.name,
           sets: exercise.sets,
           reps: exercise.reps,
-          weight_notes: exercise.weight_notes,
-          rest_time: exercise.rest_time,
-          notes: exercise.notes,
-          order_index: exercise.order_index
+          duration_minutes: exercise.duration_minutes,
+          weight_kg: exercise.weight_kg,
+          distance_km: exercise.distance_km
         }))
       }));
 
       console.log('🏋️ Workout days data prepared:', {
         daysCount: workoutDaysData.length,
-        exercisesCount: workoutDaysData.reduce((total, day) => total + day.exercises.length, 0)
+        exercisesCount: workoutDaysData.reduce((total, day) => total + (day.exercises?.length || 0), 0)
       });
 
       const data = await this.makeRequest(
@@ -320,7 +318,7 @@ class RoutineService extends BaseService {
         exercisesCount: data?.exercises?.length || 0
       });
       return data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       // Handle 404 error gracefully (no workout scheduled for today)
       if (error.response?.status === 404) {
         console.log('ℹ️ No workout scheduled for today');
@@ -472,6 +470,24 @@ class RoutineService extends BaseService {
     return this.makeRequest(
       () => apiClient.delete(`/health/logging/fitness/${logId}`),
       'ROUTINE SERVICE - deleteWorkoutLog'
+    );
+  }
+
+  // Set active routine
+  async setActiveRoutine(routineId: string): Promise<any> {
+    return this.makeRequest(
+      () => apiClient.post('/health/active-routine', {
+        routine_id: routineId
+      }),
+      'ROUTINE SERVICE - setActiveRoutine'
+    );
+  }
+
+  // Clear active routine
+  async clearActiveRoutine(): Promise<any> {
+    return this.makeRequest(
+      () => apiClient.delete('/health/active-routine'),
+      'ROUTINE SERVICE - clearActiveRoutine'
     );
   }
 }

@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
+import { ExerciseData } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
 import { createLoadingState } from '../../utils/duplicateCodeUtils';
@@ -134,8 +135,8 @@ export default function LogTodaysWorkoutModal({
             
             // Check both latest data and if logged today in parallel
             const [latestData, isLoggedToday] = await Promise.all([
-              fitnessService.getLatestExerciseData(exerciseName),
-              fitnessService.isExerciseLoggedToday(exerciseName)
+              fitnessService.getLatestExerciseData(exerciseName || ''),
+              fitnessService.isExerciseLoggedToday(exerciseName || '')
             ]);
             
             if (isLoggedToday) {
@@ -197,7 +198,7 @@ export default function LogTodaysWorkoutModal({
       
       setExerciseData(initialData);
       setExercisesLoggedToday(loggedTodaySet);
-    } catch (error) {
+    } catch (error: any) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       
       // Handle different error types
@@ -524,7 +525,7 @@ export default function LogTodaysWorkoutModal({
   const handleSkipWorkout = async () => {
     try {
       setLoading(true);
-      await routineService.skipTodaysWorkout(workoutData!.routine_id);
+      await routineService.skipTodaysWorkout(Number(workoutData!.routine_id));
       
       showToast('Your workout has been marked as skipped.', 'info');
       onWorkoutLogged();
@@ -593,7 +594,7 @@ export default function LogTodaysWorkoutModal({
               {workoutData.exercises && workoutData.exercises.length > 0 && (
                 <View style={styles.workoutCategories}>
                   {Array.from(new Set(workoutData.exercises.map(ex => ex.category || ex.logging_category).filter(Boolean))).map((category, index) => {
-                    const categoryInfo = getCategoryInfo(category);
+                    const categoryInfo = getCategoryInfo(category || '');
                     return (
                       <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
                         <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
@@ -621,9 +622,9 @@ export default function LogTodaysWorkoutModal({
 
               // Convert exercise data to DynamicExerciseForm format
               // Pre-populate with latest logged data if available
-              const exerciseForForm = {
-                exercise_name: exercise.name || exercise.exercise_name,
-                logging_category: exercise.category || exercise.logging_category,
+              const exerciseForForm: ExerciseData = {
+                exercise_name: exercise.name || exercise.exercise_name || '',
+                logging_category: exercise.category || exercise.logging_category || '',
                 sets: currentExerciseData.sets || '', // Pre-populate with latest data
                 reps: currentExerciseData.reps || '', // Pre-populate with latest data
                 weight: currentExerciseData.weight || '', // Pre-populate with latest data
@@ -632,7 +633,7 @@ export default function LogTodaysWorkoutModal({
                 duration: currentExerciseData.duration || exercise.duration || '', // Pre-populate with latest data
                 distance: currentExerciseData.distance || exercise.distance || '', // Pre-populate with latest data
                 distance_unit: 'km', // Default to km (hidden in UI)
-                category: exercise.category || exercise.logging_category
+                category: exercise.category || exercise.logging_category || ''
               };
               
               // Debug logging for auto-population
@@ -648,7 +649,7 @@ export default function LogTodaysWorkoutModal({
                       <Text style={styles.exerciseNumber}>#{index + 1}</Text>
                       <Text style={styles.exerciseName}>{exercise.name || exercise.exercise_name}</Text>
                       {(exercise.category || exercise.logging_category) && (() => {
-                        const categoryInfo = getCategoryInfo(exercise.category || exercise.logging_category);
+                        const categoryInfo = getCategoryInfo(exercise.category || exercise.logging_category || '');
                         
                         return (
                           <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
@@ -669,7 +670,7 @@ export default function LogTodaysWorkoutModal({
                     <View style={styles.exerciseActions}>
                       <TouchableOpacity
                         style={styles.skipButton}
-                        onPress={() => handleExerciseSkip(exercise.id)}
+                        onPress={() => handleExerciseSkip(Number(exercise.id))}
                       >
                         <View style={[styles.checkbox, isSkipped && styles.checkboxChecked]}>
                           {isSkipped && <Ionicons name="checkmark" size={12} color="#ffffff" />}
@@ -689,7 +690,7 @@ export default function LogTodaysWorkoutModal({
                   {/* Dynamic Exercise Form */}
                   <DynamicExerciseForm
                     exercise={exerciseForForm}
-                    index={exercise.id}
+                    index={Number(exercise.id)}
                     onUpdate={(exerciseId, field, value) => {
                       handleInputChange(exerciseId, field, value);
                     }}

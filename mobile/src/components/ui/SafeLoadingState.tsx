@@ -43,7 +43,7 @@ export const SafeLoadingState = ({
   onRetry,
   retryText = 'Try Again',
   icon,
-  color = COLORS.primary,
+  color = COLORS.primary.main,
   style,
   testID,
 }: SafeLoadingStateProps) => {
@@ -110,7 +110,7 @@ export const SafeLoadingState = ({
           onPress={handleRetry}
           testID={`${testID}-retry-button`}
         >
-          <Ionicons name="refresh" size={16} color={COLORS.primary} />
+          <Ionicons name="refresh" size={16} color={COLORS.primary.main} />
           <Text style={styles.retryText}>{retryText}</Text>
         </TouchableOpacity>
       )}
@@ -218,14 +218,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: SPACING.small,
     paddingHorizontal: SPACING.medium,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: COLORS.primary.main + '20',
     borderRadius: BORDER_RADIUS.medium,
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
     gap: SPACING.xs,
   },
   retryText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontSize: FONT_SIZE.small,
     fontWeight: '500',
   },

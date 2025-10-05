@@ -2,8 +2,11 @@ export interface ValidationRule {
   required?: boolean;
   minLength?: number;
   maxLength?: number;
+  min?: number;
+  max?: number;
   pattern?: RegExp;
-  custom?: (value: string) => string | undefined;
+  email?: boolean;
+  custom?: (value: any) => string | undefined;
   message?: string;
 }
 
@@ -59,7 +62,7 @@ export class FormValidator {
     return undefined;
   }
 
-  validateForm(data: Record<string, string>): ValidationErrors {
+  validateForm(data: Record<string, any>): ValidationErrors {
     const errors: ValidationErrors = {};
 
     Object.keys(this.rules).forEach(fieldName => {

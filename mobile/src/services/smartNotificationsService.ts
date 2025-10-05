@@ -184,9 +184,9 @@ class SmartNotificationsService {
       if (metricValue !== undefined) {
         switch (behaviorCondition.condition) {
           case 'below':
-            return metricValue < (behaviorCondition.threshold || 0);
+            return (metricValue as number) < (behaviorCondition.threshold || 0);
           case 'above':
-            return metricValue > (behaviorCondition.threshold || 0);
+            return (metricValue as number) > (behaviorCondition.threshold || 0);
           case 'missing':
             return metricValue === 0 || metricValue === null;
           case 'inconsistent':
@@ -208,7 +208,7 @@ class SmartNotificationsService {
     if (this.preferences.workout_reminders) {
       const lastWorkout = userData.last_workout;
       const daysSinceWorkout = lastWorkout ? 
-        Math.floor((now.getTime() - new Date(lastWorkout).getTime()) / (1000 * 60 * 60 * 24)) : 7;
+        Math.floor((now.getTime() - new Date(lastWorkout as string).getTime()) / (1000 * 60 * 60 * 24)) : 7;
       
       if (daysSinceWorkout >= 2) {
         notifications.push({
@@ -231,7 +231,7 @@ class SmartNotificationsService {
     if (this.preferences.meal_reminders) {
       const lastMeal = userData.last_meal;
       const hoursSinceMeal = lastMeal ? 
-        Math.floor((now.getTime() - new Date(lastMeal).getTime()) / (1000 * 60 * 60)) : 8;
+        Math.floor((now.getTime() - new Date(lastMeal as string).getTime()) / (1000 * 60 * 60)) : 8;
       
       if (hoursSinceMeal >= 4) {
         const mealType = this.getMealType(now);
@@ -256,7 +256,7 @@ class SmartNotificationsService {
       const waterIntake = userData.today_water || 0;
       const targetWater = userData.water_target || 3.0;
       
-      if (waterIntake < targetWater * 0.5) {
+      if ((waterIntake as number) < (targetWater as number) * 0.5) {
         notifications.push({
           id: 'water_reminder_1',
           type: 'water_reminder',
@@ -277,7 +277,7 @@ class SmartNotificationsService {
     if (this.preferences.mood_checks) {
       const lastMood = userData.last_mood;
       const hoursSinceMood = lastMood ? 
-        Math.floor((now.getTime() - new Date(lastMood).getTime()) / (1000 * 60 * 60)) : 24;
+        Math.floor((now.getTime() - new Date(lastMood as string).getTime()) / (1000 * 60 * 60)) : 24;
       
       if (hoursSinceMood >= 12) {
         notifications.push({
@@ -302,7 +302,7 @@ class SmartNotificationsService {
       const weeklyGoal = userData.weekly_goal || {};
       
       Object.entries(weeklyGoal).forEach(([goal, target]) => {
-        const current = goalProgress[goal] || 0;
+        const current = (goalProgress as any)[goal] || 0;
         const progress = (current / target) * 100;
         
         if (progress < 50 && now.getDay() >= 3) { // Mid-week check
@@ -342,7 +342,7 @@ class SmartNotificationsService {
 
   private checkInconsistency(metric: string, context: Record<string, unknown>): boolean {
     // Simple inconsistency check - can be enhanced with more sophisticated logic
-    const recentData = context[`${metric}_history`] || [];
+    const recentData = (context[`${metric}_history`] as any[]) || [];
     if (recentData.length < 3) return false;
     
     const values = recentData.slice(-3).map((d: Record<string, unknown>) => d.value as number);

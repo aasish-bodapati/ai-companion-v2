@@ -250,7 +250,7 @@ class NumericalGoalsService {
       });
       
       // Calculate total calories consumed
-      const caloriesConsumed = nutritionLogs.reduce((sum, log) => sum + (log.calories || 0), 0);
+      const caloriesConsumed = nutritionLogs.reduce((sum, log) => sum + (log.total_calories || 0), 0);
       
       // Estimate calories burned (simplified - would use more sophisticated calculation)
       const estimatedBurned = 2000; // Base metabolic rate + activity
@@ -324,7 +324,7 @@ class NumericalGoalsService {
         return acc;
       }, {} as Record<string, number>);
       
-      const daysMeetingGoal = Object.values(dailyTotals).filter(total => total >= dailyTarget).length;
+      const daysMeetingGoal = Object.values(dailyTotals).filter((total: any) => total >= dailyTarget).length;
       return daysMeetingGoal;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -342,9 +342,9 @@ class NumericalGoalsService {
       
       // This is simplified - would need more sophisticated food categorization
       return nutritionLogs.filter(log => 
-        log.food_name?.toLowerCase().includes('vegetable') ||
-        log.food_name?.toLowerCase().includes('salad') ||
-        log.food_name?.toLowerCase().includes('broccoli')
+        log.meal_name?.toLowerCase().includes('vegetable') ||
+        log.meal_name?.toLowerCase().includes('salad') ||
+        log.meal_name?.toLowerCase().includes('broccoli')
       ).length;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -362,9 +362,9 @@ class NumericalGoalsService {
       
       // This is simplified - would need more sophisticated food categorization
       return nutritionLogs.filter(log => 
-        log.food_name?.toLowerCase().includes('fruit') ||
-        log.food_name?.toLowerCase().includes('apple') ||
-        log.food_name?.toLowerCase().includes('banana')
+        log.meal_name?.toLowerCase().includes('fruit') ||
+        log.meal_name?.toLowerCase().includes('apple') ||
+        log.meal_name?.toLowerCase().includes('banana')
       ).length;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -384,9 +384,9 @@ class NumericalGoalsService {
       
       // This is simplified - would need more sophisticated food categorization
       return nutritionLogs.filter(log => 
-        log.food_name?.toLowerCase().includes('processed') ||
-        log.food_name?.toLowerCase().includes('packaged') ||
-        log.food_name?.toLowerCase().includes('fast food')
+        log.meal_name?.toLowerCase().includes('processed') ||
+        log.meal_name?.toLowerCase().includes('packaged') ||
+        log.meal_name?.toLowerCase().includes('fast food')
       ).length;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications

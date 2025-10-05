@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   modeSwitchButtonText: {
     fontSize: FONT_SIZE.medium,
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontWeight: '600',
   },
 });

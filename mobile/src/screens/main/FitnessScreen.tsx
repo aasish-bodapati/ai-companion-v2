@@ -77,29 +77,23 @@ export default function FitnessScreen() {
       );
       
       setWeekStats({
-        total_workouts: totalWorkouts,
-        total_duration: totalDuration,
-        total_calories_burned: totalCalories,
-        average_duration: Math.round(averageDuration),
-        average_calories: Math.round(averageCalories),
-        most_common_activity: mostCommonActivity,
-        longest_workout: longestWorkout,
-        this_week_workouts: totalWorkouts,
-        this_month_workouts: totalWorkouts, // Simplified for now
+        totalWorkouts: totalWorkouts,
+        totalDuration: totalDuration,
+        totalCalories: totalCalories,
+        averageDuration: Math.round(averageDuration),
+        averageCalories: Math.round(averageCalories),
+        workouts: workouts,
       });
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback stats
       setWeekStats({
-        total_workouts: 0,
-        total_duration: 0,
-        total_calories_burned: 0,
-        average_duration: 0,
-        average_calories: 0,
-        most_common_activity: 'No data',
-        longest_workout: 0,
-        this_week_workouts: 0,
-        this_month_workouts: 0,
+        totalWorkouts: 0,
+        totalDuration: 0,
+        totalCalories: 0,
+        averageDuration: 0,
+        averageCalories: 0,
+        workouts: [],
       });
     }
   };
@@ -110,7 +104,7 @@ export default function FitnessScreen() {
       const response = await fitnessService.getFitnessLogs({ period: 'week' });
       
       // Extract workouts array from response
-      const workouts = response?.workouts || response || [];
+      const workouts = Array.isArray(response) ? response : [];
       
       // Group workouts by day of week
       const weeklyData = {
@@ -232,7 +226,7 @@ export default function FitnessScreen() {
     {
       id: '1',
       title: 'Weekly Goal',
-      current: weekStats?.total_workouts || 0,
+      current: weekStats?.totalWorkouts || 0,
       target: 5,
       color: '#3b82f6',
       icon: 'fitness-outline',
@@ -241,7 +235,7 @@ export default function FitnessScreen() {
     {
       id: '2',
       title: 'Calories',
-      current: weekStats?.total_calories_burned || 0,
+      current: weekStats?.totalCalories || 0,
       target: 2000,
       color: '#f97316',
       icon: 'flame-outline',
@@ -250,7 +244,7 @@ export default function FitnessScreen() {
     {
       id: '3',
       title: 'Duration',
-      current: Math.round((weekStats?.total_duration || 0) / 60),
+      current: Math.round((weekStats?.totalDuration || 0) / 60),
       target: 300,
       color: '#10b981',
       icon: 'time-outline',
@@ -313,9 +307,9 @@ export default function FitnessScreen() {
     >
       {/* Today's Snapshot */}
       <TodaysSnapshot
-        weeklyWorkouts={weekStats?.total_workouts || 0}
+        weeklyWorkouts={weekStats?.totalWorkouts || 0}
         alignmentScore={75}
-        caloriesBurned={weekStats?.total_calories_burned || 0}
+        caloriesBurned={weekStats?.totalCalories || 0}
         streak={3}
         todaysWorkout={todaysWorkout}
         onQuickLog={() => setShowUnifiedWorkoutLogger(true)}

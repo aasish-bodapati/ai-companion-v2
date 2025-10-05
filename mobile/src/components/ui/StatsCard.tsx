@@ -46,7 +46,7 @@ export default function StatsCard({
   value,
   subtitle,
   icon,
-  iconColor = COLORS.primary,
+  iconColor = COLORS.primary.main,
   trend,
   trendValue,
   onPress,
@@ -83,7 +83,7 @@ export default function StatsCard({
       case 'up':
         return COLORS.success;
       case 'down':
-        return COLORS.error;
+        return COLORS.error.main;
       case 'neutral':
         return COLORS.text.secondary;
       default:
@@ -95,8 +95,8 @@ export default function StatsCard({
     switch (variant) {
       case 'primary':
         return {
-          backgroundColor: COLORS.primary + '20',
-          borderColor: COLORS.primary + '40',
+          backgroundColor: COLORS.primary.main + '20',
+          borderColor: COLORS.primary.main + '40',
         };
       case 'success':
         return {
@@ -213,7 +213,7 @@ export default function StatsCard({
                   styles.progressBar,
                   {
                     width: `${Math.min((progress.current / progress.target) * 100, 100)}%`,
-                    backgroundColor: progress.color || COLORS.primary,
+                    backgroundColor: progress.color || COLORS.primary.main,
                   }
                 ]}
               />

@@ -181,13 +181,13 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       label: 'ML Today',
       value: displayStats.total_ml_today,
       unit: 'ml',
-      color: COLORS.primary,
+      color: COLORS.primary.main,
     },
     {
       label: 'OZ Today',
       value: displayStats.total_oz_today.toFixed(1),
       unit: 'oz',
-      color: COLORS.primary,
+      color: COLORS.primary.main,
     },
     {
       label: 'Logs',
@@ -204,7 +204,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <View style={styles.iconContainer}>
-              <Ionicons name="water" size={20} color={COLORS.primary} />
+              <Ionicons name="water" size={20} color={COLORS.primary.main} />
             </View>
             <View style={styles.headerText}>
               <Text style={styles.title}>Water Intake</Text>
@@ -215,7 +215,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
           </View>
           <View style={[
             styles.badge,
-            { backgroundColor: COLORS.primary }
+            { backgroundColor: COLORS.primary.main }
           ]}>
             <Text style={styles.badgeText}>{Math.round(displayStats.progress_percentage)}%</Text>
           </View>
@@ -229,7 +229,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
                 styles.progressFill,
                 { 
                   width: `${Math.min(displayStats.progress_percentage, 100)}%`,
-                  backgroundColor: COLORS.primary
+                  backgroundColor: COLORS.primary.main
                 }
               ]} 
             />
@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: COLORS.primary.main + '20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: SPACING.sm,
@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
   quickLogText: {
     fontSize: 14,
     fontWeight: '500',
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     marginBottom: 2,
   },
   quickLogSubtext: {

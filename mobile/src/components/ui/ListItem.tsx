@@ -52,7 +52,7 @@ export default function ListItem({
   showChevron = false,
   showBadge = false,
   badgeText,
-  badgeColor = COLORS.primary,
+  badgeColor = COLORS.primary.main,
   leftIconColor = COLORS.text.secondary,
   rightIconColor = COLORS.text.secondary,
   style,
@@ -74,7 +74,7 @@ export default function ListItem({
     if (loading) {
       return (
         <View style={styles.leftContent}>
-          <ActivityIndicator size="small" color={COLORS.primary} />
+          <ActivityIndicator size="small" color={COLORS.primary.main} />
         </View>
       );
     }
@@ -102,7 +102,7 @@ export default function ListItem({
     if (loading) {
       return (
         <View style={styles.rightContent}>
-          <ActivityIndicator size="small" color={COLORS.primary} />
+          <ActivityIndicator size="small" color={COLORS.primary.main} />
         </View>
       );
     }

@@ -47,7 +47,7 @@ export default function AnalyticsScreen() {
           activityLevel: (profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') || 'moderate',
           ffm: profile.health_data.ffm ? parseFloat(profile.health_data.ffm) : undefined,
           smm: profile.health_data.smm ? parseFloat(profile.health_data.smm) : undefined,
-          bodyFat: profile.health_data.bodyFat ? parseFloat(profile.health_data.bodyFat) : undefined,
+          bodyFat: profile.health_data.body_fat_percentage ? parseFloat(profile.health_data.body_fat_percentage) : undefined,
         });
       }
       

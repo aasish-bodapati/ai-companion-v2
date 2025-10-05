@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: FONT_SIZE.small,
-    color: COLORS.error,
+    color: COLORS.error.main,
     marginTop: SPACING.xs,
   },
 });

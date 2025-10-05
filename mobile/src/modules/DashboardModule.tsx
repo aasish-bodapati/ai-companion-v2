@@ -126,7 +126,7 @@ export default function DashboardModule({
 
         {/* Daily Streaks */}
         <DailyStreaks
-          streaks={streaks}
+          streaks={streaks as any}
           onStreakPress={(streak) => {
             console.log('Streak pressed:', streak.type);
           }}
@@ -135,7 +135,7 @@ export default function DashboardModule({
 
         {/* Achievements */}
         <AchievementBadges
-          achievements={achievements}
+          achievements={achievements as any}
           onAchievementPress={(achievement) => {
             console.log('Achievement pressed:', achievement.title);
           }}

@@ -20,7 +20,7 @@ interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other' | '';
+  gender: 'male' | 'female' | 'other' | '' | 'Please select your gender';
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
@@ -32,6 +32,7 @@ interface OnboardingData {
   bodyTypeGoal: string;
   editedBodyTypeGoal?: any; // Store the edited goal details
   timezone: string;
+  goals: string[];
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -89,6 +90,7 @@ export default function EnhancedOnboardingScreen() {
       bodyFat: '',
     },
     bodyTypeGoal: '',
+    goals: [],
     timezone: 'UTC', // Default timezone, will be detected independently
     preferences: {
       notifications: true,
@@ -236,7 +238,7 @@ export default function EnhancedOnboardingScreen() {
       // Convert onboarding data to backend format
       const backendData = {
         age: parseInt(onboardingData.healthData.age) || 25,
-        gender: onboardingData.healthData.gender,
+        gender: onboardingData.healthData.gender === 'Please select your gender' ? 'male' : onboardingData.healthData.gender as 'male' | 'female' | 'other',
         height_cm: parseInt(onboardingData.healthData.height) || 175,
         current_weight_kg: parseInt(onboardingData.healthData.weight) || 70,
         activity_level: onboardingData.healthData.activityLevel,
@@ -317,9 +319,9 @@ export default function EnhancedOnboardingScreen() {
           'eda6cd66-d5f8-44a9-8891-7d4ef4f4e5ec', // Strong & Steady
           '76f3a745-02b9-4040-b90e-a1f94d9b91cf'  // Big & Bold
         ];
-        const isValid = onboardingData.bodyTypeGoal && 
+        const isValid = !!(onboardingData.bodyTypeGoal && 
                        onboardingData.bodyTypeGoal.length > 0 && 
-                       validBodyTypeIds.includes(onboardingData.bodyTypeGoal);
+                       validBodyTypeIds.includes(onboardingData.bodyTypeGoal));
         console.log('🔍 Body type validation check:', { 
           bodyTypeGoal: onboardingData.bodyTypeGoal, 
           length: onboardingData.bodyTypeGoal?.length, 
@@ -350,7 +352,7 @@ export default function EnhancedOnboardingScreen() {
               age: parseInt(onboardingData.healthData.age) || 25,
               height: parseInt(onboardingData.healthData.height) || 175,
               weight: parseInt(onboardingData.healthData.weight) || 70,
-              gender: onboardingData.healthData.gender,
+              gender: onboardingData.healthData.gender === 'Please select your gender' ? 'male' : onboardingData.healthData.gender as 'male' | 'female' | 'other',
               activityLevel: onboardingData.healthData.activityLevel,
               ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : undefined,
               smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : undefined,
@@ -412,7 +414,7 @@ export default function EnhancedOnboardingScreen() {
           onNext={handleNext}
           onPrevious={handlePrevious}
           onComplete={handleComplete}
-          canGoNext={canGoNext()}
+          canGoNext={!!canGoNext()}
           canGoPrevious={!isFirstStep}
           enableSwipe={true}
           isLastStep={isLastStep}

@@ -114,6 +114,8 @@ export default function EditPreferencesModal({
         healthData,
         goals,
         preferences,
+        bodyTypeGoal: '', // Default empty string
+        timezone: 'UTC', // Default timezone
       };
 
       await onSave(updatedData);

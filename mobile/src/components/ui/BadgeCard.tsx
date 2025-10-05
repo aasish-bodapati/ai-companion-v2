@@ -59,7 +59,7 @@ export default function BadgeCard({
   subtitle,
   description,
   icon,
-  iconColor = COLORS.primary,
+  iconColor = COLORS.primary.main,
   badges = [],
   status,
   value,
@@ -177,7 +177,7 @@ export default function BadgeCard({
             <Ionicons 
               name={actionIcon as any} 
               size={16} 
-              color={COLORS.primary}
+              color={COLORS.primary.main}
               style={styles.actionIcon}
             />
           )}
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   
   actionText: {
     fontSize: FONT_SIZE.sm,
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontWeight: '600',
   },
   
@@ -433,13 +433,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.warning,
   },
   infoBadge: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   dangerBadge: {
     backgroundColor: COLORS.danger,
   },
   primaryBadge: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   neutralBadge: {
     backgroundColor: COLORS.gray[200],
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.warning,
   },
   completedStatus: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   errorStatus: {
     backgroundColor: COLORS.danger,

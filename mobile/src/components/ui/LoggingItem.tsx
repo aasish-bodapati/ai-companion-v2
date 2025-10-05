@@ -446,7 +446,7 @@ const LoggingItem = React.memo(function LoggingItem({
                   style={styles.actionButton}
                   testID={`${testID}-remove`}
                 >
-                  <Ionicons name="trash" size={16} color={COLORS.error} />
+                  <Ionicons name="trash" size={16} color={COLORS.error.main} />
                 </TouchableOpacity>
               )}
             </View>

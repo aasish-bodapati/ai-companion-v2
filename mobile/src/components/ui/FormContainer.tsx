@@ -113,7 +113,9 @@ export const FormContainer: React.FC<FormContainerProps> = ({
 
   const containerStyle = [
     styles.container,
-    styles[`container${variant}`],
+    variant === 'modal' ? styles.containerModal : 
+    variant === 'fullscreen' ? styles.containerFullscreen : 
+    styles.container,
     style,
   ];
 
@@ -214,8 +216,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.error.main,
   },
   actionButtonDisabled: {
-    backgroundColor: COLORS.disabled.background,
-    borderColor: COLORS.disabled.border,
+    backgroundColor: COLORS.background.disabled,
+    borderColor: COLORS.border.disabled,
   },
   actionButtonText: {
     fontSize: FONT_SIZE.md,
@@ -237,7 +239,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   actionButtonTextDisabled: {
-    color: COLORS.disabled.text,
+    color: COLORS.text.disabled,
   },
 });
 

@@ -15,6 +15,8 @@ export interface HealthData {
 export interface OnboardingData {
   healthData: HealthData;
   bodyTypeGoal: string;
+  goals: string[];
+  timezone: string;
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -132,6 +134,8 @@ export const onboardingService = {
       bodyFat: '',
     },
     bodyTypeGoal: '',
+    goals: [],
+    timezone: 'UTC',
     preferences: {
       notifications: true,
       reminders: true,

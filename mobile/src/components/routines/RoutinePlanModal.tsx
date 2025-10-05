@@ -442,12 +442,6 @@ export default function RoutinePlanModal({
     marginLeft: 6,
     fontWeight: '500',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   guidanceModalContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
@@ -473,9 +467,6 @@ export default function RoutinePlanModal({
     fontWeight: '600',
     color: '#111827',
   },
-  closeButton: {
-    padding: 4,
-  },
   guidanceModalContent: {
     padding: 20,
   },
@@ -486,6 +477,18 @@ export default function RoutinePlanModal({
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 16,
+  },
+  guidanceGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  guidanceLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
   },
     actionButtons: {
       paddingHorizontal: responsive.getResponsivePadding(SPACING.md),
@@ -574,8 +577,8 @@ export default function RoutinePlanModal({
                     );
                   })()}
                   {routine.aiRecommended && (
-                    <View style={[dynamicStyles.badge, { backgroundColor: COLORS.primary + '20' }]}>
-                      <Text style={[dynamicStyles.badgeText, { color: COLORS.primary }]}>
+                    <View style={[dynamicStyles.badge, { backgroundColor: COLORS.primary.main + '20' }]}>
+                      <Text style={[dynamicStyles.badgeText, { color: COLORS.primary.main }]}>
                         Created by System
                       </Text>
                     </View>

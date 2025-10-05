@@ -183,7 +183,7 @@ export default function SearchableList({
               <Ionicons 
                 name={item.icon as any} 
                 size={20} 
-                color={item.iconColor || COLORS.primary}
+                color={item.iconColor || COLORS.primary.main}
               />
             </View>
           )}
@@ -212,7 +212,7 @@ export default function SearchableList({
               <Ionicons 
                 name={isSelected ? 'checkmark-circle' : 'ellipse-outline'} 
                 size={24} 
-                color={isSelected ? COLORS.primary : COLORS.text.tertiary}
+                color={isSelected ? COLORS.primary.main : COLORS.text.tertiary}
               />
             </TouchableOpacity>
           )}
@@ -233,7 +233,7 @@ export default function SearchableList({
     if (loading) {
       return (
         <View style={styles.emptyState}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator size="large" color={COLORS.primary.main} />
           <Text style={styles.emptyText}>{loadingText}</Text>
         </View>
       );
@@ -290,7 +290,7 @@ export default function SearchableList({
         {isSearching && (
           <ActivityIndicator 
             size="small" 
-            color={COLORS.primary}
+            color={COLORS.primary.main}
             style={styles.searchLoader}
           />
         )}
@@ -400,9 +400,9 @@ const styles = StyleSheet.create({
   },
   
   selectedItem: {
-    backgroundColor: COLORS.primary + '10',
+    backgroundColor: COLORS.primary.main + '10',
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
   },
   
   itemContent: {
@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   },
   
   selectedItemText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
   },
   
   selectedItemSubtext: {

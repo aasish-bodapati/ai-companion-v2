@@ -185,18 +185,18 @@ export default function WorkoutLoggingModal({
         case 'weighted':
         case 'bodyweight':
           // Need sets and reps
-          const sets = parseInt(exercise.sets) || 0;
-          const reps = exercise.reps || '';
+          const sets = parseInt(exercise.sets?.toString() || '0') || 0;
+          const reps = exercise.reps?.toString() || '';
           return sets > 0 && reps && reps.trim() !== '' && reps !== '0';
           
         case 'distance_based':
           // Need distance
-          const distance = parseFloat(exercise.distance) || 0;
+          const distance = parseFloat(exercise.distance?.toString() || '0') || 0;
           return distance > 0;
           
         case 'cardio_duration':
           // Need duration
-          const duration = parseFloat(exercise.duration_minutes) || 0;
+          const duration = parseFloat(exercise.duration_minutes?.toString() || '0') || 0;
           return duration > 0;
           
         default:

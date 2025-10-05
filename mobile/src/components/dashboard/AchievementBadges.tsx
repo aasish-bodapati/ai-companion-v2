@@ -155,7 +155,7 @@ export default function AchievementBadges({
               <View style={styles.achievementIcon}>
                 <View
                   style={[
-                    styles.iconContainer,
+                    styles.achievementIconContainer,
                     {
                       backgroundColor: achievement.unlocked 
                         ? achievement.color + '20' 
@@ -335,7 +335,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginBottom: 12,
   },
-  iconContainer: {
+  achievementIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,

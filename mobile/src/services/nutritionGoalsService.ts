@@ -7,7 +7,7 @@ export interface NutritionGoals {
   fat_g: number;
   water_ml: number;
   meal_frequency: number;
-  body_type_goal: 'sleek' | 'steady' | 'bold';
+  bodyTypeGoal: 'sleek' | 'steady' | 'bold';
   activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   weight_goal: 'lose' | 'maintain' | 'gain';
   target_weight?: number;
@@ -53,12 +53,12 @@ export class NutritionGoalsService {
       height_cm: number;
       weight_kg: number;
       activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
-      body_type_goal: 'sleek' | 'steady' | 'bold';
+      bodyTypeGoal: 'sleek' | 'steady' | 'bold';
       weight_goal: 'lose' | 'maintain' | 'gain';
       target_weight?: number;
     }
   ): NutritionGoals {
-    const { age, gender, height_cm, weight_kg, activity_level, body_type_goal, weight_goal, target_weight } = userProfile;
+    const { age, gender, height_cm, weight_kg, activity_level, bodyTypeGoal, weight_goal, target_weight } = userProfile;
 
     // Calculate BMR using Mifflin-St Jeor Equation
     const bmr = this.calculateBMR(age, gender, height_cm, weight_kg);
@@ -75,21 +75,21 @@ export class NutritionGoalsService {
     }
 
     // Adjust calories based on body type goal
-    const bodyTypeMultiplier = this.getBodyTypeMultiplier(body_type_goal);
+    const bodyTypeMultiplier = this.getBodyTypeMultiplier(bodyTypeGoal);
     calorieGoal = Math.round(calorieGoal * bodyTypeMultiplier);
 
     // Calculate protein needs based on body type and activity level
-    const proteinPerKg = this.getProteinPerKg(body_type_goal, activity_level);
+    const proteinPerKg = this.getProteinPerKg(bodyTypeGoal, activity_level);
     const proteinGoal = Math.round(weight_kg * proteinPerKg);
 
     // Calculate carb and fat goals
-    const { carbsGoal, fatGoal } = this.calculateMacroGoals(calorieGoal, proteinGoal, body_type_goal);
+    const { carbsGoal, fatGoal } = this.calculateMacroGoals(calorieGoal, proteinGoal, bodyTypeGoal);
 
     // Calculate water needs (35ml per kg body weight)
     const waterGoal = Math.round(weight_kg * 35);
 
     // Calculate meal frequency based on body type
-    const mealFrequency = this.getMealFrequency(body_type_goal);
+    const mealFrequency = this.getMealFrequency(bodyTypeGoal);
 
     this.goals = {
       calories: calorieGoal,
@@ -98,7 +98,7 @@ export class NutritionGoalsService {
       fat_g: fatGoal,
       water_ml: waterGoal,
       meal_frequency: mealFrequency,
-      body_type_goal: body_type_goal,
+      bodyTypeGoal: bodyTypeGoal,
       activity_level: activity_level,
       weight_goal: weight_goal,
       target_weight: target_weight,
@@ -110,22 +110,22 @@ export class NutritionGoalsService {
 
   // Generate personalized nutrition recommendations
   generateRecommendations(goals: NutritionGoals): NutritionRecommendations {
-    const { body_type_goal, activity_level, weight_goal } = goals;
+    const { bodyTypeGoal, activity_level, weight_goal } = goals;
 
     // Meal timing recommendations
-    const mealTiming = this.getMealTimingRecommendations(body_type_goal, activity_level);
+    const mealTiming = this.getMealTimingRecommendations(bodyTypeGoal, activity_level);
 
     // Macro ratios
-    const macroRatios = this.getMacroRatios(body_type_goal, weight_goal);
+    const macroRatios = this.getMacroRatios(bodyTypeGoal, weight_goal);
 
     // Hydration goal
     const hydrationGoal = goals.water_ml;
 
     // Supplements based on body type
-    const supplements = this.getSupplementRecommendations(body_type_goal, activity_level);
+    const supplements = this.getSupplementRecommendations(bodyTypeGoal, activity_level);
 
     // Food recommendations
-    const { foodsToAvoid, foodsToPrioritize } = this.getFoodRecommendations(body_type_goal, weight_goal);
+    const { foodsToAvoid, foodsToPrioritize } = this.getFoodRecommendations(bodyTypeGoal, weight_goal);
 
     this.recommendations = {
       daily_targets: goals,

@@ -11,30 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService } from '../../services/nutritionService';
+import { nutritionService, NutritionLog } from '../../services/nutritionService';
 import { getDateLocal } from '../../utils/dateUtils';
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
-
-interface MealLog {
-  id: number;
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  meal_name?: string;
-  total_calories: number;
-  notes?: string;
-  meal_date?: string; // Optional since API returns logged_at
-  logged_at?: string; // API actually returns this field
-  created_at: string;
-  food_items?: {
-    id: number;
-    food_name: string;
-    quantity_grams: number;
-    calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-  }[];
-}
 
 interface NutritionLogsViewProps {
   onRefresh?: () => void;
@@ -47,10 +27,10 @@ export interface NutritionLogsViewRef {
 const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProps>((props, ref) => {
   const { onRefresh } = props;
   const { showToast, showRapidToast } = useToast();
-  const [logs, setLogs] = useState<MealLog[]>([]);
+  const [logs, setLogs] = useState<NutritionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editingLog, setEditingLog] = useState<MealLog | null>(null);
+  const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editFoodItems, setEditFoodItems] = useState<{id: string, quantity: number, quantity_unit: string}[]>([]);
   const [editingSingleFood, setEditingSingleFood] = useState<{logId: number, foodItem: any} | null>(null);
@@ -179,7 +159,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     onRefresh?.();
   };
 
-  const handleEditLog = (log: MealLog) => {
+  const handleEditLog = (log: NutritionLog) => {
     setEditingLog(log);
     
     // Parse food_items from JSON string
@@ -198,7 +178,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     }
     
     setEditFoodItems(
-      foodItems.map(item => ({
+      foodItems.map((item: any) => ({
         id: `${log.id}-${item.food_id || item.id}`,
         quantity: item.quantity || 1,
         quantity_unit: item.quantity_unit || 'serving',
@@ -254,7 +234,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         }
 
         // Update the specific food item
-        const updatedFoodItems = foodItems.map(item => {
+        const updatedFoodItems = foodItems.map((item: any) => {
           if (item.food_id === foodItem.food_id || item.id === foodItem.id) {
             return {
               ...item,
@@ -268,10 +248,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           return item;
         });
 
-        const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
-        const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
-        const totalCarbs = updatedFoodItems.reduce((sum, item) => sum + item.carbs_g, 0);
-        const totalFat = updatedFoodItems.reduce((sum, item) => sum + item.fat_g, 0);
+        const totalCalories = updatedFoodItems.reduce((sum: number, item: any) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum: number, item: any) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum: number, item: any) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum: number, item: any) => sum + item.fat_g, 0);
 
         await nutritionService.updateMeal(logId.toString(), {
           food_items: JSON.stringify(updatedFoodItems),
@@ -297,7 +277,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         }
 
         // Editing entire meal
-        const updatedFoodItems = foodItems.map(item => {
+        const updatedFoodItems = foodItems.map((item: any) => {
           const editItem = editFoodItems.find(editItem => 
             editItem.id === `${editingLog.id}-${item.food_id || item.id}`
           );
@@ -321,10 +301,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           return item;
         });
 
-        const totalCalories = updatedFoodItems.reduce((sum, item) => sum + item.calories, 0);
-        const totalProtein = updatedFoodItems.reduce((sum, item) => sum + item.protein_g, 0);
-        const totalCarbs = updatedFoodItems.reduce((sum, item) => sum + item.carbs_g, 0);
-        const totalFat = updatedFoodItems.reduce((sum, item) => sum + item.fat_g, 0);
+        const totalCalories = updatedFoodItems.reduce((sum: number, item: any) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum: number, item: any) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum: number, item: any) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum: number, item: any) => sum + item.fat_g, 0);
 
         await nutritionService.updateMeal(editingLog.id.toString(), {
           food_items: JSON.stringify(updatedFoodItems),
@@ -405,13 +385,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         foodItems = [];
       }
 
-      const updatedFoodItems = foodItems.filter(item => 
+      const updatedFoodItems = foodItems.filter((item: any) => 
         `${log.id}-${item.id || item.food_id || foodItems.indexOf(item)}` !== foodItemId
       );
 
       if (updatedFoodItems.length === 0) {
         // If no food items left, delete the entire log
-        await nutritionService.deleteMeal(logId);
+        await nutritionService.deleteMeal(logId.toString());
         setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
         showRapidToast('Meal log deleted successfully!', 'success');
       } else {
@@ -419,15 +399,15 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         const updatedLog = {
           ...log,
           food_items: updatedFoodItems,
-          total_calories: updatedFoodItems.reduce((sum, item) => sum + (item.calories || 0), 0),
-          protein_g: updatedFoodItems.reduce((sum, item) => sum + (item.protein_g || 0), 0),
-          carbs_g: updatedFoodItems.reduce((sum, item) => sum + (item.carbs_g || 0), 0),
-          fat_g: updatedFoodItems.reduce((sum, item) => sum + (item.fat_g || 0), 0),
+          total_calories: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.calories || 0), 0),
+          protein_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.protein_g || 0), 0),
+          carbs_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.carbs_g || 0), 0),
+          fat_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.fat_g || 0), 0),
         };
 
         // Update the log in the backend
-        await nutritionService.updateMeal(logId, {
-          food_items: JSON.stringify(updatedFoodItems.map(item => ({
+        await nutritionService.updateMeal(logId.toString(), {
+          food_items: JSON.stringify(updatedFoodItems.map((item: any) => ({
             food_id: item.id,
             food_name: item.food_name,
             quantity: item.quantity || 1,
@@ -460,7 +440,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     try {
       setDeletingLogId(logId);
       
-      await nutritionService.deleteMeal(logId);
+      await nutritionService.deleteMeal(logId.toString());
       
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
@@ -567,7 +547,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       }
 
       if (foodItems && foodItems.length > 0) {
-        foodItems.forEach((item, index) => {
+        foodItems.forEach((item: any, index: number) => {
           allFoodItems.push({
             id: `${log.id}-${item.id || item.food_id || index}`,
             food_name: item.food_name,
@@ -803,7 +783,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                     foodItems = [];
                   }
 
-                  return foodItems.map((foodItem, index) => {
+                  return foodItems.map((foodItem: any, index: number) => {
                     const editItem = editFoodItems.find(item => 
                       item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
                     );

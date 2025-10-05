@@ -35,7 +35,7 @@ export default function SectionHeader({
   title,
   subtitle,
   icon,
-  iconColor = COLORS.primary,
+  iconColor = COLORS.primary.main,
   actionLabel,
   actionIcon,
   onActionPress,
@@ -115,7 +115,7 @@ export default function SectionHeader({
           <Ionicons 
             name={actionIcon as any} 
             size={16} 
-            color={actionVariant === 'primary' ? COLORS.text.inverse : COLORS.primary}
+            color={actionVariant === 'primary' ? COLORS.text.inverse : COLORS.primary.main}
             style={actionLabel ? styles.actionIcon : undefined}
           />
         )}
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
   
   // Action button styles
   primaryActionButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: 16,
@@ -268,13 +268,13 @@ const styles = StyleSheet.create({
   },
   
   secondaryActionText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
   },
   
   textActionText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontSize: FONT_SIZE.md,
     fontWeight: '500',
   },

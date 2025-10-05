@@ -2,6 +2,7 @@ import { apiClient } from './api';
 import { BaseService } from './BaseService';
 import { DebugUtils } from '../utils/debugUtils';
 import { MigrationHelpers } from '../utils/migrationHelpers';
+import { getTodayLocal } from '../utils/dateUtils';
 
 export interface FitnessLog {
   id: number;
@@ -28,6 +29,15 @@ export interface WorkoutSummary {
   total_duration: number;
   calories_burned: number;
   avg_intensity: string;
+}
+
+export interface WorkoutStats {
+  totalWorkouts: number;
+  totalDuration: number;
+  totalCalories: number;
+  averageDuration: number;
+  averageCalories: number;
+  workouts: FitnessLog[];
 }
 
 export interface ExerciseType {
@@ -59,12 +69,30 @@ export interface WorkoutCategory {
   logging_attributes?: any;
 }
 
+export interface ExerciseData {
+  exercise_name: string;
+  sets?: number | string;
+  reps?: string | number;
+  weight_used?: number | string;
+  weight?: number | string; // Alternative field name
+  weight_unit?: string;
+  duration?: number | string; // in minutes
+  distance?: number | string; // in km/miles
+  distance_unit?: string;
+  intensity?: string; // low, medium, high
+  category?: string; // bodyweight, weighted, cardio_duration, distance_based
+  logging_category?: string; // Alternative field name
+  notes?: string;
+}
+
 export interface LatestExerciseData {
   exercise_name: string;
   sets?: number;
   reps?: string;
   weight_kg?: number;
+  weight_used?: number;
   duration_minutes?: number;
+  distance?: number;
   rest_time?: number;
   notes?: string;
   workout_date?: string;
@@ -197,6 +225,38 @@ class FitnessService extends BaseService {
     return data.exercises || data;
   }
 
+  async getExercises(): Promise<ExerciseType[]> {
+    // Alias for getExerciseTypes for backward compatibility
+    return this.getExerciseTypes();
+  }
+
+  async getWorkoutStats(period: string): Promise<any> {
+    // Get workout statistics for a given period
+    const data = await this.makeRequest(
+      () => apiClient.get(`/health/fitness-logs?period=${period}`),
+      'FITNESS SERVICE - getWorkoutStats'
+    );
+    return data;
+  }
+
+  async getRoutines(): Promise<any[]> {
+    // Get user's fitness routines
+    const data = await this.makeRequest(
+      () => apiClient.get('/health/simple-routines'),
+      'FITNESS SERVICE - getRoutines'
+    );
+    return data.routines || data || [];
+  }
+
+  async getFitnessStats(): Promise<any> {
+    // Get fitness statistics
+    const data = await this.makeRequest(
+      () => apiClient.get('/health/fitness-logs?period=week'),
+      'FITNESS SERVICE - getFitnessStats'
+    );
+    return data;
+  }
+
   async getWorkoutCategories(): Promise<WorkoutCategory[]> {
     return this.makeRequest(
       () => apiClient.get('/health/exercises/categories'),
@@ -254,6 +314,22 @@ class FitnessService extends BaseService {
       MigrationHelpers.replaceErrorHandling(error, `FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}`);
       return false;
     }
+  }
+
+  // Mood logging method
+  async logMood(moodData: {
+    mood_rating: number;
+    energy_level?: number;
+    activities?: string[];
+    notes?: string;
+  }): Promise<any> {
+    return this.makeRequest(
+      () => apiClient.post('/health/logging/mood', {
+        ...moodData,
+        log_date: getTodayLocal()
+      }),
+      'FITNESS SERVICE - logMood'
+    );
   }
 }
 

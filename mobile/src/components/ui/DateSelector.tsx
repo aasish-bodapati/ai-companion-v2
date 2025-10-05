@@ -19,6 +19,7 @@ interface DateSelectorProps {
   style?: any;
   calendarModalTitle?: string;
   showLogsIndicator?: boolean;
+  testID?: string;
 }
 
 export default function DateSelector({
@@ -240,8 +241,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   todayButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
+    borderColor: COLORS.primary.main,
   },
   todayButtonText: {
     color: COLORS.text.secondary,

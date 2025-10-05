@@ -3,8 +3,8 @@ import { BaseService } from './BaseService';
 import { getTodayLocal } from '../utils/dateUtils';
 
 export interface NutritionLog {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   meal_type: string;
   meal_name?: string;
   total_calories: number;
@@ -382,6 +382,25 @@ class NutritionService extends BaseService {
         quantity_grams: quantityGrams
       }),
       'NUTRITION SERVICE - updateFoodItemQuantity'
+    );
+  }
+
+  // Water logging method
+  async logWater(amount_ml: number): Promise<any> {
+    return this.makeRequest(
+      () => apiClient.post('/health/logging/water', {
+        amount_ml,
+        log_date: getTodayLocal()
+      }),
+      'NUTRITION SERVICE - logWater'
+    );
+  }
+
+  // Get nutrition goals
+  async getNutritionGoals(): Promise<any> {
+    return this.makeRequest(
+      () => apiClient.get('/health/goals/nutrition'),
+      'NUTRITION SERVICE - getNutritionGoals'
     );
   }
 }

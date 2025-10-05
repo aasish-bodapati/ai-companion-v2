@@ -87,7 +87,7 @@ jest.mock('../contexts/AuthContext', () => ({
 }));
 
 // Global test utilities
-global.mockHapticFeedback = {
+(global as any).mockHapticFeedback = {
   light: jest.fn(),
   medium: jest.fn(),
   heavy: jest.fn(),

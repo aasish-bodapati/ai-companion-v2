@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
-import { DailyLog, WorkoutLog, NutritionLog } from '../../services/bodyTypeScoringService';
+import { DailyLog, WorkoutLog, BodyTypeNutritionLog } from '../../services/bodyTypeScoringService';
 import BodyTypeProgressDashboard from '../../components/bodyType/BodyTypeProgressDashboard';
 
 export default function BodyTypeDashboardScreen() {
@@ -32,19 +32,19 @@ export default function BodyTypeDashboardScreen() {
       const { profileService } = await import('../../services/profileService');
       
       const profile = await profileService.getUserProfile();
-      if (profile?.body_type_goal) {
-        const goal = await getBodyTypeGoalById(profile.body_type_goal);
+      if (profile?.bodyTypeGoal) {
+        const goal = await getBodyTypeGoalById(profile.bodyTypeGoal);
         setBodyTypeGoal(goal);
       }
 
       // Set user attributes
       if (profile?.health_data) {
         setUserAttributes({
-          age: parseInt(profile.health_data.age) || 25,
-          weight: parseInt(profile.health_data.weight) || 70,
-          height: parseInt(profile.health_data.height) || 175,
-          gender: profile.health_data.gender || 'male',
-          activityLevel: profile.health_data.activity_level || 'moderate',
+          age: parseInt(profile.health_data.age || '25') || 25,
+          weight: parseInt(profile.health_data.weight || '70') || 70,
+          height: parseInt(profile.health_data.height || '175') || 175,
+          gender: (profile.health_data.gender as 'male' | 'female' | 'other') || 'male',
+          activityLevel: (profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') || 'moderate',
         });
       }
 
@@ -61,7 +61,7 @@ export default function BodyTypeDashboardScreen() {
   const generateMockDailyLog = (): DailyLog => {
     return {
       workouts: [
-        { type: 'strength', duration: 60, intensity: 'moderate' },
+        { type: 'moderate_strength', duration: 60, intensity: 'moderate' },
         { type: 'cardio', duration: 30, intensity: 'moderate' },
       ],
       nutrition: [
@@ -105,7 +105,7 @@ export default function BodyTypeDashboardScreen() {
       <BodyTypeProgressDashboard
         bodyTypeGoal={bodyTypeGoal}
         userAttributes={userAttributes}
-        dailyLog={dailyLog}
+        dailyLog={dailyLog || undefined}
         onRefresh={handleRefresh}
         onLogActivity={handleLogActivity}
       />

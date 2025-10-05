@@ -17,12 +17,14 @@ import { routineService } from '../../services/routineService';
 const { width, height } = Dimensions.get('window');
 
 interface Exercise {
-  id: string;
+  id: number;
   name: string;
   category: string;
   muscle_groups: string[];
-  equipment: string;
-  instructions: string;
+  equipment?: string;
+  instructions?: string;
+  difficulty?: string;
+  logging_category?: string;
 }
 
 interface WorkoutSet {
@@ -96,7 +98,18 @@ export default function UnifiedWorkoutLogger({
     try {
       setLoading(true);
       const data = await fitnessService.getExercises();
-      setExercises(data);
+      // Map ExerciseType to Exercise format
+      const mappedExercises: Exercise[] = data.map(exercise => ({
+        id: exercise.id,
+        name: exercise.name,
+        category: exercise.category,
+        muscle_groups: [exercise.muscle_group],
+        equipment: exercise.equipment,
+        instructions: exercise.instructions,
+        difficulty: exercise.difficulty,
+        logging_category: exercise.logging_category
+      }));
+      setExercises(mappedExercises);
     } catch (error) {
       console.error('Error loading exercises:', error);
     } finally {
@@ -147,7 +160,7 @@ export default function UnifiedWorkoutLogger({
   const addExercise = (exercise: Exercise) => {
     const newSet: WorkoutSet = {
       id: Date.now().toString(),
-      exercise_id: exercise.id,
+      exercise_id: exercise.id.toString(),
       reps: 0,
       weight: 0,
       duration: 0,
@@ -306,7 +319,7 @@ export default function UnifiedWorkoutLogger({
             
             <ScrollView style={styles.setsList} showsVerticalScrollIndicator={false}>
               {workout.sets.map((set, index) => {
-                const exercise = exercises.find(e => e.id === set.exercise_id);
+                const exercise = exercises.find(e => e.id.toString() === set.exercise_id);
                 return (
                   <View key={set.id} style={styles.setCard}>
                     <View style={styles.setHeader}>

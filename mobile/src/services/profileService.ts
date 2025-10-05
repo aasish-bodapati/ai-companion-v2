@@ -78,6 +78,7 @@ export const profileService = {
       },
       bodyTypeGoal: profile.bodyTypeGoal || '',
       goals: profile.goals || [],
+      timezone: profile.timezone || 'UTC',
       preferences: profile.preferences || {
         notifications: true,
         reminders: true,

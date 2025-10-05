@@ -356,4 +356,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#9ca3af',
   },
+  valueNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  valueUnit: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginLeft: 4,
+  },
+  trendIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  trendLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 2,
+  },
 });

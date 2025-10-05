@@ -57,8 +57,8 @@ export const useFormState = <T extends Record<string, any>>(
     const fieldValidator = new FormValidator({ [field as string]: fieldRules });
     const fieldErrors = fieldValidator.validateField(field as string, data[field]);
     
-    setErrors(prev => ({ ...prev, ...fieldErrors }));
-    return !fieldValidator.hasErrors(fieldErrors);
+    setErrors(prev => ({ ...prev, ...(fieldErrors || {}) as Record<string, string> }));
+    return !fieldValidator.hasErrors((fieldErrors || {}) as any);
   }, [data, validator, rules]);
 
   const validateForm = useCallback((): boolean => {

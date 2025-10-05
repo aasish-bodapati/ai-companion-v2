@@ -16,7 +16,7 @@ import { nutritionService } from '../../services/nutritionService';
 const { width, height } = Dimensions.get('window');
 
 interface FoodItem {
-  id: string;
+  id: string | number;
   name: string;
   brand?: string;
   category: string;
@@ -232,7 +232,7 @@ export default function UnifiedNutritionLogger({
     
     if (existingItem) {
       // Update quantity if item already exists
-      updateFoodQuantity(foodItem.id, existingItem.quantity + 1);
+      updateFoodQuantity(foodItem.id.toString(), existingItem.quantity + 1);
     } else {
       // Add new food item
       const newFoodItem = {
@@ -407,7 +407,7 @@ export default function UnifiedNutritionLogger({
                             onChangeText={(text) => {
                               const newQuantity = parseFloat(text) || 0;
                               if (newQuantity >= 0) {
-                                updateFoodQuantity(item.food_item.id, newQuantity);
+                                updateFoodQuantity(item.food_item.id.toString(), newQuantity);
                               }
                             }}
                             keyboardType="numeric"
@@ -417,7 +417,7 @@ export default function UnifiedNutritionLogger({
                           <Text style={styles.servingUnit}>{item.unit}</Text>
                         </View>
                         <TouchableOpacity
-                          onPress={() => removeFoodItem(item.food_item.id)}
+                          onPress={() => removeFoodItem(item.food_item.id.toString())}
                           style={styles.removeFoodButton}
                         >
                           <Ionicons name="trash-outline" size={16} color="#ef4444" />

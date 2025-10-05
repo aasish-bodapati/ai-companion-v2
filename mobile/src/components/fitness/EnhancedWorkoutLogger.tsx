@@ -168,7 +168,13 @@ export default function EnhancedWorkoutLogger({
     }
   };
 
-  const updateExercise = (index: number, field: keyof ExerciseData, value: any) => {
+  const updateExercise = (index: number, updates: Partial<ExerciseData>) => {
+    setExercises(prev => prev.map((exercise, i) => 
+      i === index ? { ...exercise, ...updates } : exercise
+    ));
+  };
+
+  const updateExerciseField = (index: number, field: keyof ExerciseData, value: any) => {
     setExercises(prev => prev.map((exercise, i) => 
       i === index ? { ...exercise, [field]: value } : exercise
     ));
@@ -303,7 +309,7 @@ export default function EnhancedWorkoutLogger({
   };
 
   const calculateTotalSets = () => {
-    return exercises.reduce((total, exercise) => total + (exercise.sets || 0), 0);
+    return exercises.reduce((total, exercise) => total + (Number(exercise.sets) || 0), 0);
   };
 
   const calculateEstimatedCalories = () => {
@@ -484,7 +490,7 @@ export default function EnhancedWorkoutLogger({
               key={index}
               exercise={exercise}
               index={index}
-              onUpdate={updateExercise}
+              onUpdate={updateExerciseField}
               onRemove={removeExercise}
               activityType={activityType}
               showRemove={true}

@@ -26,7 +26,7 @@ class NetworkUtils {
     const finalConfig = { ...this.defaultConfig, ...config };
     const { timeout, retries, retryDelay } = finalConfig;
 
-    for (let attempt = 0; attempt <= retries; attempt++) {
+    for (let attempt = 0; attempt <= (retries || 3); attempt++) {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -64,7 +64,7 @@ class NetworkUtils {
         }
 
         // Wait before retry
-        if (retryDelay > 0) {
+        if ((retryDelay || 0) > 0) {
           await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
       }

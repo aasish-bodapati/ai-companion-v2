@@ -23,7 +23,7 @@ export interface WorkoutLog {
   planned?: boolean; // Was this a planned workout day?
 }
 
-export interface NutritionLog {
+export interface BodyTypeNutritionLog {
   proteinPerKg: number;
   calories: number;
   tdee: number; // Total Daily Energy Expenditure
@@ -33,7 +33,7 @@ export interface NutritionLog {
 
 export interface DailyLog {
   workouts: WorkoutLog[];
-  nutrition: NutritionLog[];
+  nutrition: BodyTypeNutritionLog[];
   waterIntake: number; // L
   steps: number;
   sleepHours: number;
@@ -77,7 +77,7 @@ export class BodyTypeScoringService {
   /**
    * Score a single nutrition log
    */
-  scoreNutrition(nutrition: NutritionLog): number {
+  scoreNutrition(nutrition: BodyTypeNutritionLog): number {
     const goalType = this.getGoalType();
     
     switch (goalType) {
@@ -218,7 +218,7 @@ export class BodyTypeScoringService {
     }
   }
 
-  private scoreNutritionSleekGraceful(nutrition: NutritionLog): number {
+  private scoreNutritionSleekGraceful(nutrition: BodyTypeNutritionLog): number {
     let score = 0;
 
     // Protein scoring (1.2-1.6 g/kg)
@@ -248,7 +248,7 @@ export class BodyTypeScoringService {
     return score;
   }
 
-  private scoreNutritionStrongSteady(nutrition: NutritionLog): number {
+  private scoreNutritionStrongSteady(nutrition: BodyTypeNutritionLog): number {
     let score = 0;
 
     // Protein scoring (1.6-2.0 g/kg)
@@ -278,7 +278,7 @@ export class BodyTypeScoringService {
     return score;
   }
 
-  private scoreNutritionBigBold(nutrition: NutritionLog): number {
+  private scoreNutritionBigBold(nutrition: BodyTypeNutritionLog): number {
     let score = 0;
 
     // Protein scoring (1.8-2.4 g/kg)

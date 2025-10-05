@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../services/api';
 // Note: Toast notifications are handled by the calling component
 
-interface User {
+export interface User {
   id: number;
   email: string;
   full_name: string;

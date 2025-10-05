@@ -66,13 +66,25 @@ export default function UserProfileForm({
     
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
   const validateField = (field: keyof UserProfile) => {
     const error = formValidator.validateField(field, data[field] || '');
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      if (error) {
+        newErrors[field] = error;
+      } else {
+        delete newErrors[field];
+      }
+      return newErrors;
+    });
     return !error;
   };
 
@@ -196,7 +208,7 @@ export default function UserProfileForm({
           onChangeText={(value) => updateData('website', value)}
           onBlur={() => validateField('website')}
           error={errors.website}
-          keyboardType="url"
+          keyboardType="default"
           placeholder="https://yourwebsite.com"
           testID="website-input"
         />

@@ -72,13 +72,13 @@ export default function NutritionOverviewDashboard({
           height_cm: 175,
           weight_kg: 70,
           activity_level: 'moderate' as const,
-          body_type_goal: 'steady' as const,
+          bodyTypeGoal: 'steady' as const,
           weight_goal: 'maintain' as const,
         };
 
         const goals = nutritionGoalsService.calculateGoals(userProfile);
         setNutritionGoals(goals);
-        setBodyTypeGoal(goals.body_type_goal);
+        setBodyTypeGoal(goals.bodyTypeGoal);
       }
     } catch (error) {
       console.log('Error loading nutrition goals:', error);

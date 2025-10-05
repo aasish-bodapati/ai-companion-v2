@@ -14,6 +14,7 @@ export interface NumericalGoal {
   isCustomizable: boolean;
   description: string;
   icon: string;
+  enabled: boolean;
   color: string;
 }
 
@@ -44,6 +45,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target weight loss over the goal period',
         icon: 'trending-down-outline',
         color: '#10b981',
+        enabled: true,
       },
       {
         id: 'weekly_weight_loss',
@@ -56,6 +58,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Safe and sustainable weekly weight loss',
         icon: 'calendar-outline',
         color: '#3b82f6',
+        enabled: true,
       },
       {
         id: 'body_fat_percentage',
@@ -68,6 +71,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target body fat percentage',
         icon: 'analytics-outline',
         color: '#8b5cf6',
+        enabled: true,
       },
       {
         id: 'calorie_deficit',
@@ -80,6 +84,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily calorie deficit for weight loss',
         icon: 'remove-circle-outline',
         color: '#ef4444',
+        enabled: true,
       },
     ],
   },
@@ -102,6 +107,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target muscle mass increase',
         icon: 'trending-up-outline',
         color: '#f59e0b',
+        enabled: true,
       },
       {
         id: 'protein_intake',
@@ -114,6 +120,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily protein intake for muscle building',
         icon: 'nutrition-outline',
         color: '#10b981',
+        enabled: true,
       },
       {
         id: 'strength_benchmark',
@@ -126,6 +133,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target bench press weight',
         icon: 'barbell-outline',
         color: '#3b82f6',
+        enabled: true,
       },
       {
         id: 'workout_frequency',
@@ -138,6 +146,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Number of strength training sessions per week',
         icon: 'fitness-outline',
         color: '#8b5cf6',
+        enabled: true,
       },
     ],
   },
@@ -160,6 +169,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily water intake target (2.7L for females, 3.7L for males)',
         icon: 'water-outline',
         color: '#06b6d4',
+        enabled: true,
       },
       {
         id: 'hydration_consistency',
@@ -172,6 +182,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Days per week meeting water intake goal',
         icon: 'calendar-outline',
         color: '#10b981',
+        enabled: true,
       },
     ],
   },
@@ -194,6 +205,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target hours of sleep per night',
         icon: 'moon-outline',
         color: '#6366f1',
+        enabled: true,
       },
       {
         id: 'bedtime_consistency',
@@ -206,6 +218,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Bedtime consistency window',
         icon: 'time-outline',
         color: '#8b5cf6',
+        enabled: true,
       },
       {
         id: 'sleep_quality_score',
@@ -218,6 +231,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target sleep quality rating',
         icon: 'star-outline',
         color: '#f59e0b',
+        enabled: true,
       },
     ],
   },
@@ -240,6 +254,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Target daily stress level',
         icon: 'flower-outline',
         color: '#10b981',
+        enabled: true,
       },
       {
         id: 'meditation_minutes',
@@ -252,6 +267,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily meditation practice',
         icon: 'leaf-outline',
         color: '#8b5cf6',
+        enabled: true,
       },
       {
         id: 'breathing_exercises',
@@ -264,6 +280,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Weekly breathing exercise sessions',
         icon: 'air-outline',
         color: '#06b6d4',
+        enabled: true,
       },
     ],
   },
@@ -286,6 +303,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily vegetable servings',
         icon: 'leaf-outline',
         color: '#10b981',
+        enabled: true,
       },
       {
         id: 'fruit_servings',
@@ -298,6 +316,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Daily fruit servings',
         icon: 'nutrition-outline',
         color: '#f59e0b',
+        enabled: true,
       },
       {
         id: 'processed_food_limit',
@@ -310,6 +329,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Weekly processed food limit',
         icon: 'close-circle-outline',
         color: '#ef4444',
+        enabled: true,
       },
       {
         id: 'meal_prep_frequency',
@@ -322,6 +342,7 @@ export const GOAL_TEMPLATES: GoalTemplate[] = [
         description: 'Weekly meal preparation sessions',
         icon: 'restaurant-outline',
         color: '#3b82f6',
+        enabled: true,
       },
     ],
   },

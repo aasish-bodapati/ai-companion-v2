@@ -177,8 +177,8 @@ export default function ProgressTracking({
       {streaks.length > 0 && (
         <View style={styles.section}>
           <View style={styles.streaksContainer}>
-            {streaks.map((streak) => (
-              <StreakComponent key={streak.id || streak.type} streak={streak} />
+            {streaks.map((streak, index) => (
+              <StreakComponent key={streak.type || index} streak={streak} />
             ))}
           </View>
         </View>

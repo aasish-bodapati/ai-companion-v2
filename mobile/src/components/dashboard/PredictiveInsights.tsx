@@ -159,7 +159,7 @@ export default function PredictiveInsights({
               {insight.action && (
                 <View style={styles.actionContainer}>
                   <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: insight.color }]}
+                    style={[styles.primaryActionButton, { backgroundColor: insight.color }]}
                     onPress={() => onInsightPress?.(insight)}
                   >
                     <Text style={styles.actionText}>{insight.action}</Text>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   actionContainer: {
     marginTop: 8,
   },
-  actionButton: {
+  primaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -302,10 +302,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     gap: 6,
-  },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
   },
 });

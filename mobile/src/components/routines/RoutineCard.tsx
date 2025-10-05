@@ -156,7 +156,7 @@ export default function RoutineCard({
       title={routine.name}
       description={description}
       icon="fitness-outline"
-      iconColor={COLORS.primary}
+      iconColor={COLORS.primary.main}
       badges={badges}
       details={details}
       primaryAction={primaryAction}

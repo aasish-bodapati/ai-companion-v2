@@ -532,7 +532,7 @@ export default function ComprehensiveRoutineModal({
                 <Ionicons 
                   name="search" 
                   size={18} 
-                  color={exerciseSearch.length > 0 ? COLORS.primary : COLORS.text.secondary} 
+                  color={exerciseSearch.length > 0 ? COLORS.primary.main : COLORS.text.secondary} 
                   style={styles.searchIcon} 
                 />
                 <TextInput
@@ -645,7 +645,7 @@ export default function ComprehensiveRoutineModal({
                                     style={styles.badgeIcon}
                                   />
                                   <Text style={styles.categoryText}>
-                                    {getCategoryConfig(workout.exercise.logging_category).displayName.toUpperCase()}
+                                    {getCategoryConfig(workout.exercise.logging_category).name.toUpperCase()}
                                   </Text>
                                 </View>
                               )}
@@ -653,7 +653,7 @@ export default function ComprehensiveRoutineModal({
                                 style={styles.actionButton}
                                 onPress={() => removeWorkout(currentDay, workout.id)}
                               >
-                                <Ionicons name="trash" size={16} color={COLORS.error} />
+                                <Ionicons name="trash" size={16} color={COLORS.error.main} />
                               </TouchableOpacity>
                             </View>
                           </View>
@@ -801,7 +801,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   searchContainerFocused: {
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
     backgroundColor: COLORS.background.primary,
   },
   searchIcon: {
@@ -1068,24 +1068,6 @@ const styles = StyleSheet.create({
   categoryChipTextSelected: {
     color: '#fff',
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginHorizontal: 16,
-    marginBottom: 16,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1f2937',
-    marginLeft: 8,
-  },
   exerciseItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1098,12 +1080,6 @@ const styles = StyleSheet.create({
   },
   exerciseInfo: {
     flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
   },
   exerciseDetails: {
     fontSize: 14,

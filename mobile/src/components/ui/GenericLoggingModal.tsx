@@ -136,17 +136,26 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
     <View style={styles.searchSection}>
       <SearchInput
         placeholder={searchPlaceholder}
-        value=""
-        onChangeText={onSearch}
-        onClear={onClearSearch}
-        loading={searchLoading}
-        results={searchResults.map((item: any) => ({
+        searchResults={searchResults.map((item: any): SearchResult => ({
           id: item.id || item.food_code || item.name,
-          title: item.name || item.food_name || item.title,
-          subtitle: item.description || item.category || item.brand,
-          icon: item.icon || 'search',
+          name: item.name || item.food_name || item.title,
+          category: item.category || 'Unknown',
+          calories_per_100g: item.calories_per_100g || 0,
+          protein_per_100g: item.protein_per_100g || 0,
+          carbs_per_100g: item.carbs_per_100g || 0,
+          fat_per_100g: item.fat_per_100g || 0,
+          fiber_per_100g: item.fiber_per_100g || 0,
+          sugar_per_100g: item.sugar_per_100g || 0,
+          sodium_per_100g: item.sodium_per_100g || 0,
+          calories_per_serving: item.calories_per_serving || 0,
+          protein_per_serving: item.protein_per_serving || 0,
+          carbs_per_serving: item.carbs_per_serving || 0,
+          fat_per_serving: item.fat_per_serving || 0,
+          serving_size: item.serving_size || '100g',
+          brand: item.brand || '',
         }))}
-        onSelectResult={(result) => {
+        onSearch={onSearch}
+        onSelect={(result: SearchResult) => {
           const selectedItem = searchResults.find((item: any) => 
             (item.id || item.food_code || item.name) === result.id
           );
@@ -154,7 +163,8 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
             onSelectItem(selectedItem);
           }
         }}
-        testID="search-input"
+        onClear={onClearSearch}
+        loading={searchLoading}
       />
     </View>
   );

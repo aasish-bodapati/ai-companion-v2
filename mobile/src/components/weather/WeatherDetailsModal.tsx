@@ -133,7 +133,7 @@ export default function WeatherDetailsModal({
            <View style={styles.content}>
              {loading && (
                <View style={styles.loadingContainer}>
-                 <ActivityIndicator size="small" color={COLORS.primary} />
+                 <ActivityIndicator size="small" color={COLORS.primary.main} />
                  <Text style={styles.loadingText}>Loading...</Text>
                </View>
              )}
@@ -284,10 +284,10 @@ const styles = StyleSheet.create({
   currentHourItem: {
     backgroundColor: COLORS.gray[50],
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
   },
   currentHourTime: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
     color: '#ffffff',
     fontWeight: '600',
     paddingHorizontal: 6,

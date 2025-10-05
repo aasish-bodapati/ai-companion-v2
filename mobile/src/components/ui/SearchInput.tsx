@@ -30,6 +30,9 @@ interface SearchInputProps {
   disabled?: boolean;
   showResults?: boolean;
   maxResults?: number;
+  value?: string;
+  onChangeText?: (text: string) => void;
+  results?: SearchResult[];
   renderResultItem?: (item: SearchResult, index: number) => React.ReactNode;
   searchDelay?: number;
   containerStyle?: any;
@@ -197,7 +200,7 @@ export default function SearchInput({
         <Ionicons 
           name="search" 
           size={20} 
-          color={isFocused ? COLORS.primary : COLORS.text.secondary} 
+          color={isFocused ? COLORS.primary.main : COLORS.text.secondary} 
           style={styles.searchIcon}
         />
         
@@ -217,7 +220,7 @@ export default function SearchInput({
         {loading && (
           <ActivityIndicator 
             size="small" 
-            color={COLORS.primary} 
+            color={COLORS.primary.main} 
             style={styles.loadingIndicator}
           />
         )}
@@ -306,11 +309,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   inputContainerFocused: {
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
     backgroundColor: COLORS.background.primary,
   },
   inputContainerError: {
-    borderColor: COLORS.error,
+    borderColor: COLORS.error.main,
   },
   inputContainerDisabled: {
     backgroundColor: COLORS.background.disabled,
@@ -334,7 +337,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: FONT_SIZE.small,
-    color: COLORS.error,
+    color: COLORS.error.main,
     marginTop: SPACING.xs,
     marginLeft: SPACING.small,
   },

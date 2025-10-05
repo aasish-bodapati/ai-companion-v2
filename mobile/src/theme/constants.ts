@@ -3,9 +3,11 @@ import { ViewStyle, TextStyle } from 'react-native';
 
 export const COLORS = {
   // Primary colors
-  primary: '#3b82f6',
-  primaryLight: '#60a5fa',
-  primaryDark: '#1e40af',
+  primary: {
+    main: '#3b82f6',
+    light: '#60a5fa',
+    dark: '#1e40af',
+  },
   
   // Semantic colors
   success: '#10b981',
@@ -39,6 +41,7 @@ export const COLORS = {
     primary: '#ffffff',
     secondary: '#f8fafc',
     tertiary: '#f3f4f6',
+    disabled: '#f3f4f6',
   },
   
   // Text colors
@@ -56,6 +59,7 @@ export const COLORS = {
     medium: '#d1d5db',
     dark: '#9ca3af',
     primary: '#d1d5db',
+    disabled: '#d1d5db',
   },
   
   // Overlay colors
@@ -63,8 +67,11 @@ export const COLORS = {
   backdropLight: 'rgba(0, 0, 0, 0.3)',
   
   // Additional colors
-  error: '#ef4444',
+  error: {
+    main: '#ef4444',
+  },
   info: '#3b82f6',
+  disabled: '#9ca3af',
 };
 
 export const SPACING = {

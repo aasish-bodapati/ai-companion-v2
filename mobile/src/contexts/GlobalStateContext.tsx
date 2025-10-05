@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { User } from '../types/user';
+import { User } from './AuthContext';
 import { dashboardService } from '../services/dashboardService';
 import { fitnessService } from '../services/fitnessService';
 import { nutritionService } from '../services/nutritionService';

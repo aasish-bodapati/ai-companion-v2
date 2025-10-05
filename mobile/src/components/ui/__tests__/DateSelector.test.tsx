@@ -76,7 +76,7 @@ describe('DateSelector', () => {
   it('handles previous date navigation', () => {
     const { getByTestId } = render(<DateSelector {...defaultProps} />);
     
-    const prevButton = getByTestId('date-selector').find((node) => 
+    const prevButton = getByTestId('date-selector').find((node: any) => 
       node.props.testID?.includes('prev') || 
       node.props.children?.some?.((child: any) => child?.props?.name === 'chevron-back')
     );
@@ -90,7 +90,7 @@ describe('DateSelector', () => {
   it('handles next date navigation', () => {
     const { getByTestId } = render(<DateSelector {...defaultProps} />);
     
-    const nextButton = getByTestId('date-selector').find((node) => 
+    const nextButton = getByTestId('date-selector').find((node: any) => 
       node.props.testID?.includes('next') || 
       node.props.children?.some?.((child: any) => child?.props?.name === 'chevron-forward')
     );

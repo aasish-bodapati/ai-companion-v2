@@ -50,7 +50,7 @@ class HealthDataService {
       const notifications = includeNotifications ? await this.getNotificationsData() : null;
 
       const healthData: HealthDataSummary = {
-        user: dashboard.user,
+        user: null, // User data not available in dashboard
         dashboard,
         fitness,
         nutrition,

@@ -100,7 +100,7 @@ export default function FormLayout({
         <Ionicons
           name={error ? 'alert-circle' : 'checkmark-circle'}
           size={20}
-          color={error ? COLORS.error : COLORS.success}
+          color={error ? COLORS.error.main : COLORS.success}
         />
         <Text style={[
           styles.statusText,
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.small,
   },
   errorText: {
-    color: COLORS.error,
+    color: COLORS.error.main,
   },
   successText: {
     color: COLORS.success,

@@ -127,8 +127,8 @@ export default function ScreenLayout({
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={COLORS.primary}
-                colors={[COLORS.primary]}
+                tintColor={COLORS.primary.main}
+                colors={[COLORS.primary.main]}
               />
             ) : undefined
           }

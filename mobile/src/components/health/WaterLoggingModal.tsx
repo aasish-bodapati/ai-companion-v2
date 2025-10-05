@@ -127,7 +127,7 @@ export default function WaterLoggingModal({
             onPress={() => handleAddWater(amount.ml, amount.label)}
             testID={`quick-add-${amount.ml}`}
           >
-            <Ionicons name="water" size={20} color={COLORS.primary} />
+            <Ionicons name="water" size={20} color={COLORS.primary.main} />
             <Text style={styles.quickAddText}>{amount.label}</Text>
             <Text style={styles.quickAddAmount}>{amount.ml}ml</Text>
           </TouchableOpacity>
@@ -158,7 +158,7 @@ export default function WaterLoggingModal({
           disabled={!customAmount || parseFloat(customAmount) <= 0}
           testID="add-custom-amount"
         >
-          <Ionicons name="add" size={20} color={COLORS.primary} />
+          <Ionicons name="add" size={20} color={COLORS.primary.main} />
         </TouchableOpacity>
       </View>
     </View>
@@ -173,7 +173,7 @@ export default function WaterLoggingModal({
         <Text style={styles.sectionTitle}>Today's Water Intake</Text>
         <View style={styles.summaryCard}>
           <View style={styles.summaryRow}>
-            <Ionicons name="water" size={24} color={COLORS.primary} />
+            <Ionicons name="water" size={24} color={COLORS.primary.main} />
             <View style={styles.summaryDetails}>
               <Text style={styles.summaryAmount}>{totalAmount}ml</Text>
               <Text style={styles.summaryUnit}>{totalOz.toFixed(1)} fl oz</Text>
@@ -286,10 +286,10 @@ const styles = StyleSheet.create({
   },
   addCustomButton: {
     padding: SPACING.sm,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: COLORS.primary.main + '20',
     borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.primary,
+    borderColor: COLORS.primary.main,
   },
   addCustomButtonDisabled: {
     backgroundColor: COLORS.gray[200],

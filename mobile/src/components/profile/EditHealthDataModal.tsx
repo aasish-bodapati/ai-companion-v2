@@ -261,7 +261,11 @@ export default function EditHealthDataModal({
                 key={option.id}
                 title={option.label}
                 icon={option.icon}
-                onPress={() => handleGenderSelect(option.id as HealthData['gender'])}
+                onPress={() => {
+                  if (option.id === 'male' || option.id === 'female' || option.id === 'other') {
+                    handleGenderSelect(option.id);
+                  }
+                }}
                 variant={data.gender === option.id ? 'primary' : 'outline'}
                 size="medium"
                 hapticFeedback="selection"

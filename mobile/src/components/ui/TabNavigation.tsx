@@ -115,7 +115,7 @@ export default function TabNavigation({
                 isDisabled
                   ? COLORS.text.disabled
                   : isActive
-                  ? COLORS.primary
+                  ? COLORS.primary.main
                   : COLORS.text.secondary
               }
             />
@@ -123,7 +123,7 @@ export default function TabNavigation({
               <View
                 style={[
                   styles.badge,
-                  { backgroundColor: tab.badgeColor || COLORS.error },
+                  { backgroundColor: tab.badgeColor || COLORS.error.main },
                 ]}
               >
                 <Text style={styles.badgeText}>{tab.badge}</Text>
@@ -217,10 +217,10 @@ const styles = StyleSheet.create({
     // Active tab styles
   },
   activePillsTab: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   activeUnderlineTab: {
-    borderBottomColor: COLORS.primary,
+    borderBottomColor: COLORS.primary.main,
   },
   disabledTab: {
     opacity: 0.5,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeTabText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
     fontWeight: '600',
   },
   activePillsTabText: {

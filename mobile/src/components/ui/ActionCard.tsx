@@ -66,7 +66,7 @@ export default function ActionCard({
   subtitle,
   description,
   icon,
-  iconColor = COLORS.primary,
+  iconColor = COLORS.primary.main,
   badges = [],
   details = [],
   primaryAction,
@@ -313,7 +313,7 @@ export default function ActionCard({
             {action.loading ? (
               <ActivityIndicator 
                 size="small" 
-                color={action.variant === 'ghost' ? COLORS.primary : COLORS.text.inverse}
+                color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                 style={styles.actionLoader}
               />
             ) : (
@@ -321,7 +321,7 @@ export default function ActionCard({
                 <Ionicons 
                   name={action.icon as any} 
                   size={16} 
-                  color={action.variant === 'ghost' ? COLORS.primary : COLORS.text.inverse}
+                  color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                   style={styles.actionIcon}
                 />
               )
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.warning,
   },
   infoBadge: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   dangerBadge: {
     backgroundColor: COLORS.danger,
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.warning,
   },
   completedStatus: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   errorStatus: {
     backgroundColor: COLORS.danger,
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
   },
   
   primaryAction: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
     flex: 1,
   },
   secondaryAction: {
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     color: COLORS.text.inverse,
   },
   ghostActionText: {
-    color: COLORS.primary,
+    color: COLORS.primary.main,
   },
   
   actionIcon: {

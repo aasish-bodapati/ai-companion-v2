@@ -55,6 +55,7 @@ export interface SearchParams {
   query: string;
   limit?: number;
   offset?: number;
+  signal?: AbortSignal;
 }
 
 // Common search result structure

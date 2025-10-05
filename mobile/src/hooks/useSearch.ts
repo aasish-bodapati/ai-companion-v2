@@ -75,7 +75,7 @@ export function useSearch<T>(
           const results = await searchFunction(query, {
             ...searchParams,
             signal: abortControllerRef.current.signal,
-          });
+          } as SearchParams);
 
           setSearchState(prev => ({
             ...prev,
@@ -163,7 +163,7 @@ export function useSearch<T>(
       const results = await searchFunction(query, {
         ...searchParams,
         signal: abortControllerRef.current.signal,
-      });
+      } as SearchParams);
 
       setSearchState(prev => ({
         ...prev,

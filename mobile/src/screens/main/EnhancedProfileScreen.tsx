@@ -14,11 +14,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingData } from '../../services/onboardingService';
 import { profileService } from '../../services/profileService';
 import { onboardingService } from '../../services/onboardingService';
-import { MobileOptimizedCard } from '../../components/common/MobileOptimizedCard';
+// import { MobileOptimizedCard } from '../../components/common/MobileOptimizedCard';
 import EditPreferencesModal from '../../components/profile/EditPreferencesModal';
 import { numericalGoalsService, GoalProgress } from '../../services/numericalGoalsService';
 import { hapticFeedback } from '../../utils/haptics';
-import { showToast } from '../../utils/toast';
+import { useToast } from '../../contexts/ToastContext';
 import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
 import { timezoneDetectionService } from '../../services/timezoneDetectionService';
 
@@ -122,7 +122,7 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
                 'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'active': 1.725, 'very_active': 1.9
               };
               
-              const tdee = bmr * (activityMultipliers[activityLevel] || 1.55);
+              const tdee = bmr * (activityMultipliers[activityLevel as keyof typeof activityMultipliers] || 1.55);
               return Math.round(tdee);
             })()}
           </Text>
@@ -173,6 +173,7 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
 export default function EnhancedProfileScreen() {
   const { user, logout, updateUser, rerunOnboarding, deleteAccount } = useAuth();
   const navigation = useNavigation();
+  const { showToast } = useToast();
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -220,6 +221,8 @@ export default function EnhancedProfileScreen() {
               activityLevel: 'moderate',
             },
             bodyTypeGoal: 'Athletic',
+            goals: [],
+            timezone: 'UTC',
             preferences: {
               notifications: true,
               reminders: true,
@@ -236,14 +239,14 @@ export default function EnhancedProfileScreen() {
       timezoneDetectionService.detectAndUpdateTimezone().then(detectedTimezone => {
         console.log('🌍 Profile screen timezone updated:', detectedTimezone);
         // Update the UI with the detected timezone
-        setOnboardingData(prev => ({ ...prev, timezone: detectedTimezone }));
+        setOnboardingData(prev => prev ? { ...prev, timezone: detectedTimezone } : null);
       });
       
       // Load numerical goals after onboarding data is loaded
       await loadNumericalGoals();
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      showToast.error('Error', 'Failed to load profile data');
+      showToast('Failed to load profile data', 'error');
     } finally {
       setLoading(false);
     }
@@ -315,18 +318,18 @@ export default function EnhancedProfileScreen() {
       // Update backend
       await profileService.updateUserProfile({ preferences: data });
       
-      showToast.success('Success', 'Preferences updated successfully');
+      showToast('Preferences updated successfully', 'success');
     } catch (error) {
-      showToast.error('Error', 'Failed to update preferences');
+      showToast('Failed to update preferences', 'error');
     }
   };
 
   const handleSaveNumericalGoals = async (goals: any) => {
     try {
       // This would typically save to backend
-      showToast.success('Success', 'Goals updated successfully');
+      showToast('Goals updated successfully', 'success');
     } catch (error) {
-      showToast.error('Error', 'Failed to update goals');
+      showToast('Failed to update goals', 'error');
     }
   };
 
@@ -448,16 +451,18 @@ export default function EnhancedProfileScreen() {
           <View style={styles.metricCard}>
             <Ionicons name="fitness-outline" size={16} color="#10b981" />
             <Text style={styles.metricValue} numberOfLines={1}>
-              {onboardingData?.healthData?.activityLevel?.charAt(0).toUpperCase() + 
-               onboardingData?.healthData?.activityLevel?.slice(1) || '--'}
+              {onboardingData?.healthData?.activityLevel ? 
+               onboardingData.healthData.activityLevel.charAt(0).toUpperCase() + 
+               onboardingData.healthData.activityLevel.slice(1) : '--'}
             </Text>
             <Text style={styles.metricLabel}>Activity</Text>
           </View>
           <View style={styles.metricCard}>
             <Ionicons name="people-outline" size={16} color="#8b5cf6" />
             <Text style={styles.metricValue} numberOfLines={1}>
-              {onboardingData?.healthData?.gender?.charAt(0).toUpperCase() + 
-               onboardingData?.healthData?.gender?.slice(1) || '--'}
+              {onboardingData?.healthData?.gender ? 
+               onboardingData.healthData.gender.charAt(0).toUpperCase() + 
+               onboardingData.healthData.gender.slice(1) : '--'}
             </Text>
             <Text style={styles.metricLabel}>Gender</Text>
           </View>
@@ -491,7 +496,7 @@ export default function EnhancedProfileScreen() {
             style={styles.actionCard}
             onPress={() => {
               hapticFeedback.medium();
-              showToast.info('Coming Soon', 'Data export will be available soon');
+              showToast('Data export will be available soon', 'info');
             }}
           >
             <Ionicons name="download-outline" size={24} color="#3b82f6" />

@@ -114,7 +114,7 @@ export default function FormModal({
     const variant = primaryAction?.variant || 'primary';
     const disabled = isPrimaryDisabled();
     
-    let backgroundColor = COLORS.primary;
+    let backgroundColor = COLORS.primary.main;
     let textColor = COLORS.text.inverse;
     
     switch (variant) {
@@ -128,7 +128,7 @@ export default function FormModal({
         backgroundColor = COLORS.danger;
         break;
       default:
-        backgroundColor = COLORS.primary;
+        backgroundColor = COLORS.primary.main;
     }
     
     return {
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
   
   // Primary button styles
   primaryButton: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.primary.main,
   },
   primaryButtonText: {
     color: COLORS.text.inverse,

@@ -349,7 +349,7 @@ export async function calculateBodyTypeGoal(
   
   // Calculate all targets
   const waterGoal = calculateWaterGoal(userData.gender, userData.activityLevel);
-  const isWeightLoss = bodyType.category === 'weight_loss';
+  const isWeightLoss = bodyType.name?.toLowerCase().includes('weight loss') || false;
   const calorieTarget = calculateCalorieTarget(userData, targetWeight, isWeightLoss);
   
   // Calculate protein target using comprehensive formula
@@ -361,7 +361,7 @@ export async function calculateBodyTypeGoal(
   );
   
   // Determine if goal is realistic
-  const timeline = bodyType.targetAttributes.timeline || 20; // Default to 20 weeks
+  const timeline = 20; // Default to 20 weeks
   const weightChangePerWeek = Math.abs(weightChange) / timeline;
   const isRealistic = weightChangePerWeek <= 1.0; // Max 1kg per week change
   
@@ -397,11 +397,8 @@ export async function calculateBodyTypeGoal(
     ...bodyType,
     targetAttributes: {
       ...bodyType.targetAttributes,
-      targetWeight,
-      weightChange,
-      waterGoal,
-      calorieTarget,
-      proteinTarget,
+      waterGoal: { min: waterGoal - 0.5, max: waterGoal + 0.5, recommended: waterGoal, unit: 'L' },
+      calorieTarget: calorieTarget.toString(),
     },
   };
   

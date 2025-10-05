@@ -18,7 +18,8 @@ interface HealthData {
   age: string;
   height: string;
   weight: string;
-  gender: 'male' | 'female' | 'other' | '';
+  gender: 'male' | 'female' | 'other' | '' | 'Please select your gender';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
   bodyFat?: string; // Body Fat Percentage (optional)
@@ -36,6 +37,14 @@ const GENDER_OPTIONS = [
   { id: 'other', label: 'Other', icon: 'person-outline' },
 ];
 
+const ACTIVITY_LEVEL_OPTIONS = [
+  { id: 'sedentary', label: 'Sedentary', icon: 'bed-outline' },
+  { id: 'light', label: 'Light', icon: 'walk-outline' },
+  { id: 'moderate', label: 'Moderate', icon: 'bicycle-outline' },
+  { id: 'active', label: 'Active', icon: 'fitness-outline' },
+  { id: 'very_active', label: 'Very Active', icon: 'flash-outline' },
+];
+
 export default function HealthDataStep({ 
   onDataChange, 
   initialData = {},
@@ -45,13 +54,14 @@ export default function HealthDataStep({
     height: '',
     weight: '',
     gender: initialData.gender || '', // No pre-selection for new users
+    activityLevel: initialData.activityLevel || 'moderate',
     ffm: '',
     smm: '',
     bodyFat: '',
     ...initialData,
   });
 
-  const [errors, setErrors] = useState<Partial<HealthData>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     onDataChange(data);
@@ -62,7 +72,11 @@ export default function HealthDataStep({
     
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
     }
   };
 
@@ -138,7 +152,9 @@ export default function HealthDataStep({
       newErrors.weight = 'Please enter a valid weight (30-300 kg)';
     }
 
-    if (!data.gender || data.gender === '') {
+    if (!data.gender || data.gender === 'Please select your gender') {
+      newErrors.gender = 'Please select your gender';
+    } else if (data.gender !== 'male' && data.gender !== 'female' && data.gender !== 'other') {
       newErrors.gender = 'Please select your gender';
     }
 
@@ -165,6 +181,11 @@ export default function HealthDataStep({
     setData(prev => ({ ...prev, gender }));
   };
 
+  const handleActivityLevelSelect = (activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') => {
+    hapticFeedback.selection();
+    setData(prev => ({ ...prev, activityLevel }));
+  };
+
 
   const calculateBMI = () => {
     const height = Number(data.height) / 100; // Convert cm to m
@@ -189,7 +210,9 @@ export default function HealthDataStep({
             key={option.id}
             onPress={() => {
               hapticFeedback.selection();
-              handleGenderSelect(option.id as HealthData['gender']);
+              if (option.id === 'male' || option.id === 'female' || option.id === 'other') {
+                handleGenderSelect(option.id);
+              }
             }}
             style={[
               styles.optionButton,
@@ -211,6 +234,42 @@ export default function HealthDataStep({
         ))}
       </View>
       {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
+    </View>
+  );
+
+  const renderActivityLevelSelector = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Activity Level</Text>
+      <View style={styles.optionGrid}>
+        {ACTIVITY_LEVEL_OPTIONS.map((option) => (
+          <TouchableOpacity
+            key={option.id}
+            onPress={() => {
+              hapticFeedback.selection();
+              if (option.id === 'sedentary' || option.id === 'light' || option.id === 'moderate' || option.id === 'active' || option.id === 'very_active') {
+                handleActivityLevelSelect(option.id);
+              }
+            }}
+            style={[
+              styles.optionButton,
+              data.activityLevel === option.id ? styles.optionButtonSelected : styles.optionButtonUnselected,
+            ]}
+          >
+            <Ionicons 
+              name={option.icon as any} 
+              size={20} 
+              color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'} 
+            />
+            <Text style={[
+              styles.optionButtonText,
+              data.activityLevel === option.id ? styles.optionButtonTextSelected : styles.optionButtonTextUnselected,
+            ]}>
+              {option.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {errors.activityLevel && <Text style={styles.errorText}>{errors.activityLevel}</Text>}
     </View>
   );
 
@@ -409,6 +468,9 @@ export default function HealthDataStep({
 
         {/* Gender Selector */}
         {renderGenderSelector()}
+
+        {/* Activity Level Selector */}
+        {renderActivityLevelSelector()}
 
       </ScrollView>
     </View>

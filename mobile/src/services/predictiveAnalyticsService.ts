@@ -397,7 +397,7 @@ class PredictiveAnalyticsService {
         value: 3200,
         expected: 2000,
         deviation: 0.6,
-        severity: 'high',
+        severity: 'high' as 'low' | 'medium' | 'high',
         description: 'Calorie intake was 60% higher than usual',
       },
       {
@@ -406,7 +406,7 @@ class PredictiveAnalyticsService {
         value: 25,
         expected: 45,
         deviation: -0.44,
-        severity: 'medium',
+        severity: 'medium' as 'low' | 'medium' | 'high',
         description: 'Workout was 44% shorter than usual',
       },
     ];

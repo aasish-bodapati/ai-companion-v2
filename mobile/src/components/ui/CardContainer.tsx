@@ -127,7 +127,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
               <Ionicons
                 name={action.icon as any}
                 size={16}
-                color={getActionIconColor(action.variant || 'primary', action.disabled)}
+                color={getActionIconColor(action.variant || 'primary', action.disabled || false)}
                 style={styles.actionIcon}
               />
             )}
@@ -135,7 +135,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
               style={[
                 styles.actionButtonText,
                 styles[`actionButtonText${action.variant || 'primary'}`],
-                action.disabled && styles.actionButtonTextDisabled,
+                action.disabled === true && styles.actionButtonTextDisabled,
               ]}
             >
               {action.label}
@@ -147,15 +147,15 @@ export const CardContainer: React.FC<CardContainerProps> = ({
   };
 
   const getActionIconColor = (variant: string, disabled: boolean) => {
-    if (disabled) return COLORS.disabled.text;
+    if (disabled) return COLORS.disabled;
     
     switch (variant) {
       case 'primary':
         return 'white';
       case 'secondary':
-        return COLORS.text.primary;
+        return COLORS.text.primary as string;
       case 'text':
-        return COLORS.text.secondary;
+        return COLORS.text.secondary as string;
       default:
         return 'white';
     }
@@ -235,8 +235,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   actionButtonDisabled: {
-    backgroundColor: COLORS.disabled.background,
-    borderColor: COLORS.disabled.border,
+    backgroundColor: COLORS.background.disabled,
+    borderColor: COLORS.border.disabled,
   },
   actionIcon: {
     marginRight: SPACING.xs,
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
   },
   actionButtonTextDisabled: {
-    color: COLORS.disabled.text,
+    color: COLORS.text.disabled,
   },
   disabled: {
     opacity: 0.6,
