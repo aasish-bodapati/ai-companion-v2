@@ -15,6 +15,41 @@ export interface BodyTypeGoalMetrics {
   loading: boolean;
 }
 
+interface NutritionLog {
+  total_calories?: number;
+  protein_g?: number;
+}
+
+interface FitnessLog {
+  activity_type?: string;
+}
+
+interface WaterStats {
+  total_ml_today?: number;
+}
+
+interface NutritionData {
+  totalCalories: number;
+  totalProtein: number;
+  calorieGap: number;
+  proteinGap: number;
+  mealCount: number;
+}
+
+interface FitnessData {
+  workoutCount: number;
+  hasStrengthWorkout: boolean;
+  hasCardioWorkout: boolean;
+  stepsToday: number;
+  hasActivity: boolean;
+}
+
+interface WaterData {
+  currentIntake: number;
+  deficit: number;
+  percentage: number;
+}
+
 export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<BodyTypeGoalMetrics>({
@@ -34,7 +69,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }, 1000); // Load after 1 second delay
     
     return () => clearTimeout(timer);
-  }, [user]); // Remove loadBodyTypeMetrics dependency to prevent infinite loop
+  }, [user, loadBodyTypeMetrics]); // Include loadBodyTypeMetrics dependency
 
   const loadBodyTypeMetrics = useCallback(async () => {
     try {
@@ -110,7 +145,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }
   }, [user]); // Add dependencies to prevent infinite loop
 
-  const calculateDailyScore = async (nutrition: any[], fitness: any[], waterStats: any): Promise<number> => {
+  const calculateDailyScore = async (nutrition: NutritionLog[], fitness: FitnessLog[], waterStats: WaterStats | null): Promise<number> => {
     let score = 0;
     let factors = 0;
 
@@ -150,7 +185,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return factors > 0 ? Math.round(score / factors) : 0;
   };
 
-  const calculateActivityScore = async (fitness: any[]): Promise<number> => {
+  const calculateActivityScore = async (fitness: FitnessLog[]): Promise<number> => {
     // If there are workouts logged, give full points
     if (fitness && fitness.length > 0) {
       return 100; // Full points for any workout
@@ -202,7 +237,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }
   };
 
-  const calculateWeeklyAlignment = async (nutrition: any[], fitness: any[], waterStats: any): Promise<number> => {
+  const calculateWeeklyAlignment = async (nutrition: NutritionLog[], fitness: FitnessLog[], waterStats: WaterStats | null): Promise<number> => {
     let alignment = 0;
     let factors = 0;
 
@@ -242,7 +277,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return factors > 0 ? Math.round(alignment / factors) : 0;
   };
 
-  const calculateWeeklyTrend = (nutrition: any[], fitness: any[]): 'up' | 'down' | 'stable' => {
+  const calculateWeeklyTrend = (nutrition: NutritionLog[], fitness: FitnessLog[]): 'up' | 'down' | 'stable' => {
     // Simple trend calculation based on recent activity
     const recentDays = 3;
     const olderDays = 4;
@@ -274,7 +309,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return difference > 0 ? 'closer' : 'further';
   };
 
-  const generateSuggestions = async (nutrition: any[], fitness: any[], waterStats: any, dailyScore: number): Promise<string[]> => {
+  const generateSuggestions = async (nutrition: NutritionLog[], fitness: FitnessLog[], waterStats: WaterStats | null, dailyScore: number): Promise<string[]> => {
     const suggestions: Suggestion[] = [];
     const currentHour = new Date().getHours();
     const goalName = getUserGoalName();
@@ -393,7 +428,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     category: 'nutrition' | 'fitness' | 'hydration' | 'timing' | 'consistency' | 'optimization' | 'celebration';
   }
 
-  const analyzeNutritionData = (nutrition: any[]) => {
+  const analyzeNutritionData = (nutrition: NutritionLog[]): NutritionData => {
     if (!nutrition || nutrition.length === 0) {
       return {
         totalCalories: 0,
@@ -416,7 +451,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     };
   };
 
-  const analyzeFitnessData = async (fitness: any[]) => {
+  const analyzeFitnessData = async (fitness: FitnessLog[]): Promise<FitnessData> => {
     const stepsToday = await getStepsToday(); // Real step data
     
     return {
@@ -428,7 +463,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     };
   };
 
-  const analyzeWaterData = (waterStats: any) => {
+  const analyzeWaterData = (waterStats: WaterStats | null): WaterData => {
     if (!waterStats) {
       return { currentIntake: 0, deficit: 3000, percentage: 0 };
     }
@@ -496,7 +531,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return "a glass of water";
   };
 
-  const getGoalSpecificNutritionSuggestion = (goalName: string, nutritionData: any): string => {
+  const getGoalSpecificNutritionSuggestion = (goalName: string, nutritionData: NutritionData): string => {
     switch (goalName) {
       case 'Strong & Steady':
         if (nutritionData.proteinGap > 20) {
@@ -518,7 +553,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }
   };
 
-  const getTimeAwareSuggestion = (currentHour: number, nutritionData: any, fitnessData: any, waterData: any): string => {
+  const getTimeAwareSuggestion = (currentHour: number, nutritionData: NutritionData, fitnessData: FitnessData, waterData: WaterData): string => {
     if (currentHour < 10 && nutritionData.mealCount === 0) {
       return "Start your day with a protein-rich breakfast to fuel your morning";
     }
@@ -537,7 +572,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return "";
   };
 
-  const getPerformanceBoostSuggestion = (goalName: string, nutritionData: any, fitnessData: any): string => {
+  const getPerformanceBoostSuggestion = (goalName: string, nutritionData: NutritionData, fitnessData: FitnessData): string => {
     switch (goalName) {
       case 'Strong & Steady':
         return "Add 2 more strength exercises to maximize your workout";

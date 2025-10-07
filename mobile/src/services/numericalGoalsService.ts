@@ -43,7 +43,7 @@ class NumericalGoalsService {
       const jsonValue = JSON.stringify(goals);
       await AsyncStorage.setItem(this.STORAGE_KEY, jsonValue);
       console.log('🎯 Numerical Goals Service: Goals saved to storage:', goals.length);
-    } catch (_error) {
+    } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
@@ -67,7 +67,7 @@ class NumericalGoalsService {
       
       console.log('🎯 Numerical Goals Service: No goals found in storage');
       return [];
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return [];
     }
@@ -79,7 +79,7 @@ class NumericalGoalsService {
       this.goals = [];
       await AsyncStorage.removeItem(this.STORAGE_KEY);
       console.log('🎯 Numerical Goals Service: Goals cleared from storage');
-    } catch (_error) {
+    } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }
@@ -93,7 +93,7 @@ class NumericalGoalsService {
       try {
         const progress = await this.calculateGoalProgress(goal);
         progressData.push(progress);
-      } catch (_error) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Add goal with zero progress if calculation fails
         progressData.push({
@@ -256,7 +256,7 @@ class NumericalGoalsService {
       const estimatedBurned = 2000; // Base metabolic rate + activity
       
       return Math.max(estimatedBurned - caloriesConsumed, 0);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -271,7 +271,7 @@ class NumericalGoalsService {
       });
       
       return nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -293,7 +293,7 @@ class NumericalGoalsService {
       );
       
       return workoutDays.size;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -303,7 +303,7 @@ class NumericalGoalsService {
     try {
       const waterLogs = await healthService.getWaterLogs(1);
       return waterLogs.reduce((sum, log) => sum + (log.amount_ml || 0), 0);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -324,9 +324,9 @@ class NumericalGoalsService {
         return acc;
       }, {} as Record<string, number>);
       
-      const daysMeetingGoal = Object.values(dailyTotals).filter((total: any) => total >= dailyTarget).length;
+      const daysMeetingGoal = Object.values(dailyTotals).filter((total: number) => total >= dailyTarget).length;
       return daysMeetingGoal;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -346,7 +346,7 @@ class NumericalGoalsService {
         log.meal_name?.toLowerCase().includes('salad') ||
         log.meal_name?.toLowerCase().includes('broccoli')
       ).length;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -366,7 +366,7 @@ class NumericalGoalsService {
         log.meal_name?.toLowerCase().includes('apple') ||
         log.meal_name?.toLowerCase().includes('banana')
       ).length;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -388,7 +388,7 @@ class NumericalGoalsService {
         log.meal_name?.toLowerCase().includes('packaged') ||
         log.meal_name?.toLowerCase().includes('fast food')
       ).length;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }
@@ -402,7 +402,7 @@ class NumericalGoalsService {
       
       const totalStress = moodLogs.reduce((sum, log) => sum + (log.stress_level || 0), 0);
       return totalStress / moodLogs.length;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return 0;
     }

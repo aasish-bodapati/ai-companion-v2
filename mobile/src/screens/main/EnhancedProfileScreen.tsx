@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { OnboardingData } from '../../services/onboardingService';
 import { profileService } from '../../services/profileService';
@@ -24,14 +24,29 @@ import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
 // Body Type Goals Display Component
 const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: { 
   bodyTypeGoal: string; 
-  userData: any; 
+  userData: {
+    height?: string;
+    gender?: string;
+    weight?: string;
+    age?: string;
+    activityLevel?: string;
+  }; 
   onGoalNameChange?: (name: string) => void;
 }) => {
-  const [goalData, setGoalData] = useState<any>(null);
+  const [goalData, setGoalData] = useState<{
+    name: string;
+    targetBMI: number | { recommended: number };
+    targetBodyFat: number | { recommended: number };
+    calculatedTargetWeight: number;
+    calculatedWaterGoal: number;
+    targetAttributes: {
+      workoutFrequency?: number | { recommended: number };
+      sleepDuration?: number | { recommended: number };
+    };
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-  const loadGoalData = async () => {
+  const loadGoalData = useCallback(async () => {
     try {
       // Import the body type goals service
       const { getBodyTypeGoalById } = await import('../../services/bodyTypeGoals');
@@ -55,15 +70,16 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
             onGoalNameChange(goal.name);
           }
         }
-      } catch (error) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
       } finally {
         setLoading(false);
       }
-    };
+    }, [bodyTypeGoal, userData, onGoalNameChange]);
 
+  useEffect(() => {
     loadGoalData();
-  }, [bodyTypeGoal, userData]);
+  }, [loadGoalData]);
 
   if (loading) {
     return (
@@ -170,28 +186,21 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
 };
 
 export default function EnhancedProfileScreen() {
-  const { user, logout, updateUser, rerunOnboarding, deleteAccount } = useAuth();
-  const navigation = useNavigation();
+  const { user, logout, rerunOnboarding, deleteAccount } = useAuth();
   const { showToast } = useToast();
   const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [showNumericalGoalsModal, setShowNumericalGoalsModal] = useState(false);
-  const [numericalGoals, setNumericalGoals] = useState<GoalProgress[]>([]);
-  const [goalsLoading, setGoalsLoading] = useState(false);
   const [bodyTypeGoalName, setBodyTypeGoalName] = useState<string>('');
 
   const loadNumericalGoals = useCallback(async () => {
     try {
-      setGoalsLoading(true);
-      const goals = await numericalGoalsService.calculateProgress();
-      setNumericalGoals(goals);
-      console.log('🎯 Loaded numerical goals:', goals.length);
-    } catch (error) {
+      await numericalGoalsService.calculateProgress();
+      console.log('🎯 Loaded numerical goals');
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
-    } finally {
-      setGoalsLoading(false);
     }
   }, []);
 
@@ -238,24 +247,24 @@ export default function EnhancedProfileScreen() {
       
       // Load numerical goals after onboarding data is loaded
       await loadNumericalGoals();
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load profile data', 'error');
     } finally {
       setLoading(false);
     }
-  }, []); // Remove loadNumericalGoals dependency to prevent infinite loop
+  }, [loadNumericalGoals, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     hapticFeedback.light();
     await loadOnboardingData();
     setRefreshing(false);
-  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
+  }, [loadOnboardingData]);
 
   useEffect(() => {
     loadOnboardingData();
-  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
+  }, [loadOnboardingData]);
 
   useEffect(() => {
   }, [user]);
@@ -274,7 +283,6 @@ export default function EnhancedProfileScreen() {
     hapticFeedback.medium();
     
     // Show confirmation alert
-    const { Alert } = require('react-native');
     Alert.alert(
       'Delete Account',
       'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
@@ -295,7 +303,7 @@ export default function EnhancedProfileScreen() {
               } else {
                 showToast(`Failed to delete account: ${result.error}`, 'error', 5000);
               }
-            } catch (error) {
+            } catch {
               showToast('Failed to delete account. Please try again.', 'error', 5000);
             }
           },
@@ -304,7 +312,11 @@ export default function EnhancedProfileScreen() {
     );
   };
 
-  const handlePreferencesSave = async (data: any) => {
+  const handlePreferencesSave = async (data: {
+    notifications: boolean;
+    reminders: boolean;
+    dataSharing: boolean;
+  }) => {
     try {
       // Update local state
       setOnboardingData(prev => prev ? { ...prev, preferences: data } : null);
@@ -313,16 +325,16 @@ export default function EnhancedProfileScreen() {
       await profileService.updateUserProfile({ preferences: data });
       
       showToast('Preferences updated successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to update preferences', 'error');
     }
   };
 
-  const handleSaveNumericalGoals = async (goals: any) => {
+  const handleSaveNumericalGoals = async (goals: GoalProgress[]) => {
     try {
       // This would typically save to backend
       showToast('Goals updated successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to update goals', 'error');
     }
   };

@@ -8,6 +8,8 @@ export { useAppStore } from './appStore';
 export { useNutritionStore } from './nutritionStore';
 export { useFitnessStore } from './fitnessStore';
 export { useAnalyticsStore } from './analyticsStore';
+export { useWaterStore } from './waterStore';
+export { useExerciseCategoriesStore } from './exerciseCategoriesStore';
 
 // Export all types
 export * from './types';
@@ -53,18 +55,43 @@ export {
   useAnalyticsActions,
 } from './analyticsStore';
 
+export {
+  useWaterTodayStats,
+  useWaterWeekStats,
+  useRecentWaterLogs,
+  useWaterGoal,
+  useWaterLoading,
+  useWaterError,
+  useWaterLastUpdated,
+  useWaterActions,
+} from './waterStore';
+
+export {
+  useExerciseCategories,
+  useExerciseCategoriesLoading,
+  useExerciseCategoriesError,
+  useExerciseCategoriesLoaded,
+  useExerciseCategoriesLastUpdated,
+  useExerciseCategoriesActions,
+  useExerciseCategoriesWithAutoLoad,
+} from './exerciseCategoriesStore';
+
 // Combined refresh function that refreshes all stores
 export const refreshAllStores = async () => {
   const { refreshData } = useAppStore.getState();
   const { refreshNutritionData } = useNutritionStore.getState();
   const { refreshFitnessData } = useFitnessStore.getState();
   const { refreshAnalyticsData } = useAnalyticsStore.getState();
+  const { refreshWaterData } = useWaterStore.getState();
+  const { loadCategories } = useExerciseCategoriesStore.getState();
 
   await Promise.all([
     refreshData(),
     refreshNutritionData(),
     refreshFitnessData(),
     refreshAnalyticsData(),
+    refreshWaterData(),
+    loadCategories(),
   ]);
 };
 
@@ -74,4 +101,6 @@ export const resetAllStores = () => {
   useNutritionStore.getState().resetNutritionState();
   useFitnessStore.getState().resetFitnessState();
   useAnalyticsStore.getState().resetAnalyticsState();
+  useWaterStore.getState().resetWaterState();
+  useExerciseCategoriesStore.getState().resetExerciseCategoriesState();
 };

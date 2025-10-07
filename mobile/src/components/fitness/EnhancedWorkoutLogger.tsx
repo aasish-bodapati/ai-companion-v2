@@ -19,6 +19,7 @@ import { exerciseCategoryService } from '../../services/exerciseCategoryService'
 import DynamicExerciseForm from './DynamicExerciseForm';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 const { width } = Dimensions.get('window');
 
@@ -53,25 +54,14 @@ export default function EnhancedWorkoutLogger({
   const [activityName, setActivityName] = useState('');
   const [duration, setDuration] = useState('');
   const [calories, setCalories] = useState('');
-  const [categories, setCategories] = useState<any[]>([]);
   const [unit, setUnit] = useState('kg');
   const [notes, setNotes] = useState('');
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Load categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await exerciseCategoryService.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
-    };
-    loadCategories();
-  }, []);
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
 
   const getCategoryForActivityType = (activityType: string): string => {
     // Map activity types to database categories

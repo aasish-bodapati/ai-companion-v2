@@ -6,6 +6,7 @@ import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { waterService } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { useWaterActions } from '../../stores';
 
 interface WaterLoggingModalProps {
   visible: boolean;
@@ -27,6 +28,7 @@ export default function WaterLoggingModal({
   const [waterEntries, setWaterEntries] = useState<LoggingItemData[]>([]);
   const [saving, setSaving] = useState(false);
   const [customAmount, setCustomAmount] = useState('');
+  const { createWaterLog } = useWaterActions();
 
   // Reset form when modal opens
   useEffect(() => {
@@ -93,7 +95,7 @@ export default function WaterLoggingModal({
   const handleSave = async (data: LoggingItemData) => {
     setSaving(true);
     try {
-      await waterService.createWaterLog(data);
+      await createWaterLog(data);
       onWaterLogged();
       onClose();
     } catch (error) {

@@ -5,37 +5,37 @@ import {
   TouchableOpacity,
   StyleSheet,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
+  // KeyboardAvoidingView,
+  // Platform,
+  // ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
+// import { BlurView } from 'expo-blur';
 import FormModal from './FormModal';
 import DateSelector from './DateSelector';
 import SearchInput, { SearchResult } from './SearchInput';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
 export interface LoggingItem {
   id: number | string;
   name: string;
   quantity?: number;
   quantity_unit?: string;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface LoggingModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: unknown) => Promise<void>;
   title: string;
   subtitle?: string;
   
   // Form configuration
   formType: 'meal' | 'workout' | 'water' | 'mood' | 'custom';
-  initialData?: any;
+  initialData?: unknown;
   
   // Search configuration
   searchPlaceholder: string;
@@ -54,7 +54,7 @@ interface LoggingModalProps {
   
   // Form validation
   isFormValid: () => boolean;
-  getFormData: () => any;
+  getFormData: () => unknown;
   
   // Additional form fields (for custom forms)
   additionalFields?: React.ReactNode;
@@ -69,9 +69,9 @@ interface LoggingModalProps {
   saving?: boolean;
   
   // Custom styling
-  contentStyle?: any;
-  headerStyle?: any;
-  footerStyle?: any;
+  contentStyle?: Record<string, unknown>;
+  headerStyle?: Record<string, unknown>;
+  footerStyle?: Record<string, unknown>;
   
   testID?: string;
 }
@@ -108,27 +108,27 @@ export default function LoggingModal({
   footerStyle,
   testID,
 }: LoggingModalProps) {
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  // const [keyboardVisible, setKeyboardVisible] = useState(false);
+  // const [keyboardHeight, setKeyboardHeight] = useState(0);
+  // const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Keyboard handling
-  useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
-      setKeyboardVisible(true);
-      setKeyboardHeight(e.endCoordinates.height);
-    });
+  // useEffect(() => {
+  //   const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (e) => {
+  //     setKeyboardVisible(true);
+  //     setKeyboardHeight(e.endCoordinates.height);
+  //   });
 
-    const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardVisible(false);
-      setKeyboardHeight(0);
-    });
+  //   const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
+  //     setKeyboardVisible(false);
+  //     setKeyboardHeight(0);
+  //   });
 
-    return () => {
-      keyboardDidShowListener?.remove();
-      keyboardDidHideListener?.remove();
-    };
-  }, []);
+  //   return () => {
+  //     keyboardDidShowListener?.remove();
+  //     keyboardDidHideListener?.remove();
+  //   };
+  // }, []);
 
   // Dismiss keyboard when modal closes
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function LoggingModal({
       hapticFeedback.success();
       const formData = getFormData ? getFormData() : {};
       await onSave(formData);
-    } catch (error) {
+    } catch {
       hapticFeedback.error();
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
@@ -176,7 +176,7 @@ export default function LoggingModal({
           onSelect={onSelectItem}
           onClear={onClearSearch}
           loading={searchLoading}
-          onDropdownToggle={setDropdownOpen}
+          onDropdownToggle={() => {}}
           testID={`${testID}-search`}
         />
     </View>

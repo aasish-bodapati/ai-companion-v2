@@ -4,25 +4,22 @@
  * global state after data changes (meal logging, workout logging, etc.)
  */
 
-import { useAppStore, useNutritionStore, useFitnessStore } from '../stores';
-import { nutritionService } from '../services/nutritionService';
-import { fitnessService } from '../services/fitnessService';
+// Import mocked services
+import * as mockNutritionService from '../services/nutritionService';
+import * as mockFitnessService from '../services/fitnessService';
 
 // Mock the services
 jest.mock('../services/nutritionService');
 jest.mock('../services/fitnessService');
 jest.mock('../services/dashboardService');
 
-const mockNutritionService = nutritionService as jest.Mocked<typeof nutritionService>;
-const mockFitnessService = fitnessService as jest.Mocked<typeof fitnessService>;
-
 describe('Global State Refresh Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
     // Mock successful API responses
-    mockNutritionService.logMeal.mockResolvedValue({ success: true });
-    mockNutritionService.getNutritionStats.mockResolvedValue({
+    (mockNutritionService as unknown as { logMeal: jest.Mock }).logMeal = jest.fn().mockResolvedValue({ success: true });
+    (mockNutritionService as unknown as { getNutritionStats: jest.Mock }).getNutritionStats = jest.fn().mockResolvedValue({
       total_calories: 1500,
       protein_g: 75,
       carbs_g: 200,
@@ -34,37 +31,14 @@ describe('Global State Refresh Integration', () => {
       avg_calories_per_meal: 500,
     });
     
-    mockFitnessService.logWorkout.mockResolvedValue({ success: true });
-    mockFitnessService.getFitnessLogs.mockResolvedValue([]);
+    (mockFitnessService as unknown as { logWorkout: jest.Mock }).logWorkout = jest.fn().mockResolvedValue({ success: true });
+    (mockFitnessService as unknown as { getFitnessLogs: jest.Mock }).getFitnessLogs = jest.fn().mockResolvedValue([]);
   });
 
   describe('Nutrition Screen Global State Refresh', () => {
     it('should refresh global state after meal logging', async () => {
       // This test verifies that the NutritionScreen properly calls refreshData()
       // after logging a meal, which should update the dashboard's calorie display
-      
-      const TestComponent = () => {
-        const { refreshData } = useAppStore();
-        
-        const handleMealLogged = async () => {
-          // Simulate the meal logging flow from NutritionScreen
-          await nutritionService.logMeal({
-            meal_type: 'breakfast',
-            total_calories: 500,
-            protein_g: 25,
-            carbs_g: 60,
-            fat_g: 15,
-            food_items: '[]',
-            notes: '',
-            meal_date: new Date().toISOString(),
-          });
-          
-          // This should be called after meal logging
-          await refreshData();
-        };
-        
-        return null;
-      };
       
       // The test passes if no errors are thrown during the async operations
       await expect(async () => {
@@ -79,26 +53,6 @@ describe('Global State Refresh Integration', () => {
       // This test verifies that the FitnessScreen properly calls refreshData()
       // after logging a workout, which should update the dashboard's workout metrics
       
-      const TestComponent = () => {
-        const { refreshData } = useAppStore();
-        
-        const handleWorkoutLogged = async () => {
-          // Simulate the workout logging flow from FitnessScreen
-          await fitnessService.logWorkout({
-            activity_type: 'strength_training',
-            duration_minutes: 45,
-            calories_burned: 300,
-            notes: 'Test workout',
-            activity_date: new Date().toISOString(),
-          });
-          
-          // This should be called after workout logging
-          await refreshData();
-        };
-        
-        return null;
-      };
-      
       // The test passes if no errors are thrown during the async operations
       await expect(async () => {
         // This would be called in a real test environment
@@ -111,16 +65,6 @@ describe('Global State Refresh Integration', () => {
     it('should maintain consistent state across all screens', () => {
       // This test verifies that the global state is properly shared
       // and updated consistently across all screens
-      
-      const TestComponent1 = () => {
-        const { state } = useGlobalState();
-        return state;
-      };
-      
-      const TestComponent2 = () => {
-        const { state } = useGlobalState();
-        return state;
-      };
       
       // Both components should have access to the same global state
       // This is verified by the context provider implementation
@@ -143,7 +87,7 @@ export const verifyGlobalStateRefresh = {
     try {
       // Simulate meal logging
       const mealData = {
-        meal_type: 'breakfast' as const,
+        meal_type: 'breakfast',
         total_calories: 500,
         protein_g: 25,
         carbs_g: 60,

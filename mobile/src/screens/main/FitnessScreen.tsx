@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFitnessStore, useFitnessWeekStats, useFitnessLoading, useFitnessError } from '../../stores';
+import { useFitnessStore, useFitnessWeekStats, useFitnessLoading } from '../../stores';
 import { useAuth } from '../../contexts/AuthContext';
 import TodaysSnapshot from '../../components/fitness/TodaysSnapshot';
 import UnifiedWorkoutLogger from '../../components/fitness/UnifiedWorkoutLogger';
@@ -19,13 +19,8 @@ import ProgressTracking from '../../components/fitness/ProgressTracking';
 import FitnessLogsView from '../../components/fitness/FitnessLogsView';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
-import { fitnessService, WorkoutStats } from '../../services/fitnessService';
-import { dashboardService } from '../../services/dashboardService';
+import { fitnessService } from '../../services/fitnessService';
 import { routineService } from '../../services/routineService';
-import useResponsive from '../../hooks/useResponsive';
-import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
-import { isFeatureEnabled } from '../../config/featureFlags';
-// Removed MigrationHelpers import
 
 export default function FitnessScreen() {
   // Use individual selectors instead of the actions object to prevent infinite loops
@@ -33,16 +28,13 @@ export default function FitnessScreen() {
   const addWorkout = useFitnessStore((state) => state.addWorkout);
   const weekStats = useFitnessWeekStats();
   const loading = useFitnessLoading();
-  const error = useFitnessError();
   const { user } = useAuth();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
   const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
   const [showCreateRoutineModal, setShowCreateRoutineModal] = useState(false);
-  const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
-  const [recommendedWorkout, setRecommendedWorkout] = useState<any>(null);
-  const responsive = useResponsive();
+  const [recommendedWorkout, setRecommendedWorkout] = useState<{ routine_id?: string; activity_type?: string } | null>(null);
   
   // Overview state
   const [weeklyActivityData, setWeeklyActivityData] = useState({
@@ -60,7 +52,7 @@ export default function FitnessScreen() {
   const loadWeekStats = useCallback(async () => {
     // This is now handled by the Zustand store
     await refreshFitnessData();
-  }, []); // Remove refreshFitnessData dependency to prevent infinite loop
+  }, [refreshFitnessData]);
 
   const loadWeeklyActivityData = useCallback(async () => {
     try {
@@ -99,7 +91,7 @@ export default function FitnessScreen() {
       }
       
       setWeeklyActivityData(weeklyData);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback data
       setWeeklyActivityData({
@@ -116,7 +108,7 @@ export default function FitnessScreen() {
 
   const loadOverviewData = useCallback(async () => {
     await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-  }, []); // Remove dependencies to prevent infinite loop
+  }, [loadWeekStats, loadWeeklyActivityData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -129,7 +121,7 @@ export default function FitnessScreen() {
     if (user) {
       loadOverviewData();
     }
-  }, [user]); // Load data when user changes
+  }, [user, loadOverviewData]); // Load data when user changes
 
   // Reset to overview tab every time the screen comes into focus
   useFocusEffect(
@@ -142,7 +134,14 @@ export default function FitnessScreen() {
     setShowCreateRoutineModal(false);
   };
 
-  const handleWorkoutLogged = async (workoutData: any) => {
+  const handleWorkoutLogged = useCallback(async (workoutData: {
+    activity_type?: string;
+    duration_minutes?: number;
+    calories_burned?: number;
+    notes?: string;
+    activity_date?: string;
+    routine_id?: string;
+  }) => {
     setShowUnifiedWorkoutLogger(false);
     setRecommendedWorkout(null);
     
@@ -160,36 +159,33 @@ export default function FitnessScreen() {
     await refreshFitnessData();
     
     // Force component remount with new key
-    setFitnessLogsKey(prev => {
-      const newKey = prev + 1;
-      return newKey;
-    });
-  };
+    setFitnessLogsKey(prev => prev + 1);
+  }, [addWorkout, refreshFitnessData]);
 
-  const handleFitnessLogsRefresh = () => {
+  const handleFitnessLogsRefresh = useCallback(() => {
     // This will trigger a re-render of the FitnessLogsView
     setFitnessLogsKey(prev => prev + 1);
-  };
+  }, []);
 
-  const StatCard = ({ icon, title, value, subtitle, color }: {
-    icon: string;
-    title: string;
-    value: string | number;
-    subtitle?: string;
-    color: string;
-  }) => (
-    <View style={[styles.statCard, { backgroundColor: color }]}>
-      <View style={styles.statContent}>
-        <View style={styles.statInfo}>
-          <Text style={styles.statValue}>{value}</Text>
-          <Text style={styles.statTitle}>{title}</Text>
-          {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-        </View>
-        <Ionicons name={icon as any} size={32} color="#ffffff" />
-      </View>
-    </View>
-  );
+  const handleSetActiveRoutine = useCallback(async (routine: { id: string | number }) => {
+    try {
+      await routineService.setActiveRoutine(routine.id.toString());
+      // Refresh data to show updated active routine
+      handleFitnessLogsRefresh();
+    } catch {
+      // Handle error silently for MVP
+    }
+  }, [handleFitnessLogsRefresh]);
 
+  const handleSetInactiveRoutine = useCallback(async () => {
+    try {
+      await routineService.clearActiveRoutine();
+      // Refresh data to show updated active routine
+      handleFitnessLogsRefresh();
+    } catch {
+      // Handle error silently for MVP
+    }
+  }, [handleFitnessLogsRefresh]);
 
   // No predefined workout - users create their own
   const todaysWorkout = recommendedWorkout || null;
@@ -412,27 +408,10 @@ export default function FitnessScreen() {
           }}
           onCreateRoutine={() => setShowCreateRoutineModal(true)}
           onEditRoutine={(routine) => {
-            setSelectedRoutine(routine);
             // Handle edit routine
           }}
-          onSetActive={async (routine) => {
-            try {
-              await routineService.setActiveRoutine(routine.id.toString());
-              // Refresh data to show updated active routine
-              handleFitnessLogsRefresh();
-            } catch (error) {
-              // Handle error silently for MVP
-            }
-          }}
-          onSetInactive={async (routine) => {
-            try {
-              await routineService.clearActiveRoutine();
-              // Refresh data to show updated active routine
-              handleFitnessLogsRefresh();
-            } catch (error) {
-              // Handle error silently for MVP
-            }
-          }}
+          onSetActive={handleSetActiveRoutine}
+          onSetInactive={handleSetInactiveRoutine}
         />
       ) : (
         <FitnessLogsView

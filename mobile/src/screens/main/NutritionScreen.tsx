@@ -5,33 +5,27 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  RefreshControl,
   ActivityIndicator,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNutritionStore, useNutritionWeekStats, useNutritionLoading, useNutritionError } from '../../stores';
-import { nutritionService, NutritionStats } from '../../services/nutritionService';
+import { useNutritionStore, useNutritionLoading } from '../../stores';
+import { nutritionService } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
 import NutritionOverviewDashboard from '../../components/nutrition/NutritionOverviewDashboard';
 import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
-import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
-import { isFeatureEnabled } from '../../config/featureFlags';
-// Removed MigrationHelpers import
 
 export default function NutritionScreen() {
   // Use individual selectors instead of the actions object to prevent infinite loops
   const refreshNutritionData = useNutritionStore((state) => state.refreshNutritionData);
   const addMeal = useNutritionStore((state) => state.addMeal);
-  const weekStats = useNutritionWeekStats();
   const loading = useNutritionLoading();
-  const error = useNutritionError();
   
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
-  const nutritionLogsRef = useRef<any>(null);
+  const nutritionLogsRef = useRef<{ refreshLogs: () => void } | null>(null);
   const [weeklyActivityData, setWeeklyActivityData] = useState({
     monday: 0,
     tuesday: 0,
@@ -111,8 +105,8 @@ export default function NutritionScreen() {
       
       console.log('🍽️ [NUTRITION SCREEN] Weekly activity data calculated:', weeklyData);
       setWeeklyActivityData(weeklyData);
-    } catch (error) {
-      console.error('🍽️ [NUTRITION SCREEN] Error loading weekly activity data:', error);
+    } catch {
+      // Silent error handling - no console logging to prevent Expo Go notifications
       // Set fallback data
       setWeeklyActivityData({
         monday: 0,
@@ -138,7 +132,7 @@ export default function NutritionScreen() {
 
   useEffect(() => {
     loadOverviewData();
-  }, []); // Remove loadOverviewData from dependencies to prevent infinite loop
+  }, [loadOverviewData]);
 
   // Reset to overview tab when screen comes into focus
   useFocusEffect(
@@ -147,24 +141,73 @@ export default function NutritionScreen() {
     }, [])
   );
 
-  const StatCard = ({ icon, title, value, subtitle, color }: {
-    icon: string;
-    title: string;
-    value: string | number;
-    subtitle?: string;
-    color: string;
-  }) => (
-    <View style={[styles.statCard, { backgroundColor: color }]}>
-      <View style={styles.statContent}>
-        <View style={styles.statInfo}>
-          <Text style={styles.statValue}>{value}</Text>
-          <Text style={styles.statTitle}>{title}</Text>
-          {subtitle && <Text style={styles.statSubtitle}>{subtitle}</Text>}
-        </View>
-        <Ionicons name={icon as any} size={32} color="#ffffff" />
-      </View>
-    </View>
-  );
+  const handleQuickAddMeal = useCallback(async (mealType: string, foodItems: {
+    name: string;
+    calories: number;
+    protein_g: number;
+    carbs_g: number;
+    fat_g: number;
+    quantity: number;
+    quantity_unit: string;
+  }[]) => {
+    try {
+      // Handle quick add - convert to meal data format
+      const mealData = {
+        meal_type: mealType,
+        total_calories: foodItems.reduce((sum, item) => sum + item.calories, 0),
+        protein_g: foodItems.reduce((sum, item) => sum + item.protein_g, 0),
+        carbs_g: foodItems.reduce((sum, item) => sum + item.carbs_g, 0),
+        fat_g: foodItems.reduce((sum, item) => sum + item.fat_g, 0),
+        food_items: JSON.stringify(foodItems.map(item => ({
+          food_id: Date.now(), // Temporary ID
+          food_name: item.name,
+          quantity: item.quantity,
+          quantity_unit: item.quantity_unit,
+          quantity_grams: item.quantity * 100,
+          calories: item.calories,
+          protein_g: item.protein_g,
+          carbs_g: item.carbs_g,
+          fat_g: item.fat_g,
+        }))),
+      };
+      
+      // Log the meal with proper async/await
+      await nutritionService.logMeal(mealData);
+      
+      // Add meal to store and refresh data
+      addMeal({
+        id: Date.now().toString(),
+        meal_type: mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack',
+        food_items: foodItems.map(item => ({
+          food_item: { id: Date.now(), name: item.name },
+          quantity: item.quantity,
+          unit: item.quantity_unit,
+        })),
+        total_calories: mealData.total_calories,
+        total_protein: mealData.protein_g,
+        total_carbs: mealData.carbs_g,
+        total_fat: mealData.fat_g,
+        logged_at: new Date().toISOString(),
+      });
+      
+      await refreshNutritionData();
+      
+      if (nutritionLogsRef.current) {
+        nutritionLogsRef.current.refreshLogs();
+      }
+    } catch {
+      // Silent error handling - no console logging to prevent Expo Go notifications
+    }
+  }, [addMeal, refreshNutritionData]);
+
+  const handleMealLogged = useCallback(async () => {
+    setShowLogMealModal(false);
+    await refreshNutritionData();
+    // Refresh logs if we're on the logs tab
+    if (activeTab === 'logs' && nutritionLogsRef.current) {
+      nutritionLogsRef.current.refreshLogs();
+    }
+  }, [refreshNutritionData, activeTab]);
 
 
   const renderOverview = () => (
@@ -184,57 +227,7 @@ export default function NutritionScreen() {
     >
       {/* Quick Add Meals */}
       <QuickAddMeals
-        onQuickAdd={async (mealType, foodItems) => {
-          try {
-            // Handle quick add - convert to meal data format
-            const mealData = {
-              meal_type: mealType,
-              total_calories: foodItems.reduce((sum, item) => sum + item.calories, 0),
-              protein_g: foodItems.reduce((sum, item) => sum + item.protein_g, 0),
-              carbs_g: foodItems.reduce((sum, item) => sum + item.carbs_g, 0),
-              fat_g: foodItems.reduce((sum, item) => sum + item.fat_g, 0),
-              food_items: JSON.stringify(foodItems.map(item => ({
-                food_id: Date.now(), // Temporary ID
-                food_name: item.name,
-                quantity: item.quantity,
-                quantity_unit: item.quantity_unit,
-                quantity_grams: item.quantity * 100,
-                calories: item.calories,
-                protein_g: item.protein_g,
-                carbs_g: item.carbs_g,
-                fat_g: item.fat_g,
-              }))),
-            };
-            
-            // Log the meal with proper async/await
-            await nutritionService.logMeal(mealData);
-            
-            // Add meal to store and refresh data
-            addMeal({
-              id: Date.now().toString(),
-              meal_type: mealType,
-              food_items: foodItems.map(item => ({
-                food_item: { id: Date.now(), name: item.name },
-                quantity: item.quantity,
-                unit: item.quantity_unit,
-              })),
-              total_calories: mealData.total_calories,
-              total_protein: mealData.protein_g,
-              total_carbs: mealData.carbs_g,
-              total_fat: mealData.fat_g,
-              logged_at: new Date().toISOString(),
-            });
-            
-            await refreshNutritionData();
-            
-            if (nutritionLogsRef.current) {
-              nutritionLogsRef.current.refreshLogs();
-            }
-          } catch (error) {
-            console.error('Error logging quick meal:', error);
-            // You could add user-facing error handling here
-          }
-        }}
+        onQuickAdd={handleQuickAddMeal}
         onCustomAdd={() => setShowLogMealModal(true)}
       />
 
@@ -369,14 +362,7 @@ export default function NutritionScreen() {
       <UnifiedNutritionLogger
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
-        onMealLogged={async () => {
-          setShowLogMealModal(false);
-          await refreshNutritionData();
-          // Refresh logs if we're on the logs tab
-          if (activeTab === 'logs' && nutritionLogsRef.current) {
-            nutritionLogsRef.current.refreshLogs();
-          }
-        }}
+        onMealLogged={handleMealLogged}
       />
     </View>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,101 +8,40 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { waterService, WaterLogStats } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
-// Removed unused SectionHeader import
 import { COLORS, SPACING } from '../../theme/constants';
-// Removed unused imports
+import { 
+  useWaterTodayStats, 
+  useWaterGoal, 
+  useWaterLoading, 
+  useWaterError,
+  useWaterActions 
+} from '../../stores';
 
-// No props needed - component manages its own state
+// No props needed - component uses water store
 
 export default function WaterLoggingCard() {
-  const [stats, setStats] = useState<WaterLogStats | null>(null);
-  const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
+  const stats = useWaterTodayStats();
+  const waterGoal = useWaterGoal();
+  const loading = useWaterLoading();
+  const error = useWaterError();
+  const { refreshWaterData, quickLogWater, deleteWaterLogEntry } = useWaterActions();
 
-  const loadStats = async () => {
-    try {
-      const waterStats = await waterService.getWaterStats();
-      setStats(waterStats);
-    } catch (_error) {
-      // Set default stats on error
-      setStats({
-        total_ml_today: 0,
-        total_oz_today: 0,
-        logs_today: 0,
-        goal_ml: 3000,
-        goal_oz: 101.4,
-        progress_percentage: 0,
-        average_per_log: 250,
-      });
-    }
-  };
-
-  const loadWaterGoal = async () => {
-    try {
-      // Get user profile to determine gender-based water goal
-      const { profileService } = await import('../../services/profileService');
-      const profile = await profileService.getUserProfile();
-      
-      if (profile?.health_data?.gender) {
-        const gender = profile.health_data.gender;
-        let waterGoalMl = 3000; // Default 3L
-        
-        if (gender === 'female') {
-          waterGoalMl = 2700; // 2.7L for females
-        } else if (gender === 'male') {
-          waterGoalMl = 3700; // 3.7L for males
-        } else {
-          waterGoalMl = 3000; // Default 3L for other
-        }
-        
-        setWaterGoal(waterGoalMl);
-      } else {
-        setWaterGoal(3000);
-      }
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      setWaterGoal(3000); // Fallback to default
-    }
-  };
-
+  // Load water data when component mounts
   useEffect(() => {
-    // Defer loading to reduce initial API calls
-    const timer = setTimeout(() => {
-      loadStats();
-      loadWaterGoal();
-    }, 500); // Load after 500ms delay
-    
-    return () => clearTimeout(timer);
-  }, []);
+    refreshWaterData();
+  }, [refreshWaterData]);
 
   const handleQuickLog = async (amount_ml: number) => {
     try {
       hapticFeedback.light();
       
-      await waterService.quickLogWater(amount_ml);
-      
-      // Update stats optimistically without reloading
-      if (stats) {
-        setStats(prevStats => {
-          if (!prevStats) return prevStats;
-          return {
-            ...prevStats,
-            total_ml_today: prevStats.total_ml_today + amount_ml,
-            total_oz_today: prevStats.total_oz_today + (amount_ml * 0.033814),
-            logs_today: prevStats.logs_today + 1,
-            progress_percentage: Math.min(((prevStats.total_ml_today + amount_ml) / prevStats.goal_ml) * 100, 100),
-          };
-        });
-      }
+      await quickLogWater(amount_ml);
       
       hapticFeedback.success();
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+    } catch (error) {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log water. Please try again.');
-      // Reload stats on error to get accurate data
-      loadStats();
     }
   };
 
@@ -124,46 +63,24 @@ export default function WaterLoggingCard() {
         return;
       }
       
-      // Delete the most recent log
+      // Delete the most recent log using store action
       const mostRecentLog = todaysLogs[todaysLogs.length - 1];
-      await waterService.deleteWaterLog(mostRecentLog.id);
-      
-      // Update stats optimistically
-      if (stats) {
-        setStats(prevStats => {
-          if (!prevStats) return prevStats;
-          const removedAmount = mostRecentLog.amount_ml;
-          return {
-            ...prevStats,
-            total_ml_today: Math.max(0, prevStats.total_ml_today - removedAmount),
-            total_oz_today: Math.max(0, prevStats.total_oz_today - (removedAmount * 0.033814)),
-            logs_today: Math.max(0, prevStats.logs_today - 1),
-            progress_percentage: Math.max(0, ((prevStats.total_ml_today - removedAmount) / prevStats.goal_ml) * 100),
-          };
-        });
-      }
+      await deleteWaterLogEntry(mostRecentLog.id);
       
       hapticFeedback.success();
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+    } catch (error) {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to remove water log. Please try again.');
-      // Reload stats on error to get accurate data
-      loadStats();
     }
   };
 
-  // Use default values if stats haven't loaded yet, but use dynamic water goal
-  const displayStats = stats ? {
-    ...stats,
-    goal_ml: waterGoal, // Override with numerical goal
-    goal_oz: waterGoal * 0.033814, // Convert to oz
-  } : {
+  // Use default values if stats haven't loaded yet
+  const displayStats = stats || {
     total_ml_today: 0,
     total_oz_today: 0,
     logs_today: 0,
-    goal_ml: waterGoal, // Use dynamic goal
-    goal_oz: waterGoal * 0.033814, // Convert to oz
+    goal_ml: waterGoal,
+    goal_oz: waterGoal * 0.033814,
     progress_percentage: 0,
     average_per_log: 250,
   };

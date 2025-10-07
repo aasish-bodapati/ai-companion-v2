@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface LoggingItemData {
   id: number | string;
@@ -63,20 +64,9 @@ const LoggingItem = React.memo(function LoggingItem({
       ? (item.reps || '') 
       : ''
   );
-  const [categories, setCategories] = useState<any[]>([]);
-
-  // Load categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await exerciseCategoryService.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
-    };
-    loadCategories();
-  }, []);
+  
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
 
   // Update local state when item prop changes (for auto-population)
   useEffect(() => {

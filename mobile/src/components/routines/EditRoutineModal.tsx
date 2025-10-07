@@ -16,6 +16,7 @@ import { exerciseCategoryService } from '../../services/exerciseCategoryService'
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface Exercise {
   id: number;
@@ -59,7 +60,9 @@ export default function EditRoutineModal({
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
   const [loadingRoutineData, setLoadingRoutineData] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
   
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
@@ -79,19 +82,6 @@ export default function EditRoutineModal({
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
-
-  // Load categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await exerciseCategoryService.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
-    };
-    loadCategories();
-  }, []);
 
   const getCategoryConfig = (categoryId: string) => {
     const category = categories.find(cat => cat.id === categoryId);

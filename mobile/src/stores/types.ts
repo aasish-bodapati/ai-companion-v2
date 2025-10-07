@@ -225,8 +225,113 @@ export interface AnalyticsActions {
   resetAnalyticsState: () => void;
 }
 
+// Water-specific types
+export interface WaterLog {
+  id: number;
+  user_id: number;
+  amount_ml: number;
+  amount_oz: number;
+  log_type: 'manual' | 'goal' | 'reminder';
+  notes?: string;
+  log_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WaterLogStats {
+  total_ml_today: number;
+  total_oz_today: number;
+  goal_ml: number;
+  goal_oz: number;
+  progress_percentage: number;
+  logs_today: number;
+  average_per_log: number;
+}
+
+export interface WaterLogSummary {
+  date: string;
+  total_ml: number;
+  total_oz: number;
+  logs_count: number;
+  goal_achieved: boolean;
+}
+
+export interface WaterState {
+  todayStats: WaterLogStats | null;
+  weekStats: WaterLogSummary | null;
+  recentWaterLogs: WaterLog[];
+  waterGoal: number;
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
+
+export interface WaterActions {
+  setTodayStats: (stats: WaterLogStats | null) => void;
+  setWeekStats: (stats: WaterLogSummary | null) => void;
+  setRecentWaterLogs: (logs: WaterLog[]) => void;
+  setWaterGoal: (goal: number) => void;
+  addWaterLog: (log: WaterLog) => void;
+  updateWaterLog: (id: number, log: Partial<WaterLog>) => void;
+  deleteWaterLog: (id: number) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  refreshWaterData: () => Promise<void>;
+  quickLogWater: (amount_ml: number) => Promise<any>;
+  createWaterLog: (data: any) => Promise<WaterLog>;
+  updateWaterLogEntry: (id: number, data: any) => Promise<WaterLog>;
+  deleteWaterLogEntry: (id: number) => Promise<void>;
+  getWaterLogsForPeriod: (days: number) => Promise<WaterLog[]>;
+  resetWaterState: () => void;
+}
+
 // Combined store types
 export type AppStore = AppState & AppActions;
+export type WaterStore = WaterState & WaterActions;
+
+// Exercise Categories types
+export interface ExerciseCategory {
+  id: string;
+  name: string;
+  display_name: string;
+  color: string;
+  icon: string;
+}
+
+export interface ExerciseCategoriesState {
+  categories: ExerciseCategory[];
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+  loaded: boolean;
+}
+
+export interface ExerciseCategoriesActions {
+  setCategories: (categories: ExerciseCategory[]) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setLoaded: (loaded: boolean) => void;
+  loadCategories: () => Promise<ExerciseCategory[]>;
+  getCategoryById: (id: string) => ExerciseCategory | null;
+  getCategoryConfig: (categoryId: string) => ExerciseCategory;
+  categoryExists: (categoryId: string) => boolean;
+  getCategoriesByIds: (ids: string[]) => ExerciseCategory[];
+  searchCategories: (query: string) => ExerciseCategory[];
+  getAllCategoryIds: () => string[];
+  getCategoriesGrouped: () => {
+    all: ExerciseCategory[];
+    byType: {
+      bodyweight: ExerciseCategory[];
+      weighted: ExerciseCategory[];
+      cardio: ExerciseCategory[];
+      distance: ExerciseCategory[];
+    };
+  };
+  refreshCategories: () => Promise<ExerciseCategory[]>;
+  resetExerciseCategoriesState: () => void;
+}
+
+export type ExerciseCategoriesStore = ExerciseCategoriesState & ExerciseCategoriesActions;
 export type NutritionStore = NutritionState & NutritionActions;
 export type FitnessStore = FitnessState & FitnessActions;
 export type AnalyticsStore = AnalyticsState & AnalyticsActions;

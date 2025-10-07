@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface ExerciseData {
   exercise_name: string;
@@ -39,19 +40,8 @@ export default function DynamicExerciseForm({
   activityType,
   showRemove = true
 }: DynamicExerciseFormProps) {
-  const [categories, setCategories] = useState<any[]>([]);
-
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await exerciseCategoryService.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
-    };
-    loadCategories();
-  }, []);
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
   
   // Use category from database (backend provides logging_category)
   const getExerciseCategory = (): string => {

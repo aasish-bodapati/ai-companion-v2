@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,10 +14,11 @@ import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
 import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { ExerciseData } from '../../services/fitnessService';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+// import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
 import { useCreateLoadingState } from '../../utils/duplicateCodeUtils';
 import { isFeatureEnabled } from '../../config/featureFlags';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface Exercise {
   id: string | number;
@@ -65,29 +66,21 @@ export default function LogTodaysWorkoutModal({
   // Use new loading state management if feature is enabled
   const loadingState = isFeatureEnabled('USE_NEW_LOADING_UTILS') 
     ? newLoadingState
-    : { loading, setLoading, withLoading: async (fn: () => Promise<any>) => fn(), resetError: () => {} };
-  const [exerciseData, setExerciseData] = useState<{ [key: string | number]: any }>({});
+    : { loading, setLoading, withLoading: async (fn: () => Promise<unknown>) => fn(), resetError: () => {} };
+  const [exerciseData, setExerciseData] = useState<{ [key: string | number]: Record<string, string> }>({});
   const [loggedExercises, setLoggedExercises] = useState<Set<string | number>>(new Set());
   const [skippedExercises, setSkippedExercises] = useState<Set<string | number>>(new Set());
   const [exercisesLoggedToday, setExercisesLoggedToday] = useState<Set<string | number>>(new Set());
-  const [categories, setCategories] = useState<any[]>([]);
   const weightInputRefs = useRef<{ [key: string | number]: TextInput | null }>({});
+
+  // Use exercise categories store
+  // const { categories } = useExerciseCategoriesWithAutoLoad();
 
   useEffect(() => {
     if (visible) {
       loadTodaysWorkout();
-      loadCategories();
     }
-  }, [visible]);
-
-  const loadCategories = async () => {
-    try {
-      const categoriesData = await exerciseCategoryService.getCategories();
-      setCategories(categoriesData);
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-    }
-  };
+  }, [visible, loadTodaysWorkout]);
 
   // Function to get category display info (same as other components)
   const getCategoryInfo = (category: string) => {
@@ -103,7 +96,7 @@ export default function LogTodaysWorkoutModal({
   };
 
 
-  const loadTodaysWorkout = async () => {
+  const loadTodaysWorkout = useCallback(async () => {
     try {
       setLoading(true);
       const response = await routineService.getTodaysWorkout();
@@ -123,7 +116,7 @@ export default function LogTodaysWorkoutModal({
       setWorkoutData(data);
       
       // Auto-populate exercise data with previous logged values and check if logged today
-      const initialData: { [key: string | number]: any } = {};
+      const initialData: { [key: string | number]: Record<string, string> } = {};
       const loggedTodaySet = new Set<string | number>();
       
       if (data && data.exercises && Array.isArray(data.exercises)) {
@@ -198,23 +191,29 @@ export default function LogTodaysWorkoutModal({
       
       setExerciseData(initialData);
       setExercisesLoggedToday(loggedTodaySet);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       
       // Handle different error types
-      if (error.response?.status === 404) {
-        const errorMessage = error.response?.data?.detail || 'No workout scheduled for today';
-        Alert.alert(
-          'No Workout Today', 
-          errorMessage + '\n\nYou can still log a custom workout or check your routine schedule.',
-          [
-            { text: 'Cancel', style: 'cancel', onPress: onClose },
-            { text: 'Log Custom Workout', onPress: () => {
-              onClose();
-              // You could navigate to a custom workout logging screen here
-            }}
-          ]
-        );
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorResponse = error.response as { status?: number; data?: { detail?: string } };
+        if (errorResponse.status === 404) {
+          const errorMessage = errorResponse.data?.detail || 'No workout scheduled for today';
+          Alert.alert(
+            'No Workout Today', 
+            errorMessage + '\n\nYou can still log a custom workout or check your routine schedule.',
+            [
+              { text: 'Cancel', style: 'cancel', onPress: onClose },
+              { text: 'Log Custom Workout', onPress: () => {
+                onClose();
+                // You could navigate to a custom workout logging screen here
+              }}
+            ]
+          );
+        } else {
+          showToast('Failed to load today\'s workout. Please try again.', 'error');
+          onClose();
+        }
       } else {
         showToast('Failed to load today\'s workout. Please try again.', 'error');
         onClose();
@@ -222,22 +221,22 @@ export default function LogTodaysWorkoutModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast, onClose]);
 
-  const handleExerciseLog = (exerciseId: number) => {
-    const newLogged = new Set(loggedExercises);
-    const newSkipped = new Set(skippedExercises);
-    
-    if (loggedExercises.has(exerciseId)) {
-      newLogged.delete(exerciseId);
-    } else {
-      newLogged.add(exerciseId);
-      newSkipped.delete(exerciseId);
-    }
-    
-    setLoggedExercises(newLogged);
-    setSkippedExercises(newSkipped);
-  };
+  // const handleExerciseLog = (exerciseId: number) => {
+  //   const newLogged = new Set(loggedExercises);
+  //   const newSkipped = new Set(skippedExercises);
+  //   
+  //   if (loggedExercises.has(exerciseId)) {
+  //     newLogged.delete(exerciseId);
+  //   } else {
+  //     newLogged.add(exerciseId);
+  //     newSkipped.delete(exerciseId);
+  //   }
+  //   
+  //   setLoggedExercises(newLogged);
+  //   setSkippedExercises(newSkipped);
+  // };
 
   const handleExerciseSkip = (exerciseId: number) => {
     const newSkipped = new Set(skippedExercises);
@@ -391,7 +390,7 @@ export default function LogTodaysWorkoutModal({
     if (!isFormValid()) {
       // Find exercises that need attention using the new validation logic
       const incompleteExercises = [];
-      const unhandledExercises = [];
+      // const unhandledExercises = [];
       
       for (const exercise of workoutData!.exercises) {
         const isSkipped = skippedExercises.has(exercise.id);
@@ -475,7 +474,7 @@ export default function LogTodaysWorkoutModal({
       }
 
       // Calculate total duration (estimate 2 minutes per exercise)
-      const estimatedDuration = exercises.length * 2;
+      // const estimatedDuration = exercises.length * 2;
 
       // Create separate log entries for each exercise
       console.log('🔍 [WORKOUT LOG] Creating separate log entries for each exercise');
@@ -522,21 +521,21 @@ export default function LogTodaysWorkoutModal({
     }
   };
 
-  const handleSkipWorkout = async () => {
-    try {
-      setLoading(true);
-      await routineService.skipTodaysWorkout(Number(workoutData!.routine_id));
-      
-      showToast('Your workout has been marked as skipped.', 'info');
-      onWorkoutLogged();
-      onClose();
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      showToast('Failed to skip workout. Please try again.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const handleSkipWorkout = async () => {
+  //   try {
+  //     setLoading(true);
+  //     await routineService.skipTodaysWorkout(Number(workoutData!.routine_id));
+  //     
+  //     showToast('Your workout has been marked as skipped.', 'info');
+  //     onWorkoutLogged();
+  //     onClose();
+  //   } catch (error) {
+  //     // Silent error handling - no console logging to prevent Expo Go notifications
+  //     showToast('Failed to skip workout. Please try again.', 'error');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const getTotalLogged = () => loggedExercises.size;
   const getTotalExercises = () => workoutData?.exercises?.length || 0;

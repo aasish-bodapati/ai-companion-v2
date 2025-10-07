@@ -63,7 +63,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             console.log('🔍 User data from API:', response.data);
           }
           setUser(response.data);
-        } catch (userError: any) {
+        } catch (userError: unknown) {
           // Silent error handling - no console logging to prevent Expo Go notifications
           // Clear invalid token
           await AsyncStorage.removeItem('token');
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         },
       });
 
-      const { access_token, token_type } = response.data;
+      const { access_token } = response.data;
       
       // Store token
       await AsyncStorage.setItem('token', access_token);
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const userResponse = await apiClient.get('/users/me');
         setUser(userResponse.data);
-      } catch (_error) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
         setUser({
@@ -149,41 +149,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (__DEV__) {
           console.log('🔍 login - completed:', completed, 'setNeedsOnboarding to:', !completed);
         }
-      } catch (_error) {
-        console.log('🔍 login - onboarding status error:', error);
+      } catch {
+        console.log('🔍 login - onboarding status error');
         // Default to needing onboarding if we can't check
         setNeedsOnboarding(true);
       }
 
       return { success: true };
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle different types of errors and show appropriate toast notifications
       let errorMessage = 'Login failed. Please try again.';
       
-      if (error.response?.status === 404) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        errorMessage = 'Server is not available. Please try again in a moment.';
-      } else if (error.response?.status === 401) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        errorMessage = 'Invalid email or password';
-      } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (error.response?.status === 400) {
-        const errorDetail = error.response?.data?.detail || error.response?.data?.message;
-        if (errorDetail?.includes('Incorrect email or password')) {
-          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-        } else if (errorDetail?.includes('Inactive user')) {
-          errorMessage = 'Your account has been deactivated. Please contact support.';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorResponse = error.response as { status?: number; data?: { detail?: string; message?: string } };
+        if (errorResponse.status === 404) {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          errorMessage = 'Server is not available. Please try again in a moment.';
+        } else if (errorResponse.status === 401) {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          errorMessage = 'Invalid email or password';
+        } else if (errorResponse.status === 400) {
+          const errorDetail = errorResponse.data?.detail || errorResponse.data?.message;
+          if (errorDetail?.includes('Incorrect email or password')) {
+            errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+          } else if (errorDetail?.includes('Inactive user')) {
+            errorMessage = 'Your account has been deactivated. Please contact support.';
+          } else {
+            errorMessage = errorDetail || 'Invalid credentials. Please try again.';
+          }
+        } else if (errorResponse.status === 422) {
+          errorMessage = 'Please check your email and password format.';
+        } else if (errorResponse.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
         } else {
-          errorMessage = errorDetail || 'Invalid credentials. Please try again.';
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          errorMessage = 'Login failed. Please try again.';
         }
-      } else if (error.response?.status === 422) {
-        errorMessage = 'Please check your email and password format.';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const errorCode = error.code as string;
+        const errorMsg = error.message as string;
+        if (errorCode === 'NETWORK_ERROR' || errorMsg === 'Network Error') {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          errorMessage = 'Network error. Please check your connection.';
+        } else if (errorCode === 'ECONNABORTED' || errorMsg?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else {
+          // Silent error handling - no console logging to prevent Expo Go notifications
+          errorMessage = 'Login failed. Please try again.';
+        }
       } else {
         // Silent error handling - no console logging to prevent Expo Go notifications
         errorMessage = 'Login failed. Please try again.';
@@ -205,30 +218,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       console.log('🔍 [AUTH CONTEXT] Registration API response:', response.data);
       return { success: true };
-    } catch (error: any) {
-      console.log('🔍 [AUTH CONTEXT] Registration API error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        code: error.code
-      });
+    } catch (error: unknown) {
+      console.log('🔍 [AUTH CONTEXT] Registration API error:', error);
       
       // Handle specific error cases and show toast notifications
       let errorMessage = 'Registration failed. Please try again later.';
       
-      if (error.response?.status === 400) {
-        const errorDetail = error.response?.data?.detail || error.response?.data?.message;
-        if (errorDetail?.includes('already exists')) {
-          errorMessage = 'An account with this email already exists. Please try logging in instead.';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorResponse = error.response as { status?: number; data?: { detail?: string; message?: string } };
+        if (errorResponse.status === 400) {
+          const errorDetail = errorResponse.data?.detail || errorResponse.data?.message;
+          if (errorDetail?.includes('already exists')) {
+            errorMessage = 'An account with this email already exists. Please try logging in instead.';
+          } else {
+            errorMessage = errorDetail || 'Registration failed. Please try again.';
+          }
+        } else if (errorResponse.status === 422) {
+          errorMessage = 'Please check your information and try again.';
         } else {
-          errorMessage = errorDetail || 'Registration failed. Please try again.';
+          errorMessage = 'Registration failed. Please try again later.';
         }
-      } else if (error.response?.status === 422) {
-        errorMessage = 'Please check your information and try again.';
-      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const errorCode = error.code as string;
+        const errorMsg = error.message as string;
+        if (errorCode === 'NETWORK_ERROR' || errorMsg?.includes('Network Error')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (errorCode === 'ECONNABORTED' || errorMsg?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else {
+          errorMessage = 'Registration failed. Please try again later.';
+        }
       } else {
         errorMessage = 'Registration failed. Please try again later.';
       }
@@ -245,7 +264,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (token) {
         await apiClient.post('/logout');
       }
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       // Clear local storage
@@ -274,7 +293,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('🎉 Backend onboarding completion response:', response.data);
       setNeedsOnboarding(false);
       console.log('🎉 AuthContext completeOnboarding completed - needsOnboarding set to false');
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Still mark as completed locally to prevent infinite onboarding loop
       setNeedsOnboarding(false);
@@ -310,24 +329,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setNeedsOnboarding(true);
       
       return { success: true };
-    } catch (error: any) {
-      console.log('🔍 [AUTH CONTEXT] Delete account error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        code: error.code
-      });
+    } catch (error: unknown) {
+      console.log('🔍 [AUTH CONTEXT] Delete account error:', error);
       
       let errorMessage = 'Failed to delete account. Please try again.';
       
-      if (error.response?.status === 401) {
-        errorMessage = 'You are not authorized to delete this account.';
-      } else if (error.response?.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please try again.';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorResponse = error.response as { status?: number };
+        if (errorResponse.status === 401) {
+          errorMessage = 'You are not authorized to delete this account.';
+        } else if (errorResponse.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else {
+          errorMessage = 'Failed to delete account. Please try again.';
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const errorCode = error.code as string;
+        const errorMsg = error.message as string;
+        if (errorCode === 'NETWORK_ERROR' || errorMsg?.includes('Network Error')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (errorCode === 'ECONNABORTED' || errorMsg?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else {
+          errorMessage = 'Failed to delete account. Please try again.';
+        }
+      } else {
+        errorMessage = 'Failed to delete account. Please try again.';
       }
       
       return { success: false, error: errorMessage };

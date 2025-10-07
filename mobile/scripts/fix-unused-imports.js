@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 // Get all TypeScript/JavaScript files
 const getFiles = (dir, extensions = ['.ts', '.tsx', '.js', '.jsx']) => {
@@ -84,7 +83,7 @@ const fixUnusedImports = (filePath) => {
 };
 
 // Main execution
-const srcDir = path.join(__dirname, '..', 'src');
+const srcDir = path.join(process.cwd(), 'src');
 const files = getFiles(srcDir);
 
 console.log(`Found ${files.length} files to process...`);
@@ -109,4 +108,5 @@ console.log(`\nSummary:`);
 console.log(`- Files processed: ${files.length}`);
 console.log(`- Files fixed: ${fixedCount}`);
 console.log(`- Errors: ${errorCount}`);
+
 

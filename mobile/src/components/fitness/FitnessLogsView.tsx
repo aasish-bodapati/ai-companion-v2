@@ -16,6 +16,7 @@ import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 import { 
   formatTimeInUserTimezone, 
   formatDateInUserTimezone, 
@@ -69,14 +70,15 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [navigating, setNavigating] = useState(false);
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
 
   // Debug logging for component mount/remount
 
   // Load data when component mounts or remounts
   useEffect(() => {
     loadExerciseDatabase();
-    loadCategories();
   }, []); // Empty dependency array means this runs on mount/remount
 
   // Load logs when categories are loaded
@@ -96,16 +98,6 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     }
   };
 
-  // Load categories from database
-  const loadCategories = async () => {
-    try {
-      const categoriesData = await exerciseCategoryService.getCategories();
-      console.log('🔍 [FITNESS LOGS] Loaded categories:', categoriesData);
-      setCategories(categoriesData);
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-    }
-  };
 
   // Get category config from database or return "Category Not Found"
   const getCategoryConfig = (categoryId: string) => {

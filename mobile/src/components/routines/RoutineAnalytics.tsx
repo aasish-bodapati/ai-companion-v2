@@ -12,6 +12,7 @@ import { routineService, SimpleRoutineWithProgress } from '../../services/routin
 import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { COMMON_STYLES } from '../../theme/constants';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface RoutineAnalyticsProps {
   routine: SimpleRoutineWithProgress;
@@ -45,20 +46,9 @@ const { width } = Dimensions.get('window');
 export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<any[]>([]);
-
-  // Load categories on mount
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const categoriesData = await exerciseCategoryService.getCategories();
-        setCategories(categoriesData);
-      } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
-    };
-    loadCategories();
-  }, []);
+  
+  // Use exercise categories store
+  const { categories } = useExerciseCategoriesWithAutoLoad();
 
   const loadAnalytics = async () => {
     try {
