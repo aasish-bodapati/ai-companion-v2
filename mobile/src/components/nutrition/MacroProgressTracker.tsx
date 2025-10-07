@@ -34,7 +34,12 @@ export default function MacroProgressTracker({
   onMacroPress,
 }: MacroProgressTrackerProps) {
   const [goals, setGoals] = useState<NutritionGoals | null>(null);
-  const [progress, setProgress] = useState<any>(null);
+  const [progress, setProgress] = useState<{
+    calories: { current: number; target: number; percentage: number };
+    protein_g: { current: number; target: number; percentage: number };
+    carbs_g: { current: number; target: number; percentage: number };
+    fat_g: { current: number; target: number; percentage: number };
+  } | null>(null);
 
   useEffect(() => {
     // Load goals from service
@@ -194,7 +199,7 @@ export default function MacroProgressTracker({
               <View style={styles.macroHeader}>
                 <View style={styles.macroInfo}>
                   <Ionicons 
-                    name={getMacroIcon(macro.key) as any} 
+                    name={getMacroIcon(macro.key) as keyof typeof Ionicons.glyphMap} 
                     size={16} 
                     color={getMacroColor(macro.key)} 
                   />

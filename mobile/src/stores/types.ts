@@ -1,0 +1,232 @@
+/**
+ * Zustand store types and interfaces
+ * Centralized type definitions for all store slices
+ */
+
+import { User } from '../contexts/AuthContext';
+
+// Base achievement interface
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  unlocked: boolean;
+  progress?: number;
+  unlockedAt?: string;
+  category: 'fitness' | 'nutrition' | 'consistency' | 'milestone';
+}
+
+// Streak interface
+export interface Streak {
+  type: 'workout' | 'nutrition' | 'water' | 'mood';
+  current: number;
+  best: number;
+  icon: string;
+  color: string;
+  label: string;
+  unit: string;
+}
+
+// Progress metrics interface
+export interface ProgressMetrics {
+  workouts: { current: number; target: number; progress: number };
+  calories: { current: number; target: number; progress: number };
+  protein: { current: number; target: number; progress: number };
+  water: { current: number; target: number; progress: number };
+  steps: { current: number; target: number; progress: number };
+  mood: { current: number; target: number; progress: number };
+}
+
+// Nutrition-specific types
+export interface NutritionStats {
+  total_calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+  meals_count: number;
+  avg_calories_per_meal: number;
+  total_meals: number;
+  average_daily_calories: number;
+  macro_breakdown: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  streak: number;
+  weekly_goal_progress: number;
+}
+
+export interface MealLog {
+  id?: string;
+  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+  food_items: {
+    food_item: any;
+    quantity: number;
+    unit: string;
+  }[];
+  total_calories: number;
+  total_protein: number;
+  total_carbs: number;
+  total_fat: number;
+  logged_at: string;
+}
+
+// Fitness-specific types
+export interface WorkoutStats {
+  totalWorkouts: number;
+  totalDuration: number;
+  totalCalories: number;
+  averageDuration: number;
+  averageCalories: number;
+  workouts: any[];
+}
+
+export interface WorkoutLog {
+  id?: string;
+  activity_type: string;
+  duration_minutes: number;
+  calories_burned: number;
+  notes?: string;
+  activity_date: string;
+  routine_id?: string;
+}
+
+// Analytics types
+export interface AnalyticsData {
+  total_steps: number;
+  average_mood: number;
+  weekly_activity: {
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  };
+}
+
+// Store state interfaces
+export interface AppState {
+  // User data
+  user: User | null;
+  
+  // Global state
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+  
+  // Progress metrics
+  progressMetrics: ProgressMetrics;
+  
+  // Achievements and streaks
+  achievements: Achievement[];
+  streaks: Streak[];
+  
+  // AI insights
+  aiInsights: any[];
+}
+
+export interface NutritionState {
+  // Nutrition data
+  todayStats: NutritionStats | null;
+  weekStats: NutritionStats | null;
+  recentMeals: MealLog[];
+  
+  // UI state
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
+
+export interface FitnessState {
+  // Fitness data
+  todayStats: WorkoutStats | null;
+  weekStats: WorkoutStats | null;
+  recentWorkouts: WorkoutLog[];
+  
+  // UI state
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
+
+export interface AnalyticsState {
+  // Analytics data
+  analyticsData: AnalyticsData | null;
+  weeklyActivityData: {
+    monday: number;
+    tuesday: number;
+    wednesday: number;
+    thursday: number;
+    friday: number;
+    saturday: number;
+    sunday: number;
+  };
+  
+  // UI state
+  loading: boolean;
+  error: string | null;
+  lastUpdated: string | null;
+}
+
+// Store actions interfaces
+export interface AppActions {
+  setUser: (user: User | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setProgressMetrics: (metrics: ProgressMetrics) => void;
+  setAchievements: (achievements: Achievement[]) => void;
+  setStreaks: (streaks: Streak[]) => void;
+  setAIInsights: (insights: any[]) => void;
+  updateAchievement: (id: string, unlocked: boolean, progress?: number) => void;
+  updateStreak: (type: string, current: number) => void;
+  refreshData: () => Promise<void>;
+  resetState: () => void;
+}
+
+export interface NutritionActions {
+  setTodayStats: (stats: NutritionStats | null) => void;
+  setWeekStats: (stats: NutritionStats | null) => void;
+  setRecentMeals: (meals: MealLog[]) => void;
+  addMeal: (meal: MealLog) => void;
+  updateMeal: (id: string, meal: Partial<MealLog>) => void;
+  deleteMeal: (id: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  refreshNutritionData: () => Promise<void>;
+  resetNutritionState: () => void;
+}
+
+export interface FitnessActions {
+  setTodayStats: (stats: WorkoutStats | null) => void;
+  setWeekStats: (stats: WorkoutStats | null) => void;
+  setRecentWorkouts: (workouts: WorkoutLog[]) => void;
+  addWorkout: (workout: WorkoutLog) => void;
+  updateWorkout: (id: string, workout: Partial<WorkoutLog>) => void;
+  deleteWorkout: (id: string) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  refreshFitnessData: () => Promise<void>;
+  resetFitnessState: () => void;
+}
+
+export interface AnalyticsActions {
+  setAnalyticsData: (data: AnalyticsData | null) => void;
+  setWeeklyActivityData: (data: AnalyticsState['weeklyActivityData']) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  refreshAnalyticsData: () => Promise<void>;
+  resetAnalyticsState: () => void;
+}
+
+// Combined store types
+export type AppStore = AppState & AppActions;
+export type NutritionStore = NutritionState & NutritionActions;
+export type FitnessStore = FitnessState & FitnessActions;
+export type AnalyticsStore = AnalyticsState & AnalyticsActions;

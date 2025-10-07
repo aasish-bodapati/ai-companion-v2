@@ -6,25 +6,25 @@
 export const DebugUtils = {
   isDebugMode: __DEV__, // Only log in development
   
-  log: (message: string, data?: any) => {
+  log: (message: string, data?: unknown) => {
     if (DebugUtils.isDebugMode) {
       console.log(`[DEBUG] ${message}`, data);
     }
   },
   
-  warn: (message: string, data?: any) => {
+  warn: (message: string, data?: unknown) => {
     if (DebugUtils.isDebugMode) {
       console.warn(`[WARN] ${message}`, data);
     }
   },
   
-  error: (message: string, data?: any) => {
+  error: (message: string, data?: unknown) => {
     if (DebugUtils.isDebugMode) {
       console.error(`[ERROR] ${message}`, data);
     }
   },
   
-  info: (message: string, data?: any) => {
+  info: (message: string, data?: unknown) => {
     if (DebugUtils.isDebugMode) {
       console.info(`[INFO] ${message}`, data);
     }

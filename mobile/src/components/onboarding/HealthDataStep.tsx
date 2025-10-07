@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   TouchableOpacity,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MobileOptimizedInput from '../ui/MobileOptimizedInput';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';

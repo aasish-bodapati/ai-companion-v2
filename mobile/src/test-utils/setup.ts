@@ -32,21 +32,41 @@ jest.mock('@expo/vector-icons', () => ({
 
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
-  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+  import('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = require('react-native-reanimated/mock');
+  const Reanimated = import('react-native-reanimated/mock');
   Reanimated.default.call = () => {};
   return Reanimated;
 });
 
 // Mock react-native-svg
-jest.mock('react-native-svg', () => {
-  const Svg = require('react-native-svg/mock');
-  return Svg;
-});
+jest.mock('react-native-svg', () => ({
+  Svg: 'Svg',
+  Circle: 'Circle',
+  Ellipse: 'Ellipse',
+  G: 'G',
+  Text: 'Text',
+  TextPath: 'TextPath',
+  TSpan: 'TSpan',
+  Path: 'Path',
+  Polygon: 'Polygon',
+  Polyline: 'Polyline',
+  Line: 'Line',
+  Rect: 'Rect',
+  Use: 'Use',
+  Image: 'Image',
+  Symbol: 'Symbol',
+  Defs: 'Defs',
+  LinearGradient: 'LinearGradient',
+  RadialGradient: 'RadialGradient',
+  Stop: 'Stop',
+  ClipPath: 'ClipPath',
+  Pattern: 'Pattern',
+  Mask: 'Mask',
+}));
 
 // Mock react-native-toast-message
 jest.mock('react-native-toast-message', () => ({

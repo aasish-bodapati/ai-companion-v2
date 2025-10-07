@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNutritionStore, useNutritionWeekStats, useNutritionLoading, useNutritionError } from '../../stores';
 import { nutritionService, NutritionStats } from '../../services/nutritionService';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
@@ -18,13 +19,19 @@ import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
 import { isFeatureEnabled } from '../../config/featureFlags';
-import { MigrationHelpers } from '../../utils/migrationHelpers';
+// Removed MigrationHelpers import
 
 export default function NutritionScreen() {
+  // Use individual selectors instead of the actions object to prevent infinite loops
+  const refreshNutritionData = useNutritionStore((state) => state.refreshNutritionData);
+  const addMeal = useNutritionStore((state) => state.addMeal);
+  const weekStats = useNutritionWeekStats();
+  const loading = useNutritionLoading();
+  const error = useNutritionError();
+  
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
   const nutritionLogsRef = useRef<any>(null);
-  const [weekStats, setWeekStats] = useState<NutritionStats | null>(null);
   const [weeklyActivityData, setWeeklyActivityData] = useState({
     monday: 0,
     tuesday: 0,
@@ -34,67 +41,16 @@ export default function NutritionScreen() {
     saturday: 0,
     sunday: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // Modal is now handled directly in TabNavigator
 
-  const loadWeekStats = async () => {
-    try {
-      const stats = await nutritionService.getNutritionStats('week');
-      
-      // Transform the stats to match the expected format
-      setWeekStats({
-        // Required properties
-        total_calories: stats.total_calories || 0,
-        protein_g: stats.protein_g || 0,
-        carbs_g: stats.carbs_g || 0,
-        fat_g: stats.fat_g || 0,
-        fiber_g: stats.fiber_g || 0,
-        sugar_g: stats.sugar_g || 0,
-        sodium_mg: stats.sodium_mg || 0,
-        meals_count: stats.meals_count || 0,
-        avg_calories_per_meal: stats.avg_calories_per_meal || 0,
-        // Additional properties
-        total_meals: stats.meals_count || 0,
-        average_daily_calories: stats.avg_calories_per_meal || 0,
-        macro_breakdown: {
-          protein: stats.protein_g || 0,
-          carbs: stats.carbs_g || 0,
-          fat: stats.fat_g || 0,
-        },
-        streak: 0, // Will be calculated separately
-        weekly_goal_progress: 0, // Will be calculated separately
-      });
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      // Set fallback stats
-      setWeekStats({
-        // Required properties
-        total_calories: 0,
-        protein_g: 0,
-        carbs_g: 0,
-        fat_g: 0,
-        fiber_g: 0,
-        sugar_g: 0,
-        sodium_mg: 0,
-        meals_count: 0,
-        avg_calories_per_meal: 0,
-        // Additional properties
-        total_meals: 0,
-        average_daily_calories: 0,
-        macro_breakdown: {
-          protein: 0,
-          carbs: 0,
-          fat: 0,
-        },
-        streak: 0,
-        weekly_goal_progress: 0,
-      });
-    }
-  };
+  const loadWeekStats = useCallback(async () => {
+    // This is now handled by the Zustand store
+    await refreshNutritionData();
+  }, [refreshNutritionData]);
 
-  const loadWeeklyActivityData = async () => {
+  const loadWeeklyActivityData = useCallback(async () => {
     try {
       console.log('🍽️ [NUTRITION SCREEN] Loading weekly activity data...');
       
@@ -168,18 +124,11 @@ export default function NutritionScreen() {
         sunday: 0,
       });
     }
-  };
+  }, []);
 
-  const loadOverviewData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadOverviewData = useCallback(async () => {
+    await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
+  }, [loadWeekStats, loadWeeklyActivityData]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -189,7 +138,7 @@ export default function NutritionScreen() {
 
   useEffect(() => {
     loadOverviewData();
-  }, []);
+  }, []); // Remove loadOverviewData from dependencies to prevent infinite loop
 
   // Reset to overview tab when screen comes into focus
   useFocusEffect(
@@ -259,7 +208,25 @@ export default function NutritionScreen() {
             
             // Log the meal with proper async/await
             await nutritionService.logMeal(mealData);
-            await loadOverviewData();
+            
+            // Add meal to store and refresh data
+            addMeal({
+              id: Date.now().toString(),
+              meal_type: mealType,
+              food_items: foodItems.map(item => ({
+                food_item: { id: Date.now(), name: item.name },
+                quantity: item.quantity,
+                unit: item.quantity_unit,
+              })),
+              total_calories: mealData.total_calories,
+              total_protein: mealData.protein_g,
+              total_carbs: mealData.carbs_g,
+              total_fat: mealData.fat_g,
+              logged_at: new Date().toISOString(),
+            });
+            
+            await refreshNutritionData();
+            
             if (nutritionLogsRef.current) {
               nutritionLogsRef.current.refreshLogs();
             }
@@ -402,9 +369,9 @@ export default function NutritionScreen() {
       <UnifiedNutritionLogger
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
-        onMealLogged={() => {
+        onMealLogged={async () => {
           setShowLogMealModal(false);
-          loadOverviewData();
+          await refreshNutritionData();
           // Refresh logs if we're on the logs tab
           if (activeTab === 'logs' && nutritionLogsRef.current) {
             nutritionLogsRef.current.refreshLogs();

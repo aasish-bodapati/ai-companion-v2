@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { nutritionService } from '../services/nutritionService';
 import { fitnessService } from '../services/fitnessService';
@@ -28,10 +28,15 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
   });
 
   useEffect(() => {
-    loadBodyTypeMetrics();
-  }, [user]);
+    // Defer loading to reduce initial API calls
+    const timer = setTimeout(() => {
+      loadBodyTypeMetrics();
+    }, 1000); // Load after 1 second delay
+    
+    return () => clearTimeout(timer);
+  }, [user]); // Remove loadBodyTypeMetrics dependency to prevent infinite loop
 
-  const loadBodyTypeMetrics = async () => {
+  const loadBodyTypeMetrics = useCallback(async () => {
     try {
       setMetrics(prev => ({ ...prev, loading: true }));
       
@@ -103,7 +108,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
       console.error('🎯 [BODY TYPE METRICS] Error loading metrics:', error);
       setMetrics(prev => ({ ...prev, loading: false }));
     }
-  };
+  }, [user]); // Add dependencies to prevent infinite loop
 
   const calculateDailyScore = async (nutrition: any[], fitness: any[], waterStats: any): Promise<number> => {
     let score = 0;

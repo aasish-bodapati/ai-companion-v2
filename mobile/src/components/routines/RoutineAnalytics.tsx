@@ -109,7 +109,7 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
 
   useEffect(() => {
     loadAnalytics();
-  }, [routine]);
+  }, [routine, loadAnalytics]);
 
   const StatCard = ({ icon, title, value, subtitle, color }: {
     icon: string;

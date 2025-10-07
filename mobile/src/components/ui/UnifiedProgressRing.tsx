@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { isFeatureEnabled } from '../../config/featureFlags';
-import { deprecateComponent } from '../../utils/deprecationUtils';
+// Removed deprecationUtils import
 
 const { width } = Dimensions.get('window');
 
@@ -82,14 +82,7 @@ export const UnifiedProgressRing = ({
 
   // Show deprecation warning if using old components
   useEffect(() => {
-    if (isFeatureEnabled('ENABLE_DEPRECATION_WARNINGS')) {
-      if (useSharedVariant) {
-        deprecateComponent('shared/ProgressRing', 'UnifiedProgressRing');
-      }
-      if (useUIVariant) {
-        deprecateComponent('ui/ProgressRing', 'UnifiedProgressRing');
-      }
-    }
+    // Removed deprecation warnings
   }, [useSharedVariant, useUIVariant]);
 
   // Calculate values based on variant

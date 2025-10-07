@@ -208,7 +208,7 @@ export default function EnhancedOnboardingScreen() {
       // If on the last step, complete onboarding immediately without animation
       handleComplete();
     }
-  }, [currentStep, isLastStep, isCompleting, hasCompleted]);
+  }, [currentStep, isLastStep, isCompleting, hasCompleted, handleComplete]);
 
   const handleComplete = useCallback(async () => {
     console.log('🎯 handleComplete called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);

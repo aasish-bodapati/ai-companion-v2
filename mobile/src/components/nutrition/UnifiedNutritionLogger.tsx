@@ -141,7 +141,7 @@ export default function UnifiedNutritionLogger({
     setSearching(true);
     try {
       const results = await nutritionService.searchFoods(query);
-      console.log('🔍 [NUTRITION LOGGER] Search results:', results);
+      console.log('🔍 [NUTRITION LOGGER] Found', results.length, 'food items');
       // Limit to 5 results
       setSearchResults(results.slice(0, 5));
     } catch (error) {

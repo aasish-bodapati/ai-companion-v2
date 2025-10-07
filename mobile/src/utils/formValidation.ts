@@ -6,7 +6,7 @@ export interface ValidationRule {
   max?: number;
   pattern?: RegExp;
   email?: boolean;
-  custom?: (value: any) => string | undefined;
+  custom?: (value: unknown) => string | undefined;
   message?: string;
 }
 

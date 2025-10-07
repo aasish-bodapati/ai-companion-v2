@@ -1,4 +1,4 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService, NutritionLog } from '../../services/nutritionService';
-import { getDateLocal } from '../../utils/dateUtils';
+// Removed unused import
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
 
@@ -36,10 +36,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [editingSingleFood, setEditingSingleFood] = useState<{logId: number, foodItem: any} | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // Removed unused showDatePicker
   const [navigating, setNavigating] = useState(false);
 
-  const loadLogs = async (date?: Date) => {
+  const loadLogs = useCallback(async (date?: Date) => {
     try {
       console.log('🍽️ [NUTRITION LOGS] Starting loadLogs...');
       setLoading(true);
@@ -90,13 +90,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       });
       
       setLogs(sortedLogs);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate]);
 
   const loadLogsForDate = async (date: Date) => {
     try {
@@ -114,7 +114,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         size: 50
       });
       setLogs(response || []);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
@@ -159,34 +159,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     onRefresh?.();
   };
 
-  const handleEditLog = (log: NutritionLog) => {
-    setEditingLog(log);
-    
-    // Parse food_items from JSON string
-    let foodItems = [];
-    try {
-      if (log.food_items) {
-        if (typeof log.food_items === 'string') {
-          foodItems = JSON.parse(log.food_items);
-        } else if (Array.isArray(log.food_items)) {
-          foodItems = log.food_items;
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing food_items:', error);
-      foodItems = [];
-    }
-    
-    setEditFoodItems(
-      foodItems.map((item: any) => ({
-        id: `${log.id}-${item.food_id || item.id}`,
-        quantity: item.quantity || 1,
-        quantity_unit: item.quantity_unit || 'serving',
-      }))
-    );
-    setEditingSingleFood(null);
-    setEditModalVisible(true);
-  };
+  // Removed unused handleEditLog function
 
   const handleEditSingleFood = (logId: number, foodItem: any) => {
     setEditingSingleFood({ logId, foodItem });
@@ -228,7 +201,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
               foodItems = log.food_items;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           console.error('Error parsing food_items:', error);
           foodItems = [];
         }
@@ -271,7 +244,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
               foodItems = editingLog.food_items;
             }
           }
-        } catch (error) {
+        } catch (_error) {
           console.error('Error parsing food_items:', error);
           foodItems = [];
         }
@@ -323,7 +296,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setEditingSingleFood(null);
       setEditFoodItems([]);
       showToast('Meal log updated successfully!', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to update meal log. Please try again.', 'error');
     }
@@ -348,7 +321,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           foodItems = log.food_items;
         }
       }
-    } catch (error) {
+    } catch (_error) {
       console.error('Error parsing food_items:', error);
       foodItems = [];
     }
@@ -380,7 +353,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             foodItems = log.food_items;
           }
         }
-      } catch (error) {
+      } catch (_error) {
         console.error('Error parsing food_items:', error);
         foodItems = [];
       }
@@ -428,7 +401,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         setLogs(prevLogs => prevLogs.map(l => l.id === logId ? updatedLog : l));
         showRapidToast('Food item removed successfully!', 'success');
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to remove food item. Please try again.', 'error');
     } finally {
@@ -445,7 +418,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
       showRapidToast('Meal log deleted successfully!', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete meal log. Please try again.', 'error');
     } finally {
@@ -455,26 +428,14 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [loadLogs]);
 
   // Expose refresh method to parent component
   useImperativeHandle(ref, () => ({
     refreshLogs: loadLogs
   }));
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Unknown Date';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
+  // Removed unused formatDate function
 
   const formatTime = (dateString: string) => {
     if (!dateString) return 'Unknown Time';
@@ -487,7 +448,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         hour: '2-digit',
         minute: '2-digit',
       });
-    } catch (error) {
+    } catch (_error) {
       return 'Invalid Time';
     }
   };
@@ -541,7 +502,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             foodItems = log.food_items;
           }
         }
-      } catch (error) {
+      } catch (_error) {
         console.error('Error parsing food_items:', error);
         foodItems = [];
       }
@@ -778,7 +739,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                         foodItems = editingLog.food_items;
                       }
                     }
-                  } catch (error) {
+                  } catch (_error) {
                     console.error('Error parsing food_items:', error);
                     foodItems = [];
                   }

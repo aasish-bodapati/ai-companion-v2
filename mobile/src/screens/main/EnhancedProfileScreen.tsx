@@ -20,7 +20,6 @@ import { numericalGoalsService, GoalProgress } from '../../services/numericalGoa
 import { hapticFeedback } from '../../utils/haptics';
 import { useToast } from '../../contexts/ToastContext';
 import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
-import { timezoneDetectionService } from '../../services/timezoneDetectionService';
 
 // Body Type Goals Display Component
 const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: { 
@@ -235,12 +234,7 @@ export default function EnhancedProfileScreen() {
         setOnboardingData(data);
       }
       
-      // Trigger independent timezone detection
-      timezoneDetectionService.detectAndUpdateTimezone().then(detectedTimezone => {
-        console.log('🌍 Profile screen timezone updated:', detectedTimezone);
-        // Update the UI with the detected timezone
-        setOnboardingData(prev => prev ? { ...prev, timezone: detectedTimezone } : null);
-      });
+      // Timezone detection is now handled globally in GlobalStateContext
       
       // Load numerical goals after onboarding data is loaded
       await loadNumericalGoals();

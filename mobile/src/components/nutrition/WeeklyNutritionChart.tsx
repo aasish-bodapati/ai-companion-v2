@@ -1,9 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
 import { COMMON_STYLES } from '../../theme/constants';
 
-const { width } = Dimensions.get('window');
 
 interface WeeklyNutritionChartProps {
   weeklyData: {

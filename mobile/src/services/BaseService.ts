@@ -1,5 +1,4 @@
 import { AxiosResponse } from 'axios';
-import { apiClient } from './api';
 
 export abstract class BaseService {
   /**

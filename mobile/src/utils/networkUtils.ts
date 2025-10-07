@@ -78,7 +78,7 @@ class NetworkUtils {
   }
 
   // Check if error is network-related
-  static isNetworkError(error: any): boolean {
+  static isNetworkError(error: unknown): boolean {
     if (!error) return false;
     
     const errorMessage = error.message || error.toString();
@@ -99,7 +99,7 @@ class NetworkUtils {
   }
 
   // Get user-friendly error message
-  static getUserFriendlyError(error: any): string {
+  static getUserFriendlyError(error: unknown): string {
     if (!error) return 'An unknown error occurred';
 
     const errorMessage = error.message || error.toString();

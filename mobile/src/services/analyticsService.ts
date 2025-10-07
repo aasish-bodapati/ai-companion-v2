@@ -75,7 +75,7 @@ export const analyticsService = {
     try {
       const response = await apiClient.get(`/health/analytics/trends?weeks=${weeks}`);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWeeklyTrends();
     }
@@ -86,7 +86,7 @@ export const analyticsService = {
     try {
       const response = await apiClient.get(`/health/analytics/correlations?days=${days}`);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCorrelationData();
     }
@@ -97,7 +97,7 @@ export const analyticsService = {
     try {
       const response = await apiClient.get('/health/analytics/recommendations');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
     }
@@ -108,7 +108,7 @@ export const analyticsService = {
     try {
       const response = await apiClient.get('/health/analytics/dashboard');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockDashboardData();
     }
@@ -119,7 +119,7 @@ export const analyticsService = {
     try {
       const response = await apiClient.get('/health/analytics/data-quality');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return { score: 85, suggestions: ['Log more detailed workout information'] };
     }

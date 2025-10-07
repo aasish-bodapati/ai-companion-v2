@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedModal from '../ui/MobileOptimizedModal';
-import MobileOptimizedInput from '../ui/MobileOptimizedInput';
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { onboardingService, HealthData } from '../../services/onboardingService';

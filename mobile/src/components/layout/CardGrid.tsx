@@ -4,6 +4,7 @@ import {
   StyleSheet,
   ScrollView,
   Dimensions,
+  ViewStyle,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -14,8 +15,8 @@ interface CardGridProps {
   spacing?: number;
   horizontal?: boolean;
   showsHorizontalScrollIndicator?: boolean;
-  contentContainerStyle?: any;
-  style?: any;
+  contentContainerStyle?: ViewStyle;
+  style?: ViewStyle;
 }
 
 export default function CardGrid({

@@ -6,6 +6,7 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -28,7 +29,7 @@ interface PageLayoutProps {
     color?: string;
   }[];
   footer?: React.ReactNode;
-  style?: any;
+  style?: ViewStyle;
 }
 
 export default function PageLayout({
@@ -63,7 +64,7 @@ export default function PageLayout({
                 onPress={action.onPress}
               >
                 <Ionicons 
-                  name={action.icon as any} 
+                  name={action.icon as keyof typeof Ionicons.glyphMap} 
                   size={24} 
                   color={action.color || '#6b7280'} 
                 />
@@ -84,7 +85,7 @@ export default function PageLayout({
             {quickStats.map((stat, index) => (
               <View key={index} style={styles.quickStat}>
                 <View style={[styles.quickStatIcon, { backgroundColor: stat.color + '20' }]}>
-                  <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                  <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={20} color={stat.color} />
                 </View>
                 <Text style={styles.quickStatValue}>{stat.value}</Text>
                 <Text style={styles.quickStatLabel}>{stat.label}</Text>

@@ -10,7 +10,7 @@ export const useLoadingState = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const withLoading = useCallback(async (fn: () => Promise<any>) => {
+  const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
     try {
       setLoading(true);
       setError(null);
@@ -33,7 +33,7 @@ export const useLoadingState = () => {
 export const DuplicateCodeUtils = {
 
   // Safe error handling
-  handleError: (error: any, context: string) => {
+  handleError: (error: unknown, context: string) => {
     console.error(`Error in ${context}:`, error);
     // Don't change existing error handling yet
     // This is just a placeholder for future improvements
@@ -59,7 +59,7 @@ export const DuplicateCodeUtils = {
   }),
 
   // Safe API call wrapper
-  createApiCall: (apiFunction: () => Promise<any>) => {
+  createApiCall: (apiFunction: () => Promise<unknown>) => {
     return async () => {
       try {
         return await apiFunction();
@@ -106,3 +106,55 @@ export const {
   validateRequired,
   validateNumber 
 } = DuplicateCodeUtils;
+
+// Export createLoadingState as a factory function that returns a hook
+export const createLoadingState = () => {
+  return () => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    
+    const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
+      try {
+        setLoading(true);
+        setError(null);
+        return await fn();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    }, []);
+    
+    const resetError = useCallback(() => {
+      setError(null);
+    }, []);
+    
+    return { loading, error, setLoading, withLoading, resetError };
+  };
+};
+
+// Also export as a direct hook for convenience
+export const useCreateLoadingState = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
+    try {
+      setLoading(true);
+      setError(null);
+      return await fn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  const resetError = useCallback(() => {
+    setError(null);
+  }, []);
+  
+  return { loading, error, setLoading, withLoading, resetError };
+};

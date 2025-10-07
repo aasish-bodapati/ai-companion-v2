@@ -1,4 +1,3 @@
-import { useToast as useToastContext } from '../contexts/ToastContext';
 
 // This is a fallback implementation that will be replaced by the actual toast context
 // when used within a component that has access to the ToastProvider

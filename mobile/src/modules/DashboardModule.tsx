@@ -9,7 +9,7 @@ import AchievementBadges from '../components/dashboard/AchievementBadges';
 import PredictiveInsights from '../components/dashboard/PredictiveInsights';
 import TrendAnalysis from '../components/dashboard/TrendAnalysis';
 import { useProgressMetricsData } from '../hooks/useProgressMetrics';
-import { useAchievements, useStreaks, useAIInsights } from '../contexts/GlobalStateContext';
+import { useAchievements, useStreaks, useAIInsights } from '../stores';
 import { useAuth } from '../contexts/AuthContext';
 import useResponsive from '../hooks/useResponsive';
 import { useBodyTypeGoalMetrics } from '../hooks/useBodyTypeGoalMetrics';

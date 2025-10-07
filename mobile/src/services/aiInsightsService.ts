@@ -84,7 +84,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.get(`/health/insights/suggestions?limit=${limit}`);
       return Array.isArray(response.data) ? response.data : this.getMockInsights();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Return mock data for development
       return this.getMockInsights();
@@ -96,7 +96,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.get('/health/insights/patterns');
       return Array.isArray(response.data) ? response.data : this.getMockPatterns();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockPatterns();
     }
@@ -108,7 +108,7 @@ export const aiInsightsService = {
       const params = category ? `?category=${category}` : '';
       const response = await apiClient.get(`/health/insights/suggestions${params}`);
       return Array.isArray(response.data) ? response.data : this.getMockRecommendations();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
     }
@@ -124,18 +124,18 @@ export const aiInsightsService = {
         return this.transformTrendsToAnalysis(response.data, period);
       }
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockProgressAnalysis(period);
     }
   },
 
   // Transform API trends response to analysis format
-  transformTrendsToAnalysis(trends: any[], period: string): ProgressAnalysis {
+  transformTrendsToAnalysis(trends: Record<string, unknown>[], period: string): ProgressAnalysis {
     const workoutTrend = trends.find(t => t.metric_name === 'workouts') || trends[0];
     
     return {
-      period: period as any,
+      period: period as 'week' | 'month' | 'year',
       fitness_trends: {
         workout_frequency: workoutTrend?.change_percentage || 0,
         duration_trend: 0,
@@ -166,7 +166,7 @@ export const aiInsightsService = {
       const params = goalId ? `?goal_id=${goalId}` : '';
       const response = await apiClient.get(`/health/insights/goals/progress${params}`);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockGoalAnalysis();
     }
@@ -178,7 +178,7 @@ export const aiInsightsService = {
       const params = context ? `?context=${context}` : '';
       const response = await apiClient.get(`/health/insights/motivation${params}`);
       return response.data.message;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCoachingMessage();
     }
@@ -192,7 +192,7 @@ export const aiInsightsService = {
   }) {
     try {
       await apiClient.post(`/health/insights/${insightId}/feedback`, feedback);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   },
@@ -207,7 +207,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.post('/health/insights/workout-suggestions', preferences || {});
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWorkoutSuggestions();
     }
@@ -223,7 +223,7 @@ export const aiInsightsService = {
       const data = { meal_type: mealType, ...preferences };
       const response = await apiClient.post('/health/insights/nutrition-suggestions', data);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockNutritionSuggestions();
     }
@@ -332,7 +332,7 @@ export const aiInsightsService = {
 
   getMockProgressAnalysis(period: string): ProgressAnalysis {
     return {
-      period: period as any,
+      period: period as 'week' | 'month' | 'year',
       fitness_trends: {
         workout_frequency: 15,
         duration_trend: 8,

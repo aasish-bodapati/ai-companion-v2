@@ -6,7 +6,6 @@ import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { waterService } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { BaseLog } from '../../types/BaseLog';
 
 interface WaterLoggingModalProps {
   visible: boolean;
@@ -17,7 +16,7 @@ interface WaterLoggingModalProps {
 // Mock search service for water (since water doesn't need search)
 const mockSearchService = {
   search: async (query: string) => [],
-  create: async (data: any) => data,
+  create: async (data: LoggingItemData) => data,
 };
 
 export default function WaterLoggingModal({
@@ -91,7 +90,7 @@ export default function WaterLoggingModal({
     };
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: LoggingItemData) => {
     setSaving(true);
     try {
       await waterService.createWaterLog(data);

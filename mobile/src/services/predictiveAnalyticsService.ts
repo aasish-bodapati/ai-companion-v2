@@ -1,4 +1,3 @@
-import NetworkUtils from '../utils/networkUtils';
 import { apiClient } from './api';
 
 interface TrendData {
@@ -61,7 +60,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get(`/analytics/trends/${metric}?period=${period}`);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockTrendData(metric, period);
     }
@@ -72,7 +71,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get('/analytics/health-metrics');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockHealthMetrics();
     }
@@ -83,7 +82,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get('/analytics/pattern-insights');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockPatternInsights();
     }
@@ -94,7 +93,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get('/analytics/predictive-insights');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockPredictiveInsights();
     }
@@ -110,7 +109,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get('/analytics/recommendations');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockRecommendations();
     }
@@ -126,7 +125,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get(`/analytics/goal-probability/${goalType}`);
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockGoalProbability(goalType);
     }
@@ -145,7 +144,7 @@ class PredictiveAnalyticsService {
     try {
       const response = await apiClient.get('/analytics/anomalies');
       return response.data;
-    } catch (error) {
+    } catch (_error) {
       // Silently fall back to mock data - this is expected behavior
       return this.getMockAnomalies();
     }

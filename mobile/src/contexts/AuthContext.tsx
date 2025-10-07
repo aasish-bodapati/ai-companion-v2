@@ -93,7 +93,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // No token - user needs to log in, but if they do, they'll need onboarding
         setNeedsOnboarding(true);
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Clear invalid token
       await AsyncStorage.removeItem('token');
@@ -127,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const userResponse = await apiClient.get('/users/me');
         setUser(userResponse.data);
-      } catch (error) {
+      } catch (_error) {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
         setUser({
@@ -149,7 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (__DEV__) {
           console.log('🔍 login - completed:', completed, 'setNeedsOnboarding to:', !completed);
         }
-      } catch (error) {
+      } catch (_error) {
         console.log('🔍 login - onboarding status error:', error);
         // Default to needing onboarding if we can't check
         setNeedsOnboarding(true);
@@ -245,7 +245,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (token) {
         await apiClient.post('/logout');
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       // Clear local storage
@@ -274,7 +274,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log('🎉 Backend onboarding completion response:', response.data);
       setNeedsOnboarding(false);
       console.log('🎉 AuthContext completeOnboarding completed - needsOnboarding set to false');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Still mark as completed locally to prevent infinite onboarding loop
       setNeedsOnboarding(false);

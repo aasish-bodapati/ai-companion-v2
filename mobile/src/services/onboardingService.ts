@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from './api';
 
 export interface HealthData {
   age: string;

@@ -16,7 +16,7 @@ import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { ExerciseData } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
-import { createLoadingState } from '../../utils/duplicateCodeUtils';
+import { useCreateLoadingState } from '../../utils/duplicateCodeUtils';
 import { isFeatureEnabled } from '../../config/featureFlags';
 
 interface Exercise {
@@ -59,7 +59,7 @@ export default function LogTodaysWorkoutModal({
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
   
   // Always call hooks, but conditionally use the result
-  const newLoadingState = createLoadingState();
+  const newLoadingState = useCreateLoadingState();
   const [loading, setLoading] = useState(false);
   
   // Use new loading state management if feature is enabled

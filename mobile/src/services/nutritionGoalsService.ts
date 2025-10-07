@@ -1,4 +1,3 @@
-import { nutritionService } from './nutritionService';
 
 export interface NutritionGoals {
   calories: number;

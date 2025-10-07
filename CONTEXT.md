@@ -1,5 +1,7 @@
 # AI Companion - Project Context & Ground Truths
 
+you dont have permission to start or restart servers, they are already running in dev mode
+
 ## 🎯 **Project Overview**
 AI-powered health and wellness platform that combines manual logging with intelligent insights. Built for busy professionals who need simple, fast health tracking with clean data visualization across web and mobile platforms.
 

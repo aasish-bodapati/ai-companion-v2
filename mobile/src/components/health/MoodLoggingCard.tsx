@@ -36,7 +36,12 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
   };
 
   useEffect(() => {
-    loadStats();
+    // Defer loading to reduce initial API calls
+    const timer = setTimeout(() => {
+      loadStats();
+    }, 800); // Load after 800ms delay
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // Retry failed mood logs when component loads

@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { NumericalGoal, getNumericalGoalsForHealthGoals, customizeGoalForUser } from '../../services/goalTemplates';

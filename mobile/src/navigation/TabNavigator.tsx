@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { useAppStore } from '../stores';
 
 import DashboardScreen from '../screens/main/DashboardScreen';
 import FitnessScreen from '../screens/main/FitnessScreen';
 import NutritionScreen from '../screens/main/NutritionScreen';
 import AnalyticsScreen from '../screens/main/AnalyticsScreen';
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
-import MigrationScreen from '../screens/admin/MigrationScreen';
+// Removed MigrationScreen import
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
 import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
@@ -20,7 +21,7 @@ export type TabParamList = {
   Nutrition: undefined;
   Analytics: undefined;
   Profile: undefined;
-  Migration: undefined;
+  // Removed Migration tab
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -31,6 +32,7 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [showLogMealModal, setShowLogMealModal] = useState(false);
+  const { refreshData } = useAppStore();
 
   return (
     <>
@@ -76,8 +78,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               iconName = isFocused ? 'analytics' : 'analytics-outline';
             } else if (route.name === 'Profile') {
               iconName = isFocused ? 'person' : 'person-outline';
-            } else if (route.name === 'Migration') {
-              iconName = isFocused ? 'settings' : 'settings-outline';
             } else {
               iconName = 'help-outline';
             }
@@ -129,21 +129,27 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
       <LogTodaysWorkoutModal
         visible={showLogTodaysWorkoutModal}
         onClose={() => setShowLogTodaysWorkoutModal(false)}
-        onWorkoutLogged={() => setShowLogTodaysWorkoutModal(false)}
+        onWorkoutLogged={() => {
+          setShowLogTodaysWorkoutModal(false);
+        }}
       />
 
       {/* Log Workout Modal */}
       <WorkoutLoggingModal
         visible={showLogWorkoutModal}
         onClose={() => setShowLogWorkoutModal(false)}
-        onWorkoutLogged={() => setShowLogWorkoutModal(false)}
+        onWorkoutLogged={() => {
+          setShowLogWorkoutModal(false);
+        }}
       />
 
       {/* Log Meal Modal */}
       <UnifiedNutritionLogger
         visible={showLogMealModal}
         onClose={() => setShowLogMealModal(false)}
-        onMealLogged={() => setShowLogMealModal(false)}
+        onMealLogged={() => {
+          setShowLogMealModal(false);
+        }}
       />
     </>
   );
@@ -189,11 +195,7 @@ export default function TabNavigator() {
         component={EnhancedProfileScreen} 
         options={{ title: 'Profile' }}
       />
-      <Tab.Screen 
-        name="Migration" 
-        component={MigrationScreen} 
-        options={{ title: 'Migration' }}
-      />
+      {/* Removed Migration tab */}
     </Tab.Navigator>
   );
 }

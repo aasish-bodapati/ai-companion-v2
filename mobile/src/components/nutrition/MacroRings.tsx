@@ -85,7 +85,7 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
           
           {/* Content */}
           <View style={styles.ringContent}>
-            <Ionicons name={macro.icon as any} size={16} color={statusColor} />
+            <Ionicons name={macro.icon as keyof typeof Ionicons.glyphMap} size={16} color={statusColor} />
             <Text style={[styles.ringValue, { color: statusColor }]}>
               {Math.round(macro.current)}
             </Text>

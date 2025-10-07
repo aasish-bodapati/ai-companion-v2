@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -59,9 +59,9 @@ export default function NutritionOverviewDashboard({
   useEffect(() => {
     loadNutritionData();
     loadNutritionGoals();
-  }, []);
+  }, [loadNutritionData, loadNutritionGoals]);
 
-  const loadNutritionGoals = async () => {
+  const loadNutritionGoals = useCallback(async () => {
     try {
       // Get user profile from auth context
       if (user) {
@@ -83,9 +83,9 @@ export default function NutritionOverviewDashboard({
     } catch (error) {
       console.log('Error loading nutrition goals:', error);
     }
-  };
+  }, [user]);
 
-  const loadNutritionData = async () => {
+  const loadNutritionData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -135,7 +135,7 @@ export default function NutritionOverviewDashboard({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const getTargets = () => {
     // Use calculated goals if available, otherwise fallback to defaults

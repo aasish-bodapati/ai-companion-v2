@@ -11,17 +11,16 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fitnessService } from '../../services/fitnessService';
-import { nutritionService } from '../../services/nutritionService';
+// Removed unused service imports
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 interface UniversalHealthLoggerProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: any) => void;
+  onSave: (data: Record<string, unknown>) => void;
   type: 'workout' | 'meal' | 'water' | 'mood';
-  initialData?: any;
+  initialData?: Record<string, unknown>;
 }
 
 export default function UniversalHealthLogger({
@@ -183,7 +182,7 @@ export default function UniversalHealthLogger({
               <TextInput
                 style={styles.input}
                 value={data.name || ''}
-                onChangeText={(text) => setData((prev: any) => ({ ...prev, name: text }))}
+                onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ ...prev, name: text }))}
                 placeholder="Enter workout name"
                 placeholderTextColor="#9ca3af"
               />
@@ -195,7 +194,7 @@ export default function UniversalHealthLogger({
                 <TextInput
                   style={styles.input}
                   value={data.duration?.toString() || '0'}
-                  onChangeText={(text) => setData((prev: any) => ({ 
+                  onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ 
                     ...prev, 
                     duration: parseInt(text) || 0 
                   }))}
@@ -209,7 +208,7 @@ export default function UniversalHealthLogger({
                 <TextInput
                   style={styles.input}
                   value={data.calories_burned?.toString() || '0'}
-                  onChangeText={(text) => setData((prev: any) => ({ 
+                  onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ 
                     ...prev, 
                     calories_burned: parseInt(text) || 0 
                   }))}
@@ -225,7 +224,7 @@ export default function UniversalHealthLogger({
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={data.notes || ''}
-                onChangeText={(text) => setData((prev: any) => ({ ...prev, notes: text }))}
+                onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ ...prev, notes: text }))}
                 placeholder="Add any notes about your workout"
                 placeholderTextColor="#9ca3af"
                 multiline
@@ -297,7 +296,7 @@ export default function UniversalHealthLogger({
                       backgroundColor: data.meal_type === mealType.type ? mealType.color + '10' : '#ffffff',
                     }
                   ]}
-                  onPress={() => setData((prev: any) => ({ ...prev, meal_type: mealType.type }))}
+                  onPress={() => setData((prev: Record<string, unknown>) => ({ ...prev, meal_type: mealType.type }))}
                 >
                   <Ionicons 
                     name={mealType.icon as any} 
@@ -370,7 +369,7 @@ export default function UniversalHealthLogger({
                 <TextInput
                   style={styles.waterInput}
                   value={data.amount?.toString() || '0'}
-                  onChangeText={(text) => setData((prev: any) => ({ 
+                  onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ 
                     ...prev, 
                     amount: parseFloat(text) || 0 
                   }))}
@@ -390,7 +389,7 @@ export default function UniversalHealthLogger({
                     styles.quickAmountButton,
                     { backgroundColor: data.amount === amount ? '#3b82f6' : '#f3f4f6' }
                   ]}
-                  onPress={() => setData((prev: any) => ({ ...prev, amount }))}
+                  onPress={() => setData((prev: Record<string, unknown>) => ({ ...prev, amount }))}
                 >
                   <Text style={[
                     styles.quickAmountText,
@@ -442,7 +441,7 @@ export default function UniversalHealthLogger({
                       styles.moodButton,
                       { backgroundColor: data.mood_score === score ? '#3b82f6' : '#f3f4f6' }
                     ]}
-                    onPress={() => setData((prev: any) => ({ ...prev, mood_score: score }))}
+                    onPress={() => setData((prev: Record<string, unknown>) => ({ ...prev, mood_score: score }))}
                   >
                     <Text style={[
                       styles.moodButtonText,
@@ -465,7 +464,7 @@ export default function UniversalHealthLogger({
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={data.notes || ''}
-                onChangeText={(text) => setData((prev: any) => ({ ...prev, notes: text }))}
+                onChangeText={(text) => setData((prev: Record<string, unknown>) => ({ ...prev, notes: text }))}
                 placeholder="How are you feeling today?"
                 placeholderTextColor="#9ca3af"
                 multiline

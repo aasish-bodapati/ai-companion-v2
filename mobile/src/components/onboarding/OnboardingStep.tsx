@@ -61,7 +61,7 @@ export default function OnboardingStep({
         useNativeDriver: true,
       }),
     ]).start();
-  }, []);
+  }, [fadeAnim, scaleAnim, slideAnim]);
 
   const getResponsiveFontSize = (baseSize: number) => {
     return mobileUtils.getResponsiveFontSize(baseSize, screenWidth);

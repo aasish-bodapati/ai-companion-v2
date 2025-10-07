@@ -91,7 +91,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     try {
       const exercises = await fitnessService.getExerciseTypes();
       setExerciseDatabase(exercises);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
@@ -102,7 +102,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const categoriesData = await exerciseCategoryService.getCategories();
       console.log('🔍 [FITNESS LOGS] Loaded categories:', categoriesData);
       setCategories(categoriesData);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
@@ -253,7 +253,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       setLogs(sortedLogs);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       if (error instanceof Error) {
         // Silent error handling - no console logging to prevent Expo Go notifications
@@ -339,7 +339,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       setLogs(sortedLogs);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load fitness logs. Please try again.', 'error');
     } finally {
@@ -392,7 +392,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     if (log.exercises) {
       try {
         exercises = typeof log.exercises === 'string' ? JSON.parse(log.exercises) : log.exercises;
-      } catch (error) {
+      } catch (_error) {
         exercises = [];
       }
     }
@@ -407,7 +407,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       await fitnessService.deleteWorkout(logId);
       await loadLogs(); // Refresh the logs
       showRapidToast('Workout deleted successfully', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete workout. Please try again.', 'error');
     } finally {
@@ -451,7 +451,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setEditExercises([]);
 
       showToast('Workout log updated successfully!', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to update workout log. Please try again.', 'error');
     }
@@ -506,7 +506,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
         
         showRapidToast('Exercise deleted successfully!', 'success');
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete exercise. Please try again.', 'error');
     } finally {
@@ -525,7 +525,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
       showRapidToast('Workout log deleted successfully!', 'success');
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete workout log. Please try again.', 'error');
     } finally {
@@ -533,10 +533,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     }
   };
 
-  useEffect(() => {
-    loadExerciseDatabase();
-    loadLogs();
-  }, []);
+  // Removed duplicate useEffect - data loading is handled above
 
   const formatDate = (dateString: string) => {
     return formatDateInUserTimezone(dateString);
@@ -556,7 +553,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
           // Use the timezone utility to get date in user's timezone
           const logDateStr = getDateInUserTimezone(new Date(dateField));
           datesSet.add(logDateStr);
-        } catch (error) {
+        } catch (_error) {
           // Ignore invalid dates
         }
       }
@@ -667,7 +664,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                   if (typeof exercises === 'string') {
                     try {
                       exercises = JSON.parse(exercises);
-                    } catch (error) {
+                    } catch (_error) {
                       exercises = [];
                     }
                   }
@@ -771,7 +768,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                               minute: '2-digit',
                               hour12: true
                             });
-                          } catch (error) {
+                          } catch (_error) {
                             return 'Unknown time';
                           }
                         })()}

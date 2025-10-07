@@ -1,7 +1,7 @@
 import { apiClient } from './api';
 import { BaseService } from './BaseService';
 import { DebugUtils } from '../utils/debugUtils';
-import { MigrationHelpers } from '../utils/migrationHelpers';
+// Removed MigrationHelpers import
 import { getTodayLocal } from '../utils/dateUtils';
 
 export interface FitnessLog {
@@ -176,7 +176,7 @@ class FitnessService extends BaseService {
     
     // Check if this exact workout is already being processed
     if (this.pendingRequests.has(workoutKey)) {
-      MigrationHelpers.replaceConsoleLog('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
+      console.log('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
       throw new Error('Workout is already being processed. Please wait.');
     }
 
@@ -191,7 +191,7 @@ class FitnessService extends BaseService {
         timezone_offset: timezoneOffset
       };
       
-      MigrationHelpers.replaceConsoleLog('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
+      console.log('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
       const result = await this.makeRequest(
         () => apiClient.post('/health/logging/fitness', workoutDataWithTimezone),
         'FITNESS SERVICE - logWorkout'
@@ -231,9 +231,11 @@ class FitnessService extends BaseService {
   }
 
   async getWorkoutStats(period: string): Promise<any> {
-    // Get workout statistics for a given period
+    // Get workout statistics for a given period using the correct endpoint
     const data = await this.makeRequest(
-      () => apiClient.get(`/health/fitness-logs?period=${period}`),
+      () => apiClient.get('/health/logging/fitness', {
+        params: { period: period, size: 50 }
+      }),
       'FITNESS SERVICE - getWorkoutStats'
     );
     return data;
@@ -248,10 +250,12 @@ class FitnessService extends BaseService {
     return data.routines || data || [];
   }
 
-  async getFitnessStats(): Promise<any> {
-    // Get fitness statistics
+  async getFitnessStats(period: string = 'week'): Promise<any> {
+    // Get fitness statistics using the correct endpoint
     const data = await this.makeRequest(
-      () => apiClient.get('/health/fitness-logs?period=week'),
+      () => apiClient.get('/health/logging/fitness', {
+        params: { period: period, size: 50 }
+      }),
       'FITNESS SERVICE - getFitnessStats'
     );
     return data;
@@ -287,14 +291,14 @@ class FitnessService extends BaseService {
       
       // Check if response contains exercise data or just a message
       if (response.message) {
-        MigrationHelpers.replaceConsoleLog(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
+        console.log(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
         return null;
       }
       
-      MigrationHelpers.replaceConsoleLog(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
+      console.log(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
       return response;
     } catch (error) {
-      MigrationHelpers.replaceErrorHandling(error, `FITNESS SERVICE - getLatestExerciseData for ${exerciseName}`);
+      console.error(`FITNESS SERVICE - getLatestExerciseData for ${exerciseName}:`, error);
       return null;
     }
   }
@@ -308,10 +312,10 @@ class FitnessService extends BaseService {
         'FITNESS SERVICE - isExerciseLoggedToday'
       );
       
-      MigrationHelpers.replaceConsoleLog(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
+      console.log(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
       return response.logged_today || false;
     } catch (error) {
-      MigrationHelpers.replaceErrorHandling(error, `FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}`);
+      console.error(`FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}:`, error);
       return false;
     }
   }

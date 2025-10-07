@@ -1,5 +1,6 @@
 import { Pedometer } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../utils/logger';
 
 export interface StepData {
   steps: number;
@@ -20,17 +21,31 @@ class StepTrackingService {
       // Check if pedometer is available
       const isAvailable = await Pedometer.isAvailableAsync();
       if (!isAvailable) {
-        console.log('🚶 Step tracking not available on this device');
+        logger.steps('Step tracking not available on this device');
         return false;
       }
 
       if (this.isTracking) {
-        console.log('🚶 Step tracking already active');
+        logger.steps('Step tracking already active');
         return true;
       }
 
-      console.log('🚶 Starting step tracking...');
+      logger.steps('Starting step tracking...');
       this.isTracking = true;
+
+      // Try to get initial step count for today
+      try {
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+        
+        const initialSteps = await Pedometer.getStepCountAsync(startOfDay, endOfDay);
+        this.currentSteps = initialSteps.steps;
+        logger.steps('Initial steps from device for today:', this.currentSteps);
+      } catch (error) {
+        logger.steps('Could not get initial steps, will start from 0:', error.message);
+        this.currentSteps = 0;
+      }
 
       // Get initial step count for today
       const today = new Date();

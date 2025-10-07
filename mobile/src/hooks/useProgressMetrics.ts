@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useProgressMetrics, useStreaks, useAchievements } from '../contexts/GlobalStateContext';
+import { useProgressMetrics, useStreaks, useAchievements } from '../stores';
 
 interface ProgressMetricsData {
   rings: {
@@ -92,8 +92,8 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'achievements',
         label: 'Achievements',
-        value: achievements.filter(a => a.unlocked).length,
-        target: achievements.length,
+        value: achievements?.filter(a => a.unlocked).length || 0,
+        target: achievements?.length || 0,
         unit: '',
         icon: 'trophy',
         color: '#8b5cf6',
@@ -101,7 +101,7 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'streaks',
         label: 'Best Streak',
-        value: Math.max(...streaks.map(s => s.best)),
+        value: streaks?.length > 0 ? Math.max(...streaks.map(s => s.best)) : 0,
         target: 30,
         unit: 'days',
         icon: 'flame',

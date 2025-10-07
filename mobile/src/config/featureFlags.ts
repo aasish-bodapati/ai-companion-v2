@@ -19,9 +19,7 @@ export const FEATURE_FLAGS = {
   REMOVE_UNUSED_IMPORTS: false,
   CONSOLIDATE_DUPLICATE_STYLES: false,
   
-  // Migration flags
-  MIGRATE_TO_NEW_COMPONENTS: false,
-  ENABLE_DEPRECATION_WARNINGS: true, // Warnings enabled for development
+  // Removed migration flags
   
   // Performance flags
   ENABLE_PERFORMANCE_MONITORING: false,

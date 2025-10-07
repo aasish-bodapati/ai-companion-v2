@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { isFeatureEnabled } from '../../config/featureFlags';
-import { deprecateComponent } from '../../utils/deprecationUtils';
+// Removed deprecationUtils import
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
@@ -87,13 +87,7 @@ export const UnifiedLoadingState = ({
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   // Show deprecation warnings
-  useEffect(() => {
-    if (isFeatureEnabled('ENABLE_DEPRECATION_WARNINGS')) {
-      deprecateComponent('LoadingState', 'UnifiedLoadingState');
-      deprecateComponent('EnhancedLoadingState', 'UnifiedLoadingState');
-      deprecateComponent('ProgressIndicator', 'UnifiedLoadingState');
-    }
-  }, []);
+  // Removed deprecation warnings
 
   useEffect(() => {
     if (animated && loading) {

@@ -1,18 +1,25 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGlobalState } from '../../contexts/GlobalStateContext';
+import { useAppStore, useProgressMetrics, useAchievements, useStreaks, useAIInsights } from '../../stores';
 import DashboardModule from '../../modules/DashboardModule';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
-  const { refreshData } = useGlobalState();
+  const { refreshData } = useAppStore();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Initialize store data when component mounts
+  useEffect(() => {
+    if (user) {
+      refreshData();
+    }
+  }, [user]); // Remove refreshData from dependencies to prevent infinite loop
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshData();
     setRefreshing(false);
-  }, [refreshData]);
+  }, []); // Remove refreshData from dependencies to prevent infinite loop
 
   const handleNavigate = useCallback((screen: string, params?: any) => {
     // Handle navigation to other screens

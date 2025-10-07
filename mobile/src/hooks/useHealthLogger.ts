@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useGlobalState } from '../contexts/GlobalStateContext';
+import { useAppStore } from '../stores';
 
 interface HealthLoggerOptions {
   type: 'workout' | 'meal' | 'water' | 'mood';
@@ -10,7 +10,7 @@ interface HealthLoggerOptions {
 export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOptions) {
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { refreshData } = useGlobalState();
+  const { refreshData } = useAppStore();
 
   const openLogger = useCallback(() => {
     setIsVisible(true);

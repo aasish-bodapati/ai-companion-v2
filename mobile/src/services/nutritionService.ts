@@ -111,7 +111,7 @@ class NutritionService extends BaseService {
     start_date?: string;
     end_date?: string;
   }): Promise<NutritionLog[]> {
-    console.log('🍽️ [NUTRITION SERVICE] getNutritionLogs called with params:', params);
+    console.log('🍽️ [NUTRITION SERVICE] Loading nutrition logs');
     
     // Get timezone offset in minutes
     const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
@@ -122,7 +122,7 @@ class NutritionService extends BaseService {
       ...this.getPaginationParams(params),
       timezone_offset: timezoneOffset
     };
-    console.log('🍽️ [NUTRITION SERVICE] Params with timezone:', paramsWithTimezone);
+    // Params with timezone added
     
     // Use test endpoint for period-based queries, main endpoint for date-based queries
     const endpoint = params?.period ? '/health/logging/nutrition/test' : '/health/logging/nutrition';
@@ -132,7 +132,7 @@ class NutritionService extends BaseService {
       'NUTRITION SERVICE - getNutritionLogs'
     );
     
-    console.log('🍽️ [NUTRITION SERVICE] Raw API response:', data);
+    // Removed excessive logging of raw API response
     
     // Handle different response structures
     let meals: NutritionLog[] = [];
@@ -147,8 +147,7 @@ class NutritionService extends BaseService {
       meals = [];
     }
     
-    console.log('🍽️ [NUTRITION SERVICE] Extracted meals:', meals);
-    console.log('🍽️ [NUTRITION SERVICE] Number of meals:', meals.length);
+    console.log('🍽️ [NUTRITION SERVICE] Loaded', meals.length, 'nutrition logs');
     return meals;
   }
 
@@ -171,7 +170,7 @@ class NutritionService extends BaseService {
   async getTodayNutritionSummary(): Promise<NutritionStats> {
     try {
       const today = getTodayLocal();
-      console.log('🍽️ [NUTRITION SERVICE] Today (local):', today);
+      // Using today's date for period-based queries
       
       const logs = await this.getNutritionLogs({ 
         start_date: today, 
@@ -256,13 +255,13 @@ class NutritionService extends BaseService {
       'NUTRITION SERVICE - getFoodItems'
     );
     
-    console.log('🔍 [NUTRITION SERVICE] Food items response:', response);
+    console.log('🔍 [NUTRITION SERVICE] Received food items response');
     
     // Transform API response to match FoodItem interface
     // The API returns data directly as an array
     const foods = response || [];
     if (foods && Array.isArray(foods)) {
-      console.log('🔍 [NUTRITION SERVICE] Found data array with', foods.length, 'items');
+      // Removed duplicate logging
       const transformed = foods.map((item: any) => ({
         id: item.food_code,
         name: item.food_name,
@@ -286,7 +285,7 @@ class NutritionService extends BaseService {
         carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
         fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
       }));
-      console.log('🔍 [NUTRITION SERVICE] Transformed food items:', transformed);
+      console.log('🔍 [NUTRITION SERVICE] Found', transformed.length, 'food items');
       return transformed;
     }
     
@@ -304,13 +303,13 @@ class NutritionService extends BaseService {
       'NUTRITION SERVICE - searchFoods'
     );
     
-    console.log('🔍 [NUTRITION SERVICE] Raw response:', JSON.stringify(response, null, 2));
+    // Removed excessive logging of raw response data
     
     // Transform API response to match FoodItem interface
     // The API returns data directly as an array
     const foods = response || [];
     if (foods && Array.isArray(foods)) {
-      console.log('🔍 [NUTRITION SERVICE] Found data array with', foods.length, 'items');
+      // Removed duplicate logging
       const transformed = foods.map((item: any) => ({
         id: item.food_code,
         name: item.food_name,
@@ -334,7 +333,7 @@ class NutritionService extends BaseService {
         carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
         fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
       }));
-      console.log('🔍 [NUTRITION SERVICE] Transformed results:', transformed);
+      console.log('🔍 [NUTRITION SERVICE] Found', transformed.length, 'food items');
       return transformed;
     }
     

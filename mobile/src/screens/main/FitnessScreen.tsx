@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFitnessStore, useFitnessWeekStats, useFitnessLoading, useFitnessError } from '../../stores';
+import { useAuth } from '../../contexts/AuthContext';
 import TodaysSnapshot from '../../components/fitness/TodaysSnapshot';
 import UnifiedWorkoutLogger from '../../components/fitness/UnifiedWorkoutLogger';
 import SmartRoutineManager from '../../components/fitness/SmartRoutineManager';
@@ -23,9 +25,17 @@ import { routineService } from '../../services/routineService';
 import useResponsive from '../../hooks/useResponsive';
 import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
 import { isFeatureEnabled } from '../../config/featureFlags';
-import { MigrationHelpers } from '../../utils/migrationHelpers';
+// Removed MigrationHelpers import
 
 export default function FitnessScreen() {
+  // Use individual selectors instead of the actions object to prevent infinite loops
+  const refreshFitnessData = useFitnessStore((state) => state.refreshFitnessData);
+  const addWorkout = useFitnessStore((state) => state.addWorkout);
+  const weekStats = useFitnessWeekStats();
+  const loading = useFitnessLoading();
+  const error = useFitnessError();
+  const { user } = useAuth();
+  
   const [activeTab, setActiveTab] = useState<'overview' | 'routines' | 'logs'>('overview');
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
   const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
@@ -35,7 +45,6 @@ export default function FitnessScreen() {
   const responsive = useResponsive();
   
   // Overview state
-  const [weekStats, setWeekStats] = useState<WorkoutStats | null>(null);
   const [weeklyActivityData, setWeeklyActivityData] = useState({
     monday: 0,
     tuesday: 0,
@@ -45,60 +54,15 @@ export default function FitnessScreen() {
     saturday: 0,
     sunday: 0,
   });
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
 
-  const loadWeekStats = async () => {
-    try {
-      // Get recent workouts for the week
-      const workouts = await fitnessService.getFitnessLogs({ period: 'week' });
-      
-      // Calculate stats from the workouts
-      const totalWorkouts = workouts.length;
-      const totalDuration = workouts.reduce((sum, workout) => sum + (workout.duration_minutes || 0), 0);
-      const totalCalories = workouts.reduce((sum, workout) => sum + (workout.calories_burned || 0), 0);
-      const averageDuration = totalWorkouts > 0 ? totalDuration / totalWorkouts : 0;
-      const averageCalories = totalWorkouts > 0 ? totalCalories / totalWorkouts : 0;
-      
-      // Find most common activity
-      const activityCounts: { [key: string]: number } = {};
-      workouts.forEach(workout => {
-        const activity = workout.activity_type || 'Unknown';
-        activityCounts[activity] = (activityCounts[activity] || 0) + 1;
-      });
-      const mostCommonActivity = Object.keys(activityCounts).reduce((a, b) => 
-        activityCounts[a] > activityCounts[b] ? a : b, 'No data'
-      );
-      
-      // Find longest workout
-      const longestWorkout = workouts.reduce((max, workout) => 
-        Math.max(max, workout.duration_minutes || 0), 0
-      );
-      
-      setWeekStats({
-        totalWorkouts: totalWorkouts,
-        totalDuration: totalDuration,
-        totalCalories: totalCalories,
-        averageDuration: Math.round(averageDuration),
-        averageCalories: Math.round(averageCalories),
-        workouts: workouts,
-      });
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      // Set fallback stats
-      setWeekStats({
-        totalWorkouts: 0,
-        totalDuration: 0,
-        totalCalories: 0,
-        averageDuration: 0,
-        averageCalories: 0,
-        workouts: [],
-      });
-    }
-  };
+  const loadWeekStats = useCallback(async () => {
+    // This is now handled by the Zustand store
+    await refreshFitnessData();
+  }, []); // Remove refreshFitnessData dependency to prevent infinite loop
 
-  const loadWeeklyActivityData = async () => {
+  const loadWeeklyActivityData = useCallback(async () => {
     try {
       // Get recent workouts for the week
       const response = await fitnessService.getFitnessLogs({ period: 'week' });
@@ -148,18 +112,11 @@ export default function FitnessScreen() {
         sunday: 0,
       });
     }
-  };
+  }, []);
 
-  const loadOverviewData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadOverviewData = useCallback(async () => {
+    await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
+  }, []); // Remove dependencies to prevent infinite loop
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -168,8 +125,11 @@ export default function FitnessScreen() {
   };
 
   useEffect(() => {
-    loadOverviewData();
-  }, []);
+    // Only load data if user is authenticated
+    if (user) {
+      loadOverviewData();
+    }
+  }, [user]); // Load data when user changes
 
   // Reset to overview tab every time the screen comes into focus
   useFocusEffect(
@@ -182,10 +142,22 @@ export default function FitnessScreen() {
     setShowCreateRoutineModal(false);
   };
 
-  const handleWorkoutLogged = (workoutData: any) => {
+  const handleWorkoutLogged = async (workoutData: any) => {
     setShowUnifiedWorkoutLogger(false);
     setRecommendedWorkout(null);
-    loadOverviewData(); // Refresh overview data after logging workout
+    
+    // Add workout to store
+    addWorkout({
+      id: Date.now().toString(),
+      activity_type: workoutData.activity_type || 'Unknown',
+      duration_minutes: workoutData.duration_minutes || 0,
+      calories_burned: workoutData.calories_burned || 0,
+      notes: workoutData.notes || '',
+      activity_date: workoutData.activity_date || new Date().toISOString(),
+      routine_id: workoutData.routine_id,
+    });
+    
+    await refreshFitnessData();
     
     // Force component remount with new key
     setFitnessLogsKey(prev => {
@@ -347,6 +319,26 @@ export default function FitnessScreen() {
     </ScrollView>
   );
 
+  // Show loading state if user is not authenticated
+  if (!user) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Please log in to view fitness data...</Text>
+      </View>
+    );
+  }
+
+  // Show loading state while data is being fetched
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading fitness data...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -471,34 +463,22 @@ export default function FitnessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: MigrationHelpers.replaceStyle(
-      '#f8fafc',
-      DUPLICATE_STYLES.BACKGROUND_F8FAFC
-    ),
+    backgroundColor: '#f8fafc',
   },
   header: {
-    paddingHorizontal: MigrationHelpers.replaceStyle(
-      20,
-      DUPLICATE_STYLES.PADDING_HORIZONTAL_20
-    ),
+    paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 16,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: MigrationHelpers.replaceStyle(
-      '#1f2937',
-      DUPLICATE_STYLES.COLORS.TEXT_PRIMARY
-    ),
+    color: '#1f2937',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: MigrationHelpers.replaceStyle(
-      '#6b7280',
-      DUPLICATE_STYLES.COLORS.TEXT_SECONDARY
-    ),
+    color: '#6b7280',
   },
   tabContainer: {
     flexDirection: 'row',
@@ -722,5 +702,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
   },
 });

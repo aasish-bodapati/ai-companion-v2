@@ -79,7 +79,7 @@ export default function RoutineProgressTracker({
 
   useEffect(() => {
     loadWorkoutProgress();
-  }, [routine]);
+  }, [routine, loadWorkoutProgress]);
 
   const handleCompleteWorkout = async (dayIndex: number) => {
     try {

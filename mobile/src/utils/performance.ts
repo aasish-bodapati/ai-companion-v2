@@ -1,4 +1,4 @@
-import { InteractionManager } from 'react-native';
+import { InteractionManager, Dimensions } from 'react-native';
 
 // Performance optimization utilities for mobile
 export const performanceUtils = {
@@ -58,7 +58,7 @@ export const performanceUtils = {
   // Check if device is low-end for performance optimization
   isLowEndDevice: (): boolean => {
     // Simple heuristic - can be enhanced with actual device detection
-    const { width, height } = require('react-native').Dimensions.get('window');
+    const { width, height } = Dimensions.get('window');
     const totalPixels = width * height;
     return totalPixels < 1000000; // Less than 1MP
   },

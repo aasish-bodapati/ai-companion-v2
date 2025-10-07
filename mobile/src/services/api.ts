@@ -1,11 +1,13 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '../utils/logger';
 
 const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000';
 const API_BASE_URL = `${API_URL}/api/v1`;
 
-console.log('🔍 [API CONFIG] API_URL:', API_URL);
-console.log('🔍 [API CONFIG] API_BASE_URL:', API_BASE_URL);
+logger.api('API_URL:', API_URL);
+logger.api('API_BASE_URL:', API_BASE_URL);
 
 // API Client configured
 
@@ -23,12 +25,11 @@ apiClient.interceptors.request.use(
   async config => {
     // Only log requests in development mode
     if (__DEV__) {
-      console.log('🔍 [API CLIENT] Making request to:', config.url, 'Method:', config.method);
+      logger.api('Making request to:', config.url, 'Method:', config.method);
       
       // Log request body for POST requests
       if (config.method === 'post' && config.data) {
-        console.log('🔍 [API CLIENT] Request body size:', JSON.stringify(config.data).length, 'characters');
-        console.log('🔍 [API CLIENT] Request body preview:', JSON.stringify(config.data).substring(0, 200) + '...');
+        logger.api('Request body size:', JSON.stringify(config.data).length, 'characters');
       }
     }
     
@@ -38,16 +39,16 @@ apiClient.interceptors.request.use(
     
     if (!isPublicAuthEndpoint && !isIndianFoodEndpoint) {
       try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        // AsyncStorage is now imported at the top
         const token = await AsyncStorage.getItem('token');
         
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
           if (__DEV__) {
-            console.log('🔍 [API CLIENT] Added token to request');
+            logger.api('Added token to request');
           }
         } else if (!token && __DEV__) {
-          // Silent warning handling - no console logging to prevent Expo Go notifications
+          logger.warn('No token found for request:', config.url);
         }
       } catch (error) {
         // Silent error handling - no console logging to prevent Expo Go notifications
@@ -67,7 +68,7 @@ apiClient.interceptors.response.use(
   response => {
     // Only log successful responses in development
     if (__DEV__) {
-      console.log('✅ [API CLIENT] Response received:', response.status, response.config.url);
+      logger.api('Response received:', response.status, response.config.url);
     }
     return response;
   },

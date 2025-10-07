@@ -1,6 +1,5 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { SimpleRoutineWithProgress } from '../../services/routineService';
 import ActionCard from '../ui/ActionCard';
 import { COLORS } from '../../theme/constants';

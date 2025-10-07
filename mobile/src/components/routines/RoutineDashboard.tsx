@@ -72,7 +72,7 @@ export default function RoutineDashboard({
       }
       
       setRoutines(allRoutines);
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
@@ -117,7 +117,7 @@ export default function RoutineDashboard({
       
       await loadData();
       onRoutineSelected?.();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setActionLoading(null);
@@ -129,7 +129,7 @@ export default function RoutineDashboard({
       setActionLoading(routineId);
       await routineService.stopRoutine(routineId);
       await loadData();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setActionLoading(null);
@@ -151,7 +151,7 @@ export default function RoutineDashboard({
               await routineService.deleteRoutine(routineId);
               await loadData();
               onDeleteRoutine?.(routineId);
-            } catch (error) {
+            } catch (_error) {
               // Silent error handling - no console logging to prevent Expo Go notifications
               Alert.alert('Error', 'Failed to delete routine. Please try again.');
             } finally {

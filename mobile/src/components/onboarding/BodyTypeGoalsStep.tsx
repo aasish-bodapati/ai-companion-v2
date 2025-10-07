@@ -5,8 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
-  TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
@@ -14,9 +12,6 @@ import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
 import { 
   getAvailableBodyTypes, 
-  calculateBodyTypeGoal,
-  calculateWaterGoal,
-  calculateFFMI,
   UserAttributes,
   BodyTypeGoal
 } from '../../services/bodyTypeGoals';

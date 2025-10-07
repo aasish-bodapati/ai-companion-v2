@@ -40,7 +40,7 @@ export interface SmartSuggestion {
   title: string;
   message: string;
   action: string;
-  action_data: any;
+  action_data: Record<string, unknown>;
   icon: string;
 }
 
@@ -96,7 +96,7 @@ export const dashboardService = {
     }
   },
 
-  async getAnalyticsData(): Promise<any> {
+  async getAnalyticsData(): Promise<Record<string, unknown>> {
     try {
       const response = await apiClient.get('/health/logging/analytics/daily');
       return response.data;

@@ -10,29 +10,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { waterService, WaterLogStats } from '../../services/waterService';
 import { hapticFeedback } from '../../utils/haptics';
-import SectionHeader from '../layout/SectionHeader';
+// Removed unused SectionHeader import
 import { COLORS, SPACING } from '../../theme/constants';
-import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
-import { isFeatureEnabled } from '../../config/featureFlags';
-import { MigrationHelpers } from '../../utils/migrationHelpers';
-import { DebugUtils } from '../../utils/debugUtils';
+// Removed unused imports
 
-interface WaterLoggingCardProps {
-  // No props needed - component manages its own state
-}
+// No props needed - component manages its own state
 
-export default function WaterLoggingCard({}: WaterLoggingCardProps) {
+export default function WaterLoggingCard() {
   const [stats, setStats] = useState<WaterLogStats | null>(null);
   const [waterGoal, setWaterGoal] = useState<number>(3000); // Default 3L
 
   const loadStats = async () => {
     try {
-      MigrationHelpers.replaceConsoleLog('💧 [WATER CARD] Loading water stats...');
       const waterStats = await waterService.getWaterStats();
-      MigrationHelpers.replaceConsoleLog('💧 [WATER CARD] Water stats loaded:', waterStats);
       setStats(waterStats);
-    } catch (error) {
-      MigrationHelpers.replaceErrorHandling(error, 'WaterLoggingCard.loadStats');
+    } catch (_error) {
       // Set default stats on error
       setStats({
         total_ml_today: 0,
@@ -68,15 +60,20 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       } else {
         setWaterGoal(3000);
       }
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       setWaterGoal(3000); // Fallback to default
     }
   };
 
   useEffect(() => {
-    loadStats();
-    loadWaterGoal();
+    // Defer loading to reduce initial API calls
+    const timer = setTimeout(() => {
+      loadStats();
+      loadWaterGoal();
+    }, 500); // Load after 500ms delay
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const handleQuickLog = async (amount_ml: number) => {
@@ -100,7 +97,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       }
       
       hapticFeedback.success();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log water. Please try again.');
@@ -147,7 +144,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
       }
       
       hapticFeedback.success();
-    } catch (error) {
+    } catch (_error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to remove water log. Please try again.');
@@ -173,28 +170,7 @@ export default function WaterLoggingCard({}: WaterLoggingCardProps) {
 
   // Calculate progress percentage dynamically
   const progressPercentage = Math.min((displayStats.total_ml_today / displayStats.goal_ml) * 100, 100);
-  const isGoalAchieved = progressPercentage >= 100;
-  
-
-  const statsData = [
-    {
-      label: 'ML Today',
-      value: displayStats.total_ml_today,
-      unit: 'ml',
-      color: COLORS.primary.main,
-    },
-    {
-      label: 'OZ Today',
-      value: displayStats.total_oz_today.toFixed(1),
-      unit: 'oz',
-      color: COLORS.primary.main,
-    },
-    {
-      label: 'Logs',
-      value: displayStats.logs_today,
-      color: COLORS.success,
-    },
-  ];
+  // Removed unused variables
 
 
   return (
@@ -311,24 +287,16 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
-  title: MigrationHelpers.replaceStyle({
+  title: {
     fontSize: 18,
     fontWeight: '600',
     color: COLORS.text.primary,
     marginBottom: 2,
-  }, {
-    fontSize: DUPLICATE_STYLES.FONT_SIZE_18,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-    marginBottom: 2,
-  }),
-  subtitle: MigrationHelpers.replaceStyle({
+  },
+  subtitle: {
     fontSize: 14,
     color: COLORS.text.secondary,
-  }, {
-    fontSize: DUPLICATE_STYLES.FONT_SIZE_14,
-    color: COLORS.text.secondary,
-  }),
+  },
   badge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -353,15 +321,11 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 4,
   },
-  progressText: MigrationHelpers.replaceStyle({
+  progressText: {
     fontSize: 12,
     color: COLORS.text.secondary,
     textAlign: 'center',
-  }, {
-    fontSize: DUPLICATE_STYLES.FONT_SIZE_12,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-  }),
+  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
