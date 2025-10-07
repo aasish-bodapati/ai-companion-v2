@@ -177,7 +177,7 @@ const MigrationScripts = {
 
 // If running directly, execute migrations
 if (require.main === module) {
-  const srcDirectory = path.join(__dirname, '..', 'src');
+  const srcDirectory = path.join(process.cwd(), 'src');
   MigrationScripts.runAllMigrations(srcDirectory);
 }
 

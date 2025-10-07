@@ -79,7 +79,7 @@ export default function WeeklySummaryCard({
         </View>
         <View style={styles.trendIndicator}>
           <Ionicons 
-            name={getTrendIcon(weeklyTrend) as any} 
+            name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap} 
             size={16} 
             color={getTrendColor(weeklyTrend)} 
           />

@@ -90,8 +90,12 @@ export const MigrationHelpers = {
       return createLoadingState();
     }
     
-    // Keep old useState pattern
-    return React.useState(false);
+    // Return a function that can be called in a component
+    return () => {
+      // This should be called within a React component
+      console.warn('replaceLoadingState: This should be called within a React component');
+      return { loading: false, setLoading: () => {} };
+    };
   },
 
   // Helper to validate migration safety

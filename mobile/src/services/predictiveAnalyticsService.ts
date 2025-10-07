@@ -3,18 +3,18 @@ import { apiClient } from './api';
 
 interface TrendData {
   period: 'daily' | 'weekly' | 'monthly';
-  data: Array<{
+  data: {
     date: string;
     value: number;
     predicted?: boolean;
-  }>;
+  }[];
   trend: 'up' | 'down' | 'stable';
   confidence: number;
-  forecast: Array<{
+  forecast: {
     date: string;
     value: number;
     confidence: number;
-  }>;
+  }[];
 }
 
 interface HealthMetric {
@@ -133,7 +133,7 @@ class PredictiveAnalyticsService {
   }
 
   // Get anomaly detection results
-  async getAnomalies(): Promise<Array<{
+  async getAnomalies(): Promise<{
     type: string;
     date: string;
     value: number;
@@ -141,7 +141,7 @@ class PredictiveAnalyticsService {
     deviation: number;
     severity: 'low' | 'medium' | 'high';
     description: string;
-  }>> {
+  }[]> {
     try {
       const response = await apiClient.get('/analytics/anomalies');
       return response.data;

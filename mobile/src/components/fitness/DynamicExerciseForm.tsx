@@ -21,7 +21,7 @@ export interface ExerciseData {
 interface DynamicExerciseFormProps {
   exercise: ExerciseData;
   index: number;
-  onUpdate: (index: number, field: keyof ExerciseData, value: any) => void;
+  onUpdate: (index: number, field: keyof ExerciseData, value: unknown) => void;
   onRemove: (index: number) => void;
   activityType: string;
   showRemove?: boolean;

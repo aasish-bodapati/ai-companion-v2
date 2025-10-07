@@ -171,7 +171,7 @@ export const SafeCleanup = {
   },
 
   // Run bulk cleanup on multiple files
-  runBulkCleanup: (files: Array<{path: string, content: string}>, options: {
+  runBulkCleanup: (files: {path: string, content: string}[], options: {
     removeDebugLogs?: boolean;
     removeUnusedImports?: boolean;
     removeTodoComments?: boolean;

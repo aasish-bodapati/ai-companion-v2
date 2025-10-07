@@ -178,10 +178,10 @@ class IndianFoodService {
   /**
    * Calculate total nutrition for a meal with multiple food items
    */
-  async calculateMealNutrition(foodItems: Array<{
+  async calculateMealNutrition(foodItems: {
     food_code: string;
     serving_qty: number;
-  }>): Promise<MealNutrition> {
+  }[]): Promise<MealNutrition> {
     try {
       const response = await apiClient.post(`${this.baseUrl}/calculate-meal`, foodItems);
       

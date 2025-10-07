@@ -23,7 +23,7 @@ interface DailyStreaksProps {
   streaks?: Streak[];
   onStreakPress?: (streak: Streak) => void;
   onViewAll?: () => void;
-  style?: any;
+  style?: object;
 }
 
 const defaultStreaks: Streak[] = [
@@ -116,7 +116,7 @@ export default function DailyStreaks({
           >
             <View style={styles.streakHeader}>
               <View style={[styles.streakIcon, { backgroundColor: streak.color + '20' }]}>
-                <Ionicons name={streak.icon as any} size={20} color={streak.color} />
+                <Ionicons name={streak.icon as keyof typeof Ionicons.glyphMap} size={20} color={streak.color} />
               </View>
               <View style={styles.streakInfo}>
                 <Text style={styles.streakTitle}>{streak.title}</Text>

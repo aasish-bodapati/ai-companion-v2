@@ -181,7 +181,7 @@ export default function IntegratedStatsCard({
         >
           <View style={styles.wellnessHeader}>
             <Ionicons 
-              name={getMoodIcon(wellness.mood) as any} 
+              name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={getMoodColor(wellness.mood)} 
             />

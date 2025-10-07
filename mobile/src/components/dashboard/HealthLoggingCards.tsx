@@ -84,7 +84,7 @@ export default function HealthLoggingCards({
             lastActivities.map((activity, index) => (
               <View key={index} style={styles.activityItem}>
                 <Ionicons 
-                  name={getActivityIcon(activity.type) as any} 
+                  name={getActivityIcon(activity.type) as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={getActivityColor(activity.type)} 
                 />
@@ -159,7 +159,7 @@ export default function HealthLoggingCards({
           >
             <View style={styles.wellnessIconContainer}>
               <Ionicons 
-                name={getMoodIcon(wellness.mood) as any} 
+                name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap} 
                 size={20} 
                 color={getMoodColor(wellness.mood)} 
               />

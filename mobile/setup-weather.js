@@ -24,7 +24,7 @@ rl.question('Enter your OpenWeatherMap API key: ', (apiKey) => {
     return;
   }
 
-  const envPath = path.join(__dirname, '.env');
+  const envPath = path.join(process.cwd(), '.env');
   let envContent = '';
 
   // Read existing .env file

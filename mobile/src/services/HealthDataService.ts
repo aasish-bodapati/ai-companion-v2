@@ -5,12 +5,12 @@ import { predictiveAnalyticsService } from './predictiveAnalyticsService';
 import { smartNotificationsService } from './smartNotificationsService';
 
 interface HealthDataSummary {
-  user: any;
-  dashboard: any;
-  fitness: any;
-  nutrition: any;
-  analytics: any;
-  notifications: any;
+  user: Record<string, unknown>;
+  dashboard: Record<string, unknown>;
+  fitness: Record<string, unknown>;
+  nutrition: Record<string, unknown>;
+  analytics: Record<string, unknown>;
+  notifications: Record<string, unknown>;
 }
 
 interface HealthDataOptions {
@@ -20,7 +20,7 @@ interface HealthDataOptions {
 }
 
 class HealthDataService {
-  private cache: Map<string, { data: any; timestamp: number }> = new Map();
+  private cache: Map<string, { data: unknown; timestamp: number }> = new Map();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
   // Get comprehensive health data
@@ -222,10 +222,10 @@ class HealthDataService {
   }
 
   // Batch operations
-  async batchUpdate(updates: Array<{
+  async batchUpdate(updates: {
     type: 'workout' | 'meal' | 'water' | 'mood';
-    data: any;
-  }>): Promise<void> {
+    data: unknown;
+  }[]): Promise<void> {
     try {
       // Process updates in parallel
       const promises = updates.map(update => {
@@ -254,7 +254,7 @@ class HealthDataService {
   }
 
   // Health data validation
-  validateHealthData(data: any): boolean {
+  validateHealthData(data: unknown): boolean {
     try {
       // Basic validation - can be expanded
       return (
@@ -286,7 +286,7 @@ class HealthDataService {
     }
   }
 
-  private convertToCSV(data: any): string {
+  private convertToCSV(data: unknown): string {
     // Basic CSV conversion - can be enhanced
     const headers = ['Date', 'Type', 'Value', 'Unit'];
     const rows = [headers.join(',')];

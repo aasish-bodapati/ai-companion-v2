@@ -24,7 +24,7 @@ interface AnalyticsCardProps {
   backgroundColor?: string;
   onPress?: () => void;
   children?: React.ReactNode;
-  style?: any;
+  style?: object;
 }
 
 export default function EnhancedAnalyticsCard({
@@ -79,7 +79,7 @@ export default function EnhancedAnalyticsCard({
         {trend && (
           <View style={styles.trendContainer}>
             <Ionicons
-              name={getTrendIcon() as any}
+              name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
               size={16}
               color={getTrendColor()}
             />

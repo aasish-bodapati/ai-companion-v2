@@ -88,7 +88,7 @@ export default function BodyTypeHeroCard({
             <Text style={styles.alignmentLabel}>Weekly Alignment</Text>
             <View style={styles.trendIndicator}>
               <Ionicons 
-                name={getTrendIcon(weeklyTrend) as any} 
+                name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap} 
                 size={16} 
                 color={trendColor} 
               />

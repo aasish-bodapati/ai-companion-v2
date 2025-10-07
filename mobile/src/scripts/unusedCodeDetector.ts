@@ -204,7 +204,7 @@ export const UnusedCodeDetector = {
   },
 
   // Run comprehensive analysis
-  runComprehensiveAnalysis: (files: Array<{path: string, content: string}>) => {
+  runComprehensiveAnalysis: (files: {path: string, content: string}[]) => {
     console.log('🚀 Running comprehensive unused code analysis...\n');
     
     const results = {

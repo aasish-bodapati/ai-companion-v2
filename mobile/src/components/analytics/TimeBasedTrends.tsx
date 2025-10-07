@@ -26,7 +26,7 @@ function TrendChart({ title, data, color, icon, unit, onDataPointPress }: TrendC
     <View style={styles.chartContainer}>
       <View style={styles.chartHeader}>
         <View style={styles.chartTitleContainer}>
-          <Ionicons name={icon as any} size={20} color={color} />
+          <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={20} color={color} />
           <Text style={styles.chartTitle}>{title}</Text>
         </View>
         <Text style={styles.chartUnit}>{unit}</Text>

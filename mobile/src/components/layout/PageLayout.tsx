@@ -16,17 +16,17 @@ interface PageLayoutProps {
   onRefresh?: () => Promise<void>;
   refreshing?: boolean;
   showQuickStats?: boolean;
-  quickStats?: Array<{
+  quickStats?: {
     label: string;
     value: string | number;
     icon: string;
     color: string;
-  }>;
-  headerActions?: Array<{
+  }[];
+  headerActions?: {
     icon: string;
     onPress: () => void;
     color?: string;
-  }>;
+  }[];
   footer?: React.ReactNode;
   style?: any;
 }

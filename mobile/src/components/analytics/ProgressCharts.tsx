@@ -40,7 +40,7 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
       } else {
         setAnalysis(null);
       }
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       setAnalysis(null);
     } finally {

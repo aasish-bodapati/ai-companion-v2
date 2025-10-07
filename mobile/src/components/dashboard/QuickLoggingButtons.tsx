@@ -75,7 +75,7 @@ export default function QuickLoggingButtons({
             onPress={button.onPress}
             activeOpacity={0.8}
           >
-            <Ionicons name={button.icon as any} size={24} color={button.color} />
+            <Ionicons name={button.icon as keyof typeof Ionicons.glyphMap} size={24} color={button.color} />
             <Text style={[styles.buttonText, { color: button.color }]}>
               {button.title}
             </Text>

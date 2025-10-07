@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -135,9 +135,9 @@ export default function ComprehensiveAnalyticsDashboard({
 
   useEffect(() => {
     loadAnalyticsData();
-  }, [timeRange]);
+  }, [timeRange, loadAnalyticsData]);
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     setLoading(true);
     try {
       // Mock data - in real app, this would fetch from backend
@@ -148,7 +148,7 @@ export default function ComprehensiveAnalyticsDashboard({
     } finally {
       setLoading(false);
     }
-  };
+  }, [timeRange]);
 
   const generateMockAnalyticsData = (): AnalyticsData => {
     return {

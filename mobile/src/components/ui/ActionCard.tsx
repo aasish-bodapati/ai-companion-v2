@@ -36,12 +36,12 @@ interface ActionCardProps {
   badges?: Badge[];
   
   // Details (key-value pairs)
-  details?: Array<{
+  details?: {
     label: string;
     value: string | number;
     icon?: string;
     color?: string;
-  }>;
+  }[];
   
   // Actions
   primaryAction?: Action;

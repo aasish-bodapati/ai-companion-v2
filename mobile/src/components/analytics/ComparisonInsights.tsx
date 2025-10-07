@@ -78,7 +78,7 @@ export default function ComparisonInsights({
             >
               <View style={styles.comparisonHeader}>
                 <Ionicons 
-                  name={comparison.icon as any} 
+                  name={comparison.icon as keyof typeof Ionicons.glyphMap} 
                   size={20} 
                   color={comparison.color} 
                 />
@@ -96,7 +96,7 @@ export default function ComparisonInsights({
               
               <View style={styles.comparisonTrend}>
                 <Ionicons 
-                  name={getTrendIcon(comparison.trend) as any} 
+                  name={getTrendIcon(comparison.trend) as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={trendColor} 
                 />
@@ -150,7 +150,7 @@ export default function ComparisonInsights({
               <View key={index} style={styles.laggingMetricItem}>
                 <View style={styles.laggingMetricIcon}>
                   <Ionicons 
-                    name={metric.icon as any} 
+                    name={metric.icon as keyof typeof Ionicons.glyphMap} 
                     size={16} 
                     color={metric.color} 
                   />
@@ -194,7 +194,7 @@ export default function ComparisonInsights({
               >
                 <View style={styles.achievementIcon}>
                   <Ionicons 
-                    name={achievement.icon as any} 
+                    name={achievement.icon as keyof typeof Ionicons.glyphMap} 
                     size={24} 
                     color={achievement.color} 
                   />

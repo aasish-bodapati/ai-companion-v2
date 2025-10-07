@@ -26,7 +26,7 @@ export default function QuickStatsRow({ stats }: QuickStatsRowProps) {
           activeOpacity={0.7}
         >
           <View style={styles.statHeader}>
-            <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+            <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={20} color={stat.color} />
             <Text style={styles.statValue}>{stat.value}</Text>
           </View>
           <Text style={styles.statLabel}>{stat.label}</Text>

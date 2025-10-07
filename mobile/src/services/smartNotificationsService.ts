@@ -37,11 +37,11 @@ interface SmartNotification {
   scheduled_for: string;
   data?: Record<string, unknown>;
   actionable: boolean;
-  action_buttons?: Array<{
+  action_buttons?: {
     text: string;
     action: string;
     style: 'primary' | 'secondary' | 'destructive';
-  }>;
+  }[];
 }
 
 interface NotificationPreferences {

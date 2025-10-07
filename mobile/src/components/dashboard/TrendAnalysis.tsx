@@ -28,7 +28,7 @@ interface TrendAnalysisProps {
   onMetricPress?: (metric: TrendMetric) => void;
   onViewDetails?: (metric: TrendMetric) => void;
   onViewAll?: () => void;
-  style?: any;
+  style?: object;
 }
 
 const defaultMetrics: TrendMetric[] = [

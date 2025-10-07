@@ -177,7 +177,7 @@ export const AutomatedMigration = {
   },
 
   // Run migration for multiple components
-  migrateComponents: (components: Array<{name: string, data: any}>) => {
+  migrateComponents: (components: {name: string, data: any}[]) => {
     console.log(`🚀 Starting batch migration for ${components.length} components...`);
     
     const results = {

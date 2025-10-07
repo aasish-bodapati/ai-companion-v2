@@ -72,7 +72,7 @@ export default function GoalAlignmentHero({
         </View>
         <View style={styles.trendIndicator}>
           <Ionicons 
-            name={getTrendIcon(data.trend) as any} 
+            name={getTrendIcon(data.trend) as keyof typeof Ionicons.glyphMap} 
             size={16} 
             color={trendColor} 
           />

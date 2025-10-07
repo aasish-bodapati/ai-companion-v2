@@ -514,7 +514,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   const renderMealCards = () => {
     // Flatten all food items from all logs into individual cards
-    const allFoodItems: Array<{
+    const allFoodItems: {
       id: string;
       food_name: string;
       quantity_grams: number;
@@ -528,7 +528,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       meal_type: string;
       meal_date: string;
       created_at: string;
-    }> = [];
+    }[] = [];
 
     logs.forEach((log) => {
       // Parse food_items from JSON string

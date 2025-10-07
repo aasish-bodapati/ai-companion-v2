@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { aiInsightsService, AIInsight, HealthPattern, HealthRecommendation } from '../../services/aiInsightsService';
@@ -42,7 +41,7 @@ export default function AIInsightsCard({
       setInsights(insightsData || []);
       setPatterns(patternsData || []);
       setRecommendations(Array.isArray(recommendationsData) ? recommendationsData.slice(0, 3) : []);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Set empty arrays as fallback
       setInsights([]);
@@ -108,7 +107,7 @@ export default function AIInsightsCard({
       <View style={styles.insightHeader}>
         <View style={styles.insightTitleContainer}>
           <Ionicons
-            name={getCategoryIcon(insight.category) as any}
+            name={getCategoryIcon(insight.category) as keyof typeof Ionicons.glyphMap}
             size={20}
             color={getPriorityColor(insight.priority)}
           />

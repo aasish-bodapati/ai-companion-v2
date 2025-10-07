@@ -45,7 +45,7 @@ export default function ScoringCard({ title, result, onPress, compact = false }:
       <View style={styles.header}>
         <Text style={[styles.title, compact && styles.compactTitle]}>{title}</Text>
         <View style={[styles.alignmentBadge, { backgroundColor: alignmentColor + '20' }]}>
-          <Ionicons name={alignmentIcon.name as any} size={compact ? 12 : 16} color={alignmentColor} />
+          <Ionicons name={alignmentIcon.name as keyof typeof Ionicons.glyphMap} size={compact ? 12 : 16} color={alignmentColor} />
           <Text style={[styles.alignmentText, { color: alignmentColor }, compact && styles.compactAlignmentText]}>
             {result.alignment.toUpperCase()}
           </Text>

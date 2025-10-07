@@ -5,31 +5,32 @@
 
 import { useState, useCallback } from 'react';
 
-export const DuplicateCodeUtils = {
-  // Safe loading state management
-  createLoadingState: () => {
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    
-    const withLoading = useCallback(async (fn: () => Promise<any>) => {
-      try {
-        setLoading(true);
-        setError(null);
-        return await fn();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    }, []);
-    
-    const resetError = useCallback(() => {
+// Custom hook for loading state management
+export const useLoadingState = () => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const withLoading = useCallback(async (fn: () => Promise<any>) => {
+    try {
+      setLoading(true);
       setError(null);
-    }, []);
-    
-    return { loading, error, withLoading, resetError };
-  },
+      return await fn();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+  
+  const resetError = useCallback(() => {
+    setError(null);
+  }, []);
+  
+  return { loading, error, withLoading, resetError };
+};
+
+export const DuplicateCodeUtils = {
 
   // Safe error handling
   handleError: (error: any, context: string) => {
@@ -99,7 +100,6 @@ export const DuplicateCodeUtils = {
 
 // Export individual functions for convenience
 export const { 
-  createLoadingState, 
   handleError, 
   getCommonStyles, 
   createApiCall,

@@ -88,14 +88,14 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
             <View style={styles.insightHeader}>
               <View style={styles.insightIconContainer}>
                 <Ionicons 
-                  name={getCategoryIcon(insight.category) as any} 
+                  name={getCategoryIcon(insight.category) as keyof typeof Ionicons.glyphMap} 
                   size={18} 
                   color={getCategoryColor(insight.category)} 
                 />
               </View>
               <View style={styles.priorityIndicator}>
                 <Ionicons 
-                  name={getPriorityIcon(insight.priority) as any} 
+                  name={getPriorityIcon(insight.priority) as keyof typeof Ionicons.glyphMap} 
                   size={14} 
                   color={getPriorityColor(insight.priority)} 
                 />

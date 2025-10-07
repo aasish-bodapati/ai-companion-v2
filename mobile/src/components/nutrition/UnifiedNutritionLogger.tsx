@@ -44,11 +44,11 @@ interface FoodItem {
 interface MealLog {
   id?: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  food_items: Array<{
+  food_items: {
     food_item: FoodItem;
     quantity: number;
     unit: string;
-  }>;
+  }[];
   total_calories: number;
   total_protein: number;
   total_carbs: number;
@@ -209,7 +209,7 @@ export default function UnifiedNutritionLogger({
     setSearchResults([]);
   };
 
-  const calculateTotals = (foodItems: Array<{food_item: FoodItem, quantity: number, unit: string}>) => {
+  const calculateTotals = (foodItems: {food_item: FoodItem, quantity: number, unit: string}[]) => {
     const totals = foodItems.reduce((acc, item) => {
       const calories = (item.food_item.calories_per_100g || 0) * item.quantity;
       const protein = (item.food_item.protein_per_100g || 0) * item.quantity;

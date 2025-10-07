@@ -174,7 +174,7 @@ export interface FormFieldConfig {
   placeholder?: string;
   required?: boolean;
   validation?: ValidationRule;
-  options?: Array<{ label: string; value: any }>;
+  options?: { label: string; value: any }[];
   multiline?: boolean;
   numberOfLines?: number;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';

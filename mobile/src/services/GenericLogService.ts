@@ -171,7 +171,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
   /**
    * Bulk update logs
    */
-  async bulkUpdateLogs(updates: Array<{ id: number; data: BaseLogUpdate }>): Promise<T[]> {
+  async bulkUpdateLogs(updates: { id: number; data: BaseLogUpdate }[]): Promise<T[]> {
     return this.makeRequest(
       () => apiClient.put(`${this.endpoint}/bulk`, { updates }),
       `${this.constructor.name} - bulkUpdateLogs`

@@ -24,7 +24,7 @@ interface PredictiveInsightsProps {
   insights?: PredictiveInsight[];
   onInsightPress?: (insight: PredictiveInsight) => void;
   onViewAll?: () => void;
-  style?: any;
+  style?: object;
 }
 
 const defaultInsights: PredictiveInsight[] = [
@@ -140,7 +140,7 @@ export default function PredictiveInsights({
             >
               <View style={styles.insightHeader}>
                 <View style={[styles.insightIcon, { backgroundColor: insight.color + '20' }]}>
-                  <Ionicons name={insight.icon as any} size={20} color={insight.color} />
+                  <Ionicons name={insight.icon as keyof typeof Ionicons.glyphMap} size={20} color={insight.color} />
                 </View>
                 
                 <View style={styles.insightInfo}>
@@ -150,7 +150,7 @@ export default function PredictiveInsights({
                 
                 <View style={styles.insightMeta}>
                   <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
-                    <Ionicons name={priorityIcon as any} size={12} color={priorityColor} />
+                    <Ionicons name={priorityIcon as keyof typeof Ionicons.glyphMap} size={12} color={priorityColor} />
                   </View>
                   <Text style={styles.confidenceText}>{insight.confidence}%</Text>
                 </View>

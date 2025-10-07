@@ -15,7 +15,7 @@ export interface SimpleRoutine {
 export interface WorkoutDay {
   day: string;
   workouts: Workout[];
-  exercises?: Array<{
+  exercises?: {
     id: number;
     name: string;
     sets?: number;
@@ -23,7 +23,7 @@ export interface WorkoutDay {
     duration_minutes?: number;
     weight_kg?: number;
     distance_km?: number;
-  }>; // For backward compatibility
+  }[]; // For backward compatibility
 }
 
 export interface Workout {
@@ -353,14 +353,14 @@ class RoutineService extends BaseService {
     page?: number;
     size?: number;
   }): Promise<{
-  logs: Array<{
+  logs: {
     id: number;
     activity_name: string;
     activity_type: string;
     duration_minutes: number;
     calories_burned?: number;
     created_at: string;
-  }>;
+  }[];
   stats: {
     total_workouts: number;
     total_duration: number;
@@ -445,7 +445,7 @@ class RoutineService extends BaseService {
   }
 
   // Update workout log exercises - now uses fitnessService endpoint
-  async updateWorkoutLogExercises(logId: number, exercises: Array<{
+  async updateWorkoutLogExercises(logId: number, exercises: {
     id: number;
     name: string;
     sets?: number;
@@ -453,7 +453,7 @@ class RoutineService extends BaseService {
     duration_minutes?: number;
     weight_kg?: number;
     distance_km?: number;
-  }>): Promise<{
+  }[]): Promise<{
     success: boolean;
     message: string;
   }> {

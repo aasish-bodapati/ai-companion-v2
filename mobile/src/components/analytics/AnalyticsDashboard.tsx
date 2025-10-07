@@ -4,18 +4,16 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { analyticsService, DashboardData } from '../../services/analyticsService';
-import { aiInsightsService } from '../../services/aiInsightsService';
 import EnhancedAnalyticsCard from './EnhancedAnalyticsCard';
 import ProgressCharts from './ProgressCharts';
 import { COMMON_STYLES } from '../../theme/constants';
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window'); // Unused for now
 
 interface AnalyticsDashboardProps {
   refreshTrigger?: number;

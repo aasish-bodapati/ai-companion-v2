@@ -38,7 +38,7 @@ export abstract class BaseService {
   /**
    * Centralized error handling and logging
    */
-  protected handleError(error: any, context: string): void {
+  protected handleError(error: unknown, context: string): void {
     // Silent error handling - no console logging to prevent Expo Go notifications
   }
 
@@ -58,8 +58,8 @@ export abstract class BaseService {
     size?: number;
     start_date?: string;
     end_date?: string;
-  }): any {
-    const apiParams: any = { ...params };
+  }): unknown {
+    const apiParams: Record<string, unknown> = { ...params };
     
     if (params?.start_date) {
       apiParams.start_date = this.convertDateToISO(params.start_date);
@@ -85,7 +85,7 @@ export abstract class BaseService {
     const total = items.length;
     const totalValue = items.reduce((sum, item) => sum + (Number(item[config.totalField as string]) || 0), 0);
     
-    const summary: any = {
+    const summary: Record<string, unknown> = {
       total,
       total_value: totalValue,
       average_value: total > 0 ? Math.round(totalValue / total) : 0

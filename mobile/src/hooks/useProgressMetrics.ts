@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useProgressMetrics, useStreaks, useAchievements } from '../contexts/GlobalStateContext';
 
 interface ProgressMetricsData {
-  rings: Array<{
+  rings: {
     id: string;
     label: string;
     value: number;
@@ -10,8 +10,8 @@ interface ProgressMetricsData {
     unit: string;
     icon: string;
     color: string;
-  }>;
-  bars: Array<{
+  }[];
+  bars: {
     id: string;
     label: string;
     value: number;
@@ -19,8 +19,8 @@ interface ProgressMetricsData {
     unit: string;
     icon: string;
     color: string;
-  }>;
-  numbers: Array<{
+  }[];
+  numbers: {
     id: string;
     label: string;
     value: number;
@@ -28,7 +28,7 @@ interface ProgressMetricsData {
     unit: string;
     icon: string;
     color: string;
-  }>;
+  }[];
 }
 
 export function useProgressMetricsData(): ProgressMetricsData {

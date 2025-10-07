@@ -13,17 +13,17 @@ import useResponsive from '../../hooks/useResponsive';
 interface DashboardHeaderCardProps {
   title?: string;
   subtitle?: string;
-  quickStats?: Array<{
+  quickStats?: {
     label: string;
     value: string | number;
     icon: string;
     color: string;
-  }>;
-  headerActions?: Array<{
+  }[];
+  headerActions?: {
     icon: string;
     onPress: () => void;
     color?: string;
-  }>;
+  }[];
 }
 
 export default function DashboardHeaderCard({

@@ -2,26 +2,26 @@ import { apiClient } from './api';
 
 export interface WeeklyTrends {
   fitness: {
-    weekly_data: Array<{
+    weekly_data: {
       week: string;
       workouts: number;
       total_duration: number;
       total_calories: number;
       unique_activities: number;
-    }>;
+    }[];
     trend: 'increasing' | 'decreasing' | 'stable' | 'insufficient_data';
     total_workouts: number;
     avg_workouts_per_week: number;
   };
   nutrition: {
-    weekly_data: Array<{
+    weekly_data: {
       week: string;
       meals: number;
       avg_calories_per_meal: number;
       total_protein: number;
       total_carbs: number;
       total_fat: number;
-    }>;
+    }[];
     total_meals: number;
     avg_meals_per_week: number;
   };
@@ -33,7 +33,7 @@ export interface CorrelationInsight {
   type: string;
   description: string;
   strength: 'weak' | 'moderate' | 'strong';
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface CorrelationData {
