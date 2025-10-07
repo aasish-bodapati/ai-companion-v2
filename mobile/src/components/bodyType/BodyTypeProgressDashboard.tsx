@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
 import { DailyLog, WeeklyLog } from '../../services/bodyTypeScoringService';
-import ScoringCard from './ScoringCard';
-
-const { width } = Dimensions.get('window');
 
 interface BodyTypeProgressDashboardProps {
   bodyTypeGoal: BodyTypeGoal;
@@ -35,9 +31,6 @@ export default function BodyTypeProgressDashboard({
   const {
     dailyResult,
     weeklyResult,
-    loading,
-    error,
-    refreshScores,
     isReady,
   } = useBodyTypeScoring({
     bodyTypeGoal,
@@ -46,8 +39,8 @@ export default function BodyTypeProgressDashboard({
     weeklyLog,
   });
 
-  const [streakDays, setStreakDays] = useState(7); // Mock streak data
-  const [achievements, setAchievements] = useState(['3 weeks aligned', 'Perfect week']); // Mock achievements
+  const [streakDays] = useState(7); // Mock streak data
+  const [achievements] = useState(['3 weeks aligned', 'Perfect week']); // Mock achievements
 
   const getGoalIcon = (goalName: string) => {
     if (goalName.includes('Sleek') && goalName.includes('Graceful')) {
@@ -95,7 +88,7 @@ export default function BodyTypeProgressDashboard({
         <View style={styles.goalHeader}>
           <View style={styles.goalIconContainer}>
             <Ionicons 
-              name={getGoalIcon(bodyTypeGoal.name) as any} 
+              name={getGoalIcon(bodyTypeGoal.name) as keyof typeof Ionicons.glyphMap} 
               size={32} 
               color="#3b82f6" 
             />
@@ -107,7 +100,7 @@ export default function BodyTypeProgressDashboard({
                 This Week: {weeklyResult?.percentage || 0}% Aligned
               </Text>
               <Ionicons 
-                name={alignmentIcon.name as any} 
+                name={alignmentIcon.name as keyof typeof Ionicons.glyphMap} 
                 size={20} 
                 color={alignmentColor} 
               />

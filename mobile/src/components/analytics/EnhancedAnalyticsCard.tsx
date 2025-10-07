@@ -4,12 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES } from '../../theme/constants';
-
-const { width } = Dimensions.get('window');
 
 interface AnalyticsCardProps {
   title: string;

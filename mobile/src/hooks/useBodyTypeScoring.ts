@@ -47,7 +47,7 @@ export function useBodyTypeScoring({
     if (scoringService) {
       calculateScores();
     }
-  }, [scoringService, dailyLog, weeklyLog]);
+  }, [scoringService, dailyLog, weeklyLog, calculateScores]);
 
   const calculateScores = useCallback(async () => {
     if (!scoringService) return;

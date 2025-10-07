@@ -26,10 +26,10 @@ const CalendarComponent: React.FC<CalendarComponentProps> = ({
   const [showYearPicker, setShowYearPicker] = useState(false);
   
   // Close dropdowns when clicking outside
-  const closeDropdowns = () => {
-    setShowMonthPicker(false);
-    setShowYearPicker(false);
-  };
+  // const closeDropdowns = () => {
+  //   setShowMonthPicker(false);
+  //   setShowYearPicker(false);
+  // };
   
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();

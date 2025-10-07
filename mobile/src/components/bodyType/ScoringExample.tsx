@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
-import { DailyLog, WorkoutLog, BodyTypeNutritionLog } from '../../services/bodyTypeScoringService';
+import { DailyLog } from '../../services/bodyTypeScoringService';
 import ScoringCard from './ScoringCard';
 import BodyTypeScoringDashboard from './BodyTypeScoringDashboard';
 
@@ -34,7 +34,6 @@ export default function ScoringExample({ bodyTypeGoal, userAttributes }: Scoring
 
   const {
     dailyResult,
-    weeklyResult,
     loading,
     error,
     refreshScores,

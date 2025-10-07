@@ -19,34 +19,41 @@ export const useFormState = <T extends Record<string, any>>(
     setData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing
-    if (errors[field as string]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
+    setErrors(prev => {
+      if (prev[field as string]) {
+        return { ...prev, [field]: '' };
+      }
+      return prev;
+    });
     
     // Mark field as touched
     setTouched(prev => ({ ...prev, [field]: true }));
-  }, [errors]);
+  }, []); // Remove errors dependency to prevent infinite loops
 
   const updateFields = useCallback((updates: Partial<T>) => {
     setData(prev => ({ ...prev, ...updates }));
     
     // Clear errors for updated fields
     const fieldNames = Object.keys(updates) as (keyof T)[];
-    const newErrors = { ...errors };
-    fieldNames.forEach(field => {
-      if (newErrors[field as string]) {
-        delete newErrors[field as string];
-      }
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      fieldNames.forEach(field => {
+        if (newErrors[field as string]) {
+          delete newErrors[field as string];
+        }
+      });
+      return newErrors;
     });
-    setErrors(newErrors);
     
     // Mark fields as touched
-    const newTouched = { ...touched };
-    fieldNames.forEach(field => {
-      newTouched[field] = true;
+    setTouched(prev => {
+      const newTouched = { ...prev };
+      fieldNames.forEach(field => {
+        newTouched[field] = true;
+      });
+      return newTouched;
     });
-    setTouched(newTouched);
-  }, [errors, touched]);
+  }, []); // Remove errors and touched dependencies to prevent infinite loops
 
   const validateField = useCallback((field: keyof T): boolean => {
     if (!validator) return true;

@@ -8,14 +8,12 @@ import {
   TextInput,
   StyleSheet,
   Alert,
-  ActivityIndicator,
   Image,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { fitnessService, ExerciseData } from '../../services/fitnessService';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import DynamicExerciseForm from './DynamicExerciseForm';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';

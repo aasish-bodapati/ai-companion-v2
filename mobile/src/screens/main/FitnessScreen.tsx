@@ -108,7 +108,7 @@ export default function FitnessScreen() {
 
   const loadOverviewData = useCallback(async () => {
     await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-  }, [loadWeekStats, loadWeeklyActivityData]);
+  }, []); // Remove dependencies to prevent infinite loop
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -121,7 +121,7 @@ export default function FitnessScreen() {
     if (user) {
       loadOverviewData();
     }
-  }, [user, loadOverviewData]); // Load data when user changes
+  }, [user]); // Remove loadOverviewData dependency to prevent infinite loop
 
   // Reset to overview tab every time the screen comes into focus
   useFocusEffect(

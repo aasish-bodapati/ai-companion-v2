@@ -118,23 +118,23 @@ export default function TrendAnalysis({
     return trend === 'up' ? '#10b981' : '#ef4444';
   };
 
-  const formatValue = (value: number, unit: string) => {
-    if (unit === 'cal/day') {
-      return Math.round(value).toLocaleString();
-    }
-    if (unit === 'kg') {
-      return value.toFixed(1);
-    }
-    if (unit === '/10') {
-      return value.toFixed(1);
-    }
-    return value.toString();
-  };
+  // const formatValue = (value: number, unit: string) => {
+  //   if (unit === 'cal/day') {
+  //     return Math.round(value).toLocaleString();
+  //   }
+  //   if (unit === 'kg') {
+  //     return value.toFixed(1);
+  //   }
+  //   if (unit === '/10') {
+  //     return value.toFixed(1);
+  //   }
+  //   return value.toString();
+  // };
 
-  const formatChange = (change: number, changePercent: number) => {
-    const sign = change >= 0 ? '+' : '';
-    return `${sign}${change.toFixed(1)} (${sign}${changePercent}%)`;
-  };
+  // const formatChange = (change: number, changePercent: number) => {
+  //   const sign = change >= 0 ? '+' : '';
+  //   return `${sign}${change.toFixed(1)} (${sign}${changePercent}%)`;
+  // };
 
 
   return (
@@ -178,7 +178,7 @@ export default function TrendAnalysis({
             >
               <View style={styles.metricHeader}>
                 <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}>
-                  <Ionicons name={metric.icon as any} size={20} color={metric.color} />
+                  <Ionicons name={metric.icon as keyof typeof Ionicons.glyphMap} size={20} color={metric.color} />
                 </View>
                 
                 <View style={styles.metricInfo}>
@@ -201,7 +201,7 @@ export default function TrendAnalysis({
                 <View style={styles.trendInfo}>
                   <View style={styles.trendIndicator}>
                     <Ionicons 
-                      name={trendIcon as any} 
+                      name={trendIcon as keyof typeof Ionicons.glyphMap} 
                       size={16} 
                       color={trendColor} 
                     />

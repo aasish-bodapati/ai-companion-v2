@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useProgressMetrics, useStreaks, useAchievements } from '../stores';
 
 interface ProgressMetricsData {
@@ -35,8 +35,20 @@ export function useProgressMetricsData(): ProgressMetricsData {
   const progressMetrics = useProgressMetrics();
   const { streaks } = useStreaks();
   const { achievements } = useAchievements();
+  const renderCountRef = useRef(0);
+
+  renderCountRef.current += 1;
+  if (renderCountRef.current <= 3) { // Only log first few calls
+    console.log('📊 [PROGRESS METRICS] Hook called, render count:', renderCountRef.current);
+    console.log('📊 [PROGRESS METRICS] Hook called, progressMetrics:', progressMetrics);
+    console.log('📊 [PROGRESS METRICS] Hook called, streaks:', streaks);
+    console.log('📊 [PROGRESS METRICS] Hook called, achievements:', achievements);
+  }
 
   return useMemo(() => {
+    if (renderCountRef.current <= 3) { // Only log first few recalculations
+      console.log('📊 [PROGRESS METRICS] useMemo recalculating');
+    }
     const rings = [
       {
         id: 'workouts',

@@ -27,7 +27,7 @@ export default function AnalyticsDashboard({ refreshTrigger = 0 }: AnalyticsDash
       setLoading(true);
       const data = await analyticsService.getDashboardData();
       setDashboardData(data);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);

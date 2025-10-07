@@ -8,10 +8,34 @@ export abstract class BaseService {
     requestFn: () => Promise<AxiosResponse<T>>,
     errorContext: string
   ): Promise<T> {
+    console.log(`🚰 [BASE SERVICE] makeRequest called for: ${errorContext}`);
+    const startTime = Date.now();
+    
     try {
+      console.log(`🚰 [BASE SERVICE] Executing request function for: ${errorContext}`);
       const response = await requestFn();
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      console.log(`🚰 [BASE SERVICE] Request completed successfully in ${duration}ms for: ${errorContext}`);
+      console.log(`🚰 [BASE SERVICE] Response status: ${response.status}`);
+      console.log(`🚰 [BASE SERVICE] Response data:`, response.data);
+      
       return this.extractData(response);
     } catch (error) {
+      const endTime = Date.now();
+      const duration = endTime - startTime;
+      
+      console.error(`🚰 [BASE SERVICE] Request failed after ${duration}ms for: ${errorContext}`);
+      console.error(`🚰 [BASE SERVICE] Error details:`, {
+        message: error.message,
+        name: error.name,
+        code: error.code,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      
       this.handleError(error, errorContext);
       throw error;
     }

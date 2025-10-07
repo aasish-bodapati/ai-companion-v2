@@ -80,7 +80,13 @@ export const useAppStore = create<AppStore>()(
         
         // Data refresh
         refreshData: async () => {
-          const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, setAIInsights } = get();
+          const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, setAIInsights, loading } = get();
+          
+          // Prevent multiple simultaneous calls
+          if (loading) {
+            console.log('🔄 refreshData already in progress, skipping');
+            return;
+          }
           
           try {
             setLoading(true);
@@ -96,8 +102,8 @@ export const useAppStore = create<AppStore>()(
             }
             
             // Load progress metrics
-            const progressMetrics = await loadProgressMetrics();
-            setProgressMetrics(progressMetrics);
+            const newProgressMetrics = await loadProgressMetrics();
+            setProgressMetrics(newProgressMetrics);
             
             // Load non-essential data in parallel
             const [achievements, streaks, aiInsights] = await Promise.allSettled([
@@ -215,82 +221,88 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
   }
 };
 
+// Memoize achievements data to prevent re-creation on every call
+const achievementsData: Achievement[] = [
+  {
+    id: '1',
+    title: 'First Workout',
+    description: 'Complete your first workout',
+    icon: 'trophy',
+    color: '#f59e0b',
+    unlocked: true,
+    unlockedAt: '2024-01-15',
+    category: 'fitness',
+  },
+  {
+    id: '2',
+    title: 'Week Warrior',
+    description: 'Complete 5 workouts in a week',
+    icon: 'flame',
+    color: '#ef4444',
+    unlocked: false,
+    progress: 80,
+    category: 'fitness',
+  },
+  {
+    id: '3',
+    title: 'Consistency King',
+    description: 'Work out 7 days in a row',
+    icon: 'checkmark-circle',
+    color: '#10b981',
+    unlocked: false,
+    progress: 60,
+    category: 'consistency',
+  },
+];
+
 const loadAchievements = async (): Promise<Achievement[]> => {
-  // Mock achievements data - replace with actual API call
-  return [
-    {
-      id: '1',
-      title: 'First Workout',
-      description: 'Complete your first workout',
-      icon: 'trophy',
-      color: '#f59e0b',
-      unlocked: true,
-      unlockedAt: '2024-01-15',
-      category: 'fitness',
-    },
-    {
-      id: '2',
-      title: 'Week Warrior',
-      description: 'Complete 5 workouts in a week',
-      icon: 'flame',
-      color: '#ef4444',
-      unlocked: false,
-      progress: 80,
-      category: 'fitness',
-    },
-    {
-      id: '3',
-      title: 'Consistency King',
-      description: 'Work out 7 days in a row',
-      icon: 'checkmark-circle',
-      color: '#10b981',
-      unlocked: false,
-      progress: 60,
-      category: 'consistency',
-    },
-  ];
+  // Return memoized data to prevent re-creation
+  return achievementsData;
 };
 
+// Memoize streaks data to prevent re-creation on every call
+const streaksData: Streak[] = [
+  {
+    type: 'workout',
+    current: 3,
+    best: 7,
+    icon: 'fitness',
+    color: '#3b82f6',
+    label: 'Workout',
+    unit: 'days',
+  },
+  {
+    type: 'nutrition',
+    current: 5,
+    best: 12,
+    icon: 'nutrition',
+    color: '#10b981',
+    label: 'Nutrition',
+    unit: 'days',
+  },
+  {
+    type: 'water',
+    current: 2,
+    best: 5,
+    icon: 'water',
+    color: '#06b6d4',
+    label: 'Water',
+    unit: 'days',
+  },
+  {
+    type: 'mood',
+    current: 1,
+    best: 3,
+    icon: 'happy',
+    color: '#f59e0b',
+    label: 'Mood',
+    unit: 'days',
+  },
+];
+
 const loadStreaks = async (): Promise<Streak[]> => {
-  // Mock streaks data - replace with actual API call
-  return [
-    {
-      type: 'workout',
-      current: 3,
-      best: 7,
-      icon: 'fitness',
-      color: '#3b82f6',
-      label: 'Workout',
-      unit: 'days',
-    },
-    {
-      type: 'nutrition',
-      current: 5,
-      best: 12,
-      icon: 'nutrition',
-      color: '#10b981',
-      label: 'Nutrition',
-      unit: 'days',
-    },
-    {
-      type: 'water',
-      current: 2,
-      best: 5,
-      icon: 'water',
-      color: '#06b6d4',
-      label: 'Water',
-      unit: 'days',
-    },
-    {
-      type: 'mood',
-      current: 1,
-      best: 3,
-      icon: 'happy',
-      color: '#f59e0b',
-      label: 'Mood',
-      unit: 'days',
-    },
-  ];
+  // Return memoized data to prevent re-creation
+  return streaksData;
 };
 
 const loadAIInsights = async (): Promise<any[]> => {
@@ -302,12 +314,12 @@ const loadAIInsights = async (): Promise<any[]> => {
   }
 };
 
-// Selector hooks for better performance
-export const useUser = () => useAppStore((state) => state.user);
-export const useProgressMetrics = () => useAppStore((state) => state.progressMetrics);
-export const useAchievements = () => useAppStore((state) => state.achievements);
-export const useStreaks = () => useAppStore((state) => state.streaks);
-export const useAIInsights = () => useAppStore((state) => state.aiInsights);
-export const useAppLoading = () => useAppStore((state) => state.loading);
-export const useAppError = () => useAppStore((state) => state.error);
-export const useAppLastUpdated = () => useAppStore((state) => state.lastUpdated);
+// Selector hooks for better performance with shallow comparison
+export const useUser = () => useAppStore((state) => state.user, shallow);
+export const useProgressMetrics = () => useAppStore((state) => state.progressMetrics, shallow);
+export const useAchievements = () => useAppStore((state) => state.achievements, shallow);
+export const useStreaks = () => useAppStore((state) => state.streaks, shallow);
+export const useAIInsights = () => useAppStore((state) => state.aiInsights, shallow);
+export const useAppLoading = () => useAppStore((state) => state.loading, shallow);
+export const useAppError = () => useAppStore((state) => state.error, shallow);
+export const useAppLastUpdated = () => useAppStore((state) => state.lastUpdated, shallow);

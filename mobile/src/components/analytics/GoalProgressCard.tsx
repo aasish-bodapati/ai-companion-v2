@@ -9,7 +9,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { GoalProgress, GoalAnalytics, numericalGoalsService } from '../../services/numericalGoalsService';
-import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
 
 interface GoalProgressCardProps {
@@ -35,7 +34,7 @@ export default function GoalProgressCard({ onPress }: GoalProgressCardProps) {
       
       setAnalytics(analyticsData);
       setProgressData(progressData);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);

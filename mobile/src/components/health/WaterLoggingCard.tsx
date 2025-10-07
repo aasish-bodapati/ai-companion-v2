@@ -30,7 +30,7 @@ export default function WaterLoggingCard() {
   // Load water data when component mounts
   useEffect(() => {
     refreshWaterData();
-  }, [refreshWaterData]);
+  }, []); // Remove refreshWaterData from dependencies to prevent infinite loop
 
   const handleQuickLog = async (amount_ml: number) => {
     try {

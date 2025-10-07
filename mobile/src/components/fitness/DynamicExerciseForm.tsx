@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface ExerciseData {
@@ -81,7 +80,7 @@ export default function DynamicExerciseForm({
   };
 
   const category = getExerciseCategory();
-  const categoryConfig = getCategoryConfig(category);
+  // const categoryConfig = getCategoryConfig(category);
   
 
   const renderField = (field: string, isHorizontal: boolean = false) => {

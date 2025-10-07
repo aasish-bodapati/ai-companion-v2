@@ -5,14 +5,10 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
-import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
-
-const { width } = Dimensions.get('window');
 
 interface AnalyticsData {
   // Overall Goal Alignment
@@ -143,12 +139,12 @@ export default function ComprehensiveAnalyticsDashboard({
       // Mock data - in real app, this would fetch from backend
       const mockData = generateMockAnalyticsData();
       setAnalyticsData(mockData);
-    } catch (error) {
-      // Handle error
+    } catch {
+      // Handle error silently
     } finally {
       setLoading(false);
     }
-  }, [timeRange]);
+  }, []);
 
   const generateMockAnalyticsData = (): AnalyticsData => {
     return {
@@ -280,10 +276,10 @@ export default function ComprehensiveAnalyticsDashboard({
             styles.tabButton,
             selectedTab === tab.key && styles.tabButtonActive,
           ]}
-          onPress={() => setSelectedTab(tab.key as any)}
+          onPress={() => setSelectedTab(tab.key as 'overview' | 'workouts' | 'nutrition' | 'body' | 'habits')}
         >
           <Ionicons
-            name={tab.icon as any}
+            name={tab.icon as keyof typeof Ionicons.glyphMap}
             size={20}
             color={selectedTab === tab.key ? '#3b82f6' : '#6b7280'}
           />

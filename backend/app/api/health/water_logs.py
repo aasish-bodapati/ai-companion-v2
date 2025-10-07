@@ -115,7 +115,16 @@ def create_water_log(
     water_log_in: WaterLogCreate
 ):
     """Create a new water log entry"""
+    import time
+    start_time = time.time()
+    print(f"🚰 [BACKEND] Starting water log creation at {time.strftime('%H:%M:%S')}")
+    
     log = water_log.create_with_user(db, obj_in=water_log_in, user_id=current_user.id)
+    
+    end_time = time.time()
+    duration = (end_time - start_time) * 1000  # Convert to milliseconds
+    print(f"🚰 [BACKEND] Water log creation completed in {duration:.2f}ms")
+    
     return HealthLogResponseFormatter.format_water_log_response(log)
 
 @router.post("/quick-log")

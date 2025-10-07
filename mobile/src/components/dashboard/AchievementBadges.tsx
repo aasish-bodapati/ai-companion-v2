@@ -7,8 +7,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
-import { isFeatureEnabled } from '../../config/featureFlags';
 // Removed MigrationHelpers import
 
 interface Achievement {
@@ -28,7 +26,7 @@ interface AchievementBadgesProps {
   achievements?: Achievement[];
   onAchievementPress?: (achievement: Achievement) => void;
   onViewAll?: () => void;
-  style?: any;
+  style?: object;
 }
 
 const defaultAchievements: Achievement[] = [
@@ -164,7 +162,7 @@ export default function AchievementBadges({
                   ]}
                 >
                   <Ionicons
-                    name={achievement.icon as any}
+                    name={achievement.icon as keyof typeof Ionicons.glyphMap}
                     size={24}
                     color={achievement.unlocked ? achievement.color : '#9ca3af'}
                   />

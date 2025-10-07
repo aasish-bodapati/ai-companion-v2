@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import DashboardHeaderCard from '../components/dashboard/DashboardHeaderCard';
 import WelcomeCard from '../components/dashboard/WelcomeCard';
 import BodyTypeCard from '../components/shared/BodyTypeCard';
-import WaterLoggingCard from '../components/health/WaterLoggingCard';
+import SimpleWaterLoggingCard from '../components/health/SimpleWaterLoggingCard';
 import DailyStreaks from '../components/dashboard/DailyStreaks';
 import AchievementBadges from '../components/dashboard/AchievementBadges';
 import PredictiveInsights from '../components/dashboard/PredictiveInsights';
@@ -26,11 +26,14 @@ export default function DashboardModule({
   onNavigate,
 }: DashboardModuleProps) {
   const { user } = useAuth();
+  // Re-enable useProgressMetricsData hook
   const progressData = useProgressMetricsData();
+  // Re-enable Zustand hooks with shallow comparison
   const { achievements } = useAchievements();
   const { streaks } = useStreaks();
   const aiInsights = useAIInsights();
   const responsive = useResponsive();
+  // Re-enable useBodyTypeGoalMetrics with fixes
   const bodyTypeMetrics = useBodyTypeGoalMetrics();
 
   const quickStats = [
@@ -107,8 +110,8 @@ export default function DashboardModule({
           headerActions={headerActions}
         />
 
-        {/* Water Logging */}
-        <WaterLoggingCard />
+              {/* Water Logging - Simplified version */}
+              <SimpleWaterLoggingCard />
 
         {/* Body Type Goal */}
         <BodyTypeCard

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -77,6 +77,7 @@ export default function UnifiedWorkoutLogger({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(false);
+  const isLoadingRef = useRef(false);
 
   const steps = [
     { title: 'Workout Details', icon: 'fitness' },
@@ -95,9 +96,24 @@ export default function UnifiedWorkoutLogger({
   }, [visible, initialWorkout]);
 
   const loadExercises = async () => {
+    // Prevent multiple simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('Exercise loading already in progress, skipping');
+      return;
+    }
+    
     try {
+      isLoadingRef.current = true;
       setLoading(true);
-      const data = await fitnessService.getExercises();
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Exercise loading timeout')), 10000)
+      );
+      
+      const dataPromise = fitnessService.getExercises();
+      const data = await Promise.race([dataPromise, timeoutPromise]) as any;
+      
       // Map ExerciseType to Exercise format
       const mappedExercises: Exercise[] = data.map(exercise => ({
         id: exercise.id,
@@ -112,8 +128,11 @@ export default function UnifiedWorkoutLogger({
       setExercises(mappedExercises);
     } catch (error) {
       console.error('Error loading exercises:', error);
+      // Set empty array as fallback to prevent UI issues
+      setExercises([]);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 

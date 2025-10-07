@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,6 @@ import { aiInsightsService, ProgressAnalysis } from '../../services/aiInsightsSe
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
 
-const { width } = Dimensions.get('window');
-
 interface ProgressChartsProps {
   refreshTrigger?: number;
 }
@@ -24,7 +22,7 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
-  const loadAnalysis = async () => {
+  const loadAnalysis = useCallback(async () => {
     try {
       setLoading(true);
       const data = await aiInsightsService.getProgressAnalysis(selectedPeriod);
@@ -46,11 +44,11 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedPeriod, transformApiResponseToAnalysis]);
 
   useEffect(() => {
     loadAnalysis();
-  }, [selectedPeriod, refreshTrigger]);
+  }, [selectedPeriod, refreshTrigger, loadAnalysis]);
 
   const periods = [
     { key: 'week', label: 'Week', icon: 'calendar-outline' },
@@ -78,10 +76,10 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
   };
 
   // Transform API response to expected analysis format
-  const transformApiResponseToAnalysis = (apiData: any): ProgressAnalysis => {
+  const transformApiResponseToAnalysis = (apiData: unknown): ProgressAnalysis => {
     // If it's an array of trends, extract the first one or create a default structure
     if (Array.isArray(apiData) && apiData.length > 0) {
-      const trend = apiData[0];
+      const trend = apiData[0] as { change_percentage?: number; interpretation?: string };
       return {
         period: selectedPeriod,
         fitness_trends: {
@@ -171,7 +169,7 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
         <View style={styles.trendHeader}>
           <Text style={styles.trendLabel}>{label}</Text>
           <View style={styles.trendValueContainer}>
-            <Ionicons name={trendIcon as any} size={16} color={trendColor} />
+            <Ionicons name={trendIcon as keyof typeof Ionicons.glyphMap} size={16} color={trendColor} />
             <Text style={[styles.trendValue, { color: trendColor }]}>
               {value > 0 ? '+' : ''}{value}{unit}
             </Text>
@@ -337,7 +335,7 @@ export default function ProgressCharts({ refreshTrigger = 0 }: ProgressChartsPro
             }}
           >
             <Ionicons 
-              name={period.icon as any} 
+              name={period.icon as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={selectedPeriod === period.key ? '#ffffff' : '#6b7280'} 
             />
@@ -496,7 +494,7 @@ const styles = StyleSheet.create({
     borderRadius: COMMON_STYLES.standardRadius,
     padding: 16,
     flex: 1,
-    minWidth: (width - 48) / 2,
+    minWidth: (Dimensions.get('window').width - 48) / 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,

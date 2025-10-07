@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 import { AnalyticsStore, AnalyticsData } from './types';
 import { dashboardService } from '../services/dashboardService';
 
@@ -82,12 +83,12 @@ export const useAnalyticsStore = create<AnalyticsStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useAnalyticsData = () => useAnalyticsStore((state) => state.analyticsData);
-export const useWeeklyActivityData = () => useAnalyticsStore((state) => state.weeklyActivityData);
-export const useAnalyticsLoading = () => useAnalyticsStore((state) => state.loading);
-export const useAnalyticsError = () => useAnalyticsStore((state) => state.error);
-export const useAnalyticsLastUpdated = () => useAnalyticsStore((state) => state.lastUpdated);
+// Selector hooks for better performance with shallow comparison
+export const useAnalyticsData = () => useAnalyticsStore((state) => state.analyticsData, shallow);
+export const useWeeklyActivityData = () => useAnalyticsStore((state) => state.weeklyActivityData, shallow);
+export const useAnalyticsLoading = () => useAnalyticsStore((state) => state.loading, shallow);
+export const useAnalyticsError = () => useAnalyticsStore((state) => state.error, shallow);
+export const useAnalyticsLastUpdated = () => useAnalyticsStore((state) => state.lastUpdated, shallow);
 
 // Action hooks
 export const useAnalyticsActions = () => useAnalyticsStore((state) => ({

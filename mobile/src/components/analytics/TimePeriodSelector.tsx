@@ -26,7 +26,6 @@ export default function TimePeriodSelector({
   ];
 
   const getPeriodLabel = (period: TimePeriod) => {
-    const now = new Date();
     switch (period) {
       case 'week':
         return 'This Week';
@@ -67,7 +66,7 @@ export default function TimePeriodSelector({
             activeOpacity={0.7}
           >
             <Ionicons 
-              name={period.icon as any} 
+              name={period.icon as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={selectedPeriod === period.key ? '#ffffff' : '#6b7280'} 
             />

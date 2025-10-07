@@ -8,12 +8,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { useAuth } from '../../contexts/AuthContext';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
 
 export default function BodyTypeProgressCard() {
-  const { user } = useAuth();
   const navigation = useNavigation();
   const [bodyTypeGoal, setBodyTypeGoal] = useState<BodyTypeGoal | null>(null);
   const [userAttributes, setUserAttributes] = useState<UserAttributes | null>(null);
@@ -48,7 +46,7 @@ export default function BodyTypeProgressCard() {
         });
       }
       
-    } catch (error) {
+    } catch {
       // Handle error silently for dashboard card
     } finally {
       setLoading(false);
@@ -58,8 +56,6 @@ export default function BodyTypeProgressCard() {
   const {
     dailyResult,
     weeklyResult,
-    loading: scoringLoading,
-    isReady,
   } = useBodyTypeScoring({
     bodyTypeGoal,
     userAttributes,
@@ -129,7 +125,7 @@ export default function BodyTypeProgressCard() {
         <View style={styles.goalInfo}>
           <Text style={styles.goalName}>{bodyTypeGoal.name}</Text>
           <View style={styles.alignmentIndicator}>
-            <Ionicons name={alignmentIcon.name as any} size={16} color={alignmentColor} />
+            <Ionicons name={alignmentIcon.name as keyof typeof Ionicons.glyphMap} size={16} color={alignmentColor} />
             <Text style={[styles.alignmentText, { color: alignmentColor }]}>
               {dailyResult?.alignment || 'Neutral'}
             </Text>

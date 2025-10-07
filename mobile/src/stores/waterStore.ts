@@ -57,7 +57,13 @@ export const useWaterStore = create<WaterStore>()(
 
       // Data refresh
       refreshWaterData: async () => {
-        const { setLoading, setError, setTodayStats, setRecentWaterLogs } = get();
+        const { setLoading, setError, setTodayStats, setRecentWaterLogs, loading } = get();
+        
+        // Prevent multiple simultaneous calls
+        if (loading) {
+          console.log('🔄 refreshWaterData already in progress, skipping');
+          return;
+        }
         
         try {
           setLoading(true);
@@ -232,14 +238,14 @@ export const useWaterStore = create<WaterStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useWaterTodayStats = () => useWaterStore((state) => state.todayStats);
-export const useWaterWeekStats = () => useWaterStore((state) => state.weekStats);
-export const useRecentWaterLogs = () => useWaterStore((state) => state.recentWaterLogs);
-export const useWaterGoal = () => useWaterStore((state) => state.waterGoal);
-export const useWaterLoading = () => useWaterStore((state) => state.loading);
-export const useWaterError = () => useWaterStore((state) => state.error);
-export const useWaterLastUpdated = () => useWaterStore((state) => state.lastUpdated);
+// Selector hooks for better performance with shallow comparison
+export const useWaterTodayStats = () => useWaterStore((state) => state.todayStats, shallow);
+export const useWaterWeekStats = () => useWaterStore((state) => state.weekStats, shallow);
+export const useRecentWaterLogs = () => useWaterStore((state) => state.recentWaterLogs, shallow);
+export const useWaterGoal = () => useWaterStore((state) => state.waterGoal, shallow);
+export const useWaterLoading = () => useWaterStore((state) => state.loading, shallow);
+export const useWaterError = () => useWaterStore((state) => state.error, shallow);
+export const useWaterLastUpdated = () => useWaterStore((state) => state.lastUpdated, shallow);
 
 // Actions selector
 export const useWaterActions = () => useWaterStore(

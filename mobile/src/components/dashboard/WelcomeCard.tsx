@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import { COLORS, FONT_SIZE } from '../../theme/constants';
 import { useWeather } from '../../hooks/useWeather';
 import weatherService from '../../services/weatherService';
 import WeatherDetailsModal from '../weather/WeatherDetailsModal';
@@ -22,7 +22,7 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showWeatherModal, setShowWeatherModal] = useState(false);
   const { weather, loading: weatherLoading, error: weatherError } = useWeather();
-  const responsive = useResponsive();
+  // const responsive = useResponsive();
 
   // Update time every minute
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
         <View style={styles.textContent}>
           <View style={styles.greetingRow}>
             <Ionicons 
-              name={greeting.icon as any} 
+              name={greeting.icon as keyof typeof Ionicons.glyphMap} 
               size={24} 
               color={greeting.color} 
               style={styles.icon}
@@ -143,7 +143,7 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
             <View style={styles.weatherContainer}>
               <View style={styles.weatherRow}>
                 <Ionicons 
-                  name={weatherIcon as any} 
+                  name={weatherIcon as keyof typeof Ionicons.glyphMap} 
                   size={20} 
                   color={weatherColor} 
                 />

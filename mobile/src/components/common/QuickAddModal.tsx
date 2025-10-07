@@ -11,8 +11,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { routineService } from '../../services/routineService';
-import { useToast } from '../../contexts/ToastContext';
 
 interface QuickAddModalProps {
   visible: boolean;
@@ -31,7 +29,6 @@ export default function QuickAddModal({
   onLogMeal,
   onLogTodaysWorkout,
 }: QuickAddModalProps) {
-  const { showToast } = useToast();
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
 

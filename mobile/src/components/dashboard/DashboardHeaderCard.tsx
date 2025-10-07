@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import { COLORS, FONT_SIZE } from '../../theme/constants';
 import useResponsive from '../../hooks/useResponsive';
 
 interface DashboardHeaderCardProps {
@@ -135,7 +135,7 @@ export default function DashboardHeaderCard({
                   activeOpacity={0.7}
                 >
                   <Ionicons 
-                    name={action.icon as any} 
+                    name={action.icon as keyof typeof Ionicons.glyphMap} 
                     size={responsive.breakpoints.isTablet ? 24 : 20} 
                     color={action.color || COLORS.text.secondary} 
                   />
@@ -158,7 +158,7 @@ export default function DashboardHeaderCard({
               <View key={index} style={dynamicStyles.quickStat}>
                 <View style={[dynamicStyles.quickStatIcon, { backgroundColor: stat.color + '20' }]}>
                   <Ionicons 
-                    name={stat.icon as any} 
+                    name={stat.icon as keyof typeof Ionicons.glyphMap} 
                     size={responsive.breakpoints.isTablet ? 22 : 18} 
                     color={stat.color} 
                   />

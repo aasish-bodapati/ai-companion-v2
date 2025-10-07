@@ -91,12 +91,12 @@ export const useFitnessStore = create<FitnessStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useFitnessTodayStats = () => useFitnessStore((state) => state.todayStats);
-export const useFitnessWeekStats = () => useFitnessStore((state) => state.weekStats);
-export const useRecentWorkouts = () => useFitnessStore((state) => state.recentWorkouts);
-export const useFitnessLoading = () => useFitnessStore((state) => state.loading);
-export const useFitnessError = () => useFitnessStore((state) => state.error);
+// Selector hooks for better performance with shallow comparison
+export const useFitnessTodayStats = () => useFitnessStore((state) => state.todayStats, shallow);
+export const useFitnessWeekStats = () => useFitnessStore((state) => state.weekStats, shallow);
+export const useRecentWorkouts = () => useFitnessStore((state) => state.recentWorkouts, shallow);
+export const useFitnessLoading = () => useFitnessStore((state) => state.loading, shallow);
+export const useFitnessError = () => useFitnessStore((state) => state.error, shallow);
 export const useFitnessLastUpdated = () => useFitnessStore((state) => state.lastUpdated);
 
 // Action hooks with shallow comparison to prevent infinite loops

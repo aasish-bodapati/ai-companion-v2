@@ -91,12 +91,12 @@ export const useNutritionStore = create<NutritionStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useNutritionTodayStats = () => useNutritionStore((state) => state.todayStats);
-export const useNutritionWeekStats = () => useNutritionStore((state) => state.weekStats);
-export const useRecentMeals = () => useNutritionStore((state) => state.recentMeals);
-export const useNutritionLoading = () => useNutritionStore((state) => state.loading);
-export const useNutritionError = () => useNutritionStore((state) => state.error);
+// Selector hooks for better performance with shallow comparison
+export const useNutritionTodayStats = () => useNutritionStore((state) => state.todayStats, shallow);
+export const useNutritionWeekStats = () => useNutritionStore((state) => state.weekStats, shallow);
+export const useRecentMeals = () => useNutritionStore((state) => state.recentMeals, shallow);
+export const useNutritionLoading = () => useNutritionStore((state) => state.loading, shallow);
+export const useNutritionError = () => useNutritionStore((state) => state.error, shallow);
 export const useNutritionLastUpdated = () => useNutritionStore((state) => state.lastUpdated);
 
 // Action hooks with shallow comparison to prevent infinite loops

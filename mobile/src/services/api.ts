@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000';
+const API_URL = 'http://192.168.1.5:8000';
 const API_BASE_URL = `${API_URL}/api/v1`;
 
 logger.api('API_URL:', API_URL);

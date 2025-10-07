@@ -113,6 +113,10 @@ class CRUDWaterLog(GenericHealthLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUp
 
     def create_with_user(self, db: Session, *, obj_in: WaterLogCreate, user_id: int) -> WaterLog:
         """Create a water log for a user with water-specific logic"""
+        import time
+        start_time = time.time()
+        print(f"🚰 [CRUD] Starting water log CRUD operations at {time.strftime('%H:%M:%S')}")
+        
         # Calculate ounces if not provided
         if obj_in.amount_oz is None:
             obj_in.amount_oz = obj_in.amount_ml * 0.033814
@@ -131,8 +135,18 @@ class CRUDWaterLog(GenericHealthLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUp
         
         db_obj = self.model(**filtered_data)
         db.add(db_obj)
+        
+        db_commit_start = time.time()
         db.commit()
+        db_commit_end = time.time()
+        print(f"🚰 [CRUD] Database commit took {(db_commit_end - db_commit_start) * 1000:.2f}ms")
+        
         db.refresh(db_obj)
+        
+        end_time = time.time()
+        duration = (end_time - start_time) * 1000
+        print(f"🚰 [CRUD] Water log CRUD operations completed in {duration:.2f}ms")
+        
         return db_obj
 
 # Create instance

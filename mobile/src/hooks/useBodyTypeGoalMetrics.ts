@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { nutritionService } from '../services/nutritionService';
 import { fitnessService } from '../services/fitnessService';
@@ -61,18 +61,20 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     suggestions: [],
     loading: true,
   });
+  const isLoadingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
-  useEffect(() => {
-    // Defer loading to reduce initial API calls
-    const timer = setTimeout(() => {
-      loadBodyTypeMetrics();
-    }, 1000); // Load after 1 second delay
-    
-    return () => clearTimeout(timer);
-  }, [user, loadBodyTypeMetrics]); // Include loadBodyTypeMetrics dependency
+  console.log('🎯 [BODY TYPE METRICS] Hook called, user:', user?.id);
 
   const loadBodyTypeMetrics = useCallback(async () => {
+    if (isLoadingRef.current) {
+      console.log('🎯 [BODY TYPE METRICS] Already loading, skipping');
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
+      console.log('🎯 [BODY TYPE METRICS] loadBodyTypeMetrics called');
       setMetrics(prev => ({ ...prev, loading: true }));
       
       // Get today's date in user's timezone
@@ -142,8 +144,34 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     } catch (error) {
       console.error('🎯 [BODY TYPE METRICS] Error loading metrics:', error);
       setMetrics(prev => ({ ...prev, loading: false }));
+    } finally {
+      isLoadingRef.current = false;
     }
-  }, [user]); // Add dependencies to prevent infinite loop
+  }, [user?.id]); // Add user?.id as dependency
+
+  useEffect(() => {
+    console.log('🎯 [BODY TYPE METRICS] useEffect called, user:', user?.id);
+    if (!user?.id) return;
+    
+    // Prevent multiple calls if already loading or already initialized
+    if (isLoadingRef.current || hasInitializedRef.current) {
+      console.log('🎯 [BODY TYPE METRICS] Already loading or initialized, skipping useEffect');
+      return;
+    }
+    
+    // Mark as initialized
+    hasInitializedRef.current = true;
+    
+    // Add a longer delay to prevent frequent calls
+    const timer = setTimeout(() => {
+      loadBodyTypeMetrics();
+    }, 2000); // Load after 2 second delay
+    
+    return () => {
+      console.log('🎯 [BODY TYPE METRICS] useEffect cleanup');
+      clearTimeout(timer);
+    };
+  }, [user?.id]); // Only depend on user?.id to prevent infinite loop
 
   const calculateDailyScore = async (nutrition: NutritionLog[], fitness: FitnessLog[], waterStats: WaterStats | null): Promise<number> => {
     let score = 0;

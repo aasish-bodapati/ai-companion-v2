@@ -44,12 +44,12 @@ export interface WaterLogSummary {
 }
 
 class WaterService extends GenericLogService<WaterLog> {
-  protected endpoint = '/health/water-logs';
+  protected endpoint = '/health/water-logs/';
 
   // Get water logs for a specific number of days
   async getWaterLogs(days: number = 7): Promise<WaterLog[]> {
     return this.makeRequest(
-      () => apiClient.get(`${this.endpoint}/?days=${days}`),
+      () => apiClient.get(`${this.endpoint}?days=${days}`),
       'WATER SERVICE - getWaterLogs'
     );
   }
@@ -57,7 +57,7 @@ class WaterService extends GenericLogService<WaterLog> {
   // Get today's water logs
   async getTodaysWaterLogs(): Promise<WaterLog[]> {
     return this.makeRequest(
-      () => apiClient.get(`${this.endpoint}/today`),
+      () => apiClient.get(`${this.endpoint}today`),
       'WATER SERVICE - getTodaysWaterLogs'
     );
   }
@@ -65,7 +65,7 @@ class WaterService extends GenericLogService<WaterLog> {
   // Get water intake statistics for today
   async getWaterStats(): Promise<WaterLogStats> {
     return this.makeRequest(
-      () => apiClient.get(`${this.endpoint}/stats`),
+      () => apiClient.get(`${this.endpoint}stats`),
       'WATER SERVICE - getWaterStats'
     );
   }
@@ -78,7 +78,7 @@ class WaterService extends GenericLogService<WaterLog> {
   // Quick log water intake
   async quickLogWater(amount_ml: number): Promise<{ message: string; log_entry: WaterLog; stats: WaterLogStats }> {
     return this.makeRequest(
-      () => apiClient.post(`${this.endpoint}/quick-log?amount_ml=${amount_ml}`),
+      () => apiClient.post(`${this.endpoint}quick-log?amount_ml=${amount_ml}`),
       'WATER SERVICE - quickLogWater'
     );
   }

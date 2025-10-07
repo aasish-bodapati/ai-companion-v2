@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -33,9 +33,9 @@ export default function BodyTypeScoringDashboard({
 
   useEffect(() => {
     calculateScores();
-  }, [dailyLog, weeklyLog]);
+  }, [dailyLog, weeklyLog, calculateScores]);
 
-  const calculateScores = async () => {
+  const calculateScores = useCallback(async () => {
     setLoading(true);
     try {
       if (dailyLog) {
@@ -47,12 +47,12 @@ export default function BodyTypeScoringDashboard({
         const result = scoringService.scoreWeeklyProgress(weeklyLog);
         setWeeklyResult(result);
       }
-    } catch (error) {
+    } catch {
       // Silent error handling
     } finally {
       setLoading(false);
     }
-  };
+  }, [dailyLog, weeklyLog, scoringService]);
 
   const getAlignmentIcon = (alignment: string) => {
     switch (alignment) {
@@ -91,7 +91,7 @@ export default function BodyTypeScoringDashboard({
         <View style={styles.scoreHeader}>
           <Text style={styles.scoreTitle}>{title}</Text>
           <View style={[styles.alignmentBadge, { backgroundColor: alignmentColor + '20' }]}>
-            <Ionicons name={alignmentIcon.name as any} size={16} color={alignmentColor} />
+            <Ionicons name={alignmentIcon.name as keyof typeof Ionicons.glyphMap} size={16} color={alignmentColor} />
             <Text style={[styles.alignmentText, { color: alignmentColor }]}>
               {result.alignment.toUpperCase()}
             </Text>
