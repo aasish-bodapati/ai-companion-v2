@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { NutritionStore, NutritionStats, MealLog } from './types';
+import { NutritionStore } from './types';
 import { nutritionService } from '../services/nutritionService';
 
 // Initial state

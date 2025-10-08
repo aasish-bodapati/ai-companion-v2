@@ -10,7 +10,7 @@ export interface StepData {
 
 class StepTrackingService {
   private isTracking = false;
-  private subscription: any = null;
+  private subscription: { remove: () => void } | null = null;
   private currentSteps = 0;
   private lastUpdateTime = 0;
   private readonly STORAGE_KEY = 'step_tracking_data';
@@ -50,7 +50,6 @@ class StepTrackingService {
       // Get initial step count for today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const startOfDay = today.getTime();
 
       // Start pedometer subscription
       this.subscription = Pedometer.watchStepCount((result) => {

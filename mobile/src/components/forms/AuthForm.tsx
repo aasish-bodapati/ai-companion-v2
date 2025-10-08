@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import FormLayout from '../ui/FormLayout';
 import FormSection from '../ui/FormSection';
 import FormField from '../ui/FormField';
-import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { FormValidator, LoginRules, RegistrationRules } from '../../utils/formValidation';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';

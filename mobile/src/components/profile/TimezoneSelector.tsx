@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient } from '../../services/api';
@@ -56,7 +55,7 @@ export default function TimezoneSelector({ currentTimezone, onTimezoneChange }: 
       } else {
         throw new Error('Failed to update timezone');
       }
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to update timezone. Please try again.');
     } finally {

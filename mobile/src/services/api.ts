@@ -1,5 +1,4 @@
 import axios from 'axios';
-import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
 
@@ -23,14 +22,9 @@ export const apiClient = axios.create({
 // Request interceptor for adding auth tokens if needed
 apiClient.interceptors.request.use(
   async config => {
-    // Only log requests in development mode
-    if (__DEV__) {
+    // Only log important requests in development mode
+    if (__DEV__ && config.url?.includes('/login') || config.url?.includes('/register')) {
       logger.api('Making request to:', config.url, 'Method:', config.method);
-      
-      // Log request body for POST requests
-      if (config.method === 'post' && config.data) {
-        logger.api('Request body size:', JSON.stringify(config.data).length, 'characters');
-      }
     }
     
     // Add auth token for non-public endpoints
@@ -44,14 +38,13 @@ apiClient.interceptors.request.use(
         
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
-          if (__DEV__) {
-            logger.api('Added token to request');
-          }
-        } else if (!token && __DEV__) {
-          logger.warn('No token found for request:', config.url);
+          console.log('🔐 [API] Added auth token for request to:', config.url);
+          console.log('🔐 [API] Token being sent:', token.substring(0, 50) + '...');
+        } else if (!token) {
+          console.warn('🔐 [API] No auth token found for request to:', config.url);
         }
       } catch (error) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
+        console.error('🔐 [API] Error getting auth token:', error);
       }
     }
     
@@ -66,21 +59,34 @@ apiClient.interceptors.request.use(
 // Response interceptor for handling errors
 apiClient.interceptors.response.use(
   response => {
-    // Only log successful responses in development
-    if (__DEV__) {
+    // Only log important responses in development
+    if (__DEV__ && (response.config.url?.includes('/login') || response.config.url?.includes('/register'))) {
       logger.api('Response received:', response.status, response.config.url);
     }
     return response;
   },
-  error => {
-    // Log all errors for debugging registration issues
-    console.log('🔍 [API CLIENT] Response error:', {
-      status: error.response?.status,
-      data: error.response?.data,
-      message: error.message,
-      code: error.code,
-      url: error.config?.url
-    });
+  async error => {
+    // Log authentication errors specifically
+    if (error.response?.status === 401) {
+      console.error('🔐 [API CLIENT] Authentication error:', {
+        status: error.response?.status,
+        message: error.message,
+        url: error.config?.url,
+        headers: error.config?.headers
+      });
+      
+      // Token expired - log the issue but don't clear tokens automatically
+      // Let the AuthContext handle token validation and logout
+      console.log('🔐 [API CLIENT] Token expired - AuthContext will handle logout');
+    }
+    // Only log important errors
+    else if (error.response?.status >= 500 || error.config?.url?.includes('/login') || error.config?.url?.includes('/register')) {
+      console.error('❌ [API CLIENT] Error:', {
+        status: error.response?.status,
+        message: error.message,
+        url: error.config?.url
+      });
+    }
     
     // Handle different error types more gracefully - NO CONSOLE LOGGING
     // This prevents technical errors from showing in Expo Go notifications

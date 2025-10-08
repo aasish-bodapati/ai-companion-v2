@@ -5,8 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
-  ScrollView,
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +28,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       ]);
       setStats(moodStats);
       setTodaysLog(todaysLogs.length > 0 ? todaysLogs[0] : null);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
@@ -51,7 +49,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
         for (const rating of retryQueue) {
           try {
             await moodService.quickLogMood(rating);
-          } catch (error) {
+          } catch {
           }
         }
         setRetryQueue([]);
@@ -93,7 +91,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       loadStats();
       
       hapticFeedback.success();
-    } catch (error) {
+    } catch (err) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       
@@ -104,7 +102,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
       // This provides a better user experience
       
       // Show a more user-friendly error message
-      const errorMessage = (error as Error).message === 'Request timeout' 
+      const errorMessage = (err as Error).message === 'Request timeout' 
         ? 'Connection is slow. Your mood is saved locally and will sync when connection improves.'
         : 'Connection issue. Your mood is saved locally and will sync when connection improves.';
         

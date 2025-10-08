@@ -37,7 +37,7 @@ export const getModalStyle = (size: 'small' | 'medium' | 'large' = 'medium'): Vi
     large: { ...base, width: '95%', height: '80%' },
   };
   
-  return sizes[size] as any;
+  return sizes[size] as ViewStyle;
 };
 
 /**
@@ -117,7 +117,7 @@ export const getTextStyle = (type: 'primary' | 'secondary' | 'tertiary' | 'headi
     },
   };
   
-  return textStyles[type] as any;
+  return textStyles[type] as TextStyle;
 };
 
 /**

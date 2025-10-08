@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING } from '../../theme/constants';
 import { waterService } from '../../services/waterService';
 
 interface SimpleWaterLoggingCardProps {
@@ -36,14 +35,17 @@ export default function SimpleWaterLoggingCard({ onWaterLogged }: SimpleWaterLog
       setError(null);
       
       const stats = await waterService.getWaterStats();
-      setWaterStats({
+      
+      const processedStats = {
         total_ml_today: stats.total_ml_today || 0,
         goal_ml: stats.goal_ml || 3000,
         progress_percentage: stats.progress_percentage || 0,
         logs_today: stats.logs_today || 0,
-      });
+      };
+      
+      setWaterStats(processedStats);
     } catch (err) {
-      console.error('Error loading water data:', err);
+      console.error('🚰 [SIMPLE WATER CARD] Error loading water data:', err);
       setError('Failed to load water data');
     } finally {
       setLoading(false);
@@ -51,27 +53,15 @@ export default function SimpleWaterLoggingCard({ onWaterLogged }: SimpleWaterLog
   };
 
   const handleQuickLog = async (amount_ml: number) => {
-    console.log('🚰 [WATER LOGGING] handleQuickLog called with amount_ml:', amount_ml);
-    console.log('🚰 [WATER LOGGING] Current waterStats:', waterStats);
-    
     try {
       hapticFeedback.light();
       setLoading(true);
       setError(null);
       
-      console.log('🚰 [WATER LOGGING] Starting optimistic update');
-      
       // Optimistically update the UI first
       const newTotal = waterStats.total_ml_today + amount_ml;
       const newProgress = Math.min((newTotal / waterStats.goal_ml) * 100, 100);
       const newLogs = waterStats.logs_today + 1;
-      
-      console.log('🚰 [WATER LOGGING] Calculated new values:', {
-        newTotal,
-        newProgress,
-        newLogs,
-        goal_ml: waterStats.goal_ml
-      });
       
       setWaterStats(prev => ({
         ...prev,
@@ -80,58 +70,20 @@ export default function SimpleWaterLoggingCard({ onWaterLogged }: SimpleWaterLog
         logs_today: newLogs,
       }));
       
-      console.log('🚰 [WATER LOGGING] UI updated optimistically');
-      
-      // Try the API call with detailed timing logs
-      const startTime = Date.now();
-      console.log('🚰 [WATER API] Starting water log API call at:', new Date().toISOString());
-      console.log('🚰 [WATER API] API URL being used: http://192.168.1.5:8000/api/v1/health/water-logs');
-      console.log('🚰 [WATER API] Request payload:', {
-        amount_ml,
-        timestamp: new Date().toISOString(),
-      });
-      
-                try {
-                  console.log('🚰 [WATER API] Creating timeout promise (3 seconds)');
-                  let timeoutId: NodeJS.Timeout;
-                  const timeoutPromise = new Promise((_, reject) => {
-                    timeoutId = setTimeout(() => {
-                      console.log('🚰 [WATER API] Timeout reached - rejecting promise');
-                      reject(new Error('Request timeout'));
-                    }, 3000);
-                  });
-                  
-                  console.log('🚰 [WATER API] Creating API call promise');
-                  const apiCall = waterService.createWaterLog({
-                    amount_ml,
-                    timestamp: new Date().toISOString(),
-                  });
-                  
-                  console.log('🚰 [WATER API] Racing API call against timeout');
-                  const result = await Promise.race([apiCall, timeoutPromise]);
-                  
-                  // Clear the timeout since API call succeeded
-                  clearTimeout(timeoutId);
-        
-        const endTime = Date.now();
-        const duration = endTime - startTime;
-        console.log('🚰 [WATER API] Water log API call completed successfully in:', duration, 'ms');
+      // Make the API call
+      try {
+        await waterService.createWaterLog({
+          amount_ml,
+          timestamp: new Date().toISOString(),
+        });
         
         hapticFeedback.success();
         onWaterLogged?.();
       } catch (apiError) {
-        const endTime = Date.now();
-        const duration = endTime - startTime;
-        console.warn('🚰 [WATER API] API call failed after:', duration, 'ms');
-        console.warn('🚰 [WATER API] Error details:', {
-          message: apiError.message,
-          name: apiError.name,
-          stack: apiError.stack,
-          code: apiError.code
-        });
+        console.warn('🚰 [WATER API] API call failed:', apiError);
         
         // If API fails, just show a warning but keep the UI change
-        setError(`Water logged locally (API took ${duration}ms)`);
+        setError('Water logged locally (sync pending)');
         
         // Clear the error after 3 seconds
         setTimeout(() => setError(null), 3000);
@@ -210,13 +162,27 @@ export default function SimpleWaterLoggingCard({ onWaterLogged }: SimpleWaterLog
           deleteTimeoutId = setTimeout(() => reject(new Error('Request timeout')), 3000);
         });
         
-        await Promise.race([
-          waterService.deleteWaterLog(mostRecentLog.id),
-          deleteTimeoutPromise
-        ]);
-        
-        // Clear the delete timeout since API call succeeded
-        clearTimeout(deleteTimeoutId);
+        try {
+          await Promise.race([
+            waterService.deleteWaterLog(mostRecentLog.id),
+            deleteTimeoutPromise
+          ]);
+          
+          // Clear the delete timeout since API call succeeded
+          clearTimeout(deleteTimeoutId);
+        } catch (deleteError) {
+          // Clear the delete timeout
+          clearTimeout(deleteTimeoutId);
+          
+          // If it's a 404 error, the log was already deleted, so we can continue
+          if (deleteError?.response?.status === 404) {
+            console.log('💧 Water log already deleted (404), continuing with UI update');
+          } else {
+            // For other errors, revert the optimistic update
+            await loadWaterData();
+            throw deleteError;
+          }
+        }
         
         hapticFeedback.success();
       } catch (apiError) {

@@ -40,6 +40,15 @@ interface WeeklyTrends {
   consistency_score: number;
 }
 
+interface NutritionLogData {
+  total_calories?: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  water_ml?: number;
+  mood_rating?: number;
+}
+
 export default function NutritionOverviewDashboard({
   onLogMeal,
   onViewLogs,
@@ -98,15 +107,18 @@ export default function NutritionOverviewDashboard({
         size: 50
       });
 
-      const todayData = todayLogs.reduce((totals: TodayNutrition, log: any) => ({
-        calories: totals.calories + (log.total_calories || 0),
-        protein_g: totals.protein_g + (log.protein_g || 0),
-        carbs_g: totals.carbs_g + (log.carbs_g || 0),
-        fat_g: totals.fat_g + (log.fat_g || 0),
-        meals_count: totals.meals_count + 1,
-        water_ml: totals.water_ml, // Will be loaded separately
-        mood_rating: totals.mood_rating, // Will be loaded separately
-      }), {
+      const todayData = todayLogs.reduce((totals: TodayNutrition, log: unknown) => {
+        const logData = log as NutritionLogData;
+        return {
+          calories: totals.calories + (logData.total_calories || 0),
+          protein_g: totals.protein_g + (logData.protein_g || 0),
+          carbs_g: totals.carbs_g + (logData.carbs_g || 0),
+          fat_g: totals.fat_g + (logData.fat_g || 0),
+          meals_count: totals.meals_count + 1,
+          water_ml: totals.water_ml, // Will be loaded separately
+          mood_rating: totals.mood_rating, // Will be loaded separately
+        };
+      }, {
         calories: 0,
         protein_g: 0,
         carbs_g: 0,

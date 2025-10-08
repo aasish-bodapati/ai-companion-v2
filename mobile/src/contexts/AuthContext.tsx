@@ -64,11 +64,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setUser(response.data);
         } catch (userError: unknown) {
-          // Silent error handling - no console logging to prevent Expo Go notifications
-          // Clear invalid token
-          await AsyncStorage.removeItem('token');
-          setToken(null);
-          setUser(null);
+          // Don't clear tokens on error during app startup/reload
+          // This prevents the logout issue when reloading Expo Go
+          console.log('🔐 [AUTH CONTEXT] Token validation failed, but keeping session for now');
+          // Set user from stored data instead
+          try {
+            const storedUser = await AsyncStorage.getItem('user');
+            if (storedUser) {
+              setUser(JSON.parse(storedUser));
+            }
+          } catch {
+            // Ignore stored user errors
+          }
         }
         
         // Check onboarding completion status from backend
@@ -109,7 +116,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Login endpoint expects form-encoded data, not JSON
       const formData = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
       
-      console.log('🔍 [AUTH] Login form data:', formData);
       
       const response = await apiClient.post('/login/access-token', formData, {
         headers: {
@@ -207,19 +213,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const register = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
-    console.log('🔍 [AUTH CONTEXT] register called with:', { email, fullName, passwordLength: password.length });
-    
     try {
-      console.log('🔍 [AUTH CONTEXT] Making API call to /register');
       const response = await apiClient.post('/register', {
         email,
         password,
         full_name: fullName,
       });
-      console.log('🔍 [AUTH CONTEXT] Registration API response:', response.data);
       return { success: true };
     } catch (error: unknown) {
-      console.log('🔍 [AUTH CONTEXT] Registration API error:', error);
       
       // Handle specific error cases and show toast notifications
       let errorMessage = 'Registration failed. Please try again later.';
@@ -252,7 +253,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         errorMessage = 'Registration failed. Please try again later.';
       }
       
-      console.log('🔍 [AUTH CONTEXT] Error message to show:', errorMessage);
       
       return { success: false, error: errorMessage };
     }
@@ -317,10 +317,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      console.log('🔍 [AUTH CONTEXT] deleteAccount called');
-      
       const response = await apiClient.delete('/me');
-      console.log('🔍 [AUTH CONTEXT] Delete account response:', response.data);
       
       // Clear local state
       await AsyncStorage.removeItem('token');
@@ -330,7 +327,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       return { success: true };
     } catch (error: unknown) {
-      console.log('🔍 [AUTH CONTEXT] Delete account error:', error);
       
       let errorMessage = 'Failed to delete account. Please try again.';
       

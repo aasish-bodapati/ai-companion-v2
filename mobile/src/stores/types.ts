@@ -65,7 +65,7 @@ export interface MealLog {
   id?: string;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   food_items: {
-    food_item: any;
+    food_item: Record<string, unknown>;
     quantity: number;
     unit: string;
   }[];
@@ -83,7 +83,7 @@ export interface WorkoutStats {
   totalCalories: number;
   averageDuration: number;
   averageCalories: number;
-  workouts: any[];
+  workouts: Record<string, unknown>[];
 }
 
 export interface WorkoutLog {
@@ -129,7 +129,7 @@ export interface AppState {
   streaks: Streak[];
   
   // AI insights
-  aiInsights: any[];
+  aiInsights: Record<string, unknown>[];
 }
 
 export interface NutritionState {
@@ -183,7 +183,7 @@ export interface AppActions {
   setProgressMetrics: (metrics: ProgressMetrics) => void;
   setAchievements: (achievements: Achievement[]) => void;
   setStreaks: (streaks: Streak[]) => void;
-  setAIInsights: (insights: any[]) => void;
+  setAIInsights: (insights: Record<string, unknown>[]) => void;
   updateAchievement: (id: string, unlocked: boolean, progress?: number) => void;
   updateStreak: (type: string, current: number) => void;
   refreshData: () => Promise<void>;
@@ -277,11 +277,12 @@ export interface WaterActions {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   refreshWaterData: () => Promise<void>;
-  quickLogWater: (amount_ml: number) => Promise<any>;
-  createWaterLog: (data: any) => Promise<WaterLog>;
-  updateWaterLogEntry: (id: number, data: any) => Promise<WaterLog>;
+  quickLogWater: (amount_ml: number) => Promise<WaterLog>;
+  createWaterLog: (data: Record<string, unknown>) => Promise<WaterLog>;
+  updateWaterLogEntry: (id: number, data: Record<string, unknown>) => Promise<WaterLog>;
   deleteWaterLogEntry: (id: number) => Promise<void>;
   getWaterLogsForPeriod: (days: number) => Promise<WaterLog[]>;
+  initializeWaterGoal: (gender?: string) => void;
   resetWaterState: () => void;
 }
 

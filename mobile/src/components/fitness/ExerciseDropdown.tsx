@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -43,21 +42,21 @@ export default function ExerciseDropdown({
 
   useEffect(() => {
     filterExercises();
-  }, [allExercises, searchQuery]);
+  }, [allExercises, searchQuery, filterExercises]);
 
   const loadExercises = async () => {
     try {
       setLoading(true);
       const exercises = await fitnessService.getExerciseTypes();
       setAllExercises(exercises);
-    } catch (error: unknown) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
   };
 
-  const filterExercises = () => {
+  const filterExercises = useCallback(() => {
     let filtered = [...allExercises];
 
     // Filter by search term
@@ -112,7 +111,7 @@ export default function ExerciseDropdown({
     }
 
     setFilteredExercises(filtered);
-  };
+  }, [allExercises, searchQuery]);
 
   const handleExerciseSelect = (exercise: Exercise) => {
     onExerciseSelected(exercise);

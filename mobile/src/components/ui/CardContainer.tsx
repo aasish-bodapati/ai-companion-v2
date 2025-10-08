@@ -125,7 +125,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
           >
             {action.icon && (
               <Ionicons
-                name={action.icon as any}
+                name={action.icon as keyof typeof Ionicons.glyphMap}
                 size={16}
                 color={getActionIconColor(action.variant || 'primary', action.disabled || false)}
                 style={styles.actionIcon}

@@ -8,12 +8,10 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
 
-const { width, height } = Dimensions.get('window');
 
 interface FoodItem {
   id: string | number;
@@ -96,7 +94,6 @@ export default function UnifiedNutritionLogger({
     total_fat: 0,
     logged_at: new Date().toISOString(),
   });
-  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
   const [searching, setSearching] = useState(false);
@@ -282,7 +279,6 @@ export default function UnifiedNutritionLogger({
 
 
 
-  const filteredFoodItems = searchQuery.trim().length >= 2 ? searchResults : foodItems;
 
   const renderContent = () => {
     return (
@@ -306,10 +302,10 @@ export default function UnifiedNutritionLogger({
                     backgroundColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color + '10' : '#ffffff',
                   }
                 ]}
-                onPress={() => setMeal(prev => ({ ...prev, meal_type: mealTypeOption.type as any }))}
+                onPress={() => setMeal(prev => ({ ...prev, meal_type: mealTypeOption.type as 'breakfast' | 'lunch' | 'dinner' | 'snack' }))}
               >
                 <Ionicons 
-                  name={mealTypeOption.icon as any} 
+                  name={mealTypeOption.icon as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={mealTypeOption.color} 
                 />

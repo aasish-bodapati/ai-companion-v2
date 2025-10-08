@@ -49,9 +49,6 @@ export default function ProgressTracking({
 }: ProgressTrackingProps) {
   const ProgressRingComponent = ({ ring }: { ring: ProgressRing }) => {
     const percentage = Math.min((ring.current / ring.target) * 100, 100);
-    const circumference = 2 * Math.PI * 45; // radius = 45
-    const strokeDasharray = circumference;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
       <TouchableOpacity
@@ -67,7 +64,7 @@ export default function ProgressTracking({
             }]} />
           </View>
           <View style={styles.ringContent}>
-            <Ionicons name={ring.icon as any} size={20} color={ring.color} />
+            <Ionicons name={ring.icon as keyof typeof Ionicons.glyphMap} size={20} color={ring.color} />
             <Text style={styles.ringValue}>{ring.current}</Text>
             <Text style={styles.ringUnit}>{ring.unit}</Text>
           </View>
@@ -95,7 +92,7 @@ export default function ProgressTracking({
         { backgroundColor: achievement.unlocked ? achievement.color : '#e5e7eb' }
       ]}>
         <Ionicons 
-          name={achievement.icon as any} 
+          name={achievement.icon as keyof typeof Ionicons.glyphMap} 
           size={20} 
           color={achievement.unlocked ? '#ffffff' : '#9ca3af'} 
         />
@@ -145,7 +142,7 @@ export default function ProgressTracking({
       activeOpacity={0.7}
     >
       <View style={[styles.streakIcon, { backgroundColor: streak.color + '20' }]}>
-        <Ionicons name={streak.icon as any} size={24} color={streak.color} />
+        <Ionicons name={streak.icon as keyof typeof Ionicons.glyphMap} size={24} color={streak.color} />
       </View>
       <View style={styles.streakContent}>
         <Text style={styles.streakCount}>{streak.count}</Text>

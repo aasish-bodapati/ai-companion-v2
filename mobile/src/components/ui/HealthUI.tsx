@@ -9,7 +9,7 @@ interface HealthCardProps {
   padding?: 'small' | 'medium' | 'large';
   borderRadius?: 'small' | 'medium' | 'large';
   onPress?: () => void;
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 export function HealthCard({
@@ -76,7 +76,7 @@ interface HealthIconButtonProps {
   backgroundColor?: string;
   onPress: () => void;
   disabled?: boolean;
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 export function HealthIconButton({
@@ -100,7 +100,7 @@ export function HealthIconButton({
       activeOpacity={0.7}
     >
       <Ionicons 
-        name={icon as any} 
+        name={icon as keyof typeof Ionicons.glyphMap} 
         size={size} 
         color={disabled ? '#9ca3af' : color} 
       />
@@ -113,7 +113,7 @@ interface HealthBadgeProps {
   text: string;
   variant?: 'default' | 'success' | 'warning' | 'error' | 'info';
   size?: 'small' | 'medium' | 'large';
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 export function HealthBadge({
@@ -157,7 +157,7 @@ interface HealthDividerProps {
   orientation?: 'horizontal' | 'vertical';
   thickness?: number;
   color?: string;
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 export function HealthDivider({
@@ -185,7 +185,7 @@ interface HealthSkeletonProps {
   width?: number | string;
   height?: number;
   borderRadius?: number;
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 export function HealthSkeleton({

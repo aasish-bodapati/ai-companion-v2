@@ -16,6 +16,19 @@ import { nutritionService, NutritionLog } from '../../services/nutritionService'
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
 
+interface FoodItem {
+  id?: string;
+  food_id?: string;
+  food_name: string;
+  quantity: number;
+  quantity_unit: string;
+  quantity_grams: number;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
 interface NutritionLogsViewProps {
   onRefresh?: () => void;
 }
@@ -33,7 +46,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editFoodItems, setEditFoodItems] = useState<{id: string, quantity: number, quantity_unit: string}[]>([]);
-  const [editingSingleFood, setEditingSingleFood] = useState<{logId: number, foodItem: any} | null>(null);
+  const [editingSingleFood, setEditingSingleFood] = useState<{logId: number, foodItem: unknown} | null>(null);
   const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState(new Date());
   // Removed unused showDatePicker
@@ -83,20 +96,20 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       
       // Sort logs by time (earliest to latest) for chronological order
       // All dates from backend are in UTC, so we can compare them directly
-      const sortedLogs = logs.sort((a: any, b: any) => {
+      const sortedLogs = logs.sort((a: NutritionLog, b: NutritionLog) => {
         const timeA = new Date(a.meal_date || a.created_at || 0).getTime();
         const timeB = new Date(b.meal_date || b.created_at || 0).getTime();
         return timeA - timeB; // Chronological order: earliest first
       });
       
       setLogs(sortedLogs);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, showToast]);
 
   const loadLogsForDate = async (date: Date) => {
     try {
@@ -114,7 +127,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         size: 50
       });
       setLogs(response || []);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load nutrition logs. Please try again.', 'error');
     } finally {
@@ -161,7 +174,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   // Removed unused handleEditLog function
 
-  const handleEditSingleFood = (logId: number, foodItem: any) => {
+  const handleEditSingleFood = (logId: number, foodItem: unknown) => {
     setEditingSingleFood({ logId, foodItem });
     setEditFoodItems([{
       id: `${logId}-${foodItem.food_id || foodItem.id}`,
@@ -192,7 +205,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         const originalFat = foodItem.fat_g / (foodItem.quantity || 1);
 
         // Parse food_items from JSON string
-        let foodItems = [];
+        let foodItems: FoodItem[] = [];
         try {
           if (log.food_items) {
             if (typeof log.food_items === 'string') {
@@ -201,13 +214,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
               foodItems = log.food_items;
             }
           }
-        } catch (_error) {
+        } catch {
           console.error('Error parsing food_items:', error);
           foodItems = [];
         }
 
         // Update the specific food item
-        const updatedFoodItems = foodItems.map((item: any) => {
+        const updatedFoodItems = foodItems.map((item: FoodItem) => {
           if (item.food_id === foodItem.food_id || item.id === foodItem.id) {
             return {
               ...item,
@@ -221,10 +234,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           return item;
         });
 
-        const totalCalories = updatedFoodItems.reduce((sum: number, item: any) => sum + item.calories, 0);
-        const totalProtein = updatedFoodItems.reduce((sum: number, item: any) => sum + item.protein_g, 0);
-        const totalCarbs = updatedFoodItems.reduce((sum: number, item: any) => sum + item.carbs_g, 0);
-        const totalFat = updatedFoodItems.reduce((sum: number, item: any) => sum + item.fat_g, 0);
+        const totalCalories = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.fat_g, 0);
 
         await nutritionService.updateMeal(logId.toString(), {
           food_items: JSON.stringify(updatedFoodItems),
@@ -235,7 +248,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         });
       } else if (editingLog) {
         // Parse food_items from JSON string
-        let foodItems = [];
+        let foodItems: FoodItem[] = [];
         try {
           if (editingLog.food_items) {
             if (typeof editingLog.food_items === 'string') {
@@ -244,13 +257,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
               foodItems = editingLog.food_items;
             }
           }
-        } catch (_error) {
+        } catch {
           console.error('Error parsing food_items:', error);
           foodItems = [];
         }
 
         // Editing entire meal
-        const updatedFoodItems = foodItems.map((item: any) => {
+        const updatedFoodItems = foodItems.map((item: FoodItem) => {
           const editItem = editFoodItems.find(editItem => 
             editItem.id === `${editingLog.id}-${item.food_id || item.id}`
           );
@@ -274,10 +287,10 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           return item;
         });
 
-        const totalCalories = updatedFoodItems.reduce((sum: number, item: any) => sum + item.calories, 0);
-        const totalProtein = updatedFoodItems.reduce((sum: number, item: any) => sum + item.protein_g, 0);
-        const totalCarbs = updatedFoodItems.reduce((sum: number, item: any) => sum + item.carbs_g, 0);
-        const totalFat = updatedFoodItems.reduce((sum: number, item: any) => sum + item.fat_g, 0);
+        const totalCalories = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.calories, 0);
+        const totalProtein = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.protein_g, 0);
+        const totalCarbs = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.carbs_g, 0);
+        const totalFat = updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + item.fat_g, 0);
 
         await nutritionService.updateMeal(editingLog.id.toString(), {
           food_items: JSON.stringify(updatedFoodItems),
@@ -296,7 +309,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setEditingSingleFood(null);
       setEditFoodItems([]);
       showToast('Meal log updated successfully!', 'success');
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to update meal log. Please try again.', 'error');
     }
@@ -312,7 +325,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     if (!log) return;
 
     // Parse food_items from JSON string
-    let foodItems = [];
+    let foodItems: FoodItem[] = [];
     try {
       if (log.food_items) {
         if (typeof log.food_items === 'string') {
@@ -321,7 +334,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           foodItems = log.food_items;
         }
       }
-    } catch (_error) {
+    } catch {
       console.error('Error parsing food_items:', error);
       foodItems = [];
     }
@@ -344,7 +357,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       if (!log) return;
 
       // Parse food_items from JSON string
-      let foodItems = [];
+      let foodItems: FoodItem[] = [];
       try {
         if (log.food_items) {
           if (typeof log.food_items === 'string') {
@@ -353,12 +366,12 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             foodItems = log.food_items;
           }
         }
-      } catch (_error) {
+      } catch {
         console.error('Error parsing food_items:', error);
         foodItems = [];
       }
 
-      const updatedFoodItems = foodItems.filter((item: any) => 
+      const updatedFoodItems = foodItems.filter((item: FoodItem) => 
         `${log.id}-${item.id || item.food_id || foodItems.indexOf(item)}` !== foodItemId
       );
 
@@ -372,15 +385,15 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         const updatedLog = {
           ...log,
           food_items: updatedFoodItems,
-          total_calories: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.calories || 0), 0),
-          protein_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.protein_g || 0), 0),
-          carbs_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.carbs_g || 0), 0),
-          fat_g: updatedFoodItems.reduce((sum: number, item: any) => sum + (item.fat_g || 0), 0),
+          total_calories: updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + (item.calories || 0), 0),
+          protein_g: updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + (item.protein_g || 0), 0),
+          carbs_g: updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + (item.carbs_g || 0), 0),
+          fat_g: updatedFoodItems.reduce((sum: number, item: FoodItem) => sum + (item.fat_g || 0), 0),
         };
 
         // Update the log in the backend
         await nutritionService.updateMeal(logId.toString(), {
-          food_items: JSON.stringify(updatedFoodItems.map((item: any) => ({
+          food_items: JSON.stringify(updatedFoodItems.map((item: FoodItem) => ({
             food_id: item.id,
             food_name: item.food_name,
             quantity: item.quantity || 1,
@@ -401,7 +414,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         setLogs(prevLogs => prevLogs.map(l => l.id === logId ? updatedLog : l));
         showRapidToast('Food item removed successfully!', 'success');
       }
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to remove food item. Please try again.', 'error');
     } finally {
@@ -418,7 +431,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
       
       showRapidToast('Meal log deleted successfully!', 'success');
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete meal log. Please try again.', 'error');
     } finally {
@@ -448,7 +461,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         hour: '2-digit',
         minute: '2-digit',
       });
-    } catch (_error) {
+    } catch {
       return 'Invalid Time';
     }
   };
@@ -493,7 +506,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
     logs.forEach((log) => {
       // Parse food_items from JSON string
-      let foodItems = [];
+      let foodItems: FoodItem[] = [];
       try {
         if (log.food_items) {
           if (typeof log.food_items === 'string') {
@@ -502,13 +515,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             foodItems = log.food_items;
           }
         }
-      } catch (_error) {
+      } catch {
         console.error('Error parsing food_items:', error);
         foodItems = [];
       }
 
       if (foodItems && foodItems.length > 0) {
-        foodItems.forEach((item: any, index: number) => {
+        foodItems.forEach((item: FoodItem, index: number) => {
           allFoodItems.push({
             id: `${log.id}-${item.id || item.food_id || index}`,
             food_name: item.food_name,
@@ -536,7 +549,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           </Text>
           <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(foodItem.meal_type) }]}>
             <Ionicons 
-              name={getMealTypeIcon(foodItem.meal_type) as any} 
+              name={getMealTypeIcon(foodItem.meal_type) as keyof typeof Ionicons.glyphMap} 
               size={8} 
               color="#ffffff"
               style={styles.badgeIcon}
@@ -730,7 +743,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                 // Editing entire meal
                 (() => {
                   // Parse food_items from JSON string
-                  let foodItems = [];
+                  let foodItems: FoodItem[] = [];
                   try {
                     if (editingLog.food_items) {
                       if (typeof editingLog.food_items === 'string') {
@@ -739,12 +752,12 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                         foodItems = editingLog.food_items;
                       }
                     }
-                  } catch (_error) {
+                  } catch {
                     console.error('Error parsing food_items:', error);
                     foodItems = [];
                   }
 
-                  return foodItems.map((foodItem: any, index: number) => {
+                  return foodItems.map((foodItem: FoodItem, index: number) => {
                     const editItem = editFoodItems.find(item => 
                       item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
                     );

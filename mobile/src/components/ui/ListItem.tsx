@@ -31,7 +31,7 @@ interface ListItemProps {
   badgeColor?: string;
   leftIconColor?: string;
   rightIconColor?: string;
-  style?: any;
+  style?: Record<string, unknown>;
   testID?: string;
 }
 
@@ -90,7 +90,7 @@ export default function ListItem({
     if (leftIcon) {
       return (
         <View style={styles.leftContent}>
-          <Ionicons name={leftIcon as any} size={24} color={leftIconColor} />
+          <Ionicons name={leftIcon as keyof typeof Ionicons.glyphMap} size={24} color={leftIconColor} />
         </View>
       );
     }
@@ -118,7 +118,7 @@ export default function ListItem({
     if (rightIcon) {
       return (
         <View style={styles.rightContent}>
-          <Ionicons name={rightIcon as any} size={20} color={rightIconColor} />
+          <Ionicons name={rightIcon as keyof typeof Ionicons.glyphMap} size={20} color={rightIconColor} />
         </View>
       );
     }

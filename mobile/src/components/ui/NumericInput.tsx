@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TextInputProps,
 } from 'react-native';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
 interface NumericInputProps extends Omit<TextInputProps, 'value' | 'onChangeText'> {
   label?: string;
@@ -20,9 +20,9 @@ interface NumericInputProps extends Omit<TextInputProps, 'value' | 'onChangeText
   max?: number;
   suffix?: string;
   prefix?: string;
-  containerStyle?: any;
-  inputStyle?: any;
-  labelStyle?: any;
+  containerStyle?: Record<string, unknown>;
+  inputStyle?: Record<string, unknown>;
+  labelStyle?: Record<string, unknown>;
 }
 
 export default function NumericInput({

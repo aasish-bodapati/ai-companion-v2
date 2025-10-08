@@ -131,7 +131,7 @@ class NetworkUtils {
       }, { timeout: 3000, retries: 1 });
       
       return response.data !== null;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

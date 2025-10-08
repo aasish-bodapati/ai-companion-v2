@@ -10,7 +10,7 @@ interface FormSectionProps {
   defaultCollapsed?: boolean;
   onToggle?: (collapsed: boolean) => void;
   variant?: 'default' | 'card' | 'outlined';
-  style?: any;
+  style?: Record<string, unknown>;
   testID?: string;
 }
 

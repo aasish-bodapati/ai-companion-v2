@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -31,7 +31,7 @@ export default function UniversalHealthLogger({
   initialData,
 }: UniversalHealthLoggerProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<any>({});
+  const [data, setData] = useState<Record<string, unknown>>({});
   const [loading, setLoading] = useState(false);
 
   const getSteps = () => {
@@ -71,9 +71,9 @@ export default function UniversalHealthLogger({
     if (visible) {
       initializeData();
     }
-  }, [visible, type]);
+  }, [visible, initializeData]);
 
-  const initializeData = () => {
+  const initializeData = useCallback(() => {
     const baseData = {
       date: new Date().toISOString().split('T')[0],
       logged_at: new Date().toISOString(),
@@ -123,7 +123,7 @@ export default function UniversalHealthLogger({
         });
         break;
     }
-  };
+  }, [type, initialData]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -143,7 +143,7 @@ export default function UniversalHealthLogger({
       await onSave(data);
       onClose();
       resetForm();
-    } catch (error) {
+    } catch {
       Alert.alert('Error', `Failed to save ${type}`);
     } finally {
       setLoading(false);
@@ -299,7 +299,7 @@ export default function UniversalHealthLogger({
                   onPress={() => setData((prev: Record<string, unknown>) => ({ ...prev, meal_type: mealType.type }))}
                 >
                   <Ionicons 
-                    name={mealType.icon as any} 
+                    name={mealType.icon as keyof typeof Ionicons.glyphMap} 
                     size={32} 
                     color={mealType.color} 
                   />
@@ -523,7 +523,7 @@ export default function UniversalHealthLogger({
                 { backgroundColor: index <= currentStep ? '#3b82f6' : '#e5e7eb' }
               ]}>
                 <Ionicons 
-                  name={step.icon as any} 
+                  name={step.icon as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={index <= currentStep ? '#ffffff' : '#6b7280'} 
                 />

@@ -11,7 +11,6 @@ import { COLORS, FONT_SIZE } from '../../theme/constants';
 import { useWeather } from '../../hooks/useWeather';
 import weatherService from '../../services/weatherService';
 import WeatherDetailsModal from '../weather/WeatherDetailsModal';
-import useResponsive from '../../hooks/useResponsive';
 
 interface WelcomeCardProps {
   userName?: string;
@@ -22,7 +21,6 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showWeatherModal, setShowWeatherModal] = useState(false);
   const { weather, loading: weatherLoading, error: weatherError } = useWeather();
-  // const responsive = useResponsive();
 
   // Update time every minute
   useEffect(() => {

@@ -1,7 +1,5 @@
 import { apiClient } from './api';
 import { BaseService } from './BaseService';
-import { DebugUtils } from '../utils/debugUtils';
-// Removed MigrationHelpers import
 import { getTodayLocal } from '../utils/dateUtils';
 
 export interface FitnessLog {
@@ -66,7 +64,7 @@ export interface WorkoutCategory {
   description?: string;
   icon?: string;
   color?: string;
-  logging_attributes?: any;
+  logging_attributes?: Record<string, unknown>;
 }
 
 export interface ExerciseData {
@@ -230,7 +228,7 @@ class FitnessService extends BaseService {
     return this.getExerciseTypes();
   }
 
-  async getWorkoutStats(period: string): Promise<any> {
+  async getWorkoutStats(period: string): Promise<WorkoutStats> {
     // Get workout statistics for a given period using the correct endpoint
     const data = await this.makeRequest(
       () => apiClient.get('/health/logging/fitness', {
@@ -241,7 +239,7 @@ class FitnessService extends BaseService {
     return data;
   }
 
-  async getRoutines(): Promise<any[]> {
+  async getRoutines(): Promise<unknown[]> {
     // Get user's fitness routines
     const data = await this.makeRequest(
       () => apiClient.get('/health/simple-routines'),
@@ -250,7 +248,7 @@ class FitnessService extends BaseService {
     return data.routines || data || [];
   }
 
-  async getFitnessStats(period: string = 'week'): Promise<any> {
+  async getFitnessStats(period: string = 'week'): Promise<WorkoutStats> {
     // Get fitness statistics using the correct endpoint
     const data = await this.makeRequest(
       () => apiClient.get('/health/logging/fitness', {
@@ -326,7 +324,7 @@ class FitnessService extends BaseService {
     energy_level?: number;
     activities?: string[];
     notes?: string;
-  }): Promise<any> {
+  }): Promise<unknown> {
     return this.makeRequest(
       () => apiClient.post('/health/logging/mood', {
         ...moodData,

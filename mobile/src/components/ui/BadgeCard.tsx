@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface Badge {
@@ -47,7 +47,7 @@ interface BadgeCardProps {
   // Styling
   variant?: 'default' | 'compact' | 'minimal';
   backgroundColor?: string;
-  style?: any;
+  style?: Record<string, unknown>;
   
   // Layout
   layout?: 'horizontal' | 'vertical';
@@ -156,7 +156,7 @@ export default function BadgeCard({
       <View style={styles.titleContainer}>
         {icon && (
           <Ionicons 
-            name={icon as any} 
+            name={icon as keyof typeof Ionicons.glyphMap} 
             size={20} 
             color={iconColor}
             style={styles.titleIcon}
@@ -175,7 +175,7 @@ export default function BadgeCard({
         >
           {actionIcon && (
             <Ionicons 
-              name={actionIcon as any} 
+              name={actionIcon as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={COLORS.primary.main}
               style={styles.actionIcon}
@@ -208,7 +208,7 @@ export default function BadgeCard({
           <View key={index} style={getBadgeStyle(badge)}>
             {badge.icon && (
               <Ionicons 
-                name={badge.icon as any} 
+                name={badge.icon as keyof typeof Ionicons.glyphMap} 
                 size={12} 
                 color={badge.color || COLORS.text.inverse}
                 style={styles.badgeIcon}
@@ -230,7 +230,7 @@ export default function BadgeCard({
       <View style={getStatusStyle()}>
         {status.icon && (
           <Ionicons 
-            name={status.icon as any} 
+            name={status.icon as keyof typeof Ionicons.glyphMap} 
             size={12} 
             color={COLORS.text.inverse}
             style={styles.statusIcon}

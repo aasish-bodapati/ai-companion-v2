@@ -63,16 +63,8 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    * Create a new log entry
    */
   async createLog(data: BaseLogCreate): Promise<T> {
-    console.log(`🚰 [GENERIC LOG SERVICE] createLog called for ${this.constructor.name}`);
-    console.log(`🚰 [GENERIC LOG SERVICE] Endpoint: ${this.endpoint}`);
-    console.log(`🚰 [GENERIC LOG SERVICE] Data:`, data);
-    
     return this.makeRequest(
-      () => {
-        console.log(`🚰 [GENERIC LOG SERVICE] Making POST request to: ${this.endpoint}`);
-        console.log(`🚰 [GENERIC LOG SERVICE] Request data:`, data);
-        return apiClient.post(this.endpoint, data);
-      },
+      () => apiClient.post(this.endpoint, data),
       `${this.constructor.name} - createLog`
     );
   }

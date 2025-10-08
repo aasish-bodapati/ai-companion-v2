@@ -62,7 +62,7 @@ export class FormValidator {
     return undefined;
   }
 
-  validateForm(data: Record<string, any>): ValidationErrors {
+  validateForm(data: Record<string, unknown>): ValidationErrors {
     const errors: ValidationErrors = {};
 
     Object.keys(this.rules).forEach(fieldName => {

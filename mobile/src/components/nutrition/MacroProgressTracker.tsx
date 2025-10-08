@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionGoalsService, NutritionGoals } from '../../services/nutritionGoalsService';
 
 interface MacroProgressTrackerProps {
   current: {
@@ -25,7 +23,6 @@ interface MacroProgressTrackerProps {
   onMacroPress?: (macro: string) => void;
 }
 
-const { width } = Dimensions.get('window');
 
 export default function MacroProgressTracker({
   current,
@@ -33,30 +30,7 @@ export default function MacroProgressTracker({
   bodyTypeGoal = 'steady',
   onMacroPress,
 }: MacroProgressTrackerProps) {
-  const [goals, setGoals] = useState<NutritionGoals | null>(null);
-  const [progress, setProgress] = useState<{
-    calories: { current: number; target: number; percentage: number };
-    protein_g: { current: number; target: number; percentage: number };
-    carbs_g: { current: number; target: number; percentage: number };
-    fat_g: { current: number; target: number; percentage: number };
-  } | null>(null);
 
-  useEffect(() => {
-    // Load goals from service
-    const nutritionGoals = nutritionGoalsService.getGoals();
-    if (nutritionGoals) {
-      setGoals(nutritionGoals);
-      const progressData = nutritionGoalsService.calculateProgress({
-        calories: current.calories,
-        protein_g: current.protein_g,
-        carbs_g: current.carbs_g,
-        fat_g: current.fat_g,
-        water_ml: 0, // Will be loaded separately
-        meals_count: 0, // Will be loaded separately
-      });
-      setProgress(progressData);
-    }
-  }, [current]);
 
   const getMacroColor = (macro: string) => {
     switch (macro) {

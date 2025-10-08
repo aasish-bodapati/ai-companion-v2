@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Dimensions, TouchableOpacity } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES } from '../../theme/constants';
 
-const { width } = Dimensions.get('window');
 
 interface ProgressLineChartProps {
   title: string;
@@ -107,7 +106,7 @@ export default function ProgressLineChart({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Ionicons 
-            name={icon as any} 
+            name={icon as keyof typeof Ionicons.glyphMap} 
             size={sizeStyles.iconSize} 
             color={color} 
             style={styles.icon}
@@ -120,7 +119,7 @@ export default function ProgressLineChart({
         {trend && trendValue && (
           <View style={styles.trendContainer}>
             <Ionicons 
-              name={getTrendIcon() as any} 
+              name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
               size={14} 
               color={getTrendColor()} 
             />

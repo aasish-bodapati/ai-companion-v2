@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Alert } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
 import { fitnessService, ExerciseType } from '../../services/fitnessService';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { COLORS } from '../../theme/constants';
 import { useToast } from '../../contexts/ToastContext';
 
-interface WorkoutData {
-  duration_minutes: number;
-  exercises: {
-    exercise_name: string;
-    sets?: number;
-    reps?: string;
-    weight_kg?: number;
-    duration_minutes?: number;
-    rest_time?: string;
-    notes?: string;
-  }[];
-  activity_date?: string;
+interface WorkoutExercise {
+  exercise_name?: string;
+  name?: string;
+  sets?: number;
+  reps?: string;
+  weight_kg?: number;
+  duration_minutes?: number;
+  rest_time?: string;
+  notes?: string;
+}
+
+interface TodaysWorkout {
+  exercises?: WorkoutExercise[];
 }
 
 interface WorkoutLoggingModalProps {
   visible: boolean;
   onClose: () => void;
   onWorkoutLogged: () => void;
-  todaysWorkout?: any; // Today's workout from routine
+  todaysWorkout?: TodaysWorkout; // Today's workout from routine
 }
 
 export default function WorkoutLoggingModal({
@@ -38,7 +38,6 @@ export default function WorkoutLoggingModal({
   const [exercises, setExercises] = useState<LoggingItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
-  const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
   const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string | number>>(new Set());
 
@@ -51,16 +50,18 @@ export default function WorkoutLoggingModal({
       if (todaysWorkout) {
         // Pre-populate with today's workout exercises if available
         if (todaysWorkout.exercises) {
-          const workoutExercises = todaysWorkout.exercises.map((ex: any, index: number) => ({
+          const workoutExercises = todaysWorkout.exercises.map((exercise: WorkoutExercise, index: number) => {
+            return {
             id: `workout-${index}`,
-            name: ex.exercise_name || ex.name,
-            sets: ex.sets,
-            reps: ex.reps,
-            weight_kg: ex.weight_kg,
-            duration_minutes: ex.duration_minutes,
-            rest_time: ex.rest_time,
-            notes: ex.notes,
-          }));
+            name: exercise.exercise_name || exercise.name,
+            sets: exercise.sets,
+            reps: exercise.reps,
+            weight_kg: exercise.weight_kg,
+            duration_minutes: exercise.duration_minutes,
+            rest_time: exercise.rest_time,
+            notes: exercise.notes,
+          };
+          });
           setExercises(workoutExercises);
         }
       }
@@ -73,15 +74,12 @@ export default function WorkoutLoggingModal({
       return;
     }
 
-    setSearching(true);
     try {
       const results = await fitnessService.searchExercises(query);
       setSearchResults(results);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       setSearchResults([]);
-    } finally {
-      setSearching(false);
     }
   }, []);
 
@@ -116,7 +114,7 @@ export default function WorkoutLoggingModal({
         console.log('🔍 Fetching latest workout data for exercise:', exercise.name);
         latestWorkout = await fitnessService.getLatestExerciseData(exercise.name);
         console.log('🔍 Raw API response for', exercise.name, ':', latestWorkout);
-      } catch (error) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
       }
       
@@ -155,10 +153,6 @@ export default function WorkoutLoggingModal({
     hapticFeedback.selection();
   }, [exercises]);
 
-  const handleAddItem = useCallback((item: LoggingItemData) => {
-    setExercises(prevExercises => [...prevExercises, item]);
-  }, []);
-
   const handleRemoveItem = useCallback((id: number | string) => {
     setExercises(prevExercises => prevExercises.filter(item => item.id !== id));
     hapticFeedback.light();
@@ -168,10 +162,6 @@ export default function WorkoutLoggingModal({
     setExercises(prevExercises => prevExercises.map(item =>
       item.id === id ? { ...item, ...updates } : item
     ));
-  }, []);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchResults([]);
   }, []);
 
   const isFormValid = () => {
@@ -233,7 +223,7 @@ export default function WorkoutLoggingModal({
     };
   };
 
-  const handleSave = async (data: any) => {
+  const handleSave = async (data: unknown) => {
     if (saving) {
       console.log('🚫 [WORKOUT MODAL] Save already in progress, ignoring duplicate request');
       return;
@@ -246,7 +236,7 @@ export default function WorkoutLoggingModal({
       if (data.exercises) {
         try {
           exercises = typeof data.exercises === 'string' ? JSON.parse(data.exercises) : data.exercises;
-        } catch (error) {
+        } catch {
           // Silent error handling - no console logging to prevent Expo Go notifications
           exercises = [];
         }
@@ -259,17 +249,17 @@ export default function WorkoutLoggingModal({
       // Create separate log entries for each exercise
       console.log('🔍 [WORKOUT MODAL] Creating separate log entries for each exercise');
       
-      const logPromises = exercises.map((exercise: any, index: number) => {
+      const logPromises = exercises.map((exercise: LoggingItemData, index: number) => {
         const exerciseData = {
           activity_type: 'strength_training',
-          activity_name: `${exercise.exercise_name} Workout`,
+          activity_name: `${exercise.name} Workout`,
           duration_minutes: exercise.duration_minutes || 10, // Default 10 minutes per exercise
           exercises: JSON.stringify([exercise]), // Single exercise as array
           notes: exercise.notes || '',
-          activity_date: data.activity_date || new Date().toISOString(),
+          activity_date: (data as { activity_date?: string }).activity_date || new Date().toISOString(),
         };
         
-        console.log(`🔍 [WORKOUT MODAL] Logging exercise ${index + 1}:`, exercise.exercise_name);
+        console.log(`🔍 [WORKOUT MODAL] Logging exercise ${index + 1}:`, exercise.name);
         return fitnessService.logWorkout(exerciseData);
       });
 
@@ -279,45 +269,14 @@ export default function WorkoutLoggingModal({
       console.log('✅ [WORKOUT MODAL] All exercises logged successfully');
       onWorkoutLogged();
       onClose();
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      throw error;
+      throw new Error('Failed to save workout');
     } finally {
       setSaving(false);
     }
   };
 
-  const renderExerciseItem = useCallback((item: LoggingItemData, index: number) => {
-    // Debug logging for exercise data
-    console.log('🔍 WorkoutLoggingModal - Rendering exercise item:', {
-      id: item.id,
-      name: item.name,
-      category: item.category,
-      index
-    });
-    
-    return (
-      <LoggingItem
-        key={`${item.id}-${item.name}`}
-        item={item}
-        itemType="workout"
-        index={index}
-        onUpdate={(id, updates) => {
-          handleUpdateItem(id, updates);
-          // Remove from newly added set when updated
-          setNewlyAddedIds(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(id);
-            return newSet;
-          });
-        }}
-        onRemove={handleRemoveItem}
-        showExerciseDetails={true}
-        isNewlyAdded={newlyAddedIds.has(item.id)}
-        testID={`exercise-item-${index}`}
-      />
-    );
-  }, [handleUpdateItem, handleRemoveItem, newlyAddedIds]);
 
 
   const { showToast } = useToast();
@@ -348,7 +307,7 @@ export default function WorkoutLoggingModal({
       const data = getFormData();
       await handleSave(data);
       showToast('Workout logged successfully!', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to log workout. Please try again.', 'error');
     } finally {
       setSaving(false);
@@ -380,7 +339,7 @@ export default function WorkoutLoggingModal({
                     const categoryInfo = getCategoryInfo(category);
                     return (
                       <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                        <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
+                        <Ionicons name={categoryInfo.icon as keyof typeof Ionicons.glyphMap} size={12} color={categoryInfo.color} />
                         <Text style={[styles.workoutCategoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
                       </View>
                     );
@@ -451,7 +410,7 @@ export default function WorkoutLoggingModal({
                       const categoryInfo = getCategoryInfo(exercise.category);
                       return (
                         <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                          <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
+                          <Ionicons name={categoryInfo.icon as keyof typeof Ionicons.glyphMap} size={12} color={categoryInfo.color} />
                           <Text style={[styles.categoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
                         </View>
                       );

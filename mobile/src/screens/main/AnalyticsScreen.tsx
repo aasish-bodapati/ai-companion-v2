@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
   Text,
   StyleSheet,
   SafeAreaView,
@@ -9,7 +8,6 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useAuth } from '../../contexts/AuthContext';
 import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
 import { profileService } from '../../services/profileService';
 import TimePeriodSelector, { TimePeriod } from '../../components/analytics/TimePeriodSelector';
@@ -18,7 +16,6 @@ import TimeBasedTrends from '../../components/analytics/TimeBasedTrends';
 import ComparisonInsights from '../../components/analytics/ComparisonInsights';
 
 export default function AnalyticsScreen() {
-  const { user } = useAuth();
   const [bodyTypeGoal, setBodyTypeGoal] = useState<BodyTypeGoal | null>(null);
   const [userAttributes, setUserAttributes] = useState<UserAttributes | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('week');

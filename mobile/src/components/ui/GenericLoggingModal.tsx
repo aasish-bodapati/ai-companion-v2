@@ -1,30 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FormModal from './FormModal';
 import SearchInput, { SearchResult } from './SearchInput';
-import LoggingItem, { LoggingItemData } from './LoggingItem';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { BaseLog, LogParams, SearchParams } from '../../types/BaseLog';
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import { BaseLog, SearchParams } from '../../types/BaseLog';
 
 // Generic search service interface
 export interface SearchService<T> {
   search: (query: string, params?: SearchParams) => Promise<T[]>;
-  create: (data: any) => Promise<any>;
+  create: (data: Record<string, unknown>) => Promise<Record<string, unknown>>;
 }
 
 // Generic logging modal props
 export interface GenericLoggingModalProps<T extends BaseLog, S> {
   visible: boolean;
   onClose: () => void;
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: Record<string, unknown>) => Promise<void>;
   title: string;
   subtitle?: string;
   
   // Form configuration
   formType: 'workout' | 'meal' | 'water' | 'mood' | 'custom';
-  initialData?: any;
+  initialData?: Record<string, unknown>;
   
   // Search configuration
   searchService: SearchService<S>;
@@ -44,7 +43,7 @@ export interface GenericLoggingModalProps<T extends BaseLog, S> {
   
   // Form validation
   isFormValid: () => boolean;
-  getFormData: () => any;
+  getFormData: () => Record<string, unknown>;
   
   // Additional form fields (for custom forms)
   additionalFields?: React.ReactNode;
@@ -100,8 +99,6 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
   testID,
 }: GenericLoggingModalProps<T, S>) {
   
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -121,7 +118,7 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
       hapticFeedback.success();
       const formData = getFormData ? getFormData() : {};
       await onSave(formData);
-    } catch (error) {
+    } catch {
       hapticFeedback.error();
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
@@ -136,7 +133,7 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
     <View style={styles.searchSection}>
       <SearchInput
         placeholder={searchPlaceholder}
-        searchResults={searchResults.map((item: any): SearchResult => ({
+        searchResults={searchResults.map((item: Record<string, unknown>): SearchResult => ({
           id: item.id || item.food_code || item.name,
           name: item.name || item.food_name || item.title,
           category: item.category || 'Unknown',
@@ -156,7 +153,7 @@ export default function GenericLoggingModal<T extends BaseLog, S>({
         }))}
         onSearch={onSearch}
         onSelect={(result: SearchResult) => {
-          const selectedItem = searchResults.find((item: any) => 
+          const selectedItem = searchResults.find((item: Record<string, unknown>) => 
             (item.id || item.food_code || item.name) === result.id
           );
           if (selectedItem) {

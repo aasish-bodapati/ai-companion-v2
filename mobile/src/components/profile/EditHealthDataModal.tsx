@@ -133,7 +133,7 @@ export default function EditHealthDataModal({
       onClose();
       
       showToast.success('Success!', 'Health data updated successfully');
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       showToast.error('Error', 'Failed to save health data');
@@ -290,7 +290,7 @@ export default function EditHealthDataModal({
               >
                 <View style={styles.activityContent}>
                   <Ionicons
-                    name={level.icon as any}
+                    name={level.icon as keyof typeof Ionicons.glyphMap}
                     size={24}
                     color={data.activityLevel === level.id ? level.color : '#6b7280'}
                   />

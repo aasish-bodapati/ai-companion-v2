@@ -8,11 +8,8 @@ import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { AppStore, ProgressMetrics, Achievement, Streak } from './types';
 import { dashboardService } from '../services/dashboardService';
-import { fitnessService } from '../services/fitnessService';
-import { nutritionService } from '../services/nutritionService';
 import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService';
 import stepTrackingService from '../services/stepTrackingService';
-import { timezoneDetectionService } from '../services/timezoneDetectionService';
 
 // Initial state
 const initialState = {
@@ -96,9 +93,6 @@ export const useAppStore = create<AppStore>()(
             const stepTrackingAvailable = await stepTrackingService.isAvailable();
             if (stepTrackingAvailable) {
               await stepTrackingService.startTracking();
-              console.log('🚶 Step tracking initialized');
-            } else {
-              console.log('🚶 Step tracking not available on this device');
             }
             
             // Load progress metrics
@@ -143,20 +137,15 @@ export const useAppStore = create<AppStore>()(
 );
 
 // Helper function to get steps
-const getStepsData = async (analyticsData: any): Promise<{ current: number; progress: number }> => {
+const getStepsData = async (analyticsData: Record<string, unknown>): Promise<{ current: number; progress: number }> => {
   try {
     // Try to get today's step data from device first
     const deviceSteps = await stepTrackingService.getTodaySteps();
     const currentDeviceSteps = stepTrackingService.getCurrentSteps();
     const backendSteps = analyticsData?.total_steps || 0;
     
-    console.log('🔍 Step calculation - device today steps:', deviceSteps);
-    console.log('🔍 Step calculation - device current steps:', currentDeviceSteps);
-    console.log('🔍 Step calculation - backend steps:', backendSteps);
-    
     // Use the highest available step count
     const finalSteps = Math.max(deviceSteps, currentDeviceSteps, backendSteps);
-    console.log('🔍 Step calculation - final steps:', finalSteps);
     
     return {
       current: finalSteps,
@@ -178,7 +167,6 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
     // Load analytics data for steps
     const analyticsData = await dashboardService.getAnalyticsData();
     console.log('🔍 Analytics Data:', JSON.stringify(analyticsData, null, 2));
-    console.log('🔍 Steps from analytics:', analyticsData?.total_steps);
     
     // Get steps data
     const stepsData = await getStepsData(analyticsData);
@@ -305,7 +293,7 @@ const loadStreaks = async (): Promise<Streak[]> => {
   return streaksData;
 };
 
-const loadAIInsights = async (): Promise<any[]> => {
+const loadAIInsights = async (): Promise<Record<string, unknown>[]> => {
   try {
     return await predictiveAnalyticsService.getPredictiveInsights();
   } catch (error) {

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
 import FormLayout from '../ui/FormLayout';
 import FormSection from '../ui/FormSection';
 import FormField from '../ui/FormField';
@@ -217,6 +216,4 @@ export default function UserProfileForm({
   );
 }
 
-const styles = StyleSheet.create({
-  // Add any specific styles if needed
-});
+// No styles needed for this component

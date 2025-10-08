@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   Animated,
   ViewStyle,
   Pressable,
@@ -143,7 +142,7 @@ export default function MobileOptimizedCard({
         <View style={styles.headerContent}>
           {icon && (
             <View style={styles.iconContainer}>
-              <Ionicons name={icon as any} size={20} color={iconColor} />
+              <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={20} color={iconColor} />
             </View>
           )}
           <View style={styles.textContainer}>

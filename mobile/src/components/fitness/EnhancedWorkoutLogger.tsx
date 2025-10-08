@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   StyleSheet,
   Alert,
   Image,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -17,9 +16,9 @@ import { fitnessService, ExerciseData } from '../../services/fitnessService';
 import DynamicExerciseForm from './DynamicExerciseForm';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+// import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
-const { width } = Dimensions.get('window');
+// const { width } = Dimensions.get('window');
 
 interface WorkoutData {
   activity_type: string;
@@ -38,7 +37,7 @@ interface EnhancedWorkoutLoggerProps {
   onClose: () => void;
   onWorkoutLogged: () => void;
   initialActivityType?: string;
-  todaysWorkout?: any;
+  todaysWorkout?: unknown;
 }
 
 export default function EnhancedWorkoutLogger({
@@ -59,7 +58,7 @@ export default function EnhancedWorkoutLogger({
   const [saving, setSaving] = useState(false);
 
   // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  // const { categories } = useExerciseCategoriesWithAutoLoad();
 
   const getCategoryForActivityType = (activityType: string): string => {
     // Map activity types to database categories
@@ -69,7 +68,7 @@ export default function EnhancedWorkoutLogger({
     return 'bodyweight'; // Default fallback
   };
   const [currentStep, setCurrentStep] = useState(1);
-  const [showExerciseForm, setShowExerciseForm] = useState(false);
+  // const [showExerciseForm, setShowExerciseForm] = useState(false);
 
   const activityTypes = [
     { key: 'weightlifting', label: 'Weightlifting', icon: 'barbell-outline', color: '#3b82f6' },
@@ -101,9 +100,9 @@ export default function EnhancedWorkoutLogger({
         resetForm();
       }
     }
-  }, [visible, todaysWorkout, initialActivityType]);
+  }, [visible, todaysWorkout, initialActivityType, resetForm]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setActivityType(initialActivityType);
     setActivityName('');
     setDuration('');
@@ -112,7 +111,7 @@ export default function EnhancedWorkoutLogger({
     setExercises([]);
     setPhotos([]);
     setCurrentStep(1);
-  };
+  }, [initialActivityType]);
 
   const addExercise = () => {
     const newExercise: ExerciseData = {
@@ -128,41 +127,41 @@ export default function EnhancedWorkoutLogger({
     setShowExerciseForm(true);
   };
 
-  const handleExerciseNameChange = async (index: number, exerciseName: string) => {
-    // Update the exercise name
-    updateExercise(index, { exercise_name: exerciseName });
-    
-    // If exercise name is not empty, try to get previous data
-    if (exerciseName.trim()) {
-      try {
-        const latestData = await fitnessService.getLatestExerciseData(exerciseName.trim());
-        if (latestData) {
-          console.log(`🔄 [ENHANCED WORKOUT LOGGER] Auto-populating data for ${exerciseName}:`, latestData);
-          
-          // Auto-populate the exercise with previous data
-          updateExercise(index, {
-            sets: latestData.sets || 1,
-            reps: latestData.reps || '10',
-            weight_used: latestData.weight_kg || 0,
-            notes: latestData.notes || ''
-          });
-          
-          // Show a subtle indication that data was auto-populated
-          hapticFeedback.light();
-        }
-      } catch (error) {
-        console.log(`🔍 [ENHANCED WORKOUT LOGGER] No previous data found for ${exerciseName}`);
-      }
-    }
-  };
+  // const handleExerciseNameChange = async (index: number, exerciseName: string) => {
+  //   // Update the exercise name
+  //   updateExercise(index, { exercise_name: exerciseName });
+  //   
+  //   // If exercise name is not empty, try to get previous data
+  //   if (exerciseName.trim()) {
+  //     try {
+  //       const latestData = await fitnessService.getLatestExerciseData(exerciseName.trim());
+  //       if (latestData) {
+  //         console.log(`🔄 [ENHANCED WORKOUT LOGGER] Auto-populating data for ${exerciseName}:`, latestData);
+  //         
+  //         // Auto-populate the exercise with previous data
+  //         updateExercise(index, {
+  //           sets: latestData.sets || 1,
+  //           reps: latestData.reps || '10',
+  //           weight_used: latestData.weight_kg || 0,
+  //           notes: latestData.notes || ''
+  //         });
+  //         
+  //         // Show a subtle indication that data was auto-populated
+  //         hapticFeedback.light();
+  //       }
+  //     } catch (error) {
+  //       console.log(`🔍 [ENHANCED WORKOUT LOGGER] No previous data found for ${exerciseName}`);
+  //     }
+  //   }
+  // };
 
-  const updateExercise = (index: number, updates: Partial<ExerciseData>) => {
-    setExercises(prev => prev.map((exercise, i) => 
-      i === index ? { ...exercise, ...updates } : exercise
-    ));
-  };
+  // const updateExercise = (index: number, updates: Partial<ExerciseData>) => {
+  //   setExercises(prev => prev.map((exercise, i) => 
+  //     i === index ? { ...exercise, ...updates } : exercise
+  //   ));
+  // };
 
-  const updateExerciseField = (index: number, field: keyof ExerciseData, value: any) => {
+  const updateExerciseField = (index: number, field: keyof ExerciseData, value: unknown) => {
     setExercises(prev => prev.map((exercise, i) => 
       i === index ? { ...exercise, [field]: value } : exercise
     ));
@@ -193,7 +192,7 @@ export default function EnhancedWorkoutLogger({
         hapticFeedback.success();
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to take photo. Please try again.');
     }
   };
@@ -218,7 +217,7 @@ export default function EnhancedWorkoutLogger({
         hapticFeedback.success();
         setPhotos(prev => [...prev, result.assets[0].uri]);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to select photo. Please try again.');
     }
   };
@@ -274,7 +273,7 @@ export default function EnhancedWorkoutLogger({
           },
         ]
       );
-    } catch (error) {
+    } catch {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log workout. Please try again.');
     } finally {
@@ -326,7 +325,7 @@ export default function EnhancedWorkoutLogger({
             currentStep >= step.id && styles.stepCircleActive
           ]}>
             <Ionicons 
-              name={step.icon as any} 
+              name={step.icon as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={currentStep >= step.id ? '#ffffff' : '#6b7280'} 
             />
@@ -366,7 +365,7 @@ export default function EnhancedWorkoutLogger({
             }}
           >
             <Ionicons 
-              name={type.icon as any} 
+              name={type.icon as keyof typeof Ionicons.glyphMap} 
               size={24} 
               color={activityType === type.key ? '#ffffff' : type.color} 
             />

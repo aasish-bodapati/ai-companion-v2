@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface Action {
@@ -57,7 +57,7 @@ interface ActionCardProps {
   // Styling
   variant?: 'default' | 'compact' | 'detailed';
   backgroundColor?: string;
-  style?: any;
+  style?: Record<string, unknown>;
   onPress?: () => void;
 }
 
@@ -183,7 +183,7 @@ export default function ActionCard({
       <View style={styles.titleContainer}>
         {icon && (
           <Ionicons 
-            name={icon as any} 
+            name={icon as keyof typeof Ionicons.glyphMap} 
             size={20} 
             color={iconColor}
             style={styles.titleIcon}
@@ -200,7 +200,7 @@ export default function ActionCard({
           <View key={index} style={getBadgeStyle(badge)}>
             {badge.icon && (
               <Ionicons 
-                name={badge.icon as any} 
+                name={badge.icon as keyof typeof Ionicons.glyphMap} 
                 size={12} 
                 color={COLORS.text.inverse}
                 style={styles.badgeIcon}
@@ -216,7 +216,7 @@ export default function ActionCard({
           <View style={getStatusStyle()}>
             {status.icon && (
               <Ionicons 
-                name={status.icon as any} 
+                name={status.icon as keyof typeof Ionicons.glyphMap} 
                 size={12} 
                 color={COLORS.text.inverse}
                 style={styles.statusIcon}
@@ -248,7 +248,7 @@ export default function ActionCard({
           <View key={index} style={styles.detailItem}>
             {detail.icon && (
               <Ionicons 
-                name={detail.icon as any} 
+                name={detail.icon as keyof typeof Ionicons.glyphMap} 
                 size={16} 
                 color={detail.color || COLORS.text.secondary}
                 style={styles.detailIcon}
@@ -287,7 +287,7 @@ export default function ActionCard({
             ) : (
               primaryAction.icon && (
                 <Ionicons 
-                  name={primaryAction.icon as any} 
+                  name={primaryAction.icon as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={COLORS.text.inverse}
                   style={styles.actionIcon}
@@ -319,7 +319,7 @@ export default function ActionCard({
             ) : (
               action.icon && (
                 <Ionicons 
-                  name={action.icon as any} 
+                  name={action.icon as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                   style={styles.actionIcon}

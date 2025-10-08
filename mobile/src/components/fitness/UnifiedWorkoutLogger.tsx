@@ -8,19 +8,27 @@ import {
   ScrollView,
   TextInput,
   Alert,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fitnessService } from '../../services/fitnessService';
-import { routineService } from '../../services/routineService';
 
-const { width, height } = Dimensions.get('window');
 
 interface Exercise {
   id: number;
   name: string;
   category: string;
   muscle_groups: string[];
+  equipment?: string;
+  instructions?: string;
+  difficulty?: string;
+  logging_category?: string;
+}
+
+interface ExerciseApiResponse {
+  id: number;
+  name: string;
+  category: string;
+  muscle_group: string;
   equipment?: string;
   instructions?: string;
   difficulty?: string;
@@ -75,7 +83,6 @@ export default function UnifiedWorkoutLogger({
   });
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(false);
   const isLoadingRef = useRef(false);
 
@@ -112,10 +119,10 @@ export default function UnifiedWorkoutLogger({
       );
       
       const dataPromise = fitnessService.getExercises();
-      const data = await Promise.race([dataPromise, timeoutPromise]) as any;
+      const data = await Promise.race([dataPromise, timeoutPromise]) as unknown;
       
       // Map ExerciseType to Exercise format
-      const mappedExercises: Exercise[] = data.map(exercise => ({
+      const mappedExercises: Exercise[] = (data as ExerciseApiResponse[]).map(exercise => ({
         id: exercise.id,
         name: exercise.name,
         category: exercise.category,
@@ -154,7 +161,7 @@ export default function UnifiedWorkoutLogger({
       await onSave(workout);
       onClose();
       resetForm();
-    } catch (error) {
+    } catch {
       Alert.alert('Error', 'Failed to save workout');
     } finally {
       setLoading(false);
@@ -490,7 +497,7 @@ export default function UnifiedWorkoutLogger({
                 { backgroundColor: index <= currentStep ? '#3b82f6' : '#e5e7eb' }
               ]}>
                 <Ionicons 
-                  name={step.icon as any} 
+                  name={step.icon as keyof typeof Ionicons.glyphMap} 
                   size={16} 
                   color={index <= currentStep ? '#ffffff' : '#6b7280'} 
                 />

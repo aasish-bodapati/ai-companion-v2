@@ -12,7 +12,7 @@ import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/
 export interface DropdownItem {
   id: string | number;
   name: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface DropdownProps {

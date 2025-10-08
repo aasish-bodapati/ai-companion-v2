@@ -32,7 +32,7 @@ interface MobileOptimizedModalProps {
   testID?: string;
 }
 
-const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
+const { height: screenHeight } = Dimensions.get('window');
 
 export default function MobileOptimizedModal({
   visible,
@@ -116,7 +116,7 @@ export default function MobileOptimizedModal({
     }
   };
 
-  const handleSwipeGesture = (event: any) => {
+  const handleSwipeGesture = (event: Record<string, unknown>) => {
     if (!closeOnSwipe) return;
 
     const { translationY, velocityY, state } = event.nativeEvent;
@@ -172,7 +172,7 @@ export default function MobileOptimizedModal({
   };
 
   const getAnimationStyle = () => {
-    const animatedStyle: any = {
+    const animatedStyle: Record<string, unknown> = {
       opacity: fadeAnim,
     };
 

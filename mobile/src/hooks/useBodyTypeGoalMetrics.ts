@@ -64,17 +64,13 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
   const isLoadingRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
-  console.log('🎯 [BODY TYPE METRICS] Hook called, user:', user?.id);
-
   const loadBodyTypeMetrics = useCallback(async () => {
     if (isLoadingRef.current) {
-      console.log('🎯 [BODY TYPE METRICS] Already loading, skipping');
       return;
     }
 
     try {
       isLoadingRef.current = true;
-      console.log('🎯 [BODY TYPE METRICS] loadBodyTypeMetrics called');
       setMetrics(prev => ({ ...prev, loading: true }));
       
       // Get today's date in user's timezone
@@ -86,7 +82,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
       weekStart.setDate(today.getDate() - 6);
       const weekStartStr = weekStart.toISOString().split('T')[0];
       
-      console.log('🎯 [BODY TYPE METRICS] Loading metrics for:', { todayStr, weekStartStr });
       
       // Fetch data in parallel
       const [todayNutrition, weekNutrition, todayFitness, weekFitness, waterStats] = await Promise.all([
@@ -97,13 +92,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         waterService.getWaterStats().catch(() => null),
       ]);
 
-      console.log('🎯 [BODY TYPE METRICS] Data loaded:', {
-        todayNutrition: todayNutrition?.length || 0,
-        weekNutrition: weekNutrition?.length || 0,
-        todayFitness: todayFitness?.length || 0,
-        weekFitness: weekFitness?.length || 0,
-        waterStats: waterStats ? 'loaded' : 'failed'
-      });
 
       // Calculate daily score (0-100) - now async for step tracking
       const dailyScore = await calculateDailyScore(todayNutrition, todayFitness, waterStats);
@@ -133,13 +121,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         loading: false,
       });
 
-      console.log('🎯 [BODY TYPE METRICS] Calculated metrics:', {
-        dailyScore,
-        weeklyAlignment,
-        weeklyTrend,
-        alignment,
-        suggestionsCount: suggestions.length
-      });
 
     } catch (error) {
       console.error('🎯 [BODY TYPE METRICS] Error loading metrics:', error);
@@ -150,12 +131,10 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
   }, [user?.id]); // Add user?.id as dependency
 
   useEffect(() => {
-    console.log('🎯 [BODY TYPE METRICS] useEffect called, user:', user?.id);
     if (!user?.id) return;
     
     // Prevent multiple calls if already loading or already initialized
     if (isLoadingRef.current || hasInitializedRef.current) {
-      console.log('🎯 [BODY TYPE METRICS] Already loading or initialized, skipping useEffect');
       return;
     }
     
@@ -168,7 +147,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }, 2000); // Load after 2 second delay
     
     return () => {
-      console.log('🎯 [BODY TYPE METRICS] useEffect cleanup');
       clearTimeout(timer);
     };
   }, [user?.id]); // Only depend on user?.id to prevent infinite loop

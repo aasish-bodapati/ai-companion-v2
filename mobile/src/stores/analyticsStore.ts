@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { AnalyticsStore, AnalyticsData } from './types';
+import { AnalyticsStore } from './types';
 import { dashboardService } from '../services/dashboardService';
 
 // Initial state

@@ -7,10 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedModal from './MobileOptimizedModal';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, MIXINS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface FormModalProps {
@@ -45,9 +43,9 @@ interface FormModalProps {
   scrollEnabled?: boolean;
   
   // Custom styling
-  contentStyle?: any;
-  headerStyle?: any;
-  footerStyle?: any;
+  contentStyle?: Record<string, unknown>;
+  headerStyle?: Record<string, unknown>;
+  footerStyle?: Record<string, unknown>;
   
   testID?: string;
 }
@@ -85,7 +83,7 @@ export default function FormModal({
       if (result instanceof Promise) {
         await result;
       }
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
     } finally {

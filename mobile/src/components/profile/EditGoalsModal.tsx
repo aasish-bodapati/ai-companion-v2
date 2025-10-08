@@ -174,7 +174,6 @@ export default function EditGoalsModal({
 }: EditGoalsModalProps) {
   const [selectedGoals, setSelectedGoals] = useState<string[]>(initialGoals);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -200,7 +199,6 @@ export default function EditGoalsModal({
 
   const handleSave = async () => {
     try {
-      setLoading(true);
       hapticFeedback.success();
       
       await onboardingService.updateGoals(selectedGoals);
@@ -208,12 +206,10 @@ export default function EditGoalsModal({
       onClose();
       
       showToast.success('Success!', 'Goals updated successfully');
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
       showToast.error('Error', 'Failed to save goals');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -272,7 +268,7 @@ export default function EditGoalsModal({
         <View style={styles.goalContent}>
           <View style={styles.goalHeader}>
             <Ionicons
-              name={goal.icon as any}
+              name={goal.icon as keyof typeof Ionicons.glyphMap}
               size={24}
               color={isSelected ? goal.color : '#6b7280'}
             />
@@ -332,7 +328,7 @@ export default function EditGoalsModal({
               const goal = HEALTH_GOALS.find(g => g.id === goalId);
               return goal ? (
                 <View key={goalId} style={styles.summaryGoal}>
-                  <Ionicons name={goal.icon as any} size={16} color={goal.color} />
+                  <Ionicons name={goal.icon as keyof typeof Ionicons.glyphMap} size={16} color={goal.color} />
                   <Text style={styles.summaryGoalText}>{goal.title}</Text>
                 </View>
               ) : null;

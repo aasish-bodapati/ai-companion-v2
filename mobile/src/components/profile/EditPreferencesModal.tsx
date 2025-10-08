@@ -120,7 +120,7 @@ export default function EditPreferencesModal({
       await onSave(updatedData);
       showToast.success('Success', 'Preferences updated successfully');
       onClose();
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast.error('Error', 'Failed to save preferences');
     } finally {
@@ -215,7 +215,7 @@ export default function EditPreferencesModal({
                       styles.optionButton,
                       healthData.gender === option.value && styles.optionButtonSelected,
                     ]}
-                    onPress={() => setHealthData(prev => ({ ...prev, gender: option.value as any }))}
+                    onPress={() => setHealthData(prev => ({ ...prev, gender: option.value as 'male' | 'female' | 'other' }))}
                   >
                     <Text
                       style={[
@@ -240,7 +240,7 @@ export default function EditPreferencesModal({
                       styles.activityButton,
                       healthData.activityLevel === level.value && styles.activityButtonSelected,
                     ]}
-                    onPress={() => setHealthData(prev => ({ ...prev, activityLevel: level.value as any }))}
+                    onPress={() => setHealthData(prev => ({ ...prev, activityLevel: level.value as 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active' }))}
                   >
                     <Text
                       style={[

@@ -71,7 +71,7 @@ export default function MobileOptimizedList<T>({
   const keyExtractor = useCallback(
     (item: T, index: number) => {
       if (typeof item === 'object' && item !== null && 'id' in item) {
-        return String((item as any).id);
+        return String((item as Record<string, unknown>).id);
       }
       return `item-${index}`;
     },

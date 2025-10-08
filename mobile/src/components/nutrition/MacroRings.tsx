@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -22,7 +21,6 @@ interface MacroRingsProps {
   onMacroPress?: (macro: MacroData) => void;
 }
 
-const { width } = Dimensions.get('window');
 
 export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
   const getProgressPercentage = (current: number, target: number) => {
@@ -62,9 +60,6 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
     
     // Calculate ring dimensions
     const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    const strokeDasharray = circumference;
-    const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
     return (
       <TouchableOpacity

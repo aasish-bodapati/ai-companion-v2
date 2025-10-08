@@ -111,11 +111,8 @@ class NutritionService extends BaseService {
     start_date?: string;
     end_date?: string;
   }): Promise<NutritionLog[]> {
-    console.log('🍽️ [NUTRITION SERVICE] Loading nutrition logs');
-    
     // Get timezone offset in minutes
     const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
-    console.log('🍽️ [NUTRITION SERVICE] Timezone offset:', timezoneOffset);
     
     // Add timezone offset to params
     const paramsWithTimezone = {
@@ -147,7 +144,6 @@ class NutritionService extends BaseService {
       meals = [];
     }
     
-    console.log('🍽️ [NUTRITION SERVICE] Loaded', meals.length, 'nutrition logs');
     return meals;
   }
 

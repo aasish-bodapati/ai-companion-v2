@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { routineService } from '../../services/routineService';
 import { fitnessService } from '../../services/fitnessService';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
@@ -21,7 +19,6 @@ import {
   formatTimeInUserTimezone, 
   formatDateInUserTimezone, 
   getDateInUserTimezone,
-  isDateInUserTimezone,
   getUserTimezone
 } from '../../utils/timezoneUtils';
 import CalendarComponent from '../common/CalendarComponent';
@@ -53,8 +50,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [editingLog, setEditingLog] = useState<WorkoutLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editExercises, setEditExercises] = useState<any[]>([]);
-  const [deletingLogId, setDeletingLogId] = useState<number | null>(null);
+  const [editExercises, setEditExercises] = useState<unknown[]>([]);
   const [selectedDate, setSelectedDate] = useState(() => {
     // Get current date in user's timezone
     const now = new Date();
@@ -69,7 +65,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [navigating, setNavigating] = useState(false);
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
-  const [exerciseDatabase, setExerciseDatabase] = useState<any[]>([]);
+  const [exerciseDatabase, setExerciseDatabase] = useState<unknown[]>([]);
   
   // Use exercise categories store
   const { categories } = useExerciseCategoriesWithAutoLoad();
@@ -86,14 +82,14 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     if (categories.length > 0) {
       loadLogs();
     }
-  }, [categories]);
+  }, [categories, loadLogs]);
 
   // Load exercise database for category lookup
   const loadExerciseDatabase = async () => {
     try {
       const exercises = await fitnessService.getExerciseTypes();
       setExerciseDatabase(exercises);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   };
@@ -173,7 +169,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     return 'unknown'; // Show "Category Not Found" badge for unknown exercises
   };
 
-  const loadLogs = async (date?: Date) => {
+  const loadLogs = useCallback(async (date?: Date) => {
     try {
       setLoading(true);
       const targetDate = date || selectedDate;
@@ -186,11 +182,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       // Process all logs for calendar indicators
-      const processedAllLogs = (allLogsResponse || []).map((log: any) => {
+      const processedAllLogs = (allLogsResponse || []).map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
-          } catch (e) {
+          } catch {
             log.exercises = [];
           }
         }
@@ -206,7 +202,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       try {
         targetDateStr = getDateInUserTimezone(targetDate);
         console.log('🔍 [FITNESS LOGS] Filtering by date:', targetDateStr);
-      } catch (dateError) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Fallback to UTC date
         targetDateStr = targetDate.toISOString().split('T')[0];
@@ -225,11 +221,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const filteredLogs = response || [];
       
       // Parse exercises from JSON string if needed
-      const processedLogs = filteredLogs.map((log: any) => {
+      const processedLogs = filteredLogs.map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
-          } catch (e) {
+          } catch {
             log.exercises = [];
           }
         }
@@ -238,14 +234,14 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       
       // Sort logs by time (earliest to latest) for chronological order
       // All dates from backend are in UTC, so we can compare them directly
-      const sortedLogs = processedLogs.sort((a: any, b: any) => {
+      const sortedLogs = processedLogs.sort((a: WorkoutLog, b: WorkoutLog) => {
         const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
         const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
         return timeA - timeB; // Chronological order: earliest first
       });
       
       setLogs(sortedLogs);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       if (error instanceof Error) {
         // Silent error handling - no console logging to prevent Expo Go notifications
@@ -254,7 +250,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, showToast]);
 
   const loadLogsForDate = async (date: Date) => {
     try {
@@ -271,7 +267,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       try {
         targetDateStr = getDateInUserTimezone(targetDate);
         console.log('🔍 [FITNESS LOGS] Filtering by date:', targetDateStr);
-      } catch (dateError) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Fallback to UTC date
         targetDateStr = targetDate.toISOString().split('T')[0];
@@ -286,11 +282,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       });
       
       // Process all logs for calendar indicators
-      const processedAllLogs = (allLogsResponse || []).map((log: any) => {
+      const processedAllLogs = (allLogsResponse || []).map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
-          } catch (e) {
+          } catch {
             log.exercises = [];
           }
         }
@@ -311,11 +307,11 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       const filteredLogs = response || [];
       
       // Parse exercises from JSON string if needed
-      const processedLogs = filteredLogs.map((log: any) => {
+      const processedLogs = filteredLogs.map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
           try {
             log.exercises = JSON.parse(log.exercises);
-          } catch (e) {
+          } catch {
             log.exercises = [];
           }
         }
@@ -324,14 +320,14 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       
       // Sort logs by time (earliest to latest) for chronological order
       // All dates from backend are in UTC, so we can compare them directly
-      const sortedLogs = processedLogs.sort((a: any, b: any) => {
+      const sortedLogs = processedLogs.sort((a: WorkoutLog, b: WorkoutLog) => {
         const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
         const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
         return timeA - timeB; // Chronological order: earliest first
       });
       
       setLogs(sortedLogs);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to load fitness logs. Please try again.', 'error');
     } finally {
@@ -384,7 +380,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
     if (log.exercises) {
       try {
         exercises = typeof log.exercises === 'string' ? JSON.parse(log.exercises) : log.exercises;
-      } catch (_error) {
+      } catch {
         exercises = [];
       }
     }
@@ -399,7 +395,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       await fitnessService.deleteWorkout(logId);
       await loadLogs(); // Refresh the logs
       showRapidToast('Workout deleted successfully', 'success');
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to delete workout. Please try again.', 'error');
     } finally {
@@ -443,97 +439,17 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
       setEditExercises([]);
 
       showToast('Workout log updated successfully!', 'success');
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       showToast('Failed to update workout log. Please try again.', 'error');
     }
   };
 
-  const handleDeleteExercise = (logId: number, exerciseIndex: number) => {
-    confirmDeleteExercise(logId, exerciseIndex);
-  };
 
-  const confirmDeleteExercise = async (logId: number, exerciseIndex: number) => {
-    try {
-      setDeletingLogId(logId);
-      
-      // Find the log and remove the specific exercise
-      const logToUpdate = logs.find(log => log.id === logId);
-      if (!logToUpdate || !logToUpdate.exercises) {
-        showToast('Exercise not found.', 'error');
-        return;
-      }
-      
-      // Parse exercises from JSON string
-      let exercises = [];
-      try {
-        exercises = logToUpdate.exercises ? JSON.parse(logToUpdate.exercises) : [];
-      } catch (e) {
-        exercises = [];
-      }
-      
-      // Remove the exercise from the exercises array
-      const updatedExercises = exercises.filter((_: any, index: number) => index !== exerciseIndex);
-      
-      // If no exercises left, delete the entire log
-      if (updatedExercises.length === 0) {
-        await fitnessService.deleteWorkout(logId);
-        setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-        showRapidToast('Exercise deleted. Workout log removed as it had no remaining exercises.', 'success');
-      } else {
-        // Update the log with remaining exercises
-        await routineService.updateWorkoutLogExercises(logId, updatedExercises);
-        
-        const updatedLog = {
-          ...logToUpdate,
-          exercises: JSON.stringify(updatedExercises)
-        };
-        
-        // Update in the logs array
-        setLogs(prevLogs => 
-          prevLogs.map(log => 
-            log.id === logId ? updatedLog : log
-          )
-        );
-        
-        showRapidToast('Exercise deleted successfully!', 'success');
-      }
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      showToast('Failed to delete exercise. Please try again.', 'error');
-    } finally {
-      setDeletingLogId(null);
-    }
-  };
 
-  const confirmDeleteLog = async (logId: number) => {
-    try {
-      setDeletingLogId(logId);
-      
-      // Call the API to delete the log
-      await fitnessService.deleteWorkout(logId);
-      
-      // Remove from logs array
-      setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-      
-      showRapidToast('Workout log deleted successfully!', 'success');
-    } catch (_error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      showToast('Failed to delete workout log. Please try again.', 'error');
-    } finally {
-      setDeletingLogId(null);
-    }
-  };
 
   // Removed duplicate useEffect - data loading is handled above
 
-  const formatDate = (dateString: string) => {
-    return formatDateInUserTimezone(dateString);
-  };
-
-  const formatTime = (dateString: string) => {
-    return formatTimeInUserTimezone(dateString);
-  };
 
   // Create set of dates that have logs for calendar markers
   const getLogsWithDates = (): Set<string> => {
@@ -545,7 +461,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
           // Use the timezone utility to get date in user's timezone
           const logDateStr = getDateInUserTimezone(new Date(dateField));
           datesSet.add(logDateStr);
-        } catch (_error) {
+        } catch {
           // Ignore invalid dates
         }
       }
@@ -652,16 +568,16 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
               <View key={log.id || logIndex} style={styles.workoutLogContainer}>
                 {(() => {
                   // Parse exercises from JSON string if needed
-                  let exercises: any = log.exercises;
+                  let exercises: unknown = log.exercises;
                   if (typeof exercises === 'string') {
                     try {
                       exercises = JSON.parse(exercises);
-                    } catch (_error) {
+                    } catch {
                       exercises = [];
                     }
                   }
                   return Array.isArray(exercises) ? exercises : [];
-                })().map((exercise: any, exerciseIndex: number) => {
+                })().map((exercise: unknown, exerciseIndex: number) => {
                   // Safety check to ensure exercise is an object
                   if (!exercise || typeof exercise !== 'object') {
                     return null;
@@ -685,7 +601,7 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                       return (
                         <View style={[styles.exerciseCategoryBadge, { backgroundColor: categoryConfig.color }]}>
                           <Ionicons 
-                            name={categoryConfig.icon as any} 
+                            name={categoryConfig.icon as keyof typeof Ionicons.glyphMap} 
                             size={12} 
                             color="#ffffff"
                             style={styles.badgeIcon}
@@ -754,13 +670,12 @@ export default function FitnessLogsView({ onRefresh }: FitnessLogsViewProps) {
                           if (!dateField) return 'Unknown time';
                           
                           try {
-                            const date = new Date(dateField);
                             return formatTimeInUserTimezone(dateField, {
                               hour: '2-digit', 
                               minute: '2-digit',
                               hour12: true
                             });
-                          } catch (_error) {
+                          } catch {
                             return 'Unknown time';
                           }
                         })()}

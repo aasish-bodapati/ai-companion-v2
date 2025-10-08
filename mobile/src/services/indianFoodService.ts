@@ -76,13 +76,9 @@ class IndianFoodService {
    */
   async searchFoods(query: string, limit: number = 20): Promise<IndianFood[]> {
     try {
-      console.log('🔍 Searching Indian foods:', { query, limit, url: `${this.baseUrl}/search` });
-      
       const response = await apiClient.get(`${this.baseUrl}/search`, {
         params: { q: query, limit }
       });
-      
-      console.log('✅ Search response:', { status: response.status, dataLength: response.data?.data?.length });
       
       if (response.data.success) {
         return response.data.data;
@@ -90,10 +86,6 @@ class IndianFoodService {
       throw new Error(response.data.message || 'Search failed');
     } catch (error: any) {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      if (error.response) {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        // Silent error handling - no console logging to prevent Expo Go notifications
-      }
       throw error;
     }
   }

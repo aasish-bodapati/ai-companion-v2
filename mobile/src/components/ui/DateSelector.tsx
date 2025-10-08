@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CalendarComponent from '../common/CalendarComponent';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface DateSelectorProps {
@@ -16,7 +16,7 @@ interface DateSelectorProps {
   onDateSelect: (date: Date) => void;
   label?: string;
   showTodayButton?: boolean;
-  style?: any;
+  style?: Record<string, unknown>;
   calendarModalTitle?: string;
   showLogsIndicator?: boolean;
   testID?: string;

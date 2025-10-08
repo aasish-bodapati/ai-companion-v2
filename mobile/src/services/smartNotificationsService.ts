@@ -302,7 +302,7 @@ class SmartNotificationsService {
       const weeklyGoal = userData.weekly_goal || {};
       
       Object.entries(weeklyGoal).forEach(([goal, target]) => {
-        const current = (goalProgress as any)[goal] || 0;
+        const current = (goalProgress as Record<string, unknown>)[goal] as number || 0;
         const progress = (current / target) * 100;
         
         if (progress < 50 && now.getDay() >= 3) { // Mid-week check
@@ -342,7 +342,7 @@ class SmartNotificationsService {
 
   private checkInconsistency(metric: string, context: Record<string, unknown>): boolean {
     // Simple inconsistency check - can be enhanced with more sophisticated logic
-    const recentData = (context[`${metric}_history`] as any[]) || [];
+    const recentData = (context[`${metric}_history`] as Record<string, unknown>[]) || [];
     if (recentData.length < 3) return false;
     
     const values = recentData.slice(-3).map((d: Record<string, unknown>) => d.value as number);

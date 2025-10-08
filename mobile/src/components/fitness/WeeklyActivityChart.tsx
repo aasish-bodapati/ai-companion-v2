@@ -1,8 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-
-const { width } = Dimensions.get('window');
+import { View, Text, StyleSheet } from 'react-native';
 
 interface WeeklyActivityChartProps {
   weeklyData: {

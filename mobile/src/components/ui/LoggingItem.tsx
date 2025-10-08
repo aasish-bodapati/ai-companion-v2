@@ -9,7 +9,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface LoggingItemData {
@@ -26,7 +25,7 @@ export interface LoggingItemData {
   sets?: number;
   reps?: string;
   weight_kg?: number;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface LoggingItemProps {
@@ -94,18 +93,6 @@ const LoggingItem = React.memo(function LoggingItem({
     hapticFeedback.medium();
   };
 
-  const getQuantityDisplay = () => {
-    if (itemType === 'workout' && item.duration_minutes) {
-      return `${item.duration_minutes} min`;
-    }
-    if (item.quantity && item.quantity_unit) {
-      return `${item.quantity} ${item.quantity_unit}`;
-    }
-    if (item.quantity) {
-      return item.quantity.toString();
-    }
-    return '';
-  };
 
   const getNutritionDisplay = () => {
     if (!showNutrition) return null;
@@ -130,20 +117,6 @@ const LoggingItem = React.memo(function LoggingItem({
     return details.length > 0 ? details.join(' • ') : null;
   };
 
-  const getItemIcon = () => {
-    switch (itemType) {
-      case 'meal':
-        return 'restaurant';
-      case 'workout':
-        return 'fitness';
-      case 'water':
-        return 'water';
-      case 'mood':
-        return 'happy';
-      default:
-        return 'list';
-    }
-  };
 
   const getExerciseCategory = (): string => {
     // Use logging_category first (highest priority), then category
@@ -187,20 +160,6 @@ const LoggingItem = React.memo(function LoggingItem({
     };
   };
 
-  const getMuscleGroupColor = (muscleGroup: string): string => {
-    const muscleGroupMap: { [key: string]: string } = {
-      'chest': '#ef4444',
-      'back': '#3b82f6',
-      'shoulders': '#f59e0b',
-      'arms': '#8b5cf6',
-      'legs': '#10b981',
-      'core': '#06b6d4',
-      'glutes': '#ec4899',
-      'calves': '#84cc16',
-      'full body': '#6b7280',
-    };
-    return muscleGroupMap[muscleGroup.toLowerCase()] || '#6b7280';
-  };
 
   const renderDynamicWorkoutFields = () => {
     const category = getExerciseCategory();
@@ -420,7 +379,7 @@ const LoggingItem = React.memo(function LoggingItem({
               {itemType === 'workout' && (
                 <View style={[styles.categoryBadge, { backgroundColor: getCategoryConfig(getExerciseCategory()).color }]}>
                   <Ionicons 
-                    name={getCategoryConfig(getExerciseCategory()).icon as any} 
+                    name={getCategoryConfig(getExerciseCategory()).icon as keyof typeof Ionicons.glyphMap} 
                     size={6} 
                     color="#ffffff"
                     style={styles.badgeIcon}

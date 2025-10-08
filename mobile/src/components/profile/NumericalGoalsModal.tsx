@@ -36,7 +36,6 @@ export default function NumericalGoalsModal({
   userData,
 }: NumericalGoalsModalProps) {
   const [numericalGoals, setNumericalGoals] = useState<NumericalGoal[]>([]);
-  const [editingGoal, setEditingGoal] = useState<NumericalGoal | null>(null);
 
   useEffect(() => {
     if (visible && healthGoals.length > 0) {
@@ -82,15 +81,6 @@ export default function NumericalGoalsModal({
     );
   };
 
-  const toggleGoalEnabled = (goalId: string) => {
-    setNumericalGoals(prev =>
-      prev.map(goal =>
-        goal.id === goalId
-          ? { ...goal, enabled: !goal.enabled }
-          : goal
-      )
-    );
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {

@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthLogger } from '../../hooks/useHealthLogger';
@@ -25,7 +24,7 @@ interface HealthQuickActionsProps {
   layout?: 'grid' | 'horizontal' | 'vertical';
   showDescriptions?: boolean;
   onActionPress?: (action: QuickAction) => void;
-  style?: any;
+  style?: Record<string, unknown>;
 }
 
 const defaultActions: QuickAction[] = [
@@ -117,8 +116,8 @@ export default function HealthQuickActions({
     <View style={[styles.container, style]}>
       <View style={getContainerStyle()}>
         {actions.map((action) => {
-          const logger = getLogger(action.type);
-          const isVisible = logger?.isVisible || false;
+          // const logger = getLogger(action.type);
+          // const isVisible = logger?.isVisible || false;
 
           return (
             <TouchableOpacity
@@ -134,7 +133,7 @@ export default function HealthQuickActions({
               activeOpacity={0.8}
             >
               <View style={styles.actionContent}>
-                <Ionicons name={action.icon as any} size={12} color="#ffffff" />
+                <Ionicons name={action.icon as keyof typeof Ionicons.glyphMap} size={12} color="#ffffff" />
                 <Text style={styles.actionTitle}>{action.title}</Text>
                 {showDescriptions && action.description && (
                   <Text style={styles.actionDescription}>{action.description}</Text>

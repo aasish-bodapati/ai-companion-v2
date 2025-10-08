@@ -1,10 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,8 +12,6 @@ import { COLORS, SPACING } from '../../theme/constants';
 import { 
   useWaterTodayStats, 
   useWaterGoal, 
-  useWaterLoading, 
-  useWaterError,
   useWaterActions 
 } from '../../stores';
 
@@ -23,14 +20,16 @@ import {
 export default function WaterLoggingCard() {
   const stats = useWaterTodayStats();
   const waterGoal = useWaterGoal();
-  const loading = useWaterLoading();
-  const error = useWaterError();
   const { refreshWaterData, quickLogWater, deleteWaterLogEntry } = useWaterActions();
 
   // Load water data when component mounts
-  useEffect(() => {
+  const loadWaterData = useCallback(() => {
     refreshWaterData();
-  }, []); // Remove refreshWaterData from dependencies to prevent infinite loop
+  }, [refreshWaterData]);
+
+  useEffect(() => {
+    loadWaterData();
+  }, [loadWaterData]);
 
   const handleQuickLog = async (amount_ml: number) => {
     try {
@@ -39,7 +38,7 @@ export default function WaterLoggingCard() {
       await quickLogWater(amount_ml);
       
       hapticFeedback.success();
-    } catch (error) {
+    } catch {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to log water. Please try again.');
     }
@@ -68,7 +67,7 @@ export default function WaterLoggingCard() {
       await deleteWaterLogEntry(mostRecentLog.id);
       
       hapticFeedback.success();
-    } catch (error) {
+    } catch {
       hapticFeedback.error();
       Alert.alert('Error', 'Failed to remove water log. Please try again.');
     }
@@ -85,9 +84,6 @@ export default function WaterLoggingCard() {
     average_per_log: 250,
   };
 
-  // Calculate progress percentage dynamically
-  const progressPercentage = Math.min((displayStats.total_ml_today / displayStats.goal_ml) * 100, 100);
-  // Removed unused variables
 
 
   return (

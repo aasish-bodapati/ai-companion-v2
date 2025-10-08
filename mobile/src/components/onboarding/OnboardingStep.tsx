@@ -12,7 +12,7 @@ import { mobileUtils } from '../../utils/haptics';
 
 interface OnboardingStepProps {
   icon?: string;
-  image?: any;
+  image?: string | number;
   title: string;
   subtitle?: string;
   description: string;
@@ -23,7 +23,7 @@ interface OnboardingStepProps {
   backgroundColor?: string;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function OnboardingStep({
   icon,
@@ -67,9 +67,6 @@ export default function OnboardingStep({
     return mobileUtils.getResponsiveFontSize(baseSize, screenWidth);
   };
 
-  const getResponsiveSpacing = (baseSpacing: number) => {
-    return mobileUtils.getResponsiveSpacing(baseSpacing, screenWidth);
-  };
 
   const renderIcon = () => {
     if (!showIcon || (!icon && !image)) return null;
@@ -100,7 +97,7 @@ export default function OnboardingStep({
         ]}
       >
         <Ionicons
-          name={icon as any}
+          name={icon as keyof typeof Ionicons.glyphMap}
           size={getResponsiveFontSize(48)}
           color={iconColor}
         />

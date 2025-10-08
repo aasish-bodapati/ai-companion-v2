@@ -60,7 +60,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
   const labelAnim = useRef(new Animated.Value(hasValue ? 1 : 0)).current;
   const borderAnim = useRef(new Animated.Value(0)).current;
 
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: unknown) => {
     setIsFocused(true);
     
     // Haptic feedback on focus
@@ -85,7 +85,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
     onFocus?.(e);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: unknown) => {
     setIsFocused(false);
 
     // Animate label and border
@@ -201,7 +201,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
         disabled={!onIconPress}
       >
         <Ionicons
-          name={icon as any}
+          name={icon as keyof typeof Ionicons.glyphMap}
           size={20}
           color={error ? '#ef4444' : isFocused ? '#3b82f6' : '#6b7280'}
         />

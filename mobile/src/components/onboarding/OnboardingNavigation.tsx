@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
@@ -27,7 +26,6 @@ interface OnboardingNavigationProps {
   loading?: boolean;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
 
 export default function OnboardingNavigation({
   currentStep,

@@ -127,13 +127,13 @@ export const ModalContainer: React.FC<ModalContainerProps> = ({
       onRequestClose={onClose}
       testID={testID}
     >
-      <View style={[overlay, style] as any}>
+      <View style={[overlay, style] as Record<string, unknown>}>
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
           onPress={handleBackdropPress}
         />
-        <View style={[content, contentStyle] as any}>
+        <View style={[content, contentStyle] as Record<string, unknown>}>
           {(title || subtitle || showCloseButton) && (
             <View style={[styles.header, headerStyle]}>
               <View style={styles.headerContent}>

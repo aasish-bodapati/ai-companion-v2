@@ -92,7 +92,7 @@ export default function ProgressCard({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <Ionicons 
-            name={icon as any} 
+            name={icon as keyof typeof Ionicons.glyphMap} 
             size={sizeStyles.iconSize} 
             color={color} 
             style={styles.icon}
@@ -105,7 +105,7 @@ export default function ProgressCard({
         {trend && trendValue && (
           <View style={styles.trendContainer}>
             <Ionicons 
-              name={getTrendIcon() as any} 
+              name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
               size={14} 
               color={getTrendColor()} 
             />

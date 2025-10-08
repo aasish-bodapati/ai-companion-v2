@@ -8,8 +8,18 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+interface FoodItem {
+  name: string;
+  quantity: number;
+  quantity_unit: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
 interface QuickAddMealsProps {
-  onQuickAdd: (mealType: string, foodItems: any[]) => void;
+  onQuickAdd: (mealType: string, foodItems: FoodItem[]) => void;
   onCustomAdd: () => void;
 }
 
@@ -24,15 +34,7 @@ interface QuickMeal {
   carbs_g: number;
   fat_g: number;
   meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
-  food_items: {
-    name: string;
-    quantity: number;
-    quantity_unit: string;
-    calories: number;
-    protein_g: number;
-    carbs_g: number;
-    fat_g: number;
-  }[];
+  food_items: FoodItem[];
 }
 
 const QUICK_MEALS: QuickMeal[] = [
@@ -196,11 +198,11 @@ export default function QuickAddMeals({
           >
             <View style={styles.mealHeader}>
               <View style={[styles.mealIcon, { backgroundColor: meal.color }]}>
-                <Ionicons name={meal.icon as any} size={24} color="#ffffff" />
+                <Ionicons name={meal.icon as keyof typeof Ionicons.glyphMap} size={24} color="#ffffff" />
               </View>
               <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(meal.meal_type) }]}>
                 <Ionicons 
-                  name={getMealTypeIcon(meal.meal_type) as any} 
+                  name={getMealTypeIcon(meal.meal_type) as keyof typeof Ionicons.glyphMap} 
                   size={12} 
                   color="#ffffff" 
                 />

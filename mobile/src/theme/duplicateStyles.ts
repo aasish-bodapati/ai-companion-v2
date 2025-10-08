@@ -72,7 +72,7 @@ export const DUPLICATE_STYLES = {
 };
 
 // Helper function to safely replace hardcoded values
-export const replaceHardcodedStyle = (oldStyle: any, newStyle: any) => {
+export const replaceHardcodedStyle = (oldStyle: Record<string, unknown>, newStyle: Record<string, unknown>) => {
   // Return new style, but keep old as fallback
   return { ...oldStyle, ...newStyle };
 };

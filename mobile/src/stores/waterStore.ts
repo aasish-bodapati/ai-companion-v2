@@ -6,15 +6,26 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { WaterStore, WaterLog, WaterLogStats, WaterLogSummary } from './types';
+import { WaterStore, WaterLogSummary } from './types';
 import { waterService } from '../services/waterService';
+
+// Calculate water goal based on gender
+const calculateWaterGoal = (gender?: string): number => {
+  if (gender === 'female') {
+    return 2700; // 2.7L for females
+  } else if (gender === 'male') {
+    return 3700; // 3.7L for males
+  } else {
+    return 3200; // 3.2L average for other/unspecified
+  }
+};
 
 // Initial state
 const initialState = {
   todayStats: null,
   weekStats: null,
   recentWaterLogs: [],
-  waterGoal: 3000, // Default 3L in ml
+  waterGoal: 3200, // Default 3.2L in ml (will be updated based on user gender)
   loading: false,
   error: null,
   lastUpdated: null,
@@ -69,24 +80,29 @@ export const useWaterStore = create<WaterStore>()(
           setLoading(true);
           setError(null);
 
+          console.log('🚰 [WATER STORE] Refreshing water data...');
           // Fetch today's stats and logs in parallel
           const [todayStats, recentLogs] = await Promise.all([
             waterService.getWaterStats(),
             waterService.getTodaysWaterLogs(),
           ]);
 
+          console.log('🚰 [WATER STORE] Raw todayStats from API:', JSON.stringify(todayStats, null, 2));
+          console.log('🚰 [WATER STORE] Recent logs count:', recentLogs.length);
+
           setTodayStats(todayStats);
           setRecentWaterLogs(recentLogs);
           
           // Update water goal from stats if available
           if (todayStats.goal_ml) {
+            console.log('🚰 [WATER STORE] Updating water goal to:', todayStats.goal_ml);
             get().setWaterGoal(todayStats.goal_ml);
           }
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to fetch water data';
           setError(errorMessage);
-          console.error('Water store refresh error:', error);
+          console.error('🚰 [WATER STORE] Water store refresh error:', error);
         } finally {
           setLoading(false);
         }
@@ -207,7 +223,6 @@ export const useWaterStore = create<WaterStore>()(
           const totalMl = logs.reduce((sum, log) => sum + log.amount_ml, 0);
           const totalOz = logs.reduce((sum, log) => sum + log.amount_oz, 0);
           const logsCount = logs.length;
-          const averagePerLog = logsCount > 0 ? totalMl / logsCount : 0;
           
           const weekStats: WaterLogSummary = {
             date: new Date().toISOString().split('T')[0],
@@ -227,6 +242,12 @@ export const useWaterStore = create<WaterStore>()(
         } finally {
           setLoading(false);
         }
+      },
+
+      // Initialize water goal based on user gender
+      initializeWaterGoal: (gender?: string) => {
+        const goal = calculateWaterGoal(gender);
+        set({ waterGoal: goal }, false, 'initializeWaterGoal');
       },
 
       // Reset water state

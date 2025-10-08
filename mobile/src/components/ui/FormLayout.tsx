@@ -38,8 +38,8 @@ interface FormLayoutProps {
   variant?: 'default' | 'modal' | 'fullscreen';
   scrollable?: boolean;
   keyboardAvoidingView?: boolean;
-  style?: any;
-  contentStyle?: any;
+  style?: Record<string, unknown>;
+  contentStyle?: Record<string, unknown>;
   testID?: string;
 }
 

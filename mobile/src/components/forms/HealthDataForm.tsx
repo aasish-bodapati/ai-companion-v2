@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import FormLayout from '../ui/FormLayout';
 import FormSection from '../ui/FormSection';
 import FormField from '../ui/FormField';
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { FormValidator, CommonRules, ValidationPatterns } from '../../utils/formValidation';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 interface HealthData {
   age: string;
@@ -107,7 +106,7 @@ export default function HealthDataForm({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showAdvancedFields, setShowAdvancedFields] = useState(showAdvanced);
+  const [showAdvancedFields] = useState(showAdvanced);
   const [formValidator] = useState(new FormValidator(validationRules));
 
   const updateData = (field: keyof HealthData, value: string) => {

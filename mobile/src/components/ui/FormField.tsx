@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import MobileOptimizedInput from './MobileOptimizedInput';
-import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 export interface FormFieldProps {
   name: string;
@@ -23,7 +22,7 @@ export interface FormFieldProps {
   onIconPress?: () => void;
   variant?: 'default' | 'outlined' | 'filled' | 'underlined';
   size?: 'small' | 'medium' | 'large';
-  containerStyle?: any;
+  containerStyle?: Record<string, unknown>;
   testID?: string;
 }
 

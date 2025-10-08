@@ -8,7 +8,7 @@ export const performanceUtils = {
   },
 
   // Debounce function calls to prevent excessive API calls
-  debounce: <T extends (...args: any[]) => any>(
+  debounce: <T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number
   ): ((...args: Parameters<T>) => void) => {
@@ -20,7 +20,7 @@ export const performanceUtils = {
   },
 
   // Throttle function calls to limit execution frequency
-  throttle: <T extends (...args: any[]) => any>(
+  throttle: <T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number
   ): ((...args: Parameters<T>) => void) => {
@@ -35,7 +35,7 @@ export const performanceUtils = {
   },
 
   // Memoize expensive calculations
-  memoize: <T extends (...args: any[]) => any>(fn: T): T => {
+  memoize: <T extends (...args: unknown[]) => unknown>(fn: T): T => {
     const cache = new Map();
     return ((...args: Parameters<T>) => {
       const key = JSON.stringify(args);
@@ -152,10 +152,10 @@ export const performanceUtils = {
 // API call optimization
 export const apiOptimization = {
   // Cache API responses
-  cache: new Map<string, { data: any; timestamp: number; ttl: number }>(),
+  cache: new Map<string, { data: unknown; timestamp: number; ttl: number }>(),
 
   // Cache API response
-  setCache: (key: string, data: any, ttl: number = 300000) => { // 5 minutes default
+  setCache: (key: string, data: unknown, ttl: number = 300000) => { // 5 minutes default
     apiOptimization.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -164,7 +164,7 @@ export const apiOptimization = {
   },
 
   // Get cached API response
-  getCache: (key: string): any | null => {
+  getCache: (key: string): unknown | null => {
     const cached = apiOptimization.cache.get(key);
     if (!cached) return null;
 
@@ -227,23 +227,23 @@ export const imageOptimization = {
 // Component performance optimization
 export const componentOptimization = {
   // Should component update based on props
-  shouldUpdate: (prevProps: any, nextProps: any, keys: string[]): boolean => {
+  shouldUpdate: (prevProps: Record<string, unknown>, nextProps: Record<string, unknown>, keys: string[]): boolean => {
     return keys.some(key => prevProps[key] !== nextProps[key]);
   },
 
   // Memoize component props
-  memoizeProps: <T extends Record<string, any>>(props: T, keys: string[]): Partial<T> => {
+  memoizeProps: <T extends Record<string, unknown>>(props: T, keys: string[]): Partial<T> => {
     const memoizedProps: Partial<T> = {};
     keys.forEach(key => {
       if (key in props) {
-        (memoizedProps as any)[key] = props[key];
+        (memoizedProps as Record<string, unknown>)[key] = props[key];
       }
     });
     return memoizedProps;
   },
 
   // Optimize list item rendering
-  optimizeListItem: (item: any, index: number, data: any[]): boolean => {
+  optimizeListItem: (item: unknown, index: number, data: unknown[]): boolean => {
     // Only render visible items
     const isVisible = index >= 0 && index < data.length;
     return isVisible;
