@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
+import { useToast } from '../../contexts/ToastContext';
 
 
 interface FoodItem {
@@ -85,6 +86,7 @@ export default function UnifiedNutritionLogger({
   initialMeal,
   mealType,
 }: UnifiedNutritionLoggerProps) {
+  const { showToast } = useToast();
   const [meal, setMeal] = useState<MealLog>({
     meal_type: mealType || getMealTypeByTime(),
     food_items: [],
@@ -96,6 +98,7 @@ export default function UnifiedNutritionLogger({
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
+  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -121,8 +124,10 @@ export default function UnifiedNutritionLogger({
       setLoading(true);
       const data = await nutritionService.getFoodItems();
       setFoodItems(data);
+      showToast('Food database loaded successfully', 'success');
     } catch (error) {
       console.error('Error loading food items:', error);
+      showToast('Failed to load food database', 'error');
     } finally {
       setLoading(false);
     }
@@ -181,12 +186,13 @@ export default function UnifiedNutritionLogger({
       };
       
       await nutritionService.logMeal(mealData);
+      showToast('Meal logged successfully!', 'success');
       onMealLogged();
       onClose();
       resetForm();
     } catch (error) {
       console.error('Error saving meal:', error);
-      Alert.alert('Error', 'Failed to save meal');
+      showToast('Failed to save meal. Please try again.', 'error');
     } finally {
       setLoading(false);
     }
@@ -230,6 +236,7 @@ export default function UnifiedNutritionLogger({
     if (existingItem) {
       // Update quantity if item already exists
       updateFoodQuantity(foodItem.id.toString(), existingItem.quantity + 1);
+      showToast(`${foodItem.name} quantity increased`, 'info');
     } else {
       // Add new food item
       const newFoodItem = {
@@ -246,6 +253,7 @@ export default function UnifiedNutritionLogger({
         food_items: newFoodItems,
         ...totals,
       }));
+      showToast(`${foodItem.name} added to meal`, 'success');
     }
   };
 
@@ -265,6 +273,9 @@ export default function UnifiedNutritionLogger({
   };
 
   const removeFoodItem = (foodId: string) => {
+    const foodItem = meal.food_items.find(item => item.food_item.id === foodId);
+    const foodName = foodItem?.food_item.name || 'Food item';
+    
     setMeal(prev => {
       const updatedFoodItems = prev.food_items.filter(item => item.food_item.id !== foodId);
       const totals = calculateTotals(updatedFoodItems);
@@ -275,6 +286,8 @@ export default function UnifiedNutritionLogger({
         ...totals,
       };
     });
+    
+    showToast(`${foodName} removed from meal`, 'info');
   };
 
 

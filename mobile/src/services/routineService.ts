@@ -14,16 +14,28 @@ export interface SimpleRoutine {
 
 export interface WorkoutDay {
   day: string;
-  workouts: Workout[];
+  workout_name?: string;
+  description?: string;
+  workouts?: Workout[]; // For backward compatibility
   exercises?: {
-    id: number;
-    name: string;
+    exercise_name: string;
+    logging_category: string;
     sets?: number;
-    reps?: number;
-    duration_minutes?: number;
-    weight_kg?: number;
-    distance_km?: number;
-  }[]; // For backward compatibility
+    reps?: string;
+    duration?: number;
+    distance?: number;
+    distance_unit?: string;
+    intensity?: string;
+    heart_rate?: number;
+    difficulty?: string;
+    total_reps?: number;
+    time?: number;
+    pace?: string;
+    weight_notes?: string;
+    rest_time?: string;
+    notes?: string;
+    order_index?: number;
+  }[];
 }
 
 export interface Workout {
@@ -121,18 +133,31 @@ class RoutineService extends BaseService {
     );
   }
 
+  // Get routine templates (public access)
+  async getRoutineTemplates(params?: {
+    limit?: number;
+    page?: number;
+  }): Promise<RoutineResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    if (params?.page) {
+      queryParams.append('page', params.page.toString());
+    }
+
+    return this.makeRequest(
+      () => apiClient.get(`/health/simple-routines/templates?${queryParams.toString()}`),
+      'ROUTINE SERVICE - getRoutineTemplates'
+    );
+  }
+
   // Get a specific template routine by ID (public access)
   async getTemplateRoutine(routineId: number): Promise<SimpleRoutineWithProgress> {
     const data = await this.makeRequest(
       () => apiClient.get(`/health/simple-routines/templates/${routineId}`),
       'ROUTINE SERVICE - getTemplateRoutine'
     );
-    
-    console.log('✅ Template routine fetched successfully:', {
-      id: data.id,
-      name: data.name,
-      isTemplate: data.is_template
-    });
     return data;
   }
 
@@ -143,16 +168,9 @@ class RoutineService extends BaseService {
         () => apiClient.get('/health/simple-routines/active'),
         'ROUTINE SERVICE - getActiveRoutine'
       );
-      console.log('✅ Active routine fetched successfully:', {
-        id: data.id,
-        name: data.name,
-        isTemplate: data.is_template,
-        isActive: data.user_progress?.is_active
-      });
       return data;
     } catch (error: any) {
       if (error.response?.status === 404) {
-        console.log('ℹ️ No active routine found');
         return null;
       }
       this.handleError(error, 'ROUTINE SERVICE - getActiveRoutine');
@@ -163,15 +181,9 @@ class RoutineService extends BaseService {
   // Create a user copy of a template routine
   async createFromTemplate(templateId: number, customName?: string): Promise<SimpleRoutineWithProgress> {
     try {
-      console.log('🔄 Creating routine from template:', { templateId, customName });
       
       // First get the template routine
       const template = await this.getTemplateRoutine(templateId);
-      console.log('📋 Template loaded:', {
-        name: template.name,
-        workoutDays: template.workout_schedule?.length || 0,
-        exercises: template.workout_schedule?.reduce((total, day) => total + (day.exercises?.length || 0), 0) || 0
-      });
       
       // Create a new routine based on the template
       const routineData: CreateRoutineData = {
@@ -181,7 +193,6 @@ class RoutineService extends BaseService {
         duration_weeks: template.duration_weeks,
       };
 
-      console.log('📝 Creating routine with data:', routineData);
 
       // Create the routine with workout plan
       const workoutDaysData = template.workout_schedule.map(day => ({
@@ -198,11 +209,6 @@ class RoutineService extends BaseService {
         }))
       }));
 
-      console.log('🏋️ Workout days data prepared:', {
-        daysCount: workoutDaysData.length,
-        exercisesCount: workoutDaysData.reduce((total, day) => total + (day.exercises?.length || 0), 0)
-      });
-
       const data = await this.makeRequest(
         () => apiClient.post('/health/simple-routines/with-workout-plan', {
           routine_data: routineData,
@@ -210,12 +216,6 @@ class RoutineService extends BaseService {
         }),
         'ROUTINE SERVICE - createFromTemplate'
       );
-      
-      console.log('✅ Routine created successfully:', {
-        id: data.id,
-        name: data.name,
-        isTemplate: data.is_template
-      });
       
       return data;
     } catch (error) {
@@ -307,21 +307,13 @@ class RoutineService extends BaseService {
   // Get today's workout from active routine
   async getTodaysWorkout(): Promise<any> {
     try {
-      // Use the new active routine endpoint
-      const response = await apiClient.get('/health/active-routine/today-workout');
+      // Use the correct simple routines endpoint that actually fetches from database
+      const response = await apiClient.get('/health/simple-routines/active/today-workout');
       const data = this.extractData(response);
-      
-      console.log('✅ Today\'s workout fetched successfully:', {
-        dayName: data?.day_name,
-        routineName: data?.routine_name,
-        routineId: data?.routine_id,
-        exercisesCount: data?.exercises?.length || 0
-      });
       return data;
     } catch (error: any) {
       // Handle 404 error gracefully (no workout scheduled for today)
       if (error.response?.status === 404) {
-        console.log('ℹ️ No workout scheduled for today');
         return null; // Return null instead of throwing
       }
       
@@ -420,13 +412,11 @@ class RoutineService extends BaseService {
         timezone_offset: timezoneOffset
       };
       
-      console.log('🔍 [ROUTINE SERVICE] Creating workout log with data:', logDataWithTimezone);
       // Use the same endpoint as fitnessService to avoid duplicates
       const result = await this.makeRequest(
         () => apiClient.post('/health/logging/fitness', logDataWithTimezone),
         'ROUTINE SERVICE - createWorkoutLog'
       );
-      console.log('✅ [ROUTINE SERVICE] Workout log created successfully:', result);
       return result;
     } finally {
       // Remove from pending requests after completion

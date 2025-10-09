@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
+import SimpleLoggingItem, { SimpleLoggingItemData } from '../ui/SimpleLoggingItem';
 import { fitnessService, ExerciseType } from '../../services/fitnessService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS } from '../../theme/constants';
 import { useToast } from '../../contexts/ToastContext';
+import { CategoryBadge } from '../ui/Badge';
 
 interface WorkoutExercise {
   exercise_name?: string;
@@ -36,6 +38,7 @@ export default function WorkoutLoggingModal({
   todaysWorkout,
 }: WorkoutLoggingModalProps) {
   const [exercises, setExercises] = useState<LoggingItemData[]>([]);
+  const exercisesRef = useRef<LoggingItemData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
   const [saving, setSaving] = useState(false);
@@ -68,6 +71,11 @@ export default function WorkoutLoggingModal({
     }
   }, [visible, todaysWorkout]);
 
+  // Update ref when exercises changes
+  useEffect(() => {
+    exercisesRef.current = exercises;
+  }, [exercises]);
+
   const searchExercises = useCallback(async (query: string) => {
     if (query.trim().length < 2) {
       setSearchResults([]);
@@ -96,7 +104,7 @@ export default function WorkoutLoggingModal({
     setSearchResults([]);
     
     // Check if exercise already exists
-    const existingItem = exercises.find(item => item.name === exercise.name);
+    const existingItem = exercisesRef.current.find(item => item.name === exercise.name);
     
     if (existingItem) {
       // Update sets if exercise already exists
@@ -151,7 +159,7 @@ export default function WorkoutLoggingModal({
     }
     
     hapticFeedback.selection();
-  }, [exercises]);
+  }, []);
 
   const handleRemoveItem = useCallback((id: number | string) => {
     setExercises(prevExercises => prevExercises.filter(item => item.id !== id));
@@ -163,6 +171,15 @@ export default function WorkoutLoggingModal({
       item.id === id ? { ...item, ...updates } : item
     ));
   }, []);
+
+  const handleUpdateItemWithCleanup = useCallback((id: number | string, updates: Partial<LoggingItemData>) => {
+    handleUpdateItem(id, updates);
+    setNewlyAddedIds(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+  }, [handleUpdateItem]);
 
   const isFormValid = () => {
     if (exercises.length === 0) return false;
@@ -335,15 +352,14 @@ export default function WorkoutLoggingModal({
               </Text>
               {exercises.length > 0 && (
                 <View style={styles.workoutCategories}>
-                  {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => {
-                    const categoryInfo = getCategoryInfo(category);
-                    return (
-                      <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                        <Ionicons name={categoryInfo.icon as keyof typeof Ionicons.glyphMap} size={12} color={categoryInfo.color} />
-                        <Text style={[styles.workoutCategoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
-                      </View>
-                    );
-                  })}
+                  {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => (
+                    <CategoryBadge 
+                      key={index} 
+                      category={category} 
+                      size="small" 
+                      outline 
+                    />
+                  ))}
                 </View>
               )}
             </View>
@@ -406,34 +422,20 @@ export default function WorkoutLoggingModal({
                   <View style={styles.exerciseTitleRow}>
                     <Text style={styles.exerciseNumber}>#{index + 1}</Text>
                     <Text style={styles.exerciseName}>{exercise.name}</Text>
-                    {exercise.category && (() => {
-                      const categoryInfo = getCategoryInfo(exercise.category);
-                      return (
-                        <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                          <Ionicons name={categoryInfo.icon as keyof typeof Ionicons.glyphMap} size={12} color={categoryInfo.color} />
-                          <Text style={[styles.categoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
-                        </View>
-                      );
-                    })()}
+                    {exercise.category && (
+                      <CategoryBadge 
+                        category={exercise.category} 
+                        size="small" 
+                        outline 
+                      />
+                    )}
                   </View>
                 </View>
 
-                <LoggingItem
+                <SimpleLoggingItem
                   item={exercise}
-                  itemType="workout"
-                  index={index}
-                  onUpdate={(id, updates) => {
-                    handleUpdateItem(id, updates);
-                    setNewlyAddedIds(prev => {
-                      const newSet = new Set(prev);
-                      newSet.delete(id);
-                      return newSet;
-                    });
-                  }}
+                  onUpdate={handleUpdateItemWithCleanup}
                   onRemove={handleRemoveItem}
-                  showExerciseDetails={true}
-                  isNewlyAdded={newlyAddedIds.has(exercise.id)}
-                  testID={`exercise-item-${index}`}
                 />
               </View>
             ))}
@@ -533,21 +535,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-  },
-  workoutCategoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  workoutCategoryText: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginLeft: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   closeButton: {
     padding: 4,
@@ -653,22 +640,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#111827',
     flex: 1,
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  categoryText: {
-    fontSize: 10,
-    fontWeight: '500',
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   emptyState: {
     alignItems: 'center',

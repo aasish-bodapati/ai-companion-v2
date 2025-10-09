@@ -46,7 +46,6 @@ export default function NutritionScreen() {
 
   const loadWeeklyActivityData = useCallback(async () => {
     try {
-      console.log('🍽️ [NUTRITION SCREEN] Loading weekly activity data...');
       
       // Calculate date range for the past 7 days
       const today = new Date();
@@ -56,14 +55,12 @@ export default function NutritionScreen() {
       const startDate = sevenDaysAgo.toISOString().split('T')[0];
       const endDate = today.toISOString().split('T')[0];
       
-      console.log('🍽️ [NUTRITION SCREEN] Date range:', { startDate, endDate });
       
       // Get recent meals for the week using date range
       const meals = await nutritionService.getNutritionLogs({ 
         start_date: startDate, 
         end_date: endDate 
       });
-      console.log('🍽️ [NUTRITION SCREEN] Loaded meals for weekly chart:', meals);
       
       // Group meals by day of week
       const weeklyData = {
@@ -80,13 +77,6 @@ export default function NutritionScreen() {
         meals.forEach(meal => {
           // Parse the meal_date as UTC and convert to user's timezone
           const mealDateUTC = new Date(meal.meal_date);
-          console.log('🍽️ [NUTRITION SCREEN] Processing meal:', {
-            meal_date: meal.meal_date,
-            parsed_utc: mealDateUTC.toISOString(),
-            local_time: mealDateUTC.toLocaleString(),
-            day_of_week_utc: mealDateUTC.getDay(),
-            day_of_week_local: mealDateUTC.getDay()
-          });
           
           // Use the local day of week (this handles timezone conversion automatically)
           const dayOfWeek = mealDateUTC.getDay(); // 0 = Sunday, 1 = Monday, etc.
@@ -103,7 +93,6 @@ export default function NutritionScreen() {
         });
       }
       
-      console.log('🍽️ [NUTRITION SCREEN] Weekly activity data calculated:', weeklyData);
       setWeeklyActivityData(weeklyData);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications

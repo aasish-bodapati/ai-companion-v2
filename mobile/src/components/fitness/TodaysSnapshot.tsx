@@ -109,11 +109,14 @@ export default function TodaysSnapshot({
                 size={20} 
                 color="#3b82f6" 
               />
-              <Text style={styles.workoutTitle}>Recommended: {todaysWorkout.name}</Text>
+              <Text style={styles.workoutTitle}>Recommended: {todaysWorkout.name || 'Workout'}</Text>
             </View>
             <View style={styles.workoutBadge}>
               <Text style={styles.workoutBadgeText}>
-                {todaysWorkout.difficulty.charAt(0).toUpperCase() + todaysWorkout.difficulty.slice(1)}
+                {todaysWorkout.difficulty ? 
+                  todaysWorkout.difficulty.charAt(0).toUpperCase() + todaysWorkout.difficulty.slice(1) :
+                  'Unknown'
+                }
               </Text>
             </View>
           </View>
@@ -121,15 +124,15 @@ export default function TodaysSnapshot({
           <View style={styles.workoutDetails}>
             <View style={styles.workoutDetail}>
               <Ionicons name="time-outline" size={14} color="#6b7280" />
-              <Text style={styles.workoutDetailText}>{todaysWorkout.estimatedDuration} min</Text>
+              <Text style={styles.workoutDetailText}>{todaysWorkout.estimatedDuration || 0} min</Text>
             </View>
             <View style={styles.workoutDetail}>
               <Ionicons name="barbell-outline" size={14} color="#6b7280" />
-              <Text style={styles.workoutDetailText}>{todaysWorkout.exercises.length} exercises</Text>
+              <Text style={styles.workoutDetailText}>{todaysWorkout.exercises?.length || 0} exercises</Text>
             </View>
             <View style={styles.workoutDetail}>
               <Ionicons name="flame-outline" size={14} color="#6b7280" />
-              <Text style={styles.workoutDetailText}>~{todaysWorkout.calories} cal</Text>
+              <Text style={styles.workoutDetailText}>~{todaysWorkout.calories || 0} cal</Text>
             </View>
           </View>
           

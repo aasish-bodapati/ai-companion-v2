@@ -32,20 +32,38 @@ interface ProgressMetricsData {
 }
 
 export function useProgressMetricsData(): ProgressMetricsData {
+  console.log('🔄 [PROGRESS METRICS HOOK] useProgressMetricsData called');
   const progressMetrics = useProgressMetrics();
   const { streaks } = useStreaks();
   const { achievements } = useAchievements();
   const renderCountRef = useRef(0);
 
   renderCountRef.current += 1;
+  console.log('🔄 [PROGRESS METRICS HOOK] Render count:', renderCountRef.current);
+  console.log('🔄 [PROGRESS METRICS HOOK] progressMetrics changed:', progressMetrics);
+  console.log('🔄 [PROGRESS METRICS HOOK] streaks changed:', streaks);
+  console.log('🔄 [PROGRESS METRICS HOOK] achievements changed:', achievements);
 
   return useMemo(() => {
+    console.log('🔄 [PROGRESS METRICS HOOK] progressMetrics:', progressMetrics);
+    
+    // Default values if progressMetrics is undefined
+    const defaultMetrics = {
+      workouts: { current: 0, target: 0 },
+      calories: { current: 0, target: 0 },
+      protein: { current: 0, target: 0 },
+      steps: { current: 0, target: 0 },
+      mood: { current: 0, target: 0 },
+    };
+    
+    const metrics = progressMetrics || defaultMetrics;
+    
     const rings = [
       {
         id: 'workouts',
         label: 'Workouts',
-        value: progressMetrics.workouts.current,
-        target: progressMetrics.workouts.target,
+        value: metrics.workouts?.current || 0,
+        target: metrics.workouts?.target || 0,
         unit: '',
         icon: 'fitness',
         color: '#3b82f6',
@@ -53,8 +71,8 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'calories',
         label: 'Calories',
-        value: progressMetrics.calories.current,
-        target: progressMetrics.calories.target,
+        value: metrics.calories?.current || 0,
+        target: metrics.calories?.target || 0,
         unit: 'cal',
         icon: 'flame',
         color: '#ef4444',
@@ -62,8 +80,8 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'protein',
         label: 'Protein',
-        value: progressMetrics.protein.current,
-        target: progressMetrics.protein.target,
+        value: metrics.protein?.current || 0,
+        target: metrics.protein?.target || 0,
         unit: 'g',
         icon: 'nutrition',
         color: '#10b981',
@@ -71,8 +89,8 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'steps',
         label: 'Steps',
-        value: progressMetrics.steps.current,
-        target: progressMetrics.steps.target,
+        value: metrics.steps?.current || 0,
+        target: metrics.steps?.target || 0,
         unit: '',
         icon: 'walk',
         color: '#8b5cf6',
@@ -83,8 +101,8 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'mood',
         label: 'Mood',
-        value: progressMetrics.mood.current,
-        target: progressMetrics.mood.target,
+        value: metrics.mood?.current || 0,
+        target: metrics.mood?.target || 0,
         unit: '/10',
         icon: 'happy',
         color: '#f59e0b',

@@ -16,7 +16,7 @@ import { exerciseCategoryService } from '../../services/exerciseCategoryService'
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+import { useExerciseCategories, useExerciseCategoriesActions } from '../../stores';
 
 interface Exercise {
   id: number;
@@ -62,7 +62,15 @@ export default function EditRoutineModal({
   const [loadingRoutineData, setLoadingRoutineData] = useState(false);
   
   // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  const categories = useExerciseCategories();
+  const { loadCategories } = useExerciseCategoriesActions();
+  
+  // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
+  // React.useEffect(() => {
+  //   if (categories.length === 0) {
+  //     loadCategories();
+  //   }
+  // }, [categories.length]); // Removed loadCategories from dependencies to prevent infinite loop
   
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
@@ -342,7 +350,7 @@ export default function EditRoutineModal({
           workout_name: `${day.dayName} Workout`,
           description: `${day.workouts.length} exercises`,
           workouts: day.workouts.map(workout => ({
-            activity_name: workout.exercise?.name || 'Unknown Exercise',
+            activity_name: workout.exercise?.name,
             activity_type: workout.exercise?.logging_category || 'weighted',
           })),
         }));

@@ -73,7 +73,7 @@ export default function UnifiedWorkoutLogger({
 }: UnifiedWorkoutLoggerProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [workout, setWorkout] = useState<WorkoutLog>({
-    name: '',
+    name: 'Workout Not Found',
     date: new Date().toISOString().split('T')[0],
     duration: 0,
     calories_burned: 0,
@@ -171,7 +171,7 @@ export default function UnifiedWorkoutLogger({
   const resetForm = () => {
     setCurrentStep(0);
     setWorkout({
-      name: '',
+      name: 'Workout Not Found',
       date: new Date().toISOString().split('T')[0],
       duration: 0,
       calories_burned: 0,
@@ -350,7 +350,7 @@ export default function UnifiedWorkoutLogger({
                   <View key={set.id} style={styles.setCard}>
                     <View style={styles.setHeader}>
                       <Text style={styles.setTitle}>
-                        {exercise?.name || 'Unknown Exercise'} #{index + 1}
+                        {exercise?.name} #{index + 1}
                       </Text>
                       <TouchableOpacity
                         onPress={() => removeSet(set.id)}

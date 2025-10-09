@@ -43,23 +43,19 @@ export interface HealthInsights {
 
 class HealthService extends BaseService {
   async getHealthData(): Promise<HealthData> {
-    console.log('🏥 Health Service: Fetching health data...');
     const data = await this.makeRequest(
       () => apiClient.get('/health'),
       'HEALTH SERVICE - getHealthData'
     );
-    console.log('🏥 Health Service: Health data received:', data);
     return data;
   }
 
   async getHealthProfile(): Promise<HealthProfile | null> {
     try {
-      console.log('🏥 Health Service: Fetching health profile...');
       const data = await this.makeRequest(
         () => apiClient.get('/health/profile/'),
         'HEALTH SERVICE - getHealthProfile'
       );
-      console.log('🏥 Health Service: Profile received:', data);
       return data;
     } catch (error) {
       this.handleError(error, 'HEALTH SERVICE - getHealthProfile');
@@ -68,72 +64,61 @@ class HealthService extends BaseService {
   }
 
   async updateHealthProfile(profileData: Partial<HealthProfile>): Promise<HealthProfile> {
-    console.log('🏥 Health Service: Updating health profile...', profileData);
     const data = await this.makeRequest(
       () => apiClient.put('/health/profile/', profileData),
       'HEALTH SERVICE - updateHealthProfile'
     );
-    console.log('🏥 Health Service: Profile updated:', data);
     return data;
   }
 
   async getHealthInsights(): Promise<HealthInsights> {
-    console.log('🏥 Health Service: Fetching health insights...');
     const data = await this.makeRequest(
       () => apiClient.get('/health/insights/suggestions'),
       'HEALTH SERVICE - getHealthInsights'
     );
-    console.log('🏥 Health Service: Insights received:', data);
     return data;
   }
 
   async getHealthScore(): Promise<{ score: number; breakdown: any }> {
-    console.log('🏥 Health Service: Fetching health score...');
     const data = await this.makeRequest(
       () => apiClient.get('/health/insights/health-score'),
       'HEALTH SERVICE - getHealthScore'
     );
-    console.log('🏥 Health Service: Health score received:', data);
     return data;
   }
 
   async getWeeklyReport(): Promise<any> {
-    console.log('🏥 Health Service: Fetching weekly report...');
     const data = await this.makeRequest(
       () => apiClient.get('/health/insights/weekly-report'),
       'HEALTH SERVICE - getWeeklyReport'
     );
-    console.log('🏥 Health Service: Weekly report received:', data);
     return data;
   }
 
   // Analytics
   async getAnalyticsData(): Promise<any> {
-    console.log('🏥 Health Service: Fetching analytics data...');
     const data = await this.makeRequest(
       () => apiClient.get('/health/analytics/dashboard'),
       'HEALTH SERVICE - getAnalyticsData'
     );
-    console.log('🏥 Health Service: Analytics received:', data);
     return data;
   }
 
-  // Water logging (delegated to waterService for consistency)
+  // Water logging (delegated to simpleWaterService for consistency)
   async getWaterLogs(days: number = 7): Promise<any[]> {
-    console.log('🏥 Health Service: Delegating to waterService for water logs...', days);
-    const { waterService } = await import('./waterService');
-    return waterService.getWaterLogs(days);
+    const { simpleWaterService } = await import('./simpleWaterService');
+    // Simple water service doesn't have getWaterLogs, so we'll return empty array for now
+    // This is a legacy method that might not be needed
+    return [];
   }
 
   async logWater(amount_ml: number): Promise<any> {
-    console.log('🏥 Health Service: Delegating to waterService for water logging...', amount_ml);
-    const { waterService } = await import('./waterService');
-    return waterService.createWaterLog({ amount_ml });
+    const { simpleWaterService } = await import('./simpleWaterService');
+    return simpleWaterService.logWater(amount_ml);
   }
 
   // Mood logging (delegated to moodService for consistency)
   async getMoodLogs(days: number = 7): Promise<any[]> {
-    console.log('🏥 Health Service: Delegating to moodService for mood logs...', days);
     const { moodService } = await import('./moodService');
     return moodService.getMoodLogs({ 
       start_date: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -153,7 +138,6 @@ class HealthService extends BaseService {
     notes?: string;
     activities?: string;
   }): Promise<any> {
-    console.log('🏥 Health Service: Delegating to moodService for mood logging...', moodData);
     const { moodService } = await import('./moodService');
     return moodService.createMoodLog({
       mood_rating: moodData.mood_rating,

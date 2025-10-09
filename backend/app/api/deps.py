@@ -31,11 +31,19 @@ def get_db() -> Generator:
         yield db
     except Exception as e:
         logger.error(f"🗄️ [DB] Error creating database session: {e}")
+        logger.error(f"🗄️ [DB] Exception type: {type(e).__name__}")
+        logger.error(f"🗄️ [DB] Exception details: {str(e)}")
+        import traceback
+        logger.error(f"🗄️ [DB] Full traceback: {traceback.format_exc()}")
         raise
     finally:
         logger.info(f"🗄️ [DB] Closing database session...")
-        db.close()
-        logger.info(f"🗄️ [DB] Database session closed")
+        try:
+            if 'db' in locals():
+                db.close()
+                logger.info(f"🗄️ [DB] Database session closed")
+        except Exception as close_error:
+            logger.error(f"🗄️ [DB] Error closing database session: {close_error}")
 
 def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusable_oauth2)) -> User:
     """
@@ -55,6 +63,7 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusabl
     logger = logging.getLogger(__name__)
     
     logger.info(f"🔐 [AUTH] Starting authentication for token: {token[:20]}...")
+    logger.info(f"🔐 [AUTH] Full token received: {token}")
     
     try:
         logger.info(f"🔐 [AUTH] Decoding JWT token...")

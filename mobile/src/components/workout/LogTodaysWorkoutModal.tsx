@@ -18,6 +18,7 @@ import { ExerciseData } from '../../services/fitnessService';
 import { useToast } from '../../contexts/ToastContext';
 import { useCreateLoadingState } from '../../utils/duplicateCodeUtils';
 import { isFeatureEnabled } from '../../config/featureFlags';
+import { CategoryBadge, StatusBadge } from '../ui/Badge';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface Exercise {
@@ -592,15 +593,14 @@ export default function LogTodaysWorkoutModal({
               </Text>
               {workoutData.exercises && workoutData.exercises.length > 0 && (
                 <View style={styles.workoutCategories}>
-                  {Array.from(new Set(workoutData.exercises.map(ex => ex.category || ex.logging_category).filter(Boolean))).map((category, index) => {
-                    const categoryInfo = getCategoryInfo(category || '');
-                    return (
-                      <View key={index} style={[styles.workoutCategoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                        <Ionicons name={categoryInfo.icon as any} size={12} color={categoryInfo.color} />
-                        <Text style={[styles.workoutCategoryText, { color: categoryInfo.color }]}>{categoryInfo.name}</Text>
-                      </View>
-                    );
-                  })}
+                  {Array.from(new Set(workoutData.exercises.map(ex => ex.category || ex.logging_category).filter(Boolean))).map((category, index) => (
+                    <CategoryBadge 
+                      key={index} 
+                      category={category || ''} 
+                      size="small" 
+                      outline 
+                    />
+                  ))}
                 </View>
               )}
             </View>
@@ -621,9 +621,48 @@ export default function LogTodaysWorkoutModal({
 
               // Convert exercise data to DynamicExerciseForm format
               // Pre-populate with latest logged data if available
+              
+              // Map exercise name to category if no category is provided
+              const getExerciseCategory = (exerciseName: string) => {
+                const commonExerciseMappings: { [key: string]: string } = {
+                  'run': 'distance_based',
+                  'running': 'distance_based',
+                  'jog': 'distance_based',
+                  'jogging': 'distance_based',
+                  'walk': 'distance_based',
+                  'walking': 'distance_based',
+                  'cycle': 'distance_based',
+                  'cycling': 'distance_based',
+                  'bike': 'distance_based',
+                  'biking': 'distance_based',
+                  'swim': 'distance_based',
+                  'swimming': 'distance_based',
+                  'pushup': 'bodyweight',
+                  'push-ups': 'bodyweight',
+                  'push ups': 'bodyweight',
+                  'situp': 'bodyweight',
+                  'sit-ups': 'bodyweight',
+                  'sit ups': 'bodyweight',
+                  'pullup': 'bodyweight',
+                  'pull-ups': 'bodyweight',
+                  'pull ups': 'bodyweight',
+                  'squat': 'bodyweight',
+                  'squats': 'bodyweight',
+                  'plank': 'hold_static',
+                  'yoga': 'cardio_duration',
+                  'meditation': 'cardio_duration',
+                };
+                
+                const normalizedName = exerciseName.toLowerCase().trim();
+                return commonExerciseMappings[normalizedName] || 'weighted';
+              };
+              
+              const exerciseName = exercise.name || exercise.exercise_name || 'Exercise Not Found';
+              const mappedCategory = getExerciseCategory(exerciseName);
+              
               const exerciseForForm: ExerciseData = {
-                exercise_name: exercise.name || exercise.exercise_name || '',
-                logging_category: exercise.category || exercise.logging_category || '',
+                exercise_name: exerciseName,
+                logging_category: exercise.category || exercise.logging_category || mappedCategory,
                 sets: currentExerciseData.sets || '', // Pre-populate with latest data
                 reps: currentExerciseData.reps || '', // Pre-populate with latest data
                 weight: currentExerciseData.weight || '', // Pre-populate with latest data
@@ -647,22 +686,13 @@ export default function LogTodaysWorkoutModal({
                     <View style={styles.exerciseTitleRow}>
                       <Text style={styles.exerciseNumber}>#{index + 1}</Text>
                       <Text style={styles.exerciseName}>{exercise.name || exercise.exercise_name}</Text>
-                      {(exercise.category || exercise.logging_category) && (() => {
-                        const categoryInfo = getCategoryInfo(exercise.category || exercise.logging_category || '');
-                        
-                        return (
-                          <View style={[styles.categoryBadge, { backgroundColor: categoryInfo.color + '20', borderColor: categoryInfo.color }]}>
-                            <Ionicons 
-                              name={categoryInfo.icon as any} 
-                              size={12} 
-                              color={categoryInfo.color} 
-                            />
-                            <Text style={[styles.categoryText, { color: categoryInfo.color }]}>
-                              {categoryInfo.name}
-                            </Text>
-                          </View>
-                        );
-                      })()}
+                      {(exercise.category || exercise.logging_category) && (
+                        <CategoryBadge 
+                          category={exercise.category || exercise.logging_category || ''} 
+                          size="small" 
+                          outline 
+                        />
+                      )}
                       {isLogged && <Ionicons name="checkmark-circle" size={20} color="#10B981" />}
                     </View>
                     
@@ -678,9 +708,9 @@ export default function LogTodaysWorkoutModal({
                       </TouchableOpacity>
                       
                       {isLogged && (
-                        <View style={styles.loggedBadge}>
-                          <Text style={styles.loggedText}>Logged</Text>
-                        </View>
+                        <StatusBadge status="completed" size="small">
+                          Logged
+                        </StatusBadge>
                       )}
                     </View>
                   </View>
@@ -785,21 +815,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     gap: 3,
   },
-  workoutCategoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  workoutCategoryText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   closeButton: {
     padding: 4,
   },
@@ -856,22 +871,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     flex: 1,
   },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-    marginLeft: 6,
-    borderWidth: 1,
-  },
-  categoryText: {
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 3,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
   exerciseActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -898,17 +897,6 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: 12,
     color: '#6b7280',
-  },
-  loggedBadge: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  loggedText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
   },
   inputFields: {
     marginBottom: 8,

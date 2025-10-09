@@ -17,27 +17,47 @@ import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+import { CategoryBadge } from '../ui/Badge';
 
 // Category configuration for exercise categories
-const getCategoryConfig = (category: string | undefined) => {
+const getStaticCategoryConfig = (category: string | undefined) => {
   if (!category) {
-    return { color: '#6b7280', icon: 'fitness', displayName: 'Exercise' };
+    return { color: '#6b7280', icon: 'fitness', displayName: 'Category Not Found' };
   }
   
   const categoryMap: { [key: string]: { color: string; icon: string; displayName: string } } = {
+    // Database logging categories (from migration)
+    'bodyweight': { color: '#3b82f6', icon: 'user', displayName: 'Bodyweight Exercises' },
+    'weighted': { color: '#ef4444', icon: 'dumbbell', displayName: 'Weighted Exercises' },
+    'cardio_duration': { color: '#10b981', icon: 'heart', displayName: 'Cardio & Duration' },
+    'hold_static': { color: '#8b5cf6', icon: 'clock', displayName: 'Hold & Static' },
+    'repetition_only': { color: '#f59e0b', icon: 'repeat', displayName: 'Repetition Only' },
+    'distance_based': { color: '#14b8a6', icon: 'map', displayName: 'Distance Based' },
+    
+    // Legacy/alternative category names for compatibility
     'strength': { color: '#ef4444', icon: 'barbell', displayName: 'Strength' },
-    'cardio': { color: '#3b82f6', icon: 'heart', displayName: 'Cardio' },
+    'cardio': { color: '#10b981', icon: 'heart', displayName: 'Cardio' },
     'flexibility': { color: '#10b981', icon: 'leaf', displayName: 'Flexibility' },
     'sports': { color: '#f59e0b', icon: 'football', displayName: 'Sports' },
-    'rehabilitation': { color: '#8b5cf6', icon: 'medical', displayName: 'Rehab' },
+    'rehabilitation': { color: '#8b5cf6', icon: 'medical', displayName: 'Rehabilitation' },
     'strongman': { color: '#dc2626', icon: 'fitness', displayName: 'Strongman' },
     'powerlifting': { color: '#7c3aed', icon: 'trophy', displayName: 'Powerlifting' },
     'stretching': { color: '#059669', icon: 'expand', displayName: 'Stretching' },
     'olympic_weightlifting': { color: '#d97706', icon: 'medal', displayName: 'Olympic' },
     'plyometrics': { color: '#be185d', icon: 'flash', displayName: 'Plyo' },
+    'endurance': { color: '#10b981', icon: 'heart', displayName: 'Endurance' },
+    'running': { color: '#10b981', icon: 'walk', displayName: 'Running' },
+    'yoga': { color: '#10b981', icon: 'leaf', displayName: 'Yoga' },
+    'pilates': { color: '#10b981', icon: 'leaf', displayName: 'Pilates' },
+    'swimming': { color: '#10b981', icon: 'water', displayName: 'Swimming' },
+    'cycling': { color: '#10b981', icon: 'bicycle', displayName: 'Cycling' },
+    'dance': { color: '#f59e0b', icon: 'musical-notes', displayName: 'Dance' },
+    'martial_arts': { color: '#dc2626', icon: 'shield', displayName: 'Martial Arts' },
+    'crossfit': { color: '#7c3aed', icon: 'fitness', displayName: 'CrossFit' },
+    'functional': { color: '#059669', icon: 'construct', displayName: 'Functional' },
   };
   
-  return categoryMap[category] || { color: '#6b7280', icon: 'fitness', displayName: 'Exercise' };
+  return categoryMap[category] || { color: '#6b7280', icon: 'fitness', displayName: 'Category Not Found' };
 };
 
 interface Exercise {
@@ -80,8 +100,19 @@ export default function ComprehensiveRoutineModal({
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
   
-  // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  // DISABLED: Use exercise categories store to prevent infinite loops
+  // const { categories, loadCategories } = useExerciseCategoriesWithAutoLoad();
+  
+  // Use static categories to prevent infinite loops
+  const categories = [
+    { id: 1, name: 'strength', display_name: 'Strength' },
+    { id: 2, name: 'cardio', display_name: 'Cardio' },
+    { id: 3, name: 'flexibility', display_name: 'Flexibility' },
+    { id: 4, name: 'sports', display_name: 'Sports' },
+    { id: 5, name: 'rehabilitation', display_name: 'Rehabilitation' },
+  ];
+  
+  // Categories are now auto-loaded via useExerciseCategoriesWithAutoLoad hook
   
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
@@ -99,8 +130,7 @@ export default function ComprehensiveRoutineModal({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [exerciseSearch, setExerciseSearch] = useState('');
   const [loadingExercises, setLoadingExercises] = useState(false);
-  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
-  const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
+  // Removed exercise selector functionality
 
   const resetForm = () => {
     setRoutineName('');
@@ -116,7 +146,7 @@ export default function ComprehensiveRoutineModal({
     setCurrentDay(0);
     setSelectedCategory(null);
     setExerciseSearch('');
-    setShowExerciseSelector(false);
+    // Removed exercise selector functionality
   };
 
   const handleClose = () => {
@@ -124,22 +154,35 @@ export default function ComprehensiveRoutineModal({
     onClose();
   };
 
-  const getCategoryConfig = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
+  const getCategoryConfig = (categoryIdOrName: string) => {
+    // First try to find by ID (for category selection)
+    let category = categories.find(cat => cat.id === categoryIdOrName);
+    
+    // If not found by ID, try to find by name (for exercise logging_category)
+    if (!category) {
+      category = categories.find(cat => cat.name === categoryIdOrName);
+    }
+    
     if (category) {
+      // Use the static function to get color and icon
+      const staticConfig = getStaticCategoryConfig(category.name);
       return {
         id: category.id,
-        name: category.display_name,
-        color: category.color,
-        icon: category.icon,
+        name: category.display_name || category.name,
+        color: staticConfig.color,
+        icon: staticConfig.icon,
       };
     }
-    // Return "Category Not Found" config
+    
+    // NO FALLBACK - Show the actual category value to debug
+    console.log('🔍 [CATEGORY DEBUG] Category not found:', categoryIdOrName);
+    console.log('🔍 [CATEGORY DEBUG] Available categories:', categories.map(c => ({ id: c.id, name: c.name })));
+    
     return {
-      id: categoryId,
-      name: 'Category Not Found',
-      color: '#6b7280',
-      icon: 'help-outline',
+      id: categoryIdOrName,
+      name: `DEBUG: ${categoryIdOrName}`,
+      color: '#ff0000', // Red to make it obvious
+      icon: 'warning',
     };
   };
 
@@ -234,26 +277,7 @@ export default function ComprehensiveRoutineModal({
     setDayWorkouts(updatedDayWorkouts);
   };
 
-  const selectExercise = (exercise: Exercise) => {
-    if (!currentWorkoutId) return;
-
-    const updatedDayWorkouts = [...dayWorkouts];
-    const dayIndex = currentDay;
-    const workoutIndex = updatedDayWorkouts[dayIndex].workouts.findIndex(
-      workout => workout.id === currentWorkoutId
-    );
-
-    if (workoutIndex !== -1) {
-      updatedDayWorkouts[dayIndex].workouts[workoutIndex].exercise = exercise;
-      setDayWorkouts(updatedDayWorkouts);
-    }
-
-    // Clear search and close modal
-    setExerciseSearch('');
-    setSelectedCategory(null);
-    setShowExerciseSelector(false);
-    setCurrentWorkoutId(null);
-  };
+  // Removed selectExercise function - no longer needed
 
 
   const getTotalWorkouts = () => {
@@ -291,7 +315,7 @@ export default function ComprehensiveRoutineModal({
           workout_name: `${day.dayName} Workout`,
           description: `${day.workouts.length} exercises`,
           workouts: day.workouts.map(workout => ({
-            activity_name: workout.exercise?.name || 'Unknown Exercise',
+            activity_name: workout.exercise?.name,
             activity_type: workout.exercise?.logging_category || 'weighted',
           })),
         }));
@@ -310,6 +334,7 @@ export default function ComprehensiveRoutineModal({
     }
   };
 
+  // Removed renderExerciseSelector function - no longer needed
   const renderExerciseSelector = () => (
         <Modal
           visible={showExerciseSelector}
@@ -318,8 +343,8 @@ export default function ComprehensiveRoutineModal({
           onRequestClose={() => {
             setExerciseSearch('');
             setSelectedCategory(null);
-            setShowExerciseSelector(false);
-            setCurrentWorkoutId(null);
+            // Removed exercise selector functionality
+            // Removed exercise selector functionality
           }}
         >
       <View style={styles.exerciseSelectorContainer}>
@@ -327,8 +352,8 @@ export default function ComprehensiveRoutineModal({
           <TouchableOpacity onPress={() => {
             setExerciseSearch('');
             setSelectedCategory(null);
-            setShowExerciseSelector(false);
-            setCurrentWorkoutId(null);
+            // Removed exercise selector functionality
+            // Removed exercise selector functionality
           }}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
@@ -598,18 +623,11 @@ export default function ComprehensiveRoutineModal({
 
             {/* Current Day Workouts */}
             <View style={styles.dayWorkouts}>
-              <View style={styles.dayHeader}>
-                <View style={styles.dayTitle}>
-                  <View style={styles.dayIcon}>
-                    <Text style={styles.dayIconText}>{dayWorkouts[currentDay].dayName[0]}</Text>
-                  </View>
-                  <Text style={styles.dayName}>{dayWorkouts[currentDay].dayName}</Text>
-                </View>
-              </View>
+              {/* Day header removed - day is already shown in navigation above */}
 
               {dayWorkouts[currentDay].workouts.length === 0 ? (
                 <View style={styles.noWorkouts}>
-                  <Text style={styles.noWorkoutsText}>No workouts planned for {dayWorkouts[currentDay].dayName}</Text>
+                  <Text style={styles.noWorkoutsText}>No workouts planned for this day</Text>
                   <Text style={styles.noWorkoutsSubtext}>Use the search bar above to find and add exercises</Text>
                 </View>
               ) : (
@@ -627,17 +645,10 @@ export default function ComprehensiveRoutineModal({
                             </View>
                             <View style={styles.exerciseTitleRight}>
                               {workout.exercise && workout.exercise.logging_category && (
-                                <View style={[styles.categoryBadge, { backgroundColor: getCategoryConfig(workout.exercise.logging_category).color }]}>
-                                  <Ionicons 
-                                    name={getCategoryConfig(workout.exercise.logging_category).icon as any} 
-                                    size={6} 
-                                    color="#ffffff"
-                                    style={styles.badgeIcon}
-                                  />
-                                  <Text style={styles.categoryText}>
-                                    {getCategoryConfig(workout.exercise.logging_category).name.toUpperCase()}
-                                  </Text>
-                                </View>
+                                <CategoryBadge 
+                                  category={workout.exercise.logging_category} 
+                                  size="small"
+                                />
                               )}
                               <TouchableOpacity
                                 style={styles.actionButton}
@@ -649,18 +660,7 @@ export default function ComprehensiveRoutineModal({
                           </View>
                         </View>
 
-                        <TouchableOpacity
-                          style={styles.exerciseSelector}
-                          onPress={() => {
-                            setCurrentWorkoutId(workout.id);
-                            setShowExerciseSelector(true);
-                          }}
-                        >
-                          <Text style={styles.exerciseSelectorText}>
-                            {workout.exercise ? 'Tap to change exercise' : 'Tap to select exercise'}
-                          </Text>
-                          <Ionicons name="chevron-down" size={16} color={COLORS.text.secondary} />
-                        </TouchableOpacity>
+                        {/* Removed exercise name display - no longer needed */}
                       </View>
                     </View>
                   ))}
@@ -670,7 +670,7 @@ export default function ComprehensiveRoutineModal({
           </View>
         </ScrollView>
 
-        {renderExerciseSelector()}
+        {/* Removed exercise selector functionality */}
       </View>
     </Modal>
   );
@@ -963,26 +963,6 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     margin: 0,
     padding: 0,
-  },
-  categoryBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-    marginRight: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    flexShrink: 0,
-    minWidth: 40,
-  },
-  badgeIcon: {
-    marginRight: 1,
-  },
-  categoryText: {
-    fontSize: 7,
-    fontWeight: '600',
-    color: '#ffffff',
-    textTransform: 'uppercase',
   },
   actionButton: {
     padding: 2,

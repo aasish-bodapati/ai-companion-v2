@@ -48,6 +48,7 @@ class SimpleUserRoutineProgressBase(BaseModel):
 
 class SimpleUserRoutineProgressCreate(SimpleUserRoutineProgressBase):
     """Schema for creating user routine progress"""
+    user_id: int
     routine_id: int
 
 class SimpleUserRoutineProgressUpdate(SimpleUserRoutineProgressBase):

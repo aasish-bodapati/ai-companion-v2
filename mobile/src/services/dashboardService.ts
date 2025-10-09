@@ -96,13 +96,5 @@ export const dashboardService = {
     }
   },
 
-  async getAnalyticsData(): Promise<Record<string, unknown>> {
-    try {
-      const response = await apiClient.get('/health/logging/analytics/daily');
-      return response.data;
-    } catch (error) {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      throw error;
-    }
-  }
+  // getAnalyticsData method removed - analytics functionality deleted
 };

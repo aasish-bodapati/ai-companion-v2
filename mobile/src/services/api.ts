@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
 
-const API_URL = 'http://192.168.1.5:8000';
+const API_URL = 'http://192.168.1.11:8000';
 const API_BASE_URL = `${API_URL}/api/v1`;
 
 logger.api('API_URL:', API_URL);
@@ -12,7 +12,7 @@ logger.api('API_BASE_URL:', API_BASE_URL);
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000, // 60 second timeout - backend processing is slow
+  timeout: 25000, // 25 second timeout - backend has 30s timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -38,8 +38,6 @@ apiClient.interceptors.request.use(
         
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔐 [API] Added auth token for request to:', config.url);
-          console.log('🔐 [API] Token being sent:', token.substring(0, 50) + '...');
         } else if (!token) {
           console.warn('🔐 [API] No auth token found for request to:', config.url);
         }
@@ -66,7 +64,7 @@ apiClient.interceptors.response.use(
     return response;
   },
   async error => {
-    // Log authentication errors specifically
+    // Handle authentication errors
     if (error.response?.status === 401) {
       console.error('🔐 [API CLIENT] Authentication error:', {
         status: error.response?.status,
@@ -75,9 +73,14 @@ apiClient.interceptors.response.use(
         headers: error.config?.headers
       });
       
-      // Token expired - log the issue but don't clear tokens automatically
-      // Let the AuthContext handle token validation and logout
-      console.log('🔐 [API CLIENT] Token expired - AuthContext will handle logout');
+      // Clear tokens on 401 error
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        await AsyncStorage.removeItem('token');
+        await AsyncStorage.removeItem('user');
+      } catch (clearError) {
+        console.error('🔐 [API CLIENT] Error clearing tokens:', clearError);
+      }
     }
     // Only log important errors
     else if (error.response?.status >= 500 || error.config?.url?.includes('/login') || error.config?.url?.includes('/register')) {

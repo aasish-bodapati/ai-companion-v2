@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { nutritionService } from '../services/nutritionService';
 import { fitnessService } from '../services/fitnessService';
-import { waterService } from '../services/waterService';
+import { simpleWaterService } from '../services/simpleWaterService';
 import stepTrackingService from '../services/stepTrackingService';
 
 export interface BodyTypeGoalMetrics {
@@ -89,7 +89,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         nutritionService.getNutritionLogs({ start_date: weekStartStr, end_date: todayStr }),
         fitnessService.getFitnessLogs({ start_date: todayStr, end_date: todayStr }),
         fitnessService.getFitnessLogs({ start_date: weekStartStr, end_date: todayStr }),
-        waterService.getWaterStats().catch(() => null),
+        simpleWaterService.getTodayStats().catch(() => null),
       ]);
 
 
@@ -203,7 +203,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
       if (stepsToday > 0) {
         // Score based on steps: 10,000 steps = 100 points
         const stepsScore = Math.min(100, (stepsToday / 10000) * 100);
-        console.log('🚶 Activity score from steps:', { stepsToday, stepsScore });
         return stepsScore;
       }
     } catch (error) {
@@ -219,7 +218,6 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
       // Check if step tracking is available
       const isAvailable = await stepTrackingService.isAvailable();
       if (!isAvailable) {
-        console.log('🚶 Step tracking not available on this device');
         return 0;
       }
 

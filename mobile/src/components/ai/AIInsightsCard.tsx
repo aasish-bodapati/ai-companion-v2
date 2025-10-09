@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { aiInsightsService, AIInsight, HealthPattern, HealthRecommendation } from '../../services/aiInsightsService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
+import { DifficultyBadge } from '../ui/Badge';
 
 interface AIInsightsCardProps {
   onInsightPress?: (insight: AIInsight) => void;
@@ -186,12 +187,10 @@ export default function AIInsightsCard({
           />
           <Text style={styles.recommendationTitle}>{recommendation.title}</Text>
         </View>
-        <View style={[styles.difficultyBadge, { 
-          backgroundColor: recommendation.difficulty === 'easy' ? '#10b981' : 
-                          recommendation.difficulty === 'medium' ? '#f59e0b' : '#ef4444'
-        }]}>
-          <Text style={styles.difficultyText}>{recommendation.difficulty}</Text>
-        </View>
+        <DifficultyBadge 
+          difficulty={recommendation.difficulty} 
+          size="small"
+        />
       </View>
       <Text style={styles.recommendationDescription} numberOfLines={2}>
         {recommendation.description}
@@ -525,16 +524,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginLeft: 8,
     flex: 1,
-  },
-  difficultyBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: COMMON_STYLES.standardRadius,
-  },
-  difficultyText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
   },
   recommendationDescription: {
     fontSize: 14,

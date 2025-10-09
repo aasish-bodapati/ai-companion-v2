@@ -51,6 +51,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     checkAuthStatus();
   }, []);
 
+  // Listen for token changes (when API client clears tokens on 401)
+  useEffect(() => {
+    const checkTokenStatus = async () => {
+      const storedToken = await AsyncStorage.getItem('token');
+      if (!storedToken && token) {
+        // Token was cleared by API client, logout user
+        setToken(null);
+        setUser(null);
+        setNeedsOnboarding(false);
+      }
+    };
+
+    // Check token status every 5 seconds
+    const interval = setInterval(checkTokenStatus, 5000);
+    return () => clearInterval(interval);
+  }, [token]);
+
   const checkAuthStatus = async () => {
     try {
       const storedToken = await AsyncStorage.getItem('token');
@@ -60,7 +77,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const response = await apiClient.get('/users/me');
           if (__DEV__) {
-            console.log('🔍 User data from API:', response.data);
           }
           setUser(response.data);
         } catch (userError: unknown) {

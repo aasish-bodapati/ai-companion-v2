@@ -77,29 +77,91 @@ class CRUDWaterLog(GenericHealthLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUp
 
     def get_water_stats_today(self, db: Session, *, user_id: int) -> dict:
         """Get comprehensive water stats for today"""
-        today = date.today()
+        import logging
+        from datetime import datetime
+        from app.utils.timezone_handler import TimezoneHandler
         
-        # Get total ml and count
+        logger = logging.getLogger(__name__)
+        
+        # Get user timezone from user profile
+        from app.models.user import User
+        user = db.query(User).filter(User.id == user_id).first()
+        user_timezone = user.timezone if user and user.timezone else "UTC"
+        logger.info(f"🚰 [WATER STATS] Getting water stats for user {user_id} in timezone {user_timezone}")
+        
+        # Use timezone-aware filtering like the dashboard
+        now_utc = datetime.now()
+        start_of_day, end_of_day = TimezoneHandler.get_user_timezone_range(now_utc, user_timezone)
+        
+        logger.info(f"🚰 [WATER STATS] Using timezone range: {start_of_day} to {end_of_day}")
+        
+        # First, let's check what water logs exist for this user today
+        all_logs_today = db.query(WaterLog).filter(
+            WaterLog.user_id == user_id,
+            WaterLog.log_date >= start_of_day,
+            WaterLog.log_date <= end_of_day
+        ).all()
+        
+        logger.info(f"🚰 [WATER STATS] Found {len(all_logs_today)} water logs for today")
+        for i, log in enumerate(all_logs_today):
+            logger.info(f"🚰 [WATER STATS] Log {i+1}: ID={log.id}, amount_ml={log.amount_ml}, log_date={log.log_date}")
+        
+        # Get total ml and count using timezone-aware filtering
         result = db.query(
             func.sum(WaterLog.amount_ml).label('total_ml'),
             func.count(WaterLog.id).label('count')
         ).filter(
             WaterLog.user_id == user_id,
-            func.date(WaterLog.log_date) == today
+            WaterLog.log_date >= start_of_day,
+            WaterLog.log_date <= end_of_day
         ).first()
         
         total_ml = int(result.total_ml) if result.total_ml else 0
         logs_count = int(result.count) if result.count else 0
         
+        logger.info(f"🚰 [WATER STATS] Raw query result - total_ml: {result.total_ml}, count: {result.count}")
+        logger.info(f"🚰 [WATER STATS] Processed - total_ml: {total_ml}, logs_count: {logs_count}")
+        
         # Calculate ounces (1 ml = 0.033814 oz)
         total_oz = total_ml * 0.033814
         
-        # Default goal: 8 glasses = 2000ml
-        goal_ml = 2000
+        # Get user's gender to determine water goal
+        from app.models.health.user_goals import UserHealthProfile
+        health_profile = db.query(UserHealthProfile).filter(
+            UserHealthProfile.user_id == user_id
+        ).first()
+        
+        logger.info(f"🚰 [WATER STATS] Health profile found: {health_profile is not None}")
+        if health_profile:
+            logger.info(f"🚰 [WATER STATS] User gender: {health_profile.gender}")
+        else:
+            logger.warning(f"🚰 [WATER STATS] No health profile found for user {user_id}")
+        
+        # Calculate water goal based on gender
+        if health_profile and health_profile.gender:
+            if health_profile.gender == 'female':
+                goal_ml = 2700  # 2.7L for females
+                logger.info(f"🚰 [WATER STATS] Setting female goal: {goal_ml}ml")
+            elif health_profile.gender == 'male':
+                goal_ml = 3700  # 3.7L for males
+                logger.info(f"🚰 [WATER STATS] Setting male goal: {goal_ml}ml")
+            else:
+                goal_ml = 3200  # 3.2L average for other/unspecified
+                logger.info(f"🚰 [WATER STATS] Setting other gender goal: {goal_ml}ml")
+        else:
+            goal_ml = 3200  # 3.2L default if no gender info
+            logger.info(f"🚰 [WATER STATS] Using default goal (no gender info): {goal_ml}ml")
+        
         goal_oz = goal_ml * 0.033814
         
         progress_percentage = (total_ml / goal_ml) * 100 if goal_ml > 0 else 0
         average_per_log = total_ml / logs_count if logs_count > 0 else 0
+        
+        logger.info(f"🚰 [WATER STATS] Final calculation:")
+        logger.info(f"🚰 [WATER STATS] - Total ML today: {total_ml}")
+        logger.info(f"🚰 [WATER STATS] - Goal ML: {goal_ml}")
+        logger.info(f"🚰 [WATER STATS] - Progress percentage: {progress_percentage:.1f}%")
+        logger.info(f"🚰 [WATER STATS] - Logs count: {logs_count}")
         
         return {
             "total_ml_today": total_ml,

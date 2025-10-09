@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+import { useExerciseCategories, useExerciseCategoriesActions } from '../../stores';
+import { CategoryBadge } from './Badge';
 
 export interface LoggingItemData {
   id: number | string;
@@ -65,7 +66,15 @@ const LoggingItem = React.memo(function LoggingItem({
   );
   
   // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  const categories = useExerciseCategories();
+  const { loadCategories } = useExerciseCategoriesActions();
+  
+  // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
+  // useEffect(() => {
+  //   if (categories.length === 0) {
+  //     loadCategories();
+  //   }
+  // }, [categories.length]); // Removed loadCategories from dependencies to prevent infinite loop
 
   // Update local state when item prop changes (for auto-population)
   useEffect(() => {
@@ -118,14 +127,14 @@ const LoggingItem = React.memo(function LoggingItem({
   };
 
 
-  const getExerciseCategory = (): string => {
+  const getExerciseCategory = useMemo((): string => {
     // Use logging_category first (highest priority), then category
     if (item.logging_category) return item.logging_category;
     if (item.category) return item.category;
     
     // Default to weighted for unknown categories
     return 'weighted';
-  };
+  }, [item.logging_category, item.category, categories]);
 
   const getCategoryConfig = (category: string) => {
     const categoryData = categories.find(cat => cat.id === category);
@@ -161,10 +170,10 @@ const LoggingItem = React.memo(function LoggingItem({
   };
 
 
-  const renderDynamicWorkoutFields = () => {
-    const category = getExerciseCategory();
-    console.log('🔍 [LOGGING ITEM] getExerciseCategory() returned:', category);
-    console.log('🔍 [LOGGING ITEM] Item category:', item.category);
+  const renderDynamicWorkoutFields = useCallback(() => {
+    const category = getExerciseCategory;
+    // console.log('🔍 [LOGGING ITEM] getExerciseCategory() returned:', category);
+    // console.log('🔍 [LOGGING ITEM] Item category:', item.category);
     
     switch (category) {
       case 'bodyweight':
@@ -362,7 +371,12 @@ const LoggingItem = React.memo(function LoggingItem({
           </View>
         );
     }
-  };
+  }, [getExerciseCategory, servingCount, setServingCount, onUpdate, item.id]);
+
+  // Memoize category config to avoid multiple calls
+  const categoryConfig = useMemo(() => {
+    return getCategoryConfig(getExerciseCategory);
+  }, [getExerciseCategory, categories]);
 
   return (
     <View style={styles.container} testID={testID}>
@@ -372,22 +386,15 @@ const LoggingItem = React.memo(function LoggingItem({
             <View style={styles.exerciseTitleLeft}>
               <Text style={styles.exerciseNumber}>#{index + 1}</Text>
               <Text style={styles.exerciseName} numberOfLines={1} ellipsizeMode="tail">
-                {item.name || 'Exercise Name Missing'}
+                {item.name}
               </Text>
             </View>
             <View style={styles.exerciseTitleRight}>
               {itemType === 'workout' && (
-                <View style={[styles.categoryBadge, { backgroundColor: getCategoryConfig(getExerciseCategory()).color }]}>
-                  <Ionicons 
-                    name={getCategoryConfig(getExerciseCategory()).icon as keyof typeof Ionicons.glyphMap} 
-                    size={6} 
-                    color="#ffffff"
-                    style={styles.badgeIcon}
-                  />
-                  <Text style={styles.categoryText}>
-                    {getCategoryConfig(getExerciseCategory()).displayName.toUpperCase()}
-                  </Text>
-                </View>
+                <CategoryBadge 
+                  category={item.category || item.logging_category || ''} 
+                  size="small"
+                />
               )}
               {editable && (
                 <TouchableOpacity
@@ -614,26 +621,6 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     margin: 0,
     padding: 0,
-  },
-  categoryBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-    marginRight: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    flexShrink: 0,
-    minWidth: 40,
-  },
-  badgeIcon: {
-    marginRight: 1,
-  },
-  categoryText: {
-    fontSize: 7,
-    fontWeight: '600',
-    color: '#ffffff',
-    textTransform: 'uppercase',
   },
 });
 

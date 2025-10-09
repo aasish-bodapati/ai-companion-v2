@@ -39,8 +39,11 @@ export default function DynamicExerciseForm({
   activityType,
   showRemove = true
 }: DynamicExerciseFormProps) {
-  // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  // DISABLED: Use exercise categories store to prevent infinite loops
+  // const { categories, loadCategories } = useExerciseCategoriesWithAutoLoad();
+  
+  // Use static categories to prevent infinite loops
+  const categories: any[] = [];
   
   // Use category from database (backend provides logging_category)
   const getExerciseCategory = (): string => {

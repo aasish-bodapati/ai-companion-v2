@@ -40,16 +40,16 @@ export default function WeatherDetailsModal({
 
   useEffect(() => {
     if (forecast.length > 0 && scrollViewRef) {
-      // Debug: Log the forecast data to see the structure
-      console.log('Weather forecast data:', forecast.map((item, index) => ({
-        index,
-        time: item.time,
-        isCurrent: index === 0
-      })));
+      // Structure: [past6, past5, past4, past3, past2, past1, current, future1, future2, ...]
+      // We want to show current hour in the center with past hours on the left
+      // Current hour is at index 6, scroll to center it
+      const cardWidth = 80; // Approximate width of each hour card
+      const screenWidth = 300; // Approximate screen width
+      const currentHourIndex = 6; // Current hour is at index 6
+      const centerOffset = (screenWidth - cardWidth) / 2;
+      const scrollPosition = (currentHourIndex * cardWidth) - centerOffset;
       
-      // Start at the beginning (current hour is now at index 0)
-      console.log('Starting at beginning - current hour is first card');
-      scrollViewRef?.scrollTo({ x: 0, animated: false });
+      scrollViewRef?.scrollTo({ x: Math.max(0, scrollPosition), animated: false });
     }
   }, [forecast, scrollViewRef]);
 
@@ -79,7 +79,7 @@ export default function WeatherDetailsModal({
   const renderHourlyForecast = (hour: HourlyForecast, index: number) => {
     const weatherIcon = weatherService.getWeatherIcon(hour.icon);
     const weatherColor = weatherService.getWeatherColor(hour.icon);
-    const isCurrentHour = index === 0; // Current hour is at index 0 (first position)
+    const isCurrentHour = index === 6; // Current hour is at index 6, past hours are at indices 0-5, future hours are at indices 7-18
 
     return (
       <View key={`${hour.time}-${index}`} style={[

@@ -33,31 +33,50 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
 
       // Load categories
       loadCategories: async () => {
-        const { setLoading, setError, setCategories, setLoaded, loaded } = get();
+        const state = get();
         
         // If already loaded, return cached data
-        if (loaded) {
-          return get().categories;
+        if (state.loaded) {
+          return state.categories;
+        }
+
+        // If already loading, return current categories
+        if (state.loading) {
+          console.log('🔄 [EXERCISE CATEGORIES STORE] Already loading, returning current categories');
+          return state.categories;
         }
 
         try {
-          setLoading(true);
-          setError(null);
+          console.log('🔄 [EXERCISE CATEGORIES STORE] Loading categories from API...');
+          
+          // Batch all state updates into a single set() call
+          set({
+            loading: true,
+            error: null,
+          }, false, 'loadCategories_start');
 
           const categories = await exerciseCategoryService.getCategories();
           
-          setCategories(categories);
-          setLoaded(true);
-          set({ lastUpdated: new Date().toISOString() }, false, 'loadCategories');
+          // Batch the success state updates
+          set({
+            categories,
+            loaded: true,
+            loading: false,
+            lastUpdated: new Date().toISOString(),
+          }, false, 'loadCategories_success');
 
           return categories;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load exercise categories';
-          setError(errorMessage);
           console.error('Exercise categories store load error:', error);
+          
+          // Batch the error state updates
+          set({
+            error: errorMessage,
+            loading: false,
+          }, false, 'loadCategories_error');
+          
           throw error;
-        } finally {
-          setLoading(false);
         }
       },
 
@@ -158,7 +177,7 @@ export const useExerciseCategoriesError = () => useExerciseCategoriesStore((stat
 export const useExerciseCategoriesLoaded = () => useExerciseCategoriesStore((state) => state.loaded);
 export const useExerciseCategoriesLastUpdated = () => useExerciseCategoriesStore((state) => state.lastUpdated);
 
-// Actions selector
+// Actions selector with memoized functions
 export const useExerciseCategoriesActions = () => useExerciseCategoriesStore(
   (state) => ({
     loadCategories: state.loadCategories,
@@ -177,24 +196,24 @@ export const useExerciseCategoriesActions = () => useExerciseCategoriesStore(
 
 // Convenience hook that automatically loads categories if not loaded
 export const useExerciseCategoriesWithAutoLoad = () => {
+  console.log('🔄 [EXERCISE CATEGORIES HOOK] useExerciseCategoriesWithAutoLoad called');
   const categories = useExerciseCategories();
   const loading = useExerciseCategoriesLoading();
   const error = useExerciseCategoriesError();
   const loaded = useExerciseCategoriesLoaded();
-  const { loadCategories } = useExerciseCategoriesActions();
+  const { loadCategories: loadCategoriesAction } = useExerciseCategoriesActions();
 
-  // Auto-load if not loaded and not loading
-  React.useEffect(() => {
-    if (!loaded && !loading) {
-      loadCategories();
-    }
-  }, [loaded, loading, loadCategories]);
+  console.log('🔄 [EXERCISE CATEGORIES HOOK] State - loaded:', loaded, 'loading:', loading);
+
+  // DISABLED AUTO-LOAD COMPLETELY TO PREVENT INFINITE LOOPS
+  // The issue is that even with proper dependencies, the Zustand store
+  // is causing infinite re-renders. We'll load categories manually when needed.
 
   return {
     categories,
     loading,
     error,
     loaded,
-    loadCategories,
+    loadCategories: loadCategoriesAction,
   };
 };

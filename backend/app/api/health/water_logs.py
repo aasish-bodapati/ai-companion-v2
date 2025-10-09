@@ -69,41 +69,34 @@ def get_water_stats(
     current_user: User = Depends(get_current_user)
 ):
     """Get water intake statistics for today"""
-    # Use TimezoneHandler for proper timezone handling
-    user_timezone = current_user.timezone or "UTC"
-    
-    # Get today's date range in user's timezone
-    start_of_day, end_of_day = TimezoneHandler.get_user_timezone_range(datetime.now(), user_timezone)
-    
-    # Get logs for today in user's timezone using datetime comparison
-    from sqlalchemy import and_
+    import logging
+    from datetime import date
+    from sqlalchemy import func
     from app.models.health.water_log import WaterLog
     
-    logs = db.query(WaterLog).filter(
-        and_(
-            WaterLog.user_id == current_user.id,
-            WaterLog.log_date >= start_of_day,
-            WaterLog.log_date <= end_of_day
-        )
-    ).order_by(WaterLog.log_date.desc()).all()
+    logger = logging.getLogger(__name__)
     
-    # Calculate stats manually since we're using timezone-aware filtering
-    total_ml = sum(log.amount_ml or 0 for log in logs)
-    total_oz = sum(log.amount_oz or 0 for log in logs)
-    goal_ml = 2000  # Default goal
-    goal_oz = goal_ml * 0.033814  # Convert to ounces
-    progress_percentage = (total_ml / goal_ml) * 100 if goal_ml > 0 else 0
-    average_per_log = total_ml / len(logs) if logs else 0
+    logger.info(f"🚰 [WATER API] Getting water stats for user {current_user.id}")
     
-    stats = {
-        "total_ml_today": total_ml,
-        "total_oz_today": total_oz,
-        "goal_ml": goal_ml,
-        "goal_oz": goal_oz,
-        "progress_percentage": progress_percentage,
-        "logs_today": len(logs),
-        "average_per_log": average_per_log
-    }
+    # Debug: Check what the database actually has
+    today = date.today()
+    logger.info(f"🚰 [WATER API] Using date filter: {today}")
+    
+    # Direct query to see what we get
+    direct_result = db.query(
+        func.sum(WaterLog.amount_ml).label('total_ml'),
+        func.count(WaterLog.id).label('count')
+    ).filter(
+        WaterLog.user_id == current_user.id,
+        func.date(WaterLog.log_date) == today
+    ).first()
+    
+    logger.info(f"🚰 [WATER API] Direct query result: total_ml={direct_result.total_ml}, count={direct_result.count}")
+    
+    # Use the CRUD function which has gender-based goal calculation
+    stats = water_log.get_water_stats_today(db, user_id=current_user.id)
+    
+    logger.info(f"🚰 [WATER API] CRUD function result: {stats}")
     
     return WaterLogStats(**stats)
 

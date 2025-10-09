@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthLogger } from '../../hooks/useHealthLogger';
-import UniversalHealthLogger from './UniversalHealthLogger';
+import WaterLogger from './WaterLogger';
 
 interface QuickAction {
   id: string;
@@ -149,33 +149,11 @@ export default function HealthQuickActions({
         })}
       </View>
 
-      {/* Universal Loggers */}
-      <UniversalHealthLogger
-        visible={workoutLogger.isVisible}
-        onClose={workoutLogger.closeLogger}
-        onSave={workoutLogger.saveData}
-        type="workout"
-      />
-      
-      <UniversalHealthLogger
-        visible={mealLogger.isVisible}
-        onClose={mealLogger.closeLogger}
-        onSave={mealLogger.saveData}
-        type="meal"
-      />
-      
-      <UniversalHealthLogger
+      {/* Health Loggers */}
+      <WaterLogger
         visible={waterLogger.isVisible}
         onClose={waterLogger.closeLogger}
         onSave={waterLogger.saveData}
-        type="water"
-      />
-      
-      <UniversalHealthLogger
-        visible={moodLogger.isVisible}
-        onClose={moodLogger.closeLogger}
-        onSave={moodLogger.saveData}
-        type="mood"
       />
     </View>
   );

@@ -12,7 +12,7 @@ import { routineService, SimpleRoutineWithProgress } from '../../services/routin
 import { fitnessService } from '../../services/fitnessService';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { COMMON_STYLES } from '../../theme/constants';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+import { useExerciseCategories, useExerciseCategoriesActions } from '../../stores';
 
 interface RoutineAnalyticsProps {
   routine: SimpleRoutineWithProgress;
@@ -48,7 +48,15 @@ export default function RoutineAnalytics({ routine }: RoutineAnalyticsProps) {
   const [loading, setLoading] = useState(true);
   
   // Use exercise categories store
-  const { categories } = useExerciseCategoriesWithAutoLoad();
+  const categories = useExerciseCategories();
+  const { loadCategories } = useExerciseCategoriesActions();
+  
+  // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
+  // React.useEffect(() => {
+  //   if (categories.length === 0) {
+  //     loadCategories();
+  //   }
+  // }, [categories.length]); // Removed loadCategories from dependencies to prevent infinite loop
 
   const loadAnalytics = async () => {
     try {

@@ -7,7 +7,7 @@ import { useAppStore } from '../stores';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import FitnessScreen from '../screens/main/FitnessScreen';
 import NutritionScreen from '../screens/main/NutritionScreen';
-import AnalyticsScreen from '../screens/main/AnalyticsScreen';
+// import AnalyticsScreen from '../screens/main/AnalyticsScreen'; // REMOVED
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 // Removed MigrationScreen import
 import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
@@ -19,7 +19,7 @@ export type TabParamList = {
   Dashboard: undefined;
   Fitness: undefined;
   Nutrition: undefined;
-  Analytics: undefined;
+  // Analytics: undefined; // REMOVED
   Profile: undefined;
   // Removed Migration tab
 };
@@ -74,8 +74,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               iconName = isFocused ? 'fitness' : 'fitness-outline';
             } else if (route.name === 'Nutrition') {
               iconName = isFocused ? 'nutrition' : 'nutrition-outline';
-            } else if (route.name === 'Analytics') {
-              iconName = isFocused ? 'analytics' : 'analytics-outline';
             } else if (route.name === 'Profile') {
               iconName = isFocused ? 'person' : 'person-outline';
             } else {
@@ -185,11 +183,7 @@ export default function TabNavigator() {
         component={NutritionScreen} 
         options={{ title: 'Nutrition' }}
       />
-      <Tab.Screen 
-        name="Analytics" 
-        component={AnalyticsScreen} 
-        options={{ title: 'Analytics' }}
-      />
+      {/* Analytics tab removed */}
       <Tab.Screen 
         name="Profile" 
         component={EnhancedProfileScreen} 

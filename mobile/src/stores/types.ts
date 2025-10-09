@@ -129,7 +129,6 @@ export interface AppState {
   streaks: Streak[];
   
   // AI insights
-  aiInsights: Record<string, unknown>[];
 }
 
 export interface NutritionState {
@@ -183,7 +182,6 @@ export interface AppActions {
   setProgressMetrics: (metrics: ProgressMetrics) => void;
   setAchievements: (achievements: Achievement[]) => void;
   setStreaks: (streaks: Streak[]) => void;
-  setAIInsights: (insights: Record<string, unknown>[]) => void;
   updateAchievement: (id: string, unlocked: boolean, progress?: number) => void;
   updateStreak: (type: string, current: number) => void;
   refreshData: () => Promise<void>;
@@ -248,47 +246,8 @@ export interface WaterLogStats {
   average_per_log: number;
 }
 
-export interface WaterLogSummary {
-  date: string;
-  total_ml: number;
-  total_oz: number;
-  logs_count: number;
-  goal_achieved: boolean;
-}
-
-export interface WaterState {
-  todayStats: WaterLogStats | null;
-  weekStats: WaterLogSummary | null;
-  recentWaterLogs: WaterLog[];
-  waterGoal: number;
-  loading: boolean;
-  error: string | null;
-  lastUpdated: string | null;
-}
-
-export interface WaterActions {
-  setTodayStats: (stats: WaterLogStats | null) => void;
-  setWeekStats: (stats: WaterLogSummary | null) => void;
-  setRecentWaterLogs: (logs: WaterLog[]) => void;
-  setWaterGoal: (goal: number) => void;
-  addWaterLog: (log: WaterLog) => void;
-  updateWaterLog: (id: number, log: Partial<WaterLog>) => void;
-  deleteWaterLog: (id: number) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  refreshWaterData: () => Promise<void>;
-  quickLogWater: (amount_ml: number) => Promise<WaterLog>;
-  createWaterLog: (data: Record<string, unknown>) => Promise<WaterLog>;
-  updateWaterLogEntry: (id: number, data: Record<string, unknown>) => Promise<WaterLog>;
-  deleteWaterLogEntry: (id: number) => Promise<void>;
-  getWaterLogsForPeriod: (days: number) => Promise<WaterLog[]>;
-  initializeWaterGoal: (gender?: string) => void;
-  resetWaterState: () => void;
-}
-
 // Combined store types
 export type AppStore = AppState & AppActions;
-export type WaterStore = WaterState & WaterActions;
 
 // Exercise Categories types
 export interface ExerciseCategory {

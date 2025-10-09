@@ -240,7 +240,6 @@ class NutritionService extends BaseService {
   }
 
   async getFoodItems(): Promise<FoodItem[]> {
-    console.log('🔍 [NUTRITION SERVICE] Loading all food items');
     
     // Temporary workaround: use search endpoint with empty query to get all foods
     // This works around the 405 error on the root endpoint until backend is restarted
@@ -251,7 +250,6 @@ class NutritionService extends BaseService {
       'NUTRITION SERVICE - getFoodItems'
     );
     
-    console.log('🔍 [NUTRITION SERVICE] Received food items response');
     
     // Transform API response to match FoodItem interface
     // The API returns data directly as an array
@@ -281,16 +279,13 @@ class NutritionService extends BaseService {
         carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
         fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
       }));
-      console.log('🔍 [NUTRITION SERVICE] Found', transformed.length, 'food items');
       return transformed;
     }
     
-    console.log('🔍 [NUTRITION SERVICE] No valid data found, returning empty array');
     return [];
   }
 
   async searchFoods(query: string): Promise<FoodItem[]> {
-    console.log('🔍 [NUTRITION SERVICE] Searching for:', query);
     
     const response = await this.makeRequest(
       () => apiClient.get('/health/indian-foods/search', {
@@ -329,11 +324,9 @@ class NutritionService extends BaseService {
         carbs_per_serving: item.nutrition_per_serving?.carbs_g || 0,
         fat_per_serving: item.nutrition_per_serving?.fat_g || 0,
       }));
-      console.log('🔍 [NUTRITION SERVICE] Found', transformed.length, 'food items');
       return transformed;
     }
     
-    console.log('🔍 [NUTRITION SERVICE] No valid data found, returning empty array');
     return [];
   }
 

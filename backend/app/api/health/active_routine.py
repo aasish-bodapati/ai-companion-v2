@@ -82,8 +82,47 @@ async def set_active_routine(
 ):
     """Set a routine as active for the user."""
     try:
+        from app.crud.health.simple_routine import simple_user_routine_progress
+        
         # Update the user's active routine
         current_user.active_routine_id = request.routine_id
+        
+        # Also create/update the SimpleUserRoutineProgress record
+        routine_id = int(request.routine_id)
+        
+        # Debug: Log user information
+        print(f"🔍 [SET ACTIVE ROUTINE] User ID: {current_user.id} (type: {type(current_user.id)})")
+        print(f"🔍 [SET ACTIVE ROUTINE] Routine ID: {routine_id}")
+        
+        # Ensure user_id is not None
+        if not current_user.id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
+        user_id_str = str(current_user.id)
+        print(f"🔍 [SET ACTIVE ROUTINE] User ID string: {user_id_str}")
+        
+        # Check if user already has progress for this routine
+        existing_progress = simple_user_routine_progress.get_by_user_and_routine(
+            db, user_id=user_id_str, routine_id=routine_id
+        )
+        
+        if existing_progress:
+            # Update existing progress to be active
+            existing_progress.is_active = True
+            existing_progress.updated_at = datetime.utcnow()
+            print(f"✅ [SET ACTIVE ROUTINE] Updated existing progress record")
+        else:
+            # Create new progress record
+            from app.schemas.health.simple_routine import SimpleUserRoutineProgressCreate
+            progress_data = SimpleUserRoutineProgressCreate(
+                user_id=current_user.id,  # Pass as integer, not string
+                routine_id=routine_id,
+                is_active=True
+            )
+            print(f"🔍 [SET ACTIVE ROUTINE] Creating progress data: {progress_data}")
+            simple_user_routine_progress.create(db, obj_in=progress_data)
+            print(f"✅ [SET ACTIVE ROUTINE] Created new progress record")
+        
         db.commit()
         db.refresh(current_user)
         
@@ -104,8 +143,19 @@ async def clear_active_routine(
 ):
     """Clear the user's active routine."""
     try:
+        from app.crud.health.simple_routine import simple_user_routine_progress
+        
         # Clear the user's active routine
         current_user.active_routine_id = None
+        
+        # Also deactivate any active progress records
+        active_progress = simple_user_routine_progress.get_user_active_routine(
+            db, user_id=str(current_user.id)
+        )
+        if active_progress:
+            active_progress.is_active = False
+            active_progress.updated_at = datetime.utcnow()
+        
         db.commit()
         db.refresh(current_user)
         

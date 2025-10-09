@@ -1,15 +1,12 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppStore } from '../../stores';
-import { useWaterGoalInitialization } from '../../hooks/useWaterGoalInitialization';
 import DashboardModule from '../../modules/DashboardModule';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
   // Re-enable Zustand store with fixes
   const { refreshData } = useAppStore();
-  // Initialize water goal based on user gender
-  useWaterGoalInitialization();
   const [refreshing, setRefreshing] = useState(false);
   const hasRefreshedRef = useRef(false);
 
@@ -29,7 +26,6 @@ export default function DashboardScreen() {
 
   const handleNavigate = useCallback((screen: string, params?: unknown) => {
     // Handle navigation to other screens
-    console.log('Navigate to:', screen, params);
   }, []);
 
   return (

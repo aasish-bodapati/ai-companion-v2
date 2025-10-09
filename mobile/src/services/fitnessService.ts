@@ -217,7 +217,7 @@ class FitnessService extends BaseService {
 
   async getExerciseTypes(): Promise<ExerciseType[]> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/exercises/all?limit=100'),
+      () => apiClient.get('/health/exercises/all?limit=1000'),
       'FITNESS SERVICE - getExerciseTypes'
     );
     return data.exercises || data;

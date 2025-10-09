@@ -14,6 +14,7 @@ from . import (
     fitness_logs,
     nutrition_logs,
     water_logs,
+    simple_water_logs,
     profile,
     analytics,
     body_type_goals,
@@ -39,6 +40,7 @@ router.include_router(insights.router, prefix="/insights", tags=["insights"])
 router.include_router(fitness_logs.router, prefix="/fitness-logs", tags=["fitness-logs"])  # Re-enabled for latest-exercise endpoint
 router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nutrition-logs"])
 router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs"])
+router.include_router(simple_water_logs.router, prefix="/simple-water", tags=["simple-water"])
 router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
 router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 router.include_router(body_type_goals.router, prefix="/body-type-goals", tags=["body-type-goals"])

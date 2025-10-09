@@ -8,7 +8,7 @@ import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { AppStore, ProgressMetrics, Achievement, Streak } from './types';
 import { dashboardService } from '../services/dashboardService';
-import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService';
+// import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService'; // REMOVED
 import stepTrackingService from '../services/stepTrackingService';
 
 // Initial state
@@ -27,7 +27,6 @@ const initialState = {
   },
   achievements: [],
   streaks: [],
-  aiInsights: [],
 };
 
 // Create the main app store
@@ -72,12 +71,12 @@ export const useAppStore = create<AppStore>()(
           }), false, 'updateStreak'),
         
         // AI insights
-        setAIInsights: (aiInsights) => 
-          set({ aiInsights }, false, 'setAIInsights'),
         
         // Data refresh
         refreshData: async () => {
-          const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, setAIInsights, loading } = get();
+          console.log('🔄 [APP STORE] refreshData called');
+          const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, loading } = get();
+          console.log('🔄 [APP STORE] Current loading state:', loading);
           
           // Prevent multiple simultaneous calls
           if (loading) {
@@ -100,10 +99,9 @@ export const useAppStore = create<AppStore>()(
             setProgressMetrics(newProgressMetrics);
             
             // Load non-essential data in parallel
-            const [achievements, streaks, aiInsights] = await Promise.allSettled([
+            const [achievements, streaks] = await Promise.allSettled([
               loadAchievements(),
-              loadStreaks(),
-              loadAIInsights()
+              loadStreaks()
             ]);
             
             if (achievements.status === 'fulfilled') {
@@ -112,10 +110,6 @@ export const useAppStore = create<AppStore>()(
             
             if (streaks.status === 'fulfilled') {
               setStreaks(streaks.value);
-            }
-            
-            if (aiInsights.status === 'fulfilled') {
-              setAIInsights(aiInsights.value);
             }
             
             set({ lastUpdated: new Date().toISOString() }, false, 'refreshData');
@@ -136,26 +130,7 @@ export const useAppStore = create<AppStore>()(
   )
 );
 
-// Helper function to get steps
-const getStepsData = async (analyticsData: Record<string, unknown>): Promise<{ current: number; progress: number }> => {
-  try {
-    // Try to get today's step data from device first
-    const deviceSteps = await stepTrackingService.getTodaySteps();
-    const currentDeviceSteps = stepTrackingService.getCurrentSteps();
-    const backendSteps = analyticsData?.total_steps || 0;
-    
-    // Use the highest available step count
-    const finalSteps = Math.max(deviceSteps, currentDeviceSteps, backendSteps);
-    
-    return {
-      current: finalSteps,
-      progress: Math.min((finalSteps / 10000) * 100, 100)
-    };
-  } catch (error) {
-    console.error('Error getting steps data:', error);
-    return { current: 0, progress: 0 };
-  }
-};
+// getStepsData function removed - analytics functionality deleted
 
 // Helper functions for data loading
 const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
@@ -164,12 +139,8 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
     const dashboardData = await dashboardService.getDashboardSummary();
     console.log('🔍 Dashboard Data:', JSON.stringify(dashboardData, null, 2));
     
-    // Load analytics data for steps
-    const analyticsData = await dashboardService.getAnalyticsData();
-    console.log('🔍 Analytics Data:', JSON.stringify(analyticsData, null, 2));
-    
-    // Get steps data
-    const stepsData = await getStepsData(analyticsData);
+    // Analytics data loading removed - using default values
+    const stepsData = { current: 0, progress: 0 };
     
     return {
       workouts: {
@@ -198,9 +169,9 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
         progress: stepsData.progress,
       },
       mood: {
-        current: analyticsData?.average_mood || 0,
+        current: 0,
         target: 10,
-        progress: Math.min(((analyticsData?.average_mood || 0) / 10) * 100, 100),
+        progress: 0,
       },
     };
   } catch (error) {
@@ -293,21 +264,13 @@ const loadStreaks = async (): Promise<Streak[]> => {
   return streaksData;
 };
 
-const loadAIInsights = async (): Promise<Record<string, unknown>[]> => {
-  try {
-    return await predictiveAnalyticsService.getPredictiveInsights();
-  } catch (error) {
-    console.error('Error loading AI insights:', error);
-    return [];
-  }
-};
+// loadAIInsights function removed - analytics functionality deleted
 
 // Selector hooks for better performance with shallow comparison
 export const useUser = () => useAppStore((state) => state.user, shallow);
 export const useProgressMetrics = () => useAppStore((state) => state.progressMetrics, shallow);
 export const useAchievements = () => useAppStore((state) => state.achievements, shallow);
 export const useStreaks = () => useAppStore((state) => state.streaks, shallow);
-export const useAIInsights = () => useAppStore((state) => state.aiInsights, shallow);
 export const useAppLoading = () => useAppStore((state) => state.loading, shallow);
 export const useAppError = () => useAppStore((state) => state.error, shallow);
 export const useAppLastUpdated = () => useAppStore((state) => state.lastUpdated, shallow);
