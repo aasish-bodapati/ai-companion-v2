@@ -21,7 +21,7 @@ interface BodyTypeCardProps {
   onLogMeal?: () => void;
   onViewAnalytics?: () => void;
   onEditGoals?: () => void;
-  style?: any;
+  style?: object;
 }
 
 export default function BodyTypeCard({
@@ -66,14 +66,6 @@ export default function BodyTypeCard({
     }
   };
 
-  const getAlignmentColor = () => {
-    switch (alignment) {
-      case 'closer': return '#10b981';
-      case 'further': return '#ef4444';
-      case 'same': return '#6b7280';
-      default: return '#9ca3af';
-    }
-  };
 
   const renderDashboardVariant = () => (
     <View style={styles.dashboardCard}>
@@ -102,7 +94,7 @@ export default function BodyTypeCard({
             </Text>
             {!loading && (
               <Ionicons 
-                name={getTrendIcon() as any} 
+                name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
                 size={16} 
                 color={getTrendColor()} 
               />

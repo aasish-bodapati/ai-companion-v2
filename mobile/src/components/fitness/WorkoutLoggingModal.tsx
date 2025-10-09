@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import LoggingItem, { LoggingItemData } from '../ui/LoggingItem';
-import SimpleLoggingItem, { SimpleLoggingItemData } from '../ui/SimpleLoggingItem';
+import SimpleLoggingItem from '../ui/SimpleLoggingItem';
 import { fitnessService, ExerciseType } from '../../services/fitnessService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS } from '../../theme/constants';
@@ -42,7 +41,6 @@ export default function WorkoutLoggingModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
   const [saving, setSaving] = useState(false);
-  const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string | number>>(new Set());
 
   // Reset form when modal opens
   useEffect(() => {
@@ -298,18 +296,6 @@ export default function WorkoutLoggingModal({
 
   const { showToast } = useToast();
 
-  // Function to get category display info
-  const getCategoryInfo = (category: string) => {
-    const categoryMap: { [key: string]: { name: string; color: string; icon: string } } = {
-      'bodyweight': { name: 'Bodyweight', color: '#3b82f6', icon: 'person-outline' },
-      'weighted': { name: 'Weighted', color: '#f59e0b', icon: 'barbell-outline' },
-      'cardio_duration': { name: 'Cardio', color: '#ef4444', icon: 'heart-outline' },
-      'distance_based': { name: 'Distance', color: '#10b981', icon: 'walk-outline' },
-      'mixed': { name: 'Mixed', color: '#8b5cf6', icon: 'fitness-outline' }
-    };
-    
-    return categoryMap[category] || { name: category, color: '#6b7280', icon: 'fitness-outline' };
-  };
 
   const getTotalExercises = () => exercises.length;
   const getTotalLogged = () => exercises.filter(ex => isFormValid()).length;

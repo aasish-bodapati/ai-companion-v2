@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface ExerciseData {
   exercise_name: string;
@@ -42,8 +41,6 @@ export default function DynamicExerciseForm({
   // DISABLED: Use exercise categories store to prevent infinite loops
   // const { categories, loadCategories } = useExerciseCategoriesWithAutoLoad();
   
-  // Use static categories to prevent infinite loops
-  const categories: any[] = [];
   
   // Use category from database (backend provides logging_category)
   const getExerciseCategory = (): string => {
@@ -63,24 +60,6 @@ export default function DynamicExerciseForm({
     return 'weighted';
   };
 
-  const getCategoryConfig = (categoryId: string) => {
-    const category = categories.find(cat => cat.id === categoryId);
-    if (category) {
-      return {
-        name: category.display_name,
-        icon: category.icon,
-        color: category.color,
-        fields: ['sets', 'reps', 'weight_used'], // Default fields, could be made dynamic
-      };
-    }
-    // Return "Category Not Found" config
-    return {
-      name: 'Category Not Found',
-      icon: 'help-outline',
-      color: '#6b7280',
-      fields: ['sets', 'reps'],
-    };
-  };
 
   const category = getExerciseCategory();
   // const categoryConfig = getCategoryConfig(category);

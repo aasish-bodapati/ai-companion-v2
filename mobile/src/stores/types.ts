@@ -96,20 +96,6 @@ export interface WorkoutLog {
   routine_id?: string;
 }
 
-// Analytics types
-export interface AnalyticsData {
-  total_steps: number;
-  average_mood: number;
-  weekly_activity: {
-    monday: number;
-    tuesday: number;
-    wednesday: number;
-    thursday: number;
-    friday: number;
-    saturday: number;
-    sunday: number;
-  };
-}
 
 // Store state interfaces
 export interface AppState {
@@ -155,24 +141,6 @@ export interface FitnessState {
   lastUpdated: string | null;
 }
 
-export interface AnalyticsState {
-  // Analytics data
-  analyticsData: AnalyticsData | null;
-  weeklyActivityData: {
-    monday: number;
-    tuesday: number;
-    wednesday: number;
-    thursday: number;
-    friday: number;
-    saturday: number;
-    sunday: number;
-  };
-  
-  // UI state
-  loading: boolean;
-  error: string | null;
-  lastUpdated: string | null;
-}
 
 // Store actions interfaces
 export interface AppActions {
@@ -214,14 +182,6 @@ export interface FitnessActions {
   resetFitnessState: () => void;
 }
 
-export interface AnalyticsActions {
-  setAnalyticsData: (data: AnalyticsData | null) => void;
-  setWeeklyActivityData: (data: AnalyticsState['weeklyActivityData']) => void;
-  setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
-  refreshAnalyticsData: () => Promise<void>;
-  resetAnalyticsState: () => void;
-}
 
 // Water-specific types
 export interface WaterLog {
@@ -294,4 +254,3 @@ export interface ExerciseCategoriesActions {
 export type ExerciseCategoriesStore = ExerciseCategoriesState & ExerciseCategoriesActions;
 export type NutritionStore = NutritionState & NutritionActions;
 export type FitnessStore = FitnessState & FitnessActions;
-export type AnalyticsStore = AnalyticsState & AnalyticsActions;

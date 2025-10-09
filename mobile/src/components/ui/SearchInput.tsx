@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Keyboard,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,7 +15,7 @@ import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/
 export interface SearchResult {
   id: number | string;
   name: string;
-  [key: string]: any; // Allow additional properties
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface SearchInputProps {
@@ -35,9 +34,9 @@ interface SearchInputProps {
   results?: SearchResult[];
   renderResultItem?: (item: SearchResult, index: number) => React.ReactNode;
   searchDelay?: number;
-  containerStyle?: any;
-  inputStyle?: any;
-  resultsStyle?: any;
+  containerStyle?: object;
+  inputStyle?: object;
+  resultsStyle?: object;
   testID?: string;
   onDropdownToggle?: (isOpen: boolean) => void;
 }

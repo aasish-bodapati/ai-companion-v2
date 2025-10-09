@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FormModal from './FormModal';
@@ -14,7 +14,7 @@ export interface SearchService<T> {
 }
 
 // Generic logging modal props
-export interface GenericLoggingModalProps<T extends BaseLog, S> {
+export interface GenericLoggingModalProps<T extends BaseLog, S = unknown> {
   visible: boolean;
   onClose: () => void;
   onSave: (data: Record<string, unknown>) => Promise<void>;
@@ -58,9 +58,9 @@ export interface GenericLoggingModalProps<T extends BaseLog, S> {
   saving?: boolean;
   
   // Custom styling
-  contentStyle?: any;
-  headerStyle?: any;
-  footerStyle?: any;
+  contentStyle?: object;
+  headerStyle?: object;
+  footerStyle?: object;
   
   testID?: string;
 }

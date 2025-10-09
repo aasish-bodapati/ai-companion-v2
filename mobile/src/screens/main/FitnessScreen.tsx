@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
@@ -46,7 +46,6 @@ export default function FitnessScreen() {
   const [activeTab, setActiveTab] = useState('overview');
   const [refreshing, setRefreshing] = useState(false);
   const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
-  const [recommendedWorkout, setRecommendedWorkout] = useState(null);
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
   const [activeRoutineId, setActiveRoutineId] = useState<number | null>(null);
   const [settingActiveRoutine, setSettingActiveRoutine] = useState<number | null>(null);
@@ -104,8 +103,8 @@ export default function FitnessScreen() {
         });
       }
       
-    } catch (error) {
-      console.error('❌ [FITNESS SCREEN] Error loading overview data:', error);
+    } catch (_error) {
+      console.error('❌ [FITNESS SCREEN] Error loading overview data:', _error);
     } finally {
       isLoadingRef.current = false;
     }
@@ -157,8 +156,8 @@ export default function FitnessScreen() {
       await routineService.clearActiveRoutine();
       // Refresh data to show updated active routine
       setFitnessLogsKey(prev => prev + 1);
-    } catch (error) {
-      console.error('🔄 [FITNESS SCREEN] Error clearing active routine:', error);
+    } catch (_error) {
+      console.error('🔄 [FITNESS SCREEN] Error clearing active routine:', _error);
       // Handle error silently for MVP
     }
   }, []);
@@ -183,8 +182,8 @@ export default function FitnessScreen() {
       
       // Also load the active routine to ensure state is synchronized
       await loadActiveRoutine();
-    } catch (error) {
-      console.error('🔄 [FITNESS SCREEN] Error loading routines:', error);
+    } catch (_error) {
+      console.error('🔄 [FITNESS SCREEN] Error loading routines:', _error);
     } finally {
       setRoutinesLoading(false);
     }
@@ -208,9 +207,9 @@ export default function FitnessScreen() {
       
       // Also refresh the active routine from database to ensure consistency
       await loadActiveRoutine();
-    } catch (error) {
-      console.error('❌ [FITNESS SCREEN] Error setting active routine:', error);
-      console.error('❌ [FITNESS SCREEN] Error details:', error.message);
+    } catch (_error) {
+      console.error('❌ [FITNESS SCREEN] Error setting active routine:', _error);
+      console.error('❌ [FITNESS SCREEN] Error details:', _error && typeof _error === 'object' && 'message' in _error ? (_error as { message: string }).message : 'Unknown error');
     } finally {
       setSettingActiveRoutine(null);
     }
@@ -253,8 +252,8 @@ export default function FitnessScreen() {
       } else {
         setActiveRoutineId(null);
       }
-    } catch (error) {
-      console.error('❌ [FITNESS SCREEN] Error loading active routine:', error);
+    } catch (_error) {
+      console.error('❌ [FITNESS SCREEN] Error loading active routine:', _error);
       setActiveRoutineId(null);
     }
   };

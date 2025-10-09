@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
 export type BadgeVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type BadgeSize = 'small' | 'medium' | 'large';
@@ -151,7 +150,6 @@ const Badge = React.memo(function Badge({
 
   // If onPress is provided, wrap in TouchableOpacity
   if (onPress) {
-    const { TouchableOpacity } = require('react-native');
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
         {BadgeContent}

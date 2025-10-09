@@ -14,7 +14,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { isFeatureEnabled } from '../../config/featureFlags';
 
 interface SafeLoadingStateProps {
   loading: boolean;
@@ -28,7 +27,7 @@ interface SafeLoadingStateProps {
   retryText?: string;
   icon?: string;
   color?: string;
-  style?: any;
+  style?: object;
   testID?: string;
 }
 
@@ -81,7 +80,7 @@ export const SafeLoadingState = ({
     <View style={styles.content}>
       {icon ? (
         <Ionicons
-          name={icon as any}
+          name={icon as keyof typeof Ionicons.glyphMap}
           size={size === 'small' ? 24 : size === 'large' ? 48 : 32}
           color={color}
           style={styles.icon}

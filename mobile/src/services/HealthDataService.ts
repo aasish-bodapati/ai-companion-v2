@@ -1,7 +1,6 @@
 import { dashboardService } from './dashboardService';
 import { fitnessService } from './fitnessService';
 import { nutritionService } from './nutritionService';
-import { predictiveAnalyticsService } from './predictiveAnalyticsService';
 import { smartNotificationsService } from './smartNotificationsService';
 
 interface HealthDataSummary {
@@ -9,12 +8,10 @@ interface HealthDataSummary {
   dashboard: Record<string, unknown>;
   fitness: Record<string, unknown>;
   nutrition: Record<string, unknown>;
-  analytics: Record<string, unknown>;
   notifications: Record<string, unknown>;
 }
 
 interface HealthDataOptions {
-  includeAnalytics?: boolean;
   includeNotifications?: boolean;
   refreshCache?: boolean;
 }
@@ -26,7 +23,6 @@ class HealthDataService {
   // Get comprehensive health data
   async getHealthData(options: HealthDataOptions = {}): Promise<HealthDataSummary> {
     const {
-      includeAnalytics = true,
       includeNotifications = false,
       refreshCache = false,
     } = options;
@@ -46,7 +42,6 @@ class HealthDataService {
       ]);
 
       // Fetch optional data
-      const analytics = includeAnalytics ? await this.getAnalyticsData() : null;
       const notifications = includeNotifications ? await this.getNotificationsData() : null;
 
       const healthData: HealthDataSummary = {
@@ -54,7 +49,6 @@ class HealthDataService {
         dashboard,
         fitness,
         nutrition,
-        analytics,
         notifications,
       };
 
@@ -146,31 +140,6 @@ class HealthDataService {
     }
   }
 
-  // Get analytics data
-  private async getAnalyticsData() {
-    try {
-      const [insights, trends, patterns] = await Promise.all([
-        predictiveAnalyticsService.getPredictiveInsights(),
-        predictiveAnalyticsService.getTrendAnalysis('workouts'),
-        predictiveAnalyticsService.getPatternInsights(),
-      ]);
-
-      return {
-        insights,
-        trends,
-        patterns,
-        lastUpdated: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-      return {
-        insights: [],
-        trends: null,
-        patterns: [],
-        lastUpdated: new Date().toISOString(),
-      };
-    }
-  }
 
   // Get notifications data
   private async getNotificationsData() {

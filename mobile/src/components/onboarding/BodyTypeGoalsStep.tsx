@@ -23,6 +23,19 @@ interface BodyTypeGoalsStepProps {
   onValidationChange?: (isValid: boolean) => void;
 }
 
+interface BodyTypeWithTargets {
+  id: string;
+  name: string;
+  targetAttributes?: {
+    bodyFat?: { male: { min: number; max: number }; female: { min: number; max: number } };
+    bmi?: { male: { min: number; max: number }; female: { min: number; max: number } };
+    ffmi?: { male: { min: number; max: number }; female: { min: number; max: number } };
+    smm?: { male: { min: number; max: number }; female: { min: number; max: number } };
+  };
+  targetBodyFat?: { male: { min: number; max: number }; female: { min: number; max: number } };
+  waistToHeightRatio?: { male: { min: number; max: number }; female: { min: number; max: number } };
+}
+
 export default function BodyTypeGoalsStep({ 
   onBodyTypeChange, 
   initialBodyType = '',
@@ -41,7 +54,7 @@ export default function BodyTypeGoalsStep({
         setError(null);
         const available = await getAvailableBodyTypes(userData);
         setAvailableBodyTypes(available);
-      } catch (err) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         setError('Failed to load body type goals');
       } finally {
@@ -57,7 +70,7 @@ export default function BodyTypeGoalsStep({
     if (selectedBodyType) {
       onBodyTypeChange(selectedBodyType);
     }
-  }, [selectedBodyType]);
+  }, [selectedBodyType, onBodyTypeChange]);
 
   useEffect(() => {
     // Notify parent of validation state
@@ -82,7 +95,7 @@ export default function BodyTypeGoalsStep({
     return availableBodyTypes.slice(0, 6);
   };
 
-  const getTargetBodyFatForGender = (bodyType: any, gender: string) => {
+  const getTargetBodyFatForGender = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
     
     if (gender === 'male' && bodyType.targetAttributes.bodyFatRangeMen) {
@@ -112,34 +125,8 @@ export default function BodyTypeGoalsStep({
     }
   };
 
-  const getTargetMuscleMassForGender = (bodyType: any, gender: string, userWeight: number) => {
-    if (!bodyType.targetBodyFat) return 'N/A';
-    
-    // Calculate muscle mass based on body fat percentage
-    const calculateMuscleFromBodyFat = (bodyFatPct: number, weight: number) => {
-      const fatMass = weight * (bodyFatPct / 100);
-      const leanBodyMass = weight - fatMass;
-      const muscleMass = leanBodyMass * 0.5; // Muscle is ~50% of lean body mass
-      return Math.round(muscleMass * 10) / 10;
-    };
-    
-    if (gender === 'male') {
-      const targetMuscle = calculateMuscleFromBodyFat(bodyType.targetBodyFat, userWeight);
-      return `${targetMuscle}kg`;
-    } else if (gender === 'female') {
-      const femaleTargetBodyFat = bodyType.targetBodyFat + 6;
-      const targetMuscle = calculateMuscleFromBodyFat(femaleTargetBodyFat, userWeight) * 0.8;
-      return `${Math.round(targetMuscle * 10) / 10}kg`;
-    } else {
-      // For 'other' gender, show both targets
-      const maleTargetMuscle = calculateMuscleFromBodyFat(bodyType.targetBodyFat, userWeight);
-      const femaleTargetBodyFat = bodyType.targetBodyFat + 6;
-      const femaleTargetMuscle = calculateMuscleFromBodyFat(femaleTargetBodyFat, userWeight) * 0.8;
-      return `${maleTargetMuscle}kg (M) / ${Math.round(femaleTargetMuscle * 10) / 10}kg (F)`;
-    }
-  };
 
-  const getTargetBMIForGender = (bodyType: any, gender: string) => {
+  const getTargetBMIForGender = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
     
     if (bodyType.targetAttributes.targetBMIRange) {
@@ -154,14 +141,14 @@ export default function BodyTypeGoalsStep({
     return `BMI ${target}`;
   };
 
-  const getWaistToHeightRatio = (bodyType: any) => {
+  const getWaistToHeightRatio = (bodyType: BodyTypeWithTargets) => {
     if (!bodyType.waistToHeightRatio) return 'N/A';
     
     const ratio = Math.round(bodyType.waistToHeightRatio * 100) / 100;
     return `WHR ${ratio}`;
   };
 
-  const getFatFreeMassIndex = (bodyType: any, gender: string) => {
+  const getFatFreeMassIndex = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
     
     if (gender === 'male' && bodyType.targetAttributes.ffmiRangeMen) {
@@ -183,7 +170,7 @@ export default function BodyTypeGoalsStep({
     return `FFMI ${bodyType.fatFreeMassIndex}`;
   };
 
-  const getSMMRange = (bodyType: any, gender: string) => {
+  const getSMMRange = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
     
     if (gender === 'male' && bodyType.targetAttributes.smmRangeMen) {
@@ -203,7 +190,7 @@ export default function BodyTypeGoalsStep({
   };
 
 
-  const renderBodyTypeCard = (bodyType: any) => {
+  const renderBodyTypeCard = (bodyType: BodyTypeWithTargets) => {
     const isSelected = selectedBodyType === bodyType.id;
     
     return (
@@ -227,7 +214,7 @@ export default function BodyTypeGoalsStep({
             </Text>
             <View style={styles.iconContainer}>
               <Ionicons
-                name={bodyType.icon as any}
+                name={bodyType.icon as keyof typeof Ionicons.glyphMap}
                 size={20}
                 color={isSelected ? bodyType.color : '#6b7280'}
               />

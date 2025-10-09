@@ -95,14 +95,6 @@ class HealthService extends BaseService {
     return data;
   }
 
-  // Analytics
-  async getAnalyticsData(): Promise<any> {
-    const data = await this.makeRequest(
-      () => apiClient.get('/health/analytics/dashboard'),
-      'HEALTH SERVICE - getAnalyticsData'
-    );
-    return data;
-  }
 
   // Water logging (delegated to simpleWaterService for consistency)
   async getWaterLogs(days: number = 7): Promise<any[]> {

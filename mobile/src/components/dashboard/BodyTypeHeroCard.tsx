@@ -11,7 +11,6 @@ interface BodyTypeHeroCardProps {
   suggestions: string[];
   onLogWorkout?: () => void;
   onLogMeal?: () => void;
-  onViewAnalytics?: () => void;
   onSuggestionPress?: (suggestion: string) => void;
 }
 
@@ -24,7 +23,6 @@ export default function BodyTypeHeroCard({
   suggestions,
   onLogWorkout,
   onLogMeal,
-  onViewAnalytics,
   onSuggestionPress,
 }: BodyTypeHeroCardProps) {
   const getAlignmentColor = (alignment: string) => {
@@ -66,12 +64,6 @@ export default function BodyTypeHeroCard({
             <Text style={styles.goalSubtext}>Your body type goal</Text>
           </View>
         </View>
-        <TouchableOpacity 
-          style={styles.analyticsButton}
-          onPress={onViewAnalytics}
-        >
-          <Ionicons name="analytics-outline" size={20} color="#3b82f6" />
-        </TouchableOpacity>
       </View>
 
       {/* Progress Section */}
@@ -200,11 +192,6 @@ const styles = StyleSheet.create({
   goalSubtext: {
     fontSize: 14,
     color: '#6b7280',
-  },
-  analyticsButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#f1f5f9',
   },
   progressSection: {
     flexDirection: 'row',

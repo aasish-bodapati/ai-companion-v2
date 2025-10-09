@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { SimpleRoutineWithProgress } from '../../services/routineService';
 import RoutineDetailsModal from './RoutineDetailsModal';
-import { CategoryBadge, DifficultyBadge } from '../ui/Badge';
+import { DifficultyBadge } from '../ui/Badge';
 
 interface Routine {
   id: number;
@@ -59,46 +59,7 @@ export default function SimpleRoutineDisplay({
     setSelectedRoutine(null);
   };
 
-  const getCategoryFromRoutine = (routine: Routine) => {
-    // Determine category based on workout types
-    const allWorkouts = routine.workout_schedule.flatMap(day => day.workouts || []);
-    const activityTypes = allWorkouts.map(workout => {
-      // Handle different possible field names
-      return workout.activity_type || workout.logging_category || 'mixed';
-    });
-    
-    if (activityTypes.includes('strength') || activityTypes.includes('weightlifting') || activityTypes.includes('weighted')) {
-      return 'strength';
-    } else if (activityTypes.includes('cardio') || activityTypes.includes('running') || activityTypes.includes('endurance')) {
-      return 'cardio';
-    } else if (activityTypes.includes('flexibility') || activityTypes.includes('yoga') || activityTypes.includes('stretching')) {
-      return 'flexibility';
-    } else {
-      return 'mixed';
-    }
-  };
 
-  const getCategoryIcon = (routine: Routine) => {
-    const category = getCategoryFromRoutine(routine);
-    switch (category) {
-      case 'strength': return 'barbell-outline';
-      case 'cardio': return 'heart-outline';
-      case 'flexibility': return 'leaf-outline';
-      case 'mixed': return 'fitness-outline';
-      default: return 'fitness-outline';
-    }
-  };
-
-  const getCategoryColor = (routine: Routine) => {
-    const category = getCategoryFromRoutine(routine);
-    switch (category) {
-      case 'strength': return '#3b82f6';
-      case 'cardio': return '#ef4444';
-      case 'flexibility': return '#10b981';
-      case 'mixed': return '#8b5cf6';
-      default: return '#6b7280';
-    }
-  };
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

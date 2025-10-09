@@ -12,11 +12,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, CreateRoutineData, SimpleRoutineWithProgress } from '../../services/routineService';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { apiClient } from '../../services/api';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
-import { useExerciseCategories, useExerciseCategoriesActions } from '../../stores';
 
 interface Exercise {
   id: number;
@@ -61,9 +59,6 @@ export default function EditRoutineModal({
   const [loading, setLoading] = useState(false);
   const [loadingRoutineData, setLoadingRoutineData] = useState(false);
   
-  // Use exercise categories store
-  const categories = useExerciseCategories();
-  const { loadCategories } = useExerciseCategoriesActions();
   
   // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
   // React.useEffect(() => {
@@ -87,7 +82,6 @@ export default function EditRoutineModal({
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [exerciseSearch, setExerciseSearch] = useState('');
-  const [loadingExercises, setLoadingExercises] = useState(false);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [currentWorkoutId, setCurrentWorkoutId] = useState<number | null>(null);
 
@@ -156,12 +150,12 @@ export default function EditRoutineModal({
               
               if (dayIndex !== -1) {
                 if (workoutDay.exercises && Array.isArray(workoutDay.exercises)) {
-                  convertedDayWorkouts[dayIndex].workouts = (workoutDay.exercises as any[]).map((exercise: any, index: number) => ({
+                  convertedDayWorkouts[dayIndex].workouts = (workoutDay.exercises as unknown[]).map((exercise: unknown, index: number) => ({
                     id: dayIndex * 1000 + index, // Generate unique number ID
                     exercise: {
                       id: 0, // We don't have exercise ID in the routine data
-                      name: exercise.exercise_name,
-                      logging_category: exercise.logging_category || 'weighted',
+                      name: (exercise as { exercise_name?: string }).exercise_name || 'Unknown Exercise',
+                      logging_category: (exercise as { logging_category?: string }).logging_category || 'weighted',
                       difficulty: 'medium',
                       calories_per_minute: 0,
                       description: '',
@@ -180,7 +174,7 @@ export default function EditRoutineModal({
 
           console.log('🔍 [EDIT MODAL] Final converted day workouts:', convertedDayWorkouts);
           setDayWorkouts(convertedDayWorkouts);
-        } catch (error) {
+        } catch {
           // Silent error handling - no console logging to prevent Expo Go notifications
           showToast.error('Error', 'Failed to load routine details. Please try again.');
         } finally {
@@ -222,7 +216,7 @@ export default function EditRoutineModal({
         const response = await apiClient.get('/health/exercises/all?limit=500');
         setAllExercises(response.data.exercises || []);
         setFilteredExercises(response.data.exercises || []);
-      } catch (error) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         showToast.error('Error', 'Failed to load exercises');
       } finally {
@@ -361,9 +355,14 @@ export default function EditRoutineModal({
       resetForm();
       onClose();
       onRoutineUpdated();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      showToast.error('Error', err.response?.data?.detail || err.message || 'Failed to update routine');
+      const errorMessage = err && typeof err === 'object' && 'response' in err 
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+        : err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : 'Failed to update routine';
+      showToast.error('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -425,7 +424,7 @@ export default function EditRoutineModal({
                   onPress={() => setSelectedCategory(category.id)}
                 >
                   <Ionicons
-                    name={categoryConfig.icon as any}
+                    name={categoryConfig.icon as keyof typeof Ionicons.glyphMap}
                     size={16}
                     color={selectedCategory === category.id ? '#fff' : categoryConfig.color}
                   />

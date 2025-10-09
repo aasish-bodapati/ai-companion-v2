@@ -241,7 +241,7 @@ export default function HealthGoalsStep({
             ]}
           >
             <Ionicons 
-              name={category.icon as any} 
+              name={category.icon as keyof typeof Ionicons.glyphMap} 
               size={16} 
               color={selectedCategory === category.id ? '#ffffff' : category.color} 
             />
@@ -274,7 +274,7 @@ export default function HealthGoalsStep({
         <View style={styles.goalContent}>
           <View style={styles.goalHeader}>
             <Ionicons
-              name={goal.icon as any}
+              name={goal.icon as keyof typeof Ionicons.glyphMap}
               size={24}
               color={isSelected ? goal.color : '#6b7280'}
             />

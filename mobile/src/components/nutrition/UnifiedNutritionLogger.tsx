@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { nutritionService } from '../../services/nutritionService';
@@ -98,7 +97,6 @@ export default function UnifiedNutritionLogger({
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FoodItem[]>([]);
-  const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [searching, setSearching] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -109,7 +107,7 @@ export default function UnifiedNutritionLogger({
         setMeal(initialMeal);
       }
     }
-  }, [visible, initialMeal]);
+  }, [visible, initialMeal, loadFoodItems]);
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -117,9 +115,9 @@ export default function UnifiedNutritionLogger({
     } else {
       setSearchResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchFoods]);
 
-  const loadFoodItems = async () => {
+  const loadFoodItems = useCallback(async () => {
     try {
       setLoading(true);
       const data = await nutritionService.getFoodItems();
@@ -131,9 +129,9 @@ export default function UnifiedNutritionLogger({
     } finally {
       setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  const searchFoods = async (query: string) => {
+  const searchFoods = useCallback(async (query: string) => {
     if (query.trim().length < 2) {
       setSearchResults([]);
       return;
@@ -152,7 +150,7 @@ export default function UnifiedNutritionLogger({
     } finally {
       setSearching(false);
     }
-  };
+  }, []);
 
   const handleSelectFood = (foodItem: FoodItem) => {
     addFoodItem(foodItem);

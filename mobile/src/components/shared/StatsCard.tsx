@@ -27,7 +27,7 @@ interface StatsCardProps {
   showTargets?: boolean;
   onStatPress?: (stat: StatItem) => void;
   onViewAll?: () => void;
-  style?: any;
+  style?: object;
 }
 
 export default function StatsCard({
@@ -97,7 +97,7 @@ export default function StatsCard({
                 >
                   <View style={styles.barHeader}>
                     <View style={styles.barIconContainer}>
-                      <Ionicons name={stat.icon as any} size={16} color={stat.color} />
+                      <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={16} color={stat.color} />
                     </View>
                     <Text style={styles.barLabel}>{stat.label}</Text>
                     <Text style={styles.barValue}>
@@ -137,7 +137,7 @@ export default function StatsCard({
                   activeOpacity={0.7}
                 >
                   <View style={[styles.numberIcon, { backgroundColor: stat.color + '20' }]}>
-                    <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                    <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={20} color={stat.color} />
                   </View>
                   <Text style={styles.numberValue}>{stat.value}</Text>
                   <Text style={styles.numberLabel}>{stat.label}</Text>

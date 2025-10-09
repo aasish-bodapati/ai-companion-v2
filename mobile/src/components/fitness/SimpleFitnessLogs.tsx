@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,6 @@ import {
   getUserTimezone
 } from '../../utils/timezoneUtils';
 import CalendarComponent from '../common/CalendarComponent';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface WorkoutLog {
   id: number;
@@ -58,20 +57,15 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   const [editNotes, setEditNotes] = useState('');
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<unknown[]>([]);
-  const [categoryConfigs, setCategoryConfigs] = useState<{ [key: string]: any }>({});
-  
   // DISABLED: Use exercise categories store to prevent infinite loops
   // const { categories, loadCategories, loaded } = useExerciseCategoriesWithAutoLoad();
-  
-  // Use static categories to prevent infinite loops
-  const categories: any[] = [];
 
   // Load logs on component mount
   useEffect(() => {
     loadLogs();
     loadExerciseDatabase();
     loadCategoryConfigs();
-  }, []);
+  }, [loadLogs]);
 
   // Categories are now auto-loaded via useExerciseCategoriesWithAutoLoad hook
 
@@ -95,15 +89,15 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
         }
       }
       setExerciseDatabase(exercises);
-    } catch (error) {
-      console.error('Error loading exercise database:', error);
+    } catch (_error) {
+      console.error('Error loading exercise database:', _error);
     }
   };
 
   const loadCategoryConfigs = async () => {
     try {
       const categories = await exerciseCategoryService.getCategories();
-      const configMap: { [key: string]: any } = {};
+      const configMap: { [key: string]: { name: string; icon: string; color: string } } = {};
       categories.forEach(category => {
         configMap[category.id] = {
           name: category.display_name,
@@ -112,12 +106,12 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
         };
       });
       setCategoryConfigs(configMap);
-    } catch (error) {
-      console.log('Error loading category configs:', error);
+    } catch (_error) {
+      console.log('Error loading category configs:', _error);
     }
   };
 
-  const loadLogs = async (date?: Date) => {
+  const loadLogs = useCallback(async (date?: Date) => {
     try {
       setLoading(true);
       const targetDate = date || selectedDate;
@@ -177,13 +171,13 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       });
       
       setLogs(sortedLogs);
-    } catch (error) {
-      console.error('Error loading logs:', error);
+    } catch (_error) {
+      console.error('Error loading logs:', _error);
       showToast('Failed to load fitness logs', 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDate, showToast]);
 
   const onRefreshLogs = async () => {
     setRefreshing(true);
@@ -233,7 +227,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       await fitnessService.deleteWorkout(logId);
       await loadLogs();
       showToast('Workout deleted successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to delete workout', 'error');
     }
   };
@@ -256,7 +250,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       setEditingLog(null);
       setEditNotes('');
       showToast('Workout updated successfully', 'success');
-    } catch (error) {
+    } catch {
       showToast('Failed to update workout', 'error');
     }
   };
@@ -278,7 +272,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   };
 
   // Look up exercise category from database
-  const getExerciseCategory = (exercise: any) => {
+  const getExerciseCategory = (exercise: { exercise_name?: string; name?: string; [key: string]: unknown }) => {
     const exerciseName = exercise.exercise_name || exercise.name || 'Exercise Not Found';
     // First check for common exercise mappings
     const commonExerciseMappings: { [key: string]: string } = {
@@ -466,7 +460,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
               {/* Exercise Details */}
               {log.exercises && Array.isArray(log.exercises) && log.exercises.length > 0 && (
                 <View style={styles.exercisesContainer}>
-                  {log.exercises.map((exercise: any, exerciseIndex: number) => {
+                  {log.exercises.map((exercise: { exercise_name?: string; name?: string; [key: string]: unknown }, exerciseIndex: number) => {
                     console.log('🔍 [FITNESS LOGS] Exercise for category lookup:', exercise);
                     const category = getExerciseCategory(exercise);
                     console.log('🔍 [FITNESS LOGS] Resolved category:', category);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -39,7 +39,7 @@ export default function RoutineProgressTracker({
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const loadWorkoutProgress = async () => {
+  const loadWorkoutProgress = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -52,8 +52,8 @@ export default function RoutineProgressTracker({
         // Continue with progress tracking even if no workout is scheduled
       }
       
-      // Get recent workout logs
-      const recentLogs = await fitnessService.getRecentWorkouts(30);
+      // Get recent workout logs (for future use)
+      // const recentLogs = await fitnessService.getRecentWorkouts(30);
       
       // Build progress tracking based on routine structure
       const progress: WorkoutProgress[] = routine.workout_schedule.map(day => ({
@@ -70,12 +70,12 @@ export default function RoutineProgressTracker({
       }));
       
       setWorkoutProgress(progress);
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
-  };
+  }, [routine.id]);
 
   useEffect(() => {
     loadWorkoutProgress();
@@ -105,7 +105,7 @@ export default function RoutineProgressTracker({
           },
         ]
       );
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       Alert.alert('Error', 'Failed to mark workout as completed. Please try again.');
     } finally {

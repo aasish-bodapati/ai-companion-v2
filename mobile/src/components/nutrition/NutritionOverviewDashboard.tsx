@@ -18,7 +18,6 @@ import { useAuth } from '../../contexts/AuthContext';
 interface NutritionOverviewDashboardProps {
   onLogMeal: () => void;
   onViewLogs: () => void;
-  onViewAnalytics: () => void;
   refreshing?: boolean;
   onRefresh?: () => void;
 }
@@ -52,7 +51,6 @@ interface NutritionLogData {
 export default function NutritionOverviewDashboard({
   onLogMeal,
   onViewLogs,
-  onViewAnalytics,
   refreshing = false,
   onRefresh,
 }: NutritionOverviewDashboardProps) {

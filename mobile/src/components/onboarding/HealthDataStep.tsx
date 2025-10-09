@@ -166,10 +166,6 @@ export default function HealthDataStep({
       newErrors.smm = 'Please enter a valid SMM (10-100 kg)';
     }
 
-    if (data.bodyFat && (isNaN(Number(data.bodyFat)) || Number(data.bodyFat) < 3 || Number(data.bodyFat) > 50)) {
-      newErrors.bodyFat = 'Please enter a valid body fat percentage (3-50%)';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -218,7 +214,7 @@ export default function HealthDataStep({
             ]}
           >
             <Ionicons 
-              name={option.icon as any} 
+              name={option.icon as keyof typeof Ionicons.glyphMap} 
               size={20} 
               color={data.gender === option.id ? '#ffffff' : '#3b82f6'} 
             />
@@ -254,7 +250,7 @@ export default function HealthDataStep({
             ]}
           >
             <Ionicons 
-              name={option.icon as any} 
+              name={option.icon as keyof typeof Ionicons.glyphMap} 
               size={20} 
               color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'} 
             />

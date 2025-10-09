@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { useExerciseCategories, useExerciseCategoriesActions } from '../../stores';
+import { useExerciseCategories } from '../../stores';
 import { CategoryBadge } from './Badge';
 
 export interface LoggingItemData {
@@ -371,12 +371,8 @@ const LoggingItem = React.memo(function LoggingItem({
           </View>
         );
     }
-  }, [getExerciseCategory, servingCount, setServingCount, onUpdate, item.id]);
+  }, [getExerciseCategory, servingCount, setServingCount, onUpdate, item.id, item.distance, item.duration_minutes, item.weight_kg, repsCount, testID]);
 
-  // Memoize category config to avoid multiple calls
-  const categoryConfig = useMemo(() => {
-    return getCategoryConfig(getExerciseCategory);
-  }, [getExerciseCategory, categories]);
 
   return (
     <View style={styles.container} testID={testID}>

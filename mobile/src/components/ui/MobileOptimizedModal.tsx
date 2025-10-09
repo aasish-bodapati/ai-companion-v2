@@ -101,7 +101,7 @@ export default function MobileOptimizedModal({
         }),
       ]).start();
     }
-  }, [visible, enableHaptic]);
+  }, [visible, enableHaptic, fadeAnim, scaleAnim, slideAnim]);
 
   const handleClose = () => {
     if (enableHaptic) {

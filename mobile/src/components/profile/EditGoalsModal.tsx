@@ -153,7 +153,7 @@ const HEALTH_GOALS = [
     id: 'track_progress',
     title: 'Track Progress',
     description: 'Monitor and celebrate achievements',
-    icon: 'analytics-outline',
+    icon: 'trending-up-outline',
     color: '#10b981',
     category: 'lifestyle',
   },
