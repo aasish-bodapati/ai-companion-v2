@@ -71,7 +71,7 @@ export function useBodyTypeScoring({
       } else {
         setWeeklyResult(null);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to calculate scores');
       setDailyResult(null);
       setWeeklyResult(null);

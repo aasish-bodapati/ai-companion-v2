@@ -22,7 +22,7 @@ export default function ProfileScreen() {
     <TouchableOpacity style={styles.profileItem} onPress={onPress}>
       <View style={styles.profileItemContent}>
         <View style={styles.profileItemIcon}>
-          <Ionicons name={icon as any} size={24} color="#6366f1" />
+          <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={24} color="#6366f1" />
         </View>
         <Text style={styles.profileItemTitle}>{title}</Text>
         {showArrow && (

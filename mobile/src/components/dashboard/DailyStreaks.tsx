@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 interface Streak {
   id: string;
@@ -155,9 +156,9 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#ffffff',
     borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    padding: SPACING.xl,
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -168,8 +169,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 16,
+    marginBottom: SPACING.lg,
+    paddingBottom: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -185,48 +186,48 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f9ff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: '#1f2937',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f8fafc',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
     borderRadius: 8,
     gap: 4,
   },
   actionText: {
-    fontSize: 14,
-    color: '#3b82f6',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.primary.main,
     fontWeight: '500',
   },
   streaksContainer: {
-    paddingRight: 20,
+    paddingRight: SPACING.xl,
   },
   streakCard: {
     width: 160,
-    padding: 16,
+    padding: SPACING.lg,
     borderLeftWidth: 4,
-    marginRight: 16,
+    marginRight: SPACING.lg,
   },
   streakHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   streakIcon: {
     width: 32,
@@ -234,20 +235,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   streakInfo: {
     flex: 1,
   },
   streakTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   streakDescription: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
   },
   streakProgress: {
     gap: 8,
@@ -257,12 +258,12 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
   },
   streakCurrent: {
-    fontSize: 24,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
   },
   streakTarget: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   progressBar: {
     height: 4,

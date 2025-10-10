@@ -11,13 +11,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { isFeatureEnabled } from '../../config/featureFlags';
+import { getStatusColor, getStatusText, getMotivationalText } from '../../utils/componentUtils';
 // Removed deprecationUtils import
 
-const { width } = Dimensions.get('window');
 
 // Combined interface supporting both old and new props
 interface UnifiedProgressRingProps {
@@ -93,7 +91,7 @@ export const UnifiedProgressRing = ({
   const calculatedCurrent = useSharedVariant ? value! : current!;
   const calculatedGoal = useSharedVariant ? target! : goal!;
   const calculatedLabel = useSharedVariant ? label! : label!;
-  const calculatedColor = useSharedVariant ? color! : color!;
+  // const calculatedColor = useSharedVariant ? color! : color!;
   const calculatedSize = useSharedVariant ? size! : size!;
   const calculatedStrokeWidth = useSharedVariant ? strokeWidth! : strokeWidth!;
 
@@ -122,30 +120,10 @@ export const UnifiedProgressRing = ({
   }, [calculatedProgress, animated, animatedValue, scaleValue]);
 
   const radius = (calculatedSize - calculatedStrokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
 
-  const getStatusColor = () => {
-    const percentage = calculatedProgress * 100;
-    if (percentage >= 90) return '#10b981';
-    if (percentage >= 70) return '#f59e0b';
-    return calculatedColor;
-  };
-
-  const getStatusText = () => {
-    const percentage = calculatedProgress * 100;
-    if (percentage >= 90) return 'Excellent';
-    if (percentage >= 70) return 'Good';
-    if (percentage >= 50) return 'Fair';
-    return 'Needs Work';
-  };
-
-  const getMotivationalText = () => {
-    if (calculatedProgress >= 1) return 'Complete! 🎉';
-    if (calculatedProgress >= 0.8) return 'Almost there! 💪';
-    if (calculatedProgress >= 0.5) return 'Great progress! 🌟';
-    if (calculatedProgress > 0) return 'Keep going! 🚀';
-    return 'Let\'s start! 💫';
-  };
+  const statusColor = getStatusColor(calculatedProgress * 100);
+  const statusText = getStatusText(calculatedProgress * 100);
+  const motivationalText = getMotivationalText(calculatedProgress);
 
   const renderContent = () => (
     <Animated.View
@@ -186,10 +164,10 @@ export const UnifiedProgressRing = ({
               borderRadius: radius,
               borderWidth: calculatedStrokeWidth,
               borderColor: 'transparent',
-              borderTopColor: getStatusColor(),
-              borderRightColor: calculatedProgress > 0.25 ? getStatusColor() : 'transparent',
-              borderBottomColor: calculatedProgress > 0.5 ? getStatusColor() : 'transparent',
-              borderLeftColor: calculatedProgress > 0.75 ? getStatusColor() : 'transparent',
+              borderTopColor: statusColor,
+              borderRightColor: calculatedProgress > 0.25 ? statusColor : 'transparent',
+              borderBottomColor: calculatedProgress > 0.5 ? statusColor : 'transparent',
+              borderLeftColor: calculatedProgress > 0.75 ? statusColor : 'transparent',
               transform: [{ rotate: '-90deg' }],
             },
           ]}
@@ -199,11 +177,11 @@ export const UnifiedProgressRing = ({
       {/* Center Content */}
       <View style={styles.centerContent}>
         {(showIcon || icon) && (
-          <View style={[styles.iconContainer, { backgroundColor: getStatusColor() + '20' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: statusColor + '20' }]}>
             <Ionicons
-              name={calculatedProgress >= 1 ? 'checkmark' : (iconName as any) || (icon as any)}
+              name={calculatedProgress >= 1 ? 'checkmark' : (iconName as keyof typeof Ionicons.glyphMap) || (icon as keyof typeof Ionicons.glyphMap)}
               size={calculatedSize * 0.15}
-              color={getStatusColor()}
+              color={statusColor}
             />
           </View>
         )}
@@ -228,13 +206,13 @@ export const UnifiedProgressRing = ({
         
         {useUIVariant && (
           <Text style={[styles.motivation, { fontSize: calculatedSize * 0.08 }]}>
-            {getMotivationalText()}
+            {motivationalText}
           </Text>
         )}
         
         {useSharedVariant && (
           <Text style={[styles.status, { fontSize: calculatedSize * 0.08 }]}>
-            {getStatusText()}
+            {statusText}
           </Text>
         )}
       </View>

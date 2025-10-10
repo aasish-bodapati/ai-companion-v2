@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
-import { fitnessService } from '../../services/fitnessService';
+// import { fitnessService } from '../../services/fitnessService'; // Unused for now
 import { COMMON_STYLES } from '../../theme/constants';
 
 interface RoutineProgressTrackerProps {

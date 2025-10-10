@@ -22,7 +22,7 @@ class ExerciseService {
         name: response.data.name,
         logging_category: response.data.logging_category
       };
-    } catch (error) {
+    } catch {
       console.warn(`Exercise with ID ${id} not found`);
       return null;
     }
@@ -39,7 +39,7 @@ class ExerciseService {
       
       // Filter out null results
       return results.filter((exercise): exercise is Exercise => exercise !== null);
-    } catch (error) {
+    } catch {
       console.error('Error fetching exercises:', error);
       return [];
     }
@@ -52,7 +52,7 @@ class ExerciseService {
     try {
       const response = await apiClient.get('/health/exercises');
       return response.data;
-    } catch (error) {
+    } catch {
       console.error('Error fetching all exercises:', error);
       return [];
     }

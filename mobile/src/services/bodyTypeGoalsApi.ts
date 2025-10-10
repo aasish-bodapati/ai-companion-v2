@@ -78,7 +78,7 @@ class BodyTypeGoalsApiService {
       
       console.log('🎯 Body type goals fetched successfully:', response.data.body_type_goals.length);
       return response.data.body_type_goals;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error('Failed to fetch body type goals');
     }
@@ -94,7 +94,7 @@ class BodyTypeGoalsApiService {
       
       console.log('🎯 System body type goals fetched successfully:', response.data.body_type_goals.length);
       return response.data.body_type_goals;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error('Failed to fetch system body type goals');
     }
@@ -110,7 +110,7 @@ class BodyTypeGoalsApiService {
       
       console.log(`🎯 Body type goals for category ${category} fetched successfully:`, response.data.body_type_goals.length);
       return response.data.body_type_goals;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error(`Failed to fetch body type goals for category ${category}`);
     }
@@ -126,7 +126,7 @@ class BodyTypeGoalsApiService {
       
       console.log(`🎯 Body type goal ${id} fetched successfully`);
       return response.data;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }

@@ -341,7 +341,7 @@ export default function HealthGoalsStep({
                   const goal = HEALTH_GOALS.find(g => g.id === goalId);
                   return goal ? (
                     <View key={goalId} style={styles.summaryGoal}>
-                      <Ionicons name={goal.icon as any} size={16} color={goal.color} />
+                      <Ionicons name={goal.icon as keyof typeof Ionicons.glyphMap} size={16} color={goal.color} />
                       <Text style={styles.summaryGoalText}>{goal.title}</Text>
                     </View>
                   ) : null;

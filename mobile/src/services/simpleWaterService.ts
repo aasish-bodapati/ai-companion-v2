@@ -43,11 +43,11 @@ class SimpleWaterService {
    * Get today's water stats - simple and fast
    */
   async getTodayStats(): Promise<SimpleWaterStats> {
-    console.log('🚰 [SIMPLE WATER] Getting today stats');
-    
     const response = await apiClient.get('/health/simple-water/stats');
     
-    console.log('🚰 [SIMPLE WATER] Stats retrieved:', response.data);
+    if (__DEV__) {
+      console.log('🚰 Water loaded - progress:', response.data.progress_percentage + '%');
+    }
     return response.data;
   }
 

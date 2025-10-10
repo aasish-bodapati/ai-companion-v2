@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { COMMON_STYLES } from '../../theme/constants';
+import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
 
@@ -29,7 +28,7 @@ export default function SimpleChart({
   height = 200,
 }: SimpleChartProps) {
   const max = maxValue || Math.max(...data.map(d => d.value));
-  const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+  const colors = [COLORS.primary.main, COLORS.success, COLORS.warning, COLORS.danger, '#8b5cf6', '#06b6d4'];
 
   const renderBarChart = () => {
     return (
@@ -151,7 +150,7 @@ export default function SimpleChart({
   const renderDonutChart = () => {
     const radius = 150;
     const strokeWidth = 40;
-    const circumference = 2 * Math.PI * radius;
+    // const circumference = 2 * Math.PI * radius;
     
     // Check if all values are zero
     const totalValue = data.reduce((sum, item) => sum + item.value, 0);
@@ -164,7 +163,7 @@ export default function SimpleChart({
             {!isEmpty ? (
               <>
                 {data.map((item, index) => {
-                  const percentage = (item.value / max) * 100;
+                  // const percentage = (item.value / max) * 100;
                   const color = item.color || colors[index % colors.length];
                   
                   return (
@@ -209,7 +208,7 @@ export default function SimpleChart({
                   height: radius * 2,
                   borderRadius: radius,
                   borderWidth: strokeWidth,
-                  borderColor: '#e5e7eb',
+                  borderColor: COLORS.gray[200],
                 }]} />
                 <View style={styles.donutCenter}>
                   <Text style={styles.donutCenterText}>0</Text>
@@ -258,10 +257,10 @@ export default function SimpleChart({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderRadius: 16,
-    padding: 16,
-    marginVertical: 8,
+    padding: SPACING.lg,
+    marginVertical: SPACING.sm,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -269,10 +268,10 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 20,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xl,
   },
   chartContainer: {
     justifyContent: 'center',
@@ -284,12 +283,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'space-around',
     height: '100%',
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACING.sm,
   },
   barItem: {
     flex: 1,
     alignItems: 'center',
-    marginHorizontal: 4,
+    marginHorizontal: SPACING.xs,
   },
   barWrapper: {
     height: '85%',
@@ -302,28 +301,28 @@ const styles = StyleSheet.create({
     minHeight: 4,
   },
   barLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: SPACING.xs,
   },
   barValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 2,
   },
   // Line Chart Styles
   lineContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   gridLine: {
     position: 'absolute',
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
   },
   line: {
     position: 'absolute',
@@ -334,7 +333,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderRadius: COMMON_STYLES.smallRadius,
     borderWidth: 3,
-    borderColor: '#ffffff',
+    borderColor: COLORS.background.primary,
   },
   lineLabels: {
     flexDirection: 'row',
@@ -342,8 +341,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   lineLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     flex: 1,
   },
@@ -358,7 +357,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 20,
+    marginRight: SPACING.xl,
   },
   donutSegment: {
     position: 'absolute',
@@ -374,41 +373,41 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   donutCenterText: {
-    fontSize: 40,
+    fontSize: FONT_SIZE.xxxxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   donutCenterLabel: {
-    fontSize: 18,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   donutEmptyRing: {
     position: 'absolute',
   },
   legend: {
-    marginLeft: 20,
+    marginLeft: SPACING.xl,
     flex: 1,
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   legendColor: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginRight: 8,
+    marginRight: SPACING.sm,
   },
   legendLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     flex: 1,
     fontWeight: '500',
   },
   legendValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
 });

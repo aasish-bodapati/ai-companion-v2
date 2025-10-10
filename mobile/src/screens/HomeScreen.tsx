@@ -35,17 +35,16 @@ export default function HomeScreen() {
         console.log('📱 HomeScreen: Fetch response status:', fetchResponse.status);
         const fetchData = await fetchResponse.json();
         console.log('📱 HomeScreen: Fetch response data:', fetchData);
-      } catch (fetchError) {
+      } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
       }
       
       const data = await healthService.getHealthData();
       console.log('📱 HomeScreen: Successfully received data:', data);
       setHealthData(data);
-    } catch (err) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage = 'Unknown error occurred';
       setError(errorMessage);
       Alert.alert('Error', `Failed to fetch health data: ${errorMessage}`);
     } finally {
@@ -86,7 +85,7 @@ export default function HomeScreen() {
               {(() => {
                 try {
                   return JSON.stringify(healthData, null, 2);
-                } catch (error) {
+                } catch {
                   return 'Error displaying data';
                 }
               })()}

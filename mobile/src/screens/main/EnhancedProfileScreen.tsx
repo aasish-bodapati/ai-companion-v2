@@ -253,18 +253,18 @@ export default function EnhancedProfileScreen() {
     } finally {
       setLoading(false);
     }
-  }, []); // Remove dependencies to prevent infinite loop
+  }, [loadNumericalGoals, showToast]); // Add missing dependencies
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     hapticFeedback.light();
     await loadOnboardingData();
     setRefreshing(false);
-  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
+  }, [loadOnboardingData]); // Add loadOnboardingData dependency
 
   useEffect(() => {
     loadOnboardingData();
-  }, []); // Remove loadOnboardingData dependency to prevent infinite loop
+  }, [loadOnboardingData]); // Add loadOnboardingData dependency
 
   useEffect(() => {
   }, [user]);

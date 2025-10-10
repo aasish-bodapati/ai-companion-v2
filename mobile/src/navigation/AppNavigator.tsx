@@ -20,7 +20,10 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
   const { isAuthenticated, isLoading, needsOnboarding } = useAuth();
   
-  console.log('🧭 AppNavigator render - isAuthenticated:', isAuthenticated, 'needsOnboarding:', needsOnboarding, 'isLoading:', isLoading);
+  // Only log when state changes, not on every render
+  if (__DEV__) {
+    console.log('🧭 AppNavigator render - isAuthenticated:', isAuthenticated, 'needsOnboarding:', needsOnboarding, 'isLoading:', isLoading);
+  }
 
   if (isLoading) {
     return (

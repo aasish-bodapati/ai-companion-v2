@@ -23,9 +23,9 @@ interface SectionHeaderProps {
   actionDisabled?: boolean;
   
   // Styling
-  style?: any;
-  titleStyle?: any;
-  subtitleStyle?: any;
+  style?: object;
+  titleStyle?: object;
+  subtitleStyle?: object;
   
   // Layout
   alignment?: 'left' | 'center' | 'space-between';
@@ -91,7 +91,7 @@ export default function SectionHeader({
     if (!icon) return null;
     return (
       <Ionicons 
-        name={icon as any} 
+        name={icon as keyof typeof Ionicons.glyphMap} 
         size={20} 
         color={iconColor}
         style={styles.titleIcon}
@@ -113,7 +113,7 @@ export default function SectionHeader({
       >
         {actionIcon && (
           <Ionicons 
-            name={actionIcon as any} 
+            name={actionIcon as keyof typeof Ionicons.glyphMap} 
             size={16} 
             color={actionVariant === 'primary' ? COLORS.text.inverse : COLORS.primary.main}
             style={actionLabel ? styles.actionIcon : undefined}

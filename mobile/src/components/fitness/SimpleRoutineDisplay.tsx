@@ -44,9 +44,15 @@ export default function SimpleRoutineDisplay({
   const [selectedRoutine, setSelectedRoutine] = useState<SimpleRoutineWithProgress | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Debug: Log the first routine structure
-  if (routines.length > 0) {
-  }
+  // Debug: Log routines to see what we're getting
+  console.log('🔍 SimpleRoutineDisplay - routines:', routines, 'type:', typeof routines, 'isArray:', Array.isArray(routines));
+
+  // Handle both array and paginated response formats
+  const safeRoutines = Array.isArray(routines) 
+    ? routines 
+    : (routines && routines.routines) 
+      ? routines.routines 
+      : [];
 
   const handleRoutinePress = (routine: SimpleRoutineWithProgress) => {
     setSelectedRoutine(routine);
@@ -74,7 +80,7 @@ export default function SimpleRoutineDisplay({
         </TouchableOpacity>
       </View>
 
-      {routines.length === 0 ? (
+      {safeRoutines.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="fitness-outline" size={48} color="#9ca3af" />
           <Text style={styles.emptyTitle}>No Routines Yet</Text>
@@ -84,7 +90,7 @@ export default function SimpleRoutineDisplay({
         </View>
       ) : (
         <View style={styles.routineList}>
-          {routines.map((routine) => (
+          {safeRoutines.map((routine) => (
             <TouchableOpacity
               key={routine.id}
               style={styles.routineCard}

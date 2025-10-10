@@ -97,7 +97,7 @@ export class BodyTypeScoringService {
    */
   scoreDailyProgress(dailyLog: DailyLog): ScoringResult {
     let totalScore = 0;
-    const suggestions: string[] = [];
+    // const suggestions: string[] = []; // Unused for now
     const maxPossibleScore = this.getMaxDailyScore();
 
     // Score workouts
@@ -137,7 +137,7 @@ export class BodyTypeScoringService {
    */
   scoreWeeklyProgress(weeklyLog: WeeklyLog): ScoringResult {
     let totalScore = 0;
-    const suggestions: string[] = [];
+    // const suggestions: string[] = []; // Unused for now
     const maxPossibleScore = this.getMaxWeeklyScore();
 
     // Score each day
@@ -458,7 +458,7 @@ export class BodyTypeScoringService {
   }
 
   private getDailySuggestions(dailyLog: DailyLog, alignment: string): string[] {
-    const suggestions: string[] = [];
+    // const suggestions: string[] = []; // Unused for now
     
     if (alignment === 'farther') {
       suggestions.push('Focus on your body type goal requirements');
@@ -477,7 +477,7 @@ export class BodyTypeScoringService {
   }
 
   private getWeeklySuggestions(weeklyLog: WeeklyLog, alignment: string): string[] {
-    const suggestions: string[] = [];
+    // const suggestions: string[] = []; // Unused for now
     
     if (alignment === 'farther') {
       suggestions.push('Focus on consistency with your body type goal');

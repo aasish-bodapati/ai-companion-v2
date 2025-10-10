@@ -35,7 +35,7 @@ interface StatsCardProps {
   size?: 'small' | 'medium' | 'large';
   loading?: boolean;
   disabled?: boolean;
-  style?: any;
+  style?: object;
   testID?: string;
   progress?: ProgressData;
   achievement?: AchievementData;
@@ -165,7 +165,7 @@ export default function StatsCard({
           </Text>
           {icon && (
             <Ionicons
-              name={icon as any}
+              name={icon as keyof typeof Ionicons.glyphMap}
               size={20}
               color={disabled ? COLORS.text.disabled : iconColor}
             />
@@ -179,7 +179,7 @@ export default function StatsCard({
           {trend && trendValue && (
             <View style={styles.trendContainer}>
               <Ionicons
-                name={getTrendIcon() as any}
+                name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
                 size={16}
                 color={getTrendColor()}
               />
@@ -225,7 +225,7 @@ export default function StatsCard({
         {achievement && achievement.reached && (
           <View style={styles.achievementContainer}>
             <Ionicons
-              name={achievement.icon as any}
+              name={achievement.icon as keyof typeof Ionicons.glyphMap}
               size={16}
               color={COLORS.success}
             />

@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { FitnessStore, WorkoutStats, WorkoutLog } from './types';
+import { FitnessStore } from './types';
 import { fitnessService } from '../services/fitnessService';
 
 // Initial state

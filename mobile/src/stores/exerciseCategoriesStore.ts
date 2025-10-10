@@ -3,11 +3,10 @@
  * Manages exercise categories data and provides centralized access
  */
 
-import React from 'react';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { ExerciseCategoriesStore, ExerciseCategory } from './types';
+import { ExerciseCategoriesStore } from './types';
 import { exerciseCategoryService } from '../services/exerciseCategoryService';
 
 // Initial state

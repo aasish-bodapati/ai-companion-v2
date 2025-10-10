@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useRef, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef, useEffect, useCallback } from 'react';
 import Toast, { ToastType } from '../components/ui/Toast';
 
 interface ToastItem {
@@ -70,7 +70,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     }
   };
 
-  const hideToast = () => {
+  const hideToast = useCallback(() => {
     setVisible(false);
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -93,7 +93,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         return next;
       });
     }, 100);
-  };
+  }, []);
 
   // Process queue when it changes
   useEffect(() => {
@@ -105,7 +105,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
         hideToast();
       }, nextToast.duration);
     }
-  }, [toastQueue, currentToast, visible]);
+  }, [toastQueue, currentToast, visible, hideToast]);
 
   // Cleanup timeout on unmount
   useEffect(() => {

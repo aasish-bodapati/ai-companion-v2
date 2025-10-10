@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UnifiedProgressRing } from '../ui/UnifiedProgressRing';
+import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 interface StatItem {
   id: string;
@@ -97,7 +98,7 @@ export default function StatsCard({
                 >
                   <View style={styles.barHeader}>
                     <View style={styles.barIconContainer}>
-                      <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={16} color={stat.color} />
+                      <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={FONT_SIZE.lg} color={stat.color} /> {/* 16 -> FONT_SIZE.lg */}
                     </View>
                     <Text style={styles.barLabel}>{stat.label}</Text>
                     <Text style={styles.barValue}>
@@ -137,7 +138,7 @@ export default function StatsCard({
                   activeOpacity={0.7}
                 >
                   <View style={[styles.numberIcon, { backgroundColor: stat.color + '20' }]}>
-                    <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={20} color={stat.color} />
+                    <Ionicons name={stat.icon as keyof typeof Ionicons.glyphMap} size={FONT_SIZE.xl} color={stat.color} /> {/* 20 -> FONT_SIZE.xl */}
                   </View>
                   <Text style={styles.numberValue}>{stat.value}</Text>
                   <Text style={styles.numberLabel}>{stat.label}</Text>
@@ -160,120 +161,116 @@ export default function StatsCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 6,
-    padding: 6,
-    marginHorizontal: 8,
-    marginBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
+    borderRadius: BORDER_RADIUS.sm, // 6 -> BORDER_RADIUS.sm
+    padding: SPACING.sm, // 6 -> SPACING.sm
+    marginHorizontal: SPACING.sm, // 8 -> SPACING.sm
+    marginBottom: SPACING.sm, // 6 -> SPACING.sm
+    ...SHADOWS.small, // Replaced individual shadow properties with SHADOWS.small
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SPACING.xs, // 4 -> SPACING.xs
   },
   title: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
   },
   viewAllText: {
-    fontSize: 14,
-    color: '#3b82f6',
-    fontWeight: '500',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    color: COLORS.primary.main, // '#3b82f6' -> COLORS.primary.main
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
   },
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-evenly',
-    gap: 2,
+    gap: 2, // Keep as is for precise spacing
   },
   horizontalContainer: {
     paddingLeft: 0,
   },
   verticalContainer: {
-    gap: 4,
+    gap: SPACING.xs, // 4 -> SPACING.xs
   },
   // Ring stats (handled by ProgressRing component)
   
   // Bar stats
   barStat: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: COLORS.background.secondary, // '#f8fafc' -> COLORS.background.secondary
+    borderRadius: BORDER_RADIUS.lg, // 12 -> BORDER_RADIUS.lg
+    padding: SPACING.lg, // 16 -> SPACING.lg
+    marginBottom: SPACING.md, // 12 -> SPACING.md
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
     minWidth: 200,
   },
   barHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm, // 8 -> SPACING.sm
   },
   barIconContainer: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary, // '#f3f4f6' -> COLORS.background.tertiary
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
+    marginRight: SPACING.sm, // 8 -> SPACING.sm
   },
   barLabel: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
   },
   barValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
   },
   barContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SPACING.xs, // 4 -> SPACING.xs
   },
   barBackground: {
     flex: 1,
     height: 6,
-    borderRadius: 3,
-    marginRight: 8,
+    borderRadius: 3, // Keep as is for precise bar height
+    marginRight: SPACING.sm, // 8 -> SPACING.sm
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 3, // Keep as is for precise bar height
   },
   barPercentage: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
     minWidth: 40,
     textAlign: 'right',
   },
   barTarget: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    color: COLORS.text.tertiary, // '#9ca3af' -> COLORS.text.tertiary
   },
   
   // Number stats
   numberStat: {
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    padding: SPACING.lg, // 16 -> SPACING.lg
+    backgroundColor: COLORS.background.secondary, // '#f8fafc' -> COLORS.background.secondary
+    borderRadius: BORDER_RADIUS.lg, // 12 -> BORDER_RADIUS.lg
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
     minWidth: 100,
-    marginRight: 12,
+    marginRight: SPACING.md, // 12 -> SPACING.md
   },
   numberIcon: {
     width: 40,
@@ -281,23 +278,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm, // 8 -> SPACING.sm
   },
   numberValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 4,
+    fontSize: FONT_SIZE.xl, // 20 -> FONT_SIZE.xl
+    fontWeight: FONT_WEIGHT.bold, // 'bold' -> FONT_WEIGHT.bold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
+    marginBottom: SPACING.xs, // 4 -> SPACING.xs
   },
   numberLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 2, // Keep as is for precise spacing
   },
   numberTarget: {
-    fontSize: 10,
-    color: '#9ca3af',
+    fontSize: 10, // Keep as is for very small text
+    color: COLORS.text.tertiary, // '#9ca3af' -> COLORS.text.tertiary
   },
 });

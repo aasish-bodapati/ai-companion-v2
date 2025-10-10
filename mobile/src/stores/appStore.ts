@@ -74,13 +74,10 @@ export const useAppStore = create<AppStore>()(
         
         // Data refresh
         refreshData: async () => {
-          console.log('🔄 [APP STORE] refreshData called');
           const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, loading } = get();
-          console.log('🔄 [APP STORE] Current loading state:', loading);
           
           // Prevent multiple simultaneous calls
           if (loading) {
-            console.log('🔄 refreshData already in progress, skipping');
             return;
           }
           
@@ -137,7 +134,9 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
   try {
     // Load from dashboard service
     const dashboardData = await dashboardService.getDashboardSummary();
-    console.log('🔍 Dashboard Data:', JSON.stringify(dashboardData, null, 2));
+    if (__DEV__) {
+      console.log('🔍 Dashboard loaded - workouts:', dashboardData.today_stats.workouts, 'meals:', dashboardData.today_stats.meals);
+    }
     
     // Analytics data loading removed - using default values
     const stepsData = { current: 0, progress: 0 };

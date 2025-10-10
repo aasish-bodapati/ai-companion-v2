@@ -94,7 +94,7 @@ AI-powered health and wellness platform that combines manual logging with intell
 - **Servers Always Running** - Assume backend (port 8000) and mobile dev servers are running in dev mode
 - **No Server Control** - AI assistant has NO authority to stop/start/restart servers
 - **Never Restart Servers** - Don't stop/start servers without explicit user permission
-- **PowerShell Commands** - Use PowerShell syntax for Windows commands
+- **PowerShell Commands** - ALWAYS use PowerShell syntax for Windows commands (not bash/cmd)
 - **Dev Mode Only** - All servers run in development mode by default
 - **CORS Configured** - Backend allows mobile access from 192.168.x.x networks
 
@@ -168,6 +168,15 @@ AI-powered health and wellness platform that combines manual logging with intell
 
 ## 🚀 **Development Guidelines**
 
+### PowerShell Command Requirements
+- **ALWAYS use PowerShell syntax** for all Windows commands
+- Use `Get-Process` instead of `ps`, `Stop-Process` instead of `kill`
+- Use `Get-NetTCPConnection` instead of `netstat`, `taskkill` for process termination
+- Use `cd` for directory changes, `ls` or `Get-ChildItem` for listing
+- Use `npm` and `npx` commands as-is (they work in PowerShell)
+- Use `python` and `uvicorn` commands as-is (they work in PowerShell)
+- Use `alembic` commands as-is (they work in PowerShell)
+
 ### Adding Features
 1. Create feature directory in appropriate location
 2. Add models, schemas, CRUD operations, and API endpoints
@@ -225,6 +234,8 @@ AI-powered health and wellness platform that combines manual logging with intell
 - **Generic Health Logging**: Implemented generic CRUD patterns to reduce code duplication
 - **Response Formatting**: Standardized response formatting with HealthLogResponseFormatter
 - **Database Session Management**: Enhanced logging and error handling in database operations
+- **API Organization**: Feature-based API structure with health, core, and analytics modules
+- **Security Enhancements**: Comprehensive security headers, CORS configuration, and timeout middleware
 
 ### Mobile App Features
 - **Component Library**: 126+ reusable components organized by feature
@@ -238,6 +249,50 @@ AI-powered health and wellness platform that combines manual logging with intell
 - **Water Logging**: Improved water tracking with ML/oz conversion and log types
 - **Health Profile**: Comprehensive user health information and measurements
 - **Goal Tracking**: User goal setting and progress monitoring system
+- **Integer IDs**: Migrated from UUIDs to integer primary keys for better performance
+- **Timezone Support**: All timestamps are timezone-aware with proper datetime handling
+
+## 🔧 **PowerShell Command Examples**
+
+### Process Management
+```powershell
+# Check running processes
+Get-Process | Where-Object {$_.ProcessName -like "*python*" -or $_.ProcessName -like "*node*"}
+
+# Stop specific process by PID
+Stop-Process -Id <PID_NUMBER> -Force
+
+# Stop all Python processes
+Get-Process python | Stop-Process -Force
+
+# Check port usage
+Get-NetTCPConnection -LocalPort 8000
+```
+
+### Database Operations
+```powershell
+# Run migrations
+cd backend
+alembic upgrade head
+
+# Create new migration
+alembic revision --autogenerate -m "description"
+
+# Initialize database
+python init_db.py
+```
+
+### Development Servers
+```powershell
+# Backend server
+cd backend
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Mobile app
+cd mobile
+npx expo start --clear
+npx expo start --tunnel --clear
+```
 
 ---
 

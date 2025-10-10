@@ -84,7 +84,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.get(`/health/insights/suggestions?limit=${limit}`);
       return Array.isArray(response.data) ? response.data : this.getMockInsights();
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Return mock data for development
       return this.getMockInsights();
@@ -96,7 +96,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.get('/health/insights/patterns');
       return Array.isArray(response.data) ? response.data : this.getMockPatterns();
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockPatterns();
     }
@@ -108,7 +108,7 @@ export const aiInsightsService = {
       const params = category ? `?category=${category}` : '';
       const response = await apiClient.get(`/health/insights/suggestions${params}`);
       return Array.isArray(response.data) ? response.data : this.getMockRecommendations();
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
     }
@@ -124,7 +124,7 @@ export const aiInsightsService = {
         return this.transformTrendsToAnalysis(response.data, period);
       }
       return response.data;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockProgressAnalysis(period);
     }
@@ -166,7 +166,7 @@ export const aiInsightsService = {
       const params = goalId ? `?goal_id=${goalId}` : '';
       const response = await apiClient.get(`/health/insights/goals/progress${params}`);
       return response.data;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockGoalAnalysis();
     }
@@ -178,7 +178,7 @@ export const aiInsightsService = {
       const params = context ? `?context=${context}` : '';
       const response = await apiClient.get(`/health/insights/motivation${params}`);
       return response.data.message;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCoachingMessage();
     }
@@ -192,7 +192,7 @@ export const aiInsightsService = {
   }) {
     try {
       await apiClient.post(`/health/insights/${insightId}/feedback`, feedback);
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
   },
@@ -207,7 +207,7 @@ export const aiInsightsService = {
     try {
       const response = await apiClient.post('/health/insights/workout-suggestions', preferences || {});
       return response.data;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWorkoutSuggestions();
     }
@@ -223,7 +223,7 @@ export const aiInsightsService = {
       const data = { meal_type: mealType, ...preferences };
       const response = await apiClient.post('/health/insights/nutrition-suggestions', data);
       return response.data;
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockNutritionSuggestions();
     }

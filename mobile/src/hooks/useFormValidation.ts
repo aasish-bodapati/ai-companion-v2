@@ -31,7 +31,7 @@ export function useFormValidation<T extends Record<string, any>>(
   }, [validationRules]);
 
   // Validate a single field
-  const validateField = useCallback((field: keyof T, value: any): string | undefined => {
+  const validateField = useCallback((field: keyof T, value: unknown): string | undefined => {
     const fieldRules = validationRules[field];
     if (!fieldRules) return undefined;
 
@@ -63,7 +63,7 @@ export function useFormValidation<T extends Record<string, any>>(
   }, [validator, validationRules, formState.data]);
 
   // Update field value
-  const updateField = useCallback((field: keyof T, value: any) => {
+  const updateField = useCallback((field: keyof T, value: unknown) => {
     setFormState(prev => {
       const newData = { ...prev.data, [field]: value };
       const fieldError = validateField(field, value);

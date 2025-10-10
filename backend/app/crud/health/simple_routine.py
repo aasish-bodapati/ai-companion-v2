@@ -22,7 +22,7 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
             SimpleRoutine.is_active == True
         ).offset(skip).limit(limit).all()
 
-    def get_user_routines(self, db: Session, *, user_id: str, skip: int = 0, limit: int = 100) -> List[SimpleRoutine]:
+    def get_user_routines(self, db: Session, *, user_id: int, skip: int = 0, limit: int = 100) -> List[SimpleRoutine]:
         """Get user-created routines"""
         return db.query(SimpleRoutine).filter(
             SimpleRoutine.created_by_user_id == user_id,
@@ -35,7 +35,7 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
             SimpleRoutine.is_active == True
         ).offset(skip).limit(limit).all()
 
-    def create_with_user(self, db: Session, *, obj_in: SimpleRoutineCreate, user_id: str) -> SimpleRoutine:
+    def create_with_user(self, db: Session, *, obj_in: SimpleRoutineCreate, user_id: int) -> SimpleRoutine:
         """Create a routine for a user"""
         db_obj = SimpleRoutine(
             **obj_in.model_dump(exclude_unset=True),
@@ -47,7 +47,7 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
         db.refresh(db_obj)
         return db_obj
 
-    def create_with_workout_plan(self, db: Session, *, routine_data: SimpleRoutineCreate, workout_days: List[dict], user_id: str) -> SimpleRoutine:
+    def create_with_workout_plan(self, db: Session, *, routine_data: SimpleRoutineCreate, workout_days: List[dict], user_id: int) -> SimpleRoutine:
         """Create a routine with detailed workout plan"""
 
         # Create the routine
@@ -99,21 +99,21 @@ class CRUDSimpleRoutine(CRUDBase[SimpleRoutine, SimpleRoutineCreate, SimpleRouti
 class CRUDSimpleUserRoutineProgress(CRUDBase[SimpleUserRoutineProgress, SimpleUserRoutineProgressCreate, SimpleUserRoutineProgressUpdate]):
     """CRUD operations for SimpleUserRoutineProgress"""
 
-    def get_user_active_routine(self, db: Session, *, user_id: str) -> Optional[SimpleUserRoutineProgress]:
+    def get_user_active_routine(self, db: Session, *, user_id: int) -> Optional[SimpleUserRoutineProgress]:
         """Get user's currently active routine"""
         return db.query(SimpleUserRoutineProgress).filter(
             SimpleUserRoutineProgress.user_id == user_id,
             SimpleUserRoutineProgress.is_active == True
         ).first()
 
-    def get_by_user_and_routine(self, db: Session, *, user_id: str, routine_id: int) -> Optional[SimpleUserRoutineProgress]:
+    def get_by_user_and_routine(self, db: Session, *, user_id: int, routine_id: int) -> Optional[SimpleUserRoutineProgress]:
         """Get user's progress for a specific routine"""
         return db.query(SimpleUserRoutineProgress).filter(
             SimpleUserRoutineProgress.user_id == user_id,
             SimpleUserRoutineProgress.routine_id == routine_id
         ).first()
 
-    def start_routine(self, db: Session, *, user_id: str, routine_id: str) -> SimpleUserRoutineProgress:
+    def start_routine(self, db: Session, *, user_id: int, routine_id: int) -> SimpleUserRoutineProgress:
         """Start following a routine"""
         # Deactivate any currently active routine
         active_routine = self.get_user_active_routine(db, user_id=user_id)
@@ -134,7 +134,7 @@ class CRUDSimpleUserRoutineProgress(CRUDBase[SimpleUserRoutineProgress, SimpleUs
         db.refresh(db_obj)
         return db_obj
 
-    def stop_routine(self, db: Session, *, user_id: str, routine_id: str) -> Optional[SimpleUserRoutineProgress]:
+    def stop_routine(self, db: Session, *, user_id: int, routine_id: int) -> Optional[SimpleUserRoutineProgress]:
         """Stop following a routine"""
         progress = db.query(SimpleUserRoutineProgress).filter(
             SimpleUserRoutineProgress.user_id == user_id,
@@ -152,7 +152,7 @@ class CRUDSimpleUserRoutineProgress(CRUDBase[SimpleUserRoutineProgress, SimpleUs
 
         return progress
 
-    def log_workout(self, db: Session, *, user_id: str, routine_id: str) -> Optional[SimpleUserRoutineProgress]:
+    def log_workout(self, db: Session, *, user_id: int, routine_id: int) -> Optional[SimpleUserRoutineProgress]:
         """Log a workout completion for a routine"""
         progress = db.query(SimpleUserRoutineProgress).filter(
             SimpleUserRoutineProgress.user_id == user_id,

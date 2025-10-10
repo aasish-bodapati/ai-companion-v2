@@ -233,7 +233,7 @@ class HealthDataService {
         data.fitness &&
         data.nutrition
       );
-    } catch (error) {
+    } catch {
       return false;
     }
   }

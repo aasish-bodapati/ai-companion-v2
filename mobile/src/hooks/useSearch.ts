@@ -84,8 +84,8 @@ export function useSearch<T>(
             hasSearched: true,
             error: undefined,
           }));
-        } catch (error: any) {
-          if (error.name === 'AbortError') {
+        } catch (error: unknown) {
+          if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
             // Request was cancelled, ignore
             return;
           }
@@ -174,12 +174,13 @@ export function useSearch<T>(
       }));
 
       return results;
-    } catch (error: any) {
-      if (error.name === 'AbortError') {
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
         return [];
       }
 
-      const errorMessage = error.message || 'Search failed';
+      const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+        (error as Error).message : 'Search failed';
       setSearchState(prev => ({
         ...prev,
         results: [],

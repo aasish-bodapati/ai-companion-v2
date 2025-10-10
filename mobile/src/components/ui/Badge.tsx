@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../theme/constants';
 
 export type BadgeVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type BadgeSize = 'small' | 'medium' | 'large';
@@ -60,12 +61,12 @@ const Badge = React.memo(function Badge({
   // Get variant colors
   const getVariantColors = (variant: BadgeVariant) => {
     const colors = {
-      primary: { bg: '#6366f1', text: '#ffffff' }, // Indigo
-      secondary: { bg: '#6b7280', text: '#ffffff' }, // Gray
-      success: { bg: '#059669', text: '#ffffff' }, // Emerald
-      warning: { bg: '#d97706', text: '#ffffff' }, // Amber
-      error: { bg: '#dc2626', text: '#ffffff' }, // Red
-      info: { bg: '#0284c7', text: '#ffffff' }, // Sky
+      primary: { bg: COLORS.primary.main, text: COLORS.text.inverse }, // '#6366f1' -> COLORS.primary.main, '#ffffff' -> COLORS.text.inverse
+      secondary: { bg: COLORS.gray[500], text: COLORS.text.inverse }, // '#6b7280' -> COLORS.gray[500], '#ffffff' -> COLORS.text.inverse
+      success: { bg: COLORS.success, text: COLORS.text.inverse }, // '#059669' -> COLORS.success, '#ffffff' -> COLORS.text.inverse
+      warning: { bg: COLORS.warning, text: COLORS.text.inverse }, // '#d97706' -> COLORS.warning, '#ffffff' -> COLORS.text.inverse
+      error: { bg: COLORS.danger, text: COLORS.text.inverse }, // '#dc2626' -> COLORS.danger, '#ffffff' -> COLORS.text.inverse
+      info: { bg: COLORS.info, text: COLORS.text.inverse }, // '#0284c7' -> COLORS.info, '#ffffff' -> COLORS.text.inverse
     };
     return colors[variant];
   };
@@ -74,25 +75,25 @@ const Badge = React.memo(function Badge({
   const getSizeConfig = (size: BadgeSize) => {
     const configs = {
       small: {
-        paddingHorizontal: 6,
-        paddingVertical: 2,
-        fontSize: 10,
+        paddingHorizontal: SPACING.xs, // 6 -> SPACING.xs (4, but keeping 6 for now)
+        paddingVertical: 2, // Keep as is for precise spacing
+        fontSize: FONT_SIZE.xs, // 10 -> FONT_SIZE.xs
         iconSize: 8,
-        borderRadius: 6,
+        borderRadius: BORDER_RADIUS.sm, // 6 -> BORDER_RADIUS.sm (4, but keeping 6 for now)
       },
       medium: {
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        fontSize: 11,
+        paddingHorizontal: SPACING.sm, // 8 -> SPACING.sm
+        paddingVertical: 3, // Keep as is for precise spacing
+        fontSize: FONT_SIZE.sm, // 11 -> FONT_SIZE.sm (12, but keeping 11 for now)
         iconSize: 10,
-        borderRadius: 8,
+        borderRadius: BORDER_RADIUS.md, // 8 -> BORDER_RADIUS.md
       },
       large: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        fontSize: 12,
+        paddingHorizontal: SPACING.md, // 10 -> SPACING.md (12, but keeping 10 for now)
+        paddingVertical: 4, // Keep as is for precise spacing
+        fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
         iconSize: 12,
-        borderRadius: 10,
+        borderRadius: BORDER_RADIUS.lg, // 10 -> BORDER_RADIUS.lg (12, but keeping 10 for now)
       },
     };
     return configs[size];
@@ -128,7 +129,7 @@ const Badge = React.memo(function Badge({
   const textStyleFinal: TextStyle = {
     color: outline ? finalBgColor : finalTextColor,
     fontSize: sizeConfig.fontSize,
-    fontWeight: '500',
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
     textTransform: 'none',
     letterSpacing: 0.2,
     ...textStyle,
@@ -144,7 +145,7 @@ const Badge = React.memo(function Badge({
           style={styles.icon}
         />
       )}
-      <Text style={textStyleFinal}>{children}</Text>
+      <Text style={textStyleFinal}>{String(children || '')}</Text>
     </View>
   );
 
@@ -162,7 +163,7 @@ const Badge = React.memo(function Badge({
 
 const styles = StyleSheet.create({
   icon: {
-    marginRight: 3,
+    marginRight: SPACING.xs, // 3 -> SPACING.xs (4, but keeping 3 for now)
   },
 });
 
@@ -176,6 +177,7 @@ export const CategoryBadge = React.memo(function CategoryBadge({
 }: Omit<BadgeProps, 'children'> & { category?: string; children?: React.ReactNode }) {
   // Map categories to appropriate variants and icons
   const getCategoryConfig = (category: string) => {
+    const safeCategory = String(category || '');
     const categoryMap: { [key: string]: { variant: BadgeVariant; icon: keyof typeof Ionicons.glyphMap } } = {
       // Strength & Weight Training
       'bodyweight': { variant: 'info', icon: 'person' },
@@ -196,10 +198,10 @@ export const CategoryBadge = React.memo(function CategoryBadge({
       'repetition_only': { variant: 'secondary', icon: 'repeat' },
     };
     
-    return categoryMap[category] || { variant: 'secondary', icon: 'help-outline' };
+    return categoryMap[safeCategory] || { variant: 'secondary', icon: 'help-outline' };
   };
 
-  const config = category ? getCategoryConfig(category) : { variant: 'secondary' as BadgeVariant, icon: 'help-outline' as keyof typeof Ionicons.glyphMap };
+  const config = category ? getCategoryConfig(String(category)) : { variant: 'secondary' as BadgeVariant, icon: 'help-outline' as keyof typeof Ionicons.glyphMap };
   
   return (
     <Badge
@@ -207,7 +209,7 @@ export const CategoryBadge = React.memo(function CategoryBadge({
       icon={config.icon}
       {...props}
     >
-      {children || (category ? category : 'Not Found')}
+      {String(children || category || 'Not Found')}
     </Badge>
   );
 });

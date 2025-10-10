@@ -8,15 +8,15 @@ import { BaseLog, BaseLogCreate } from '../types/BaseLog';
  */
 export function useLoggingModal<T extends BaseLog, S>(
   options: {
-    initialData?: any;
-    onSave: (data: any) => Promise<void>;
+    initialData?: unknown;
+    onSave: (data: unknown) => Promise<void>;
     onClose: () => void;
     searchService: {
       search: (query: string) => Promise<S[]>;
-      create: (data: any) => Promise<any>;
+      create: (data: unknown) => Promise<unknown>;
     };
     transformSearchResult: (item: S) => LoggingItemData;
-    getFormData: (items: LoggingItemData[]) => any;
+    getFormData: (items: LoggingItemData[]) => unknown;
     validateForm: (items: LoggingItemData[]) => boolean;
   }
 ) {
@@ -80,8 +80,10 @@ export function useLoggingModal<T extends BaseLog, S>(
     try {
       const results = await searchService.search(query);
       setSearchResults(results);
-    } catch (error: any) {
-      setSearchError(error.message || 'Search failed');
+    } catch (error: unknown) {
+      const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+        (error as Error).message : 'Search failed';
+      setSearchError(errorMessage);
       setSearchResults([]);
     } finally {
       setIsSearching(false);

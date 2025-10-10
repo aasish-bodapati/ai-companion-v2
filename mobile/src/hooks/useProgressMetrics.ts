@@ -32,20 +32,19 @@ interface ProgressMetricsData {
 }
 
 export function useProgressMetricsData(): ProgressMetricsData {
-  console.log('🔄 [PROGRESS METRICS HOOK] useProgressMetricsData called');
   const progressMetrics = useProgressMetrics();
   const { streaks } = useStreaks();
   const { achievements } = useAchievements();
   const renderCountRef = useRef(0);
 
   renderCountRef.current += 1;
-  console.log('🔄 [PROGRESS METRICS HOOK] Render count:', renderCountRef.current);
-  console.log('🔄 [PROGRESS METRICS HOOK] progressMetrics changed:', progressMetrics);
-  console.log('🔄 [PROGRESS METRICS HOOK] streaks changed:', streaks);
-  console.log('🔄 [PROGRESS METRICS HOOK] achievements changed:', achievements);
+  
+  // Only log on first render in development
+  if (__DEV__ && renderCountRef.current === 1) {
+    console.log('🔄 [PROGRESS METRICS HOOK] Initialized');
+  }
 
   return useMemo(() => {
-    console.log('🔄 [PROGRESS METRICS HOOK] progressMetrics:', progressMetrics);
     
     // Default values if progressMetrics is undefined
     const defaultMetrics = {

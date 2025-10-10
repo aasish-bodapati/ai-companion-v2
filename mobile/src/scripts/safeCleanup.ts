@@ -250,7 +250,7 @@ export const SafeCleanup = {
   },
 
   // Validate cleanup safety
-  validateCleanupSafety: (filePath: string, changes: any[]) => {
+  validateCleanupSafety: (filePath: string, changes: unknown[]) => {
     console.log(`🔍 Validating cleanup safety for ${filePath}...`);
     
     const validation = {
@@ -293,7 +293,7 @@ export const SafeCleanup = {
   },
 
   // Generate cleanup report
-  generateCleanupReport: (results: any) => {
+  generateCleanupReport: (results: Record<string, unknown>) => {
     console.log('\n📋 Cleanup Report:');
     console.log(`Total Files: ${results.totalFiles}`);
     console.log(`Processed Files: ${results.processedFiles}`);

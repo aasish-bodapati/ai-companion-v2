@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 interface QuickStat {
   icon: string;
@@ -50,15 +51,15 @@ export default function QuickStatsRow({ stats }: QuickStatsRowProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    gap: 12,
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.lg,
+    gap: SPACING.md,
   },
   statCard: {
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 12,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -68,18 +69,18 @@ const styles = StyleSheet.create({
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 6,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 8,
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.sm,
   },
   progressBar: {
     height: 4,

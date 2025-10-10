@@ -79,7 +79,7 @@ class HealthService extends BaseService {
     return data;
   }
 
-  async getHealthScore(): Promise<{ score: number; breakdown: any }> {
+  async getHealthScore(): Promise<{ score: number; breakdown: Record<string, unknown> }> {
     const data = await this.makeRequest(
       () => apiClient.get('/health/insights/health-score'),
       'HEALTH SERVICE - getHealthScore'

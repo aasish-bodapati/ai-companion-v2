@@ -19,7 +19,7 @@ interface SearchableItem {
   description?: string;
   icon?: string;
   iconColor?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 interface SearchableListProps {
@@ -44,10 +44,10 @@ interface SearchableListProps {
   itemHeight?: number;
   
   // Styling
-  containerStyle?: any;
-  searchContainerStyle?: any;
-  listStyle?: any;
-  itemStyle?: any;
+  containerStyle?: object;
+  searchContainerStyle?: object;
+  listStyle?: object;
+  itemStyle?: object;
   
   // Loading state
   loading?: boolean;
@@ -139,10 +139,6 @@ export default function SearchableList({
     }
   };
 
-  const handleItemSelect = (item: SearchableItem) => {
-    hapticFeedback.selection();
-    onItemSelect(item);
-  };
 
   const isItemSelected = (itemId: number) => {
     if (multiSelect) {
@@ -181,7 +177,7 @@ export default function SearchableList({
           {item.icon && (
             <View style={styles.itemIconContainer}>
               <Ionicons 
-                name={item.icon as any} 
+                name={item.icon as keyof typeof Ionicons.glyphMap} 
                 size={20} 
                 color={item.iconColor || COLORS.primary.main}
               />
@@ -242,7 +238,7 @@ export default function SearchableList({
     return (
       <View style={styles.emptyState}>
         <Ionicons 
-          name={emptyIcon as any} 
+          name={emptyIcon as keyof typeof Ionicons.glyphMap} 
           size={48} 
           color={COLORS.text.tertiary}
         />

@@ -90,27 +90,37 @@ async def set_active_routine(
         # Also create/update the SimpleUserRoutineProgress record
         routine_id = int(request.routine_id)
         
-        # Debug: Log user information
-        print(f"🔍 [SET ACTIVE ROUTINE] User ID: {current_user.id} (type: {type(current_user.id)})")
-        print(f"🔍 [SET ACTIVE ROUTINE] Routine ID: {routine_id}")
-        
         # Ensure user_id is not None
         if not current_user.id:
             raise HTTPException(status_code=400, detail="User ID is required")
         
-        user_id_str = str(current_user.id)
-        print(f"🔍 [SET ACTIVE ROUTINE] User ID string: {user_id_str}")
+        # FIRST: Deactivate ALL currently active routines for this user
+        from sqlalchemy import and_
+        from app.models.health.simple_routine import SimpleUserRoutineProgress
+        active_routines = db.query(SimpleUserRoutineProgress).filter(
+            and_(
+                SimpleUserRoutineProgress.user_id == current_user.id,
+                SimpleUserRoutineProgress.is_active == True
+            )
+        ).all()
         
-        # Check if user already has progress for this routine
+        for active_routine in active_routines:
+            active_routine.is_active = False
+            active_routine.updated_at = datetime.utcnow()
+            print(f"🔄 [SET ACTIVE] Deactivated routine {active_routine.routine_id}")
+        
+        print(f"🔄 [SET ACTIVE] Deactivated {len(active_routines)} active routines")
+        
+        # SECOND: Check if user already has progress for this routine
         existing_progress = simple_user_routine_progress.get_by_user_and_routine(
-            db, user_id=user_id_str, routine_id=routine_id
+            db, user_id=current_user.id, routine_id=routine_id
         )
         
         if existing_progress:
             # Update existing progress to be active
             existing_progress.is_active = True
             existing_progress.updated_at = datetime.utcnow()
-            print(f"✅ [SET ACTIVE ROUTINE] Updated existing progress record")
+            print(f"✅ [SET ACTIVE] Activated existing progress for routine {routine_id}")
         else:
             # Create new progress record
             from app.schemas.health.simple_routine import SimpleUserRoutineProgressCreate
@@ -119,9 +129,8 @@ async def set_active_routine(
                 routine_id=routine_id,
                 is_active=True
             )
-            print(f"🔍 [SET ACTIVE ROUTINE] Creating progress data: {progress_data}")
             simple_user_routine_progress.create(db, obj_in=progress_data)
-            print(f"✅ [SET ACTIVE ROUTINE] Created new progress record")
+            print(f"✅ [SET ACTIVE] Created new progress for routine {routine_id}")
         
         db.commit()
         db.refresh(current_user)
@@ -150,7 +159,7 @@ async def clear_active_routine(
         
         # Also deactivate any active progress records
         active_progress = simple_user_routine_progress.get_user_active_routine(
-            db, user_id=str(current_user.id)
+            db, user_id=current_user.id
         )
         if active_progress:
             active_progress.is_active = False

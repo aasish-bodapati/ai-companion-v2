@@ -159,7 +159,7 @@ class WeatherService {
         .sort((a: any, b: any) => a.timestamp - b.timestamp);
       
       // Generate hourly data by interpolating between 3-hour intervals
-      const allHourlyData: Array<{ time: Date; data: any }> = [];
+      const allHourlyData: { time: Date; data: unknown }[] = [];
       
       for (let i = 0; i < relevantForecasts.length - 1; i++) {
         const current = relevantForecasts[i];

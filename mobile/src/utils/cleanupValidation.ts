@@ -4,7 +4,6 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
 
 export const CleanupValidation = {
   // Validate that removing a file won't break anything
@@ -120,8 +119,8 @@ export const CleanupValidation = {
 
   // Validate that replacing hardcoded values won't break anything
   validateStyleReplacement: (
-    oldValue: any, 
-    newValue: any, 
+    oldValue: unknown, 
+    newValue: unknown, 
     context: string
   ): { safe: boolean; reason?: string } => {
     // Basic validation - in a real implementation, this would be more sophisticated

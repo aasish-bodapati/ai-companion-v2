@@ -111,7 +111,7 @@ export default function NutritionScreen() {
 
   const loadOverviewData = useCallback(async () => {
     await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-  }, []); // Remove dependencies to prevent infinite loop
+  }, [loadWeekStats, loadWeeklyActivityData]); // Add missing dependencies
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -121,7 +121,7 @@ export default function NutritionScreen() {
 
   useEffect(() => {
     loadOverviewData();
-  }, []); // Remove loadOverviewData dependency to prevent infinite loop
+  }, [loadOverviewData]); // Add loadOverviewData dependency
 
   // Reset to overview tab when screen comes into focus
   useFocusEffect(

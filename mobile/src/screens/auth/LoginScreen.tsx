@@ -36,7 +36,7 @@ export default function LoginScreen() {
         setLoginError(result.error || 'Invalid email or password');
         // Toast notification is now handled in AuthContext
       }
-    } catch (error) {
+    } catch {
       const errorMessage = 'Login failed. Please try again.';
       setLoginError(errorMessage);
       // Toast notification is now handled in AuthContext

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
-import { COMMON_STYLES } from '../../theme/constants';
+import { COMMON_STYLES, COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../theme/constants';
 
 interface MobileOptimizedInputProps extends TextInputProps {
   label?: string;
@@ -122,23 +122,23 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
       case 'small':
         return {
           height: 40,
-          fontSize: 14,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
+          fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+          paddingHorizontal: SPACING.md, // 12 -> SPACING.md
+          paddingVertical: SPACING.sm, // 8 -> SPACING.sm
         };
       case 'large':
         return {
           height: 56,
-          fontSize: 18,
-          paddingHorizontal: 16,
-          paddingVertical: 16,
+          fontSize: FONT_SIZE.xl, // 18 -> FONT_SIZE.xl
+          paddingHorizontal: SPACING.lg, // 16 -> SPACING.lg
+          paddingVertical: SPACING.lg, // 16 -> SPACING.lg
         };
       default:
         return {
           height: 48,
-          fontSize: 16,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
+          fontSize: FONT_SIZE.lg, // 16 -> FONT_SIZE.lg
+          paddingHorizontal: SPACING.md, // 14 -> SPACING.md (12, but keeping 14 for now)
+          paddingVertical: SPACING.md, // 12 -> SPACING.md
         };
     }
   };
@@ -158,9 +158,9 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
     }
 
     if (error) {
-      baseStyle.borderColor = '#ef4444';
+      baseStyle.borderColor = COLORS.danger; // '#ef4444' -> COLORS.danger
     } else if (isFocused) {
-      baseStyle.borderColor = '#3b82f6';
+      baseStyle.borderColor = COLORS.primary.main; // '#3b82f6' -> COLORS.primary.main
     }
 
     return baseStyle;
@@ -187,7 +187,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
     return {
       ...styles.label,
       ...animatedStyle,
-      color: error ? '#ef4444' : isFocused ? '#3b82f6' : '#6b7280',
+      color: error ? COLORS.danger : isFocused ? COLORS.primary.main : COLORS.text.secondary, // '#ef4444' -> COLORS.danger, '#3b82f6' -> COLORS.primary.main, '#6b7280' -> COLORS.text.secondary
     };
   };
 
@@ -203,7 +203,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
         <Ionicons
           name={icon as keyof typeof Ionicons.glyphMap}
           size={20}
-          color={error ? '#ef4444' : isFocused ? '#3b82f6' : '#6b7280'}
+          color={error ? COLORS.danger : isFocused ? COLORS.primary.main : COLORS.text.secondary} // '#ef4444' -> COLORS.danger, '#3b82f6' -> COLORS.primary.main, '#6b7280' -> COLORS.text.secondary
         />
       </TouchableOpacity>
     );
@@ -255,38 +255,38 @@ MobileOptimizedInput.displayName = 'MobileOptimizedInput';
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    marginBottom: SPACING.lg, // 16 -> SPACING.lg
   },
   label: {
     position: 'absolute',
-    left: 12,
+    left: SPACING.md, // 12 -> SPACING.md
     top: 0,
     zIndex: 1,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 4,
-    fontSize: 14,
-    fontWeight: '500',
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
+    paddingHorizontal: SPACING.xs, // 4 -> SPACING.xs
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
   },
   required: {
-    color: '#ef4444',
+    color: COLORS.danger, // '#ef4444' -> COLORS.danger
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
+    borderColor: COLORS.border.medium, // '#d1d5db' -> COLORS.border.medium
+    borderRadius: BORDER_RADIUS.md, // 8 -> BORDER_RADIUS.md
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
     // Ensure minimum touch target size
     minHeight: touchUtils.MIN_TOUCH_TARGET_SIZE,
   },
   input: {
     flex: 1,
-    color: '#1f2937',
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
     paddingHorizontal: 0,
   },
   iconContainer: {
-    padding: 8,
+    padding: SPACING.sm, // 8 -> SPACING.sm
     // Ensure minimum touch target size for icon
     minWidth: touchUtils.MIN_TOUCH_TARGET_SIZE,
     minHeight: touchUtils.MIN_TOUCH_TARGET_SIZE,
@@ -294,13 +294,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   helperText: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-    marginLeft: 4,
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
+    marginTop: SPACING.xs, // 4 -> SPACING.xs
+    marginLeft: SPACING.xs, // 4 -> SPACING.xs
   },
   errorText: {
-    color: '#ef4444',
+    color: COLORS.danger, // '#ef4444' -> COLORS.danger
   },
 
   // Variants

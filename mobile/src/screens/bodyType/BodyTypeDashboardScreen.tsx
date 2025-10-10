@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -21,9 +21,9 @@ export default function BodyTypeDashboardScreen() {
 
   useEffect(() => {
     loadUserData();
-  }, []);
+  }, [loadUserData]);
 
-  const loadUserData = async () => {
+  const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -56,7 +56,7 @@ export default function BodyTypeDashboardScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const generateMockDailyLog = (): DailyLog => {
     return {

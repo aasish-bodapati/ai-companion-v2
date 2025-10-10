@@ -266,7 +266,7 @@ export const UnusedCodeDetector = {
   },
 
   // Generate cleanup recommendations
-  generateCleanupRecommendations: (results: any) => {
+  generateCleanupRecommendations: (results: Record<string, unknown>) => {
     console.log('\n📋 Cleanup Recommendations:');
     
     const recommendations = [

@@ -6,10 +6,10 @@
 ```bash
 # Kill Python server (Windows)
 ngrok http 8000
-taskkill /f /im python.exe
 netstat -ano | findstr :8000
 taskkill /f /pid <PID_NUMBER>
 taskkill /f /im node.exe
+taskkill /f /im python.exe
 npx expo start --clear
 npx expo start --tunnel --clear
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000

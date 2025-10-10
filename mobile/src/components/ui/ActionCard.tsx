@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, MIXINS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
 interface Action {
@@ -184,7 +184,7 @@ export default function ActionCard({
         {icon && (
           <Ionicons 
             name={icon as keyof typeof Ionicons.glyphMap} 
-            size={20} 
+            size={FONT_SIZE.xl} // 20 -> FONT_SIZE.xl
             color={iconColor}
             style={styles.titleIcon}
           />
@@ -201,7 +201,7 @@ export default function ActionCard({
             {badge.icon && (
               <Ionicons 
                 name={badge.icon as keyof typeof Ionicons.glyphMap} 
-                size={12} 
+                size={FONT_SIZE.sm} // 12 -> FONT_SIZE.sm
                 color={COLORS.text.inverse}
                 style={styles.badgeIcon}
               />
@@ -217,7 +217,7 @@ export default function ActionCard({
             {status.icon && (
               <Ionicons 
                 name={status.icon as keyof typeof Ionicons.glyphMap} 
-                size={12} 
+                size={FONT_SIZE.sm} // 12 -> FONT_SIZE.sm
                 color={COLORS.text.inverse}
                 style={styles.statusIcon}
               />
@@ -249,7 +249,7 @@ export default function ActionCard({
             {detail.icon && (
               <Ionicons 
                 name={detail.icon as keyof typeof Ionicons.glyphMap} 
-                size={16} 
+                size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                 color={detail.color || COLORS.text.secondary}
                 style={styles.detailIcon}
               />
@@ -288,7 +288,7 @@ export default function ActionCard({
               primaryAction.icon && (
                 <Ionicons 
                   name={primaryAction.icon as keyof typeof Ionicons.glyphMap} 
-                  size={16} 
+                  size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                   color={COLORS.text.inverse}
                   style={styles.actionIcon}
                 />
@@ -320,7 +320,7 @@ export default function ActionCard({
               action.icon && (
                 <Ionicons 
                   name={action.icon as keyof typeof Ionicons.glyphMap} 
-                  size={16} 
+                  size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                   color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                   style={styles.actionIcon}
                 />
@@ -400,9 +400,9 @@ const styles = StyleSheet.create({
   
   title: {
     fontSize: FONT_SIZE.lg,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.primary,
-    marginBottom: 2,
+    marginBottom: 2, // Keep as is for precise spacing
   },
   
   subtitle: {
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   
   badgeText: {
     fontSize: FONT_SIZE.xs,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.inverse,
   },
   
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   
   statusText: {
     fontSize: FONT_SIZE.xs,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.inverse,
   },
   
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
   
   detailText: {
     fontSize: FONT_SIZE.sm,
-    fontWeight: '500',
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
     color: COLORS.text.primary,
     marginRight: SPACING.xs,
   },
@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
   
   actionText: {
     fontSize: FONT_SIZE.sm,
-    fontWeight: '600',
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
   },
   
   primaryActionText: {

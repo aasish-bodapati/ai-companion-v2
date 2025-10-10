@@ -89,7 +89,7 @@ export abstract class BaseService {
   /**
    * Calculate summary statistics from array of items
    */
-  protected calculateSummary<T extends Record<string, any>>(
+  protected calculateSummary<T extends Record<string, unknown>>(
     items: T[],
     config: {
       totalField: keyof T;

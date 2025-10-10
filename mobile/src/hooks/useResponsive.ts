@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dimensions, ScaledSize } from 'react-native';
+import { Dimensions } from 'react-native';
 import { BREAKPOINTS } from '../theme/constants';
 
 export interface ScreenDimensions {

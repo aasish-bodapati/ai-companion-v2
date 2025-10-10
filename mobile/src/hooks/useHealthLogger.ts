@@ -3,7 +3,7 @@ import { useAppStore } from '../stores';
 
 interface HealthLoggerOptions {
   type: 'workout' | 'meal' | 'water' | 'mood';
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: unknown) => void;
   onError?: (error: string) => void;
 }
 
@@ -20,7 +20,7 @@ export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOption
     setIsVisible(false);
   }, []);
 
-  const saveData = useCallback(async (data: any) => {
+  const saveData = useCallback(async (data: unknown) => {
     try {
       setLoading(true);
       
@@ -39,7 +39,7 @@ export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOption
     } finally {
       setLoading(false);
     }
-  }, [type, onSuccess, onError, refreshData, closeLogger]);
+  }, [type]); // Only depend on type to prevent infinite loops
 
   return {
     isVisible,

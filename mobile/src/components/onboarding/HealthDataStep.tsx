@@ -135,40 +135,7 @@ export default function HealthDataStep({
     return Math.round(proteinTarget * 10) / 10;
   };
 
-  const validateData = (): boolean => {
-    const newErrors: Partial<HealthData> = {};
-
-    if (!data.age || isNaN(Number(data.age)) || Number(data.age) < 13 || Number(data.age) > 120) {
-      newErrors.age = 'Please enter a valid age (13-120)';
-    }
-
-    if (!data.height || isNaN(Number(data.height)) || Number(data.height) < 100 || Number(data.height) > 250) {
-      newErrors.height = 'Please enter a valid height (100-250 cm)';
-    }
-
-    if (!data.weight || isNaN(Number(data.weight)) || Number(data.weight) < 30 || Number(data.weight) > 300) {
-      newErrors.weight = 'Please enter a valid weight (30-300 kg)';
-    }
-
-    if (!data.gender || data.gender === 'Please select your gender') {
-      newErrors.gender = 'Please select your gender';
-    } else if (data.gender !== 'male' && data.gender !== 'female' && data.gender !== 'other') {
-      newErrors.gender = 'Please select your gender';
-    }
-
-    // Optional field validation - only validate if provided
-    if (data.ffm && (isNaN(Number(data.ffm)) || Number(data.ffm) < 20 || Number(data.ffm) > 100)) {
-      newErrors.ffm = 'Please enter a valid FFM (20-100 kg)';
-    }
-
-    // Optional field validation - only validate if provided
-    if (data.smm && (isNaN(Number(data.smm)) || Number(data.smm) < 10 || Number(data.smm) > 100)) {
-      newErrors.smm = 'Please enter a valid SMM (10-100 kg)';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  // validateData function removed - unused for now
 
   const handleGenderSelect = (gender: 'male' | 'female' | 'other') => {
     hapticFeedback.selection();

@@ -27,7 +27,7 @@ interface TabNavigationProps {
   size?: 'small' | 'medium' | 'large';
   scrollable?: boolean;
   showLabels?: boolean;
-  style?: any;
+  style?: object;
   testID?: string;
 }
 
@@ -73,7 +73,6 @@ export default function TabNavigation({
     }
   };
 
-  const sizeStyles = getSizeStyles();
 
   const renderTab = (tab: TabItem) => {
     const isActive = activeTab === tab.id;
@@ -87,12 +86,12 @@ export default function TabNavigation({
       isActive && variant === 'pills' && styles.activePillsTab,
       isActive && variant === 'underline' && styles.activeUnderlineTab,
       isDisabled && styles.disabledTab,
-      { paddingVertical: sizeStyles.paddingVertical },
+      { paddingVertical: getSizeStyles().paddingVertical },
     ];
 
     const textStyle = [
       styles.tabText,
-      { fontSize: sizeStyles.fontSize },
+      { fontSize: getSizeStyles().fontSize },
       isActive && styles.activeTabText,
       isActive && variant === 'pills' && styles.activePillsTabText,
       isDisabled && styles.disabledTabText,
@@ -109,8 +108,8 @@ export default function TabNavigation({
         <View style={styles.tabContent}>
           <View style={styles.iconContainer}>
             <Ionicons
-              name={tab.icon as any}
-              size={sizeStyles.iconSize}
+              name={tab.icon as keyof typeof Ionicons.glyphMap}
+              size={getSizeStyles().iconSize}
               color={
                 isDisabled
                   ? COLORS.text.disabled

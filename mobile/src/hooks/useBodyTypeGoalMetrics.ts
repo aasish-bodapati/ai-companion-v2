@@ -128,7 +128,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     } finally {
       isLoadingRef.current = false;
     }
-  }, [user?.id]); // Add user?.id as dependency
+  }, [user?.id]); // Only depend on user?.id to prevent infinite loops
 
   useEffect(() => {
     if (!user?.id) return;
@@ -149,7 +149,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     return () => {
       clearTimeout(timer);
     };
-  }, [user?.id]); // Only depend on user?.id to prevent infinite loop
+  }, [user?.id, loadBodyTypeMetrics]); // Add loadBodyTypeMetrics dependency
 
   const calculateDailyScore = async (nutrition: NutritionLog[], fitness: FitnessLog[], waterStats: WaterStats | null): Promise<number> => {
     let score = 0;

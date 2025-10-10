@@ -1,6 +1,14 @@
 import { apiClient } from './api';
 import { BaseService } from './BaseService';
 
+interface ApiError {
+  response?: {
+    status: number;
+    data?: unknown;
+  };
+  message?: string;
+}
+
 export interface SimpleRoutine {
   id: number;
   name: string;
@@ -169,8 +177,9 @@ class RoutineService extends BaseService {
         'ROUTINE SERVICE - getActiveRoutine'
       );
       return data;
-    } catch (error: any) {
-      if (error.response?.status === 404) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      if (apiError.response?.status === 404) {
         return null;
       }
       this.handleError(error, 'ROUTINE SERVICE - getActiveRoutine');
@@ -311,9 +320,10 @@ class RoutineService extends BaseService {
       const response = await apiClient.get('/health/simple-routines/active/today-workout');
       const data = this.extractData(response);
       return data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Handle 404 error gracefully (no workout scheduled for today)
-      if (error.response?.status === 404) {
+      const apiError = error as ApiError;
+      if (apiError.response?.status === 404) {
         return null; // Return null instead of throwing
       }
       

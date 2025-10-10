@@ -5,7 +5,7 @@ import FormModal from './FormModal';
 import SearchInput, { SearchResult } from './SearchInput';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
-import { BaseLog, SearchParams } from '../../types/BaseLog';
+import { SearchParams } from '../../types/BaseLog';
 
 // Generic search service interface
 export interface SearchService<T> {
@@ -14,7 +14,7 @@ export interface SearchService<T> {
 }
 
 // Generic logging modal props
-export interface GenericLoggingModalProps<T extends BaseLog, S = unknown> {
+export interface GenericLoggingModalProps<S = unknown> {
   visible: boolean;
   onClose: () => void;
   onSave: (data: Record<string, unknown>) => Promise<void>;
@@ -65,7 +65,7 @@ export interface GenericLoggingModalProps<T extends BaseLog, S = unknown> {
   testID?: string;
 }
 
-export default function GenericLoggingModal<T extends BaseLog, S>({
+export default function GenericLoggingModal<S>({
   visible,
   onClose,
   onSave,

@@ -29,6 +29,7 @@ router = APIRouter()
 def get_routine_templates(
     *,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100)
 ):
@@ -39,6 +40,11 @@ def get_routine_templates(
     # Prepare routines with workout details
     routines_with_progress = []
     for routine_obj in routines_list:
+        # Get user's progress for this template routine
+        progress = simple_user_routine_progress.get_by_user_and_routine(
+            db, user_id=current_user.id, routine_id=routine_obj.id
+        )
+        
         # Prepare routine data with proper tags handling
         routine_data = routine_obj.__dict__.copy()
 
@@ -98,7 +104,8 @@ def get_routine_templates(
         routine_data['total_workouts_per_week'] = len(workout_schedule)
         routine_data['is_template'] = True
         
-        routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=None)
+        # Include user progress if it exists
+        routine_with_progress = SimpleRoutineWithProgress(**routine_data, user_progress=progress)
         routines_with_progress.append(routine_with_progress)
 
     return SimpleRoutineListResponse(

@@ -271,7 +271,6 @@ async def metrics_middleware(request: Request, call_next):
             # Sum and count
             hist["sum_ms"] = float(hist.get("sum_ms", 0.0)) + float(elapsed_ms)
             hist["count"] = int(hist.get("count", 0)) + 1
-
         except Exception as e:
             logger.debug("metrics_middleware failure: %s", e)
 

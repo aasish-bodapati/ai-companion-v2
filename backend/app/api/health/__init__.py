@@ -16,7 +16,6 @@ from . import (
     water_logs,
     simple_water_logs,
     profile,
-    analytics,
     body_type_goals,
     indian_foods,
     active_routine
@@ -42,7 +41,7 @@ router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nu
 router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs"])
 router.include_router(simple_water_logs.router, prefix="/simple-water", tags=["simple-water"])
 router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
-router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+# router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])  # Commented out - analytics module not found
 router.include_router(body_type_goals.router, prefix="/body-type-goals", tags=["body-type-goals"])
 router.include_router(indian_foods.router, prefix="/indian-foods", tags=["indian-foods"])
 router.include_router(active_routine.router, tags=["active-routine"])

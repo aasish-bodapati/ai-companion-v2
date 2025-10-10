@@ -7,11 +7,10 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import { COLORS, FONT_SIZE } from '../../theme/constants';
 import weatherService, { HourlyForecast, WeatherData } from '../../services/weatherService';
 
 interface WeatherDetailsModalProps {
@@ -20,7 +19,6 @@ interface WeatherDetailsModalProps {
   currentWeather: WeatherData | null;
 }
 
-const { width } = Dimensions.get('window');
 
 export default function WeatherDetailsModal({
   visible,
@@ -94,7 +92,7 @@ export default function WeatherDetailsModal({
           styles.hourIcon,
           isCurrentHour && styles.currentHourIcon
         ]}>
-          <Ionicons name={weatherIcon as any} size={20} color={weatherColor} />
+          <Ionicons name={weatherIcon as keyof typeof Ionicons.glyphMap} size={20} color={weatherColor} />
         </View>
         <Text style={[
           styles.hourTemp, 

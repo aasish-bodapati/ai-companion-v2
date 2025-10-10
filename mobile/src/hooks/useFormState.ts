@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ValidationErrors, ValidationRules, FormValidator } from '../utils/formValidation';
 
 /**
@@ -13,9 +13,9 @@ export const useFormState = <T extends Record<string, any>>(
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>);
   
-  const validator = rules ? new FormValidator(rules) : null;
+  const validator = useMemo(() => rules ? new FormValidator(rules) : null, [rules]);
 
-  const updateField = useCallback((field: keyof T, value: any) => {
+  const updateField = useCallback((field: keyof T, value: unknown) => {
     setData(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing

@@ -83,7 +83,7 @@ class SmartNotificationsService {
     try {
       const response = await apiClient.get('/notifications/rules');
       this.notificationRules = response.data;
-    } catch (error) {
+    } catch {
         // Silently fall back to default rules - this is expected behavior
       this.notificationRules = this.getDefaultRules();
     }
@@ -94,7 +94,7 @@ class SmartNotificationsService {
     try {
       const response = await apiClient.get('/notifications/smart');
       return response.data;
-    } catch (error) {
+    } catch {
       // Silently fall back to mock data - this is expected behavior
       return this.generateMockNotifications();
     }
@@ -103,9 +103,9 @@ class SmartNotificationsService {
   // Schedule a notification
   async scheduleNotification(notification: SmartNotification): Promise<boolean> {
     try {
-      const response = await apiClient.post('/notifications/schedule', notification);
+      await apiClient.post('/notifications/schedule', notification);
       return true;
-    } catch (error) {
+    } catch {
       // Silently handle scheduling failure - this is expected behavior
       return false;
     }
@@ -117,7 +117,7 @@ class SmartNotificationsService {
       this.preferences = { ...this.preferences, ...preferences };
       await apiClient.put('/notifications/preferences', this.preferences);
       return true;
-    } catch (error) {
+    } catch {
       // Silently fall back to local storage - this is expected behavior
       return true; // Still update locally
     }

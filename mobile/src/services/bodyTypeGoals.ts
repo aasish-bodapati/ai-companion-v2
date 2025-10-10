@@ -93,7 +93,7 @@ function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
   if (typeof apiGoal.target_attributes === 'string') {
     try {
       targetAttributes = JSON.parse(apiGoal.target_attributes);
-    } catch (e) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error(`Invalid target_attributes format for goal ${apiGoal.id}`);
     }
@@ -102,12 +102,12 @@ function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
   }
   
   // Helper function to extract recommended value from range or return the value as-is
-  const getRecommendedValue = (value: any): number => {
-    if (value && typeof value === 'object' && 'recommended' in value) {
-      return value.recommended;
-    }
-    return value || 0;
-  };
+  // const getRecommendedValue = (value: any): number => { // Unused for now
+  //   if (value && typeof value === 'object' && 'recommended' in value) {
+  //     return value.recommended;
+  //   }
+  //   return value || 0;
+  // };
   
   return {
     id: apiGoal.id,
@@ -420,7 +420,7 @@ export async function getAvailableBodyTypes(userData: UserAttributes): Promise<B
   try {
     const apiGoals = await bodyTypeGoalsApiService.getBodyTypeGoals();
     return apiGoals.map(convertApiBodyTypeGoal);
-  } catch (error) {
+    } catch {
     // Silent error handling - no console logging to prevent Expo Go notifications
     return []; // Return empty array on error
   }
@@ -438,7 +438,7 @@ export async function getBodyTypeGoalById(id: string): Promise<BodyTypeGoal | nu
   try {
     const apiGoal = await bodyTypeGoalsApiService.getBodyTypeGoalById(id);
     return apiGoal ? convertApiBodyTypeGoal(apiGoal) : null;
-  } catch (error) {
+    } catch {
     // Silent error handling - no console logging to prevent Expo Go notifications
     return null;
   }

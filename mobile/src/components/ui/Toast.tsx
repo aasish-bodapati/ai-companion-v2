@@ -1,13 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS } from '../../theme/constants';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -54,9 +54,9 @@ const Toast: React.FC<ToastProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [visible, duration]);
+  }, [visible, duration, hideToast, opacity, translateY]);
 
-  const hideToast = () => {
+  const hideToast = useCallback(() => {
     Animated.parallel([
       Animated.timing(translateY, {
         toValue: -100,
@@ -71,7 +71,7 @@ const Toast: React.FC<ToastProps> = ({
     ]).start(() => {
       onHide();
     });
-  };
+  }, [translateY, opacity, onHide]);
 
   if (!visible) return null;
 
@@ -79,33 +79,33 @@ const Toast: React.FC<ToastProps> = ({
     switch (type) {
       case 'success':
         return {
-          backgroundColor: '#10b981',
+          backgroundColor: COLORS.success,
           icon: 'checkmark-circle' as const,
-          iconColor: '#ffffff',
+          iconColor: COLORS.text.inverse,
         };
       case 'error':
         return {
-          backgroundColor: '#ef4444',
+          backgroundColor: COLORS.danger,
           icon: 'close-circle' as const,
-          iconColor: '#ffffff',
+          iconColor: COLORS.text.inverse,
         };
       case 'warning':
         return {
-          backgroundColor: '#f59e0b',
+          backgroundColor: COLORS.warning,
           icon: 'warning' as const,
-          iconColor: '#ffffff',
+          iconColor: COLORS.text.inverse,
         };
       case 'info':
         return {
           backgroundColor: '#06b6d4',
           icon: 'information-circle' as const,
-          iconColor: '#ffffff',
+          iconColor: COLORS.text.inverse,
         };
       default:
         return {
-          backgroundColor: '#6b7280',
+          backgroundColor: COLORS.gray[500],
           icon: 'information-circle' as const,
-          iconColor: '#ffffff',
+          iconColor: COLORS.text.inverse,
         };
     }
   };
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     fontSize: 14,
     fontWeight: '500',
     marginLeft: 8,
@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   queueText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     fontSize: 12,
     fontWeight: '600',
   },

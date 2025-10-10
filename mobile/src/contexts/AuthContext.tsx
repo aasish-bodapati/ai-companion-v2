@@ -76,13 +76,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Verify token with backend
         try {
           const response = await apiClient.get('/users/me');
-          if (__DEV__) {
-          }
           setUser(response.data);
-        } catch (userError: unknown) {
+        } catch (_userError: unknown) {
           // Don't clear tokens on error during app startup/reload
           // This prevents the logout issue when reloading Expo Go
-          console.log('🔐 [AUTH CONTEXT] Token validation failed, but keeping session for now');
+          if (__DEV__) {
+            console.log('🔐 [AUTH CONTEXT] Token validation failed, but keeping session for now');
+          }
           // Set user from stored data instead
           try {
             const storedUser = await AsyncStorage.getItem('user');
@@ -97,18 +97,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Check onboarding completion status from backend
         try {
           const onboardingStatus = await apiClient.get('/health/onboarding/status');
-          if (__DEV__) {
-            console.log('🔍 checkAuthStatus - onboarding status from API:', onboardingStatus.data);
-          }
           const completed = onboardingStatus.data.completed;
           
           // Check if onboarding is completed
           setNeedsOnboarding(!completed);
           if (__DEV__) {
-            console.log('🔍 checkAuthStatus - completed:', completed, 'setNeedsOnboarding to:', !completed);
+            console.log('🔍 Auth check - onboarding:', completed ? 'completed' : 'needed');
           }
-        } catch (onboardingError) {
-          console.log('🔍 checkAuthStatus - onboarding status error:', onboardingError);
+        } catch (_onboardingError) {
+          if (__DEV__) {
+            console.log('🔍 Auth check - onboarding error, defaulting to needed');
+          }
           // Default to needing onboarding if we can't check
           setNeedsOnboarding(true);
         }
@@ -116,7 +115,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // No token - user needs to log in, but if they do, they'll need onboarding
         setNeedsOnboarding(true);
       }
-    } catch (_error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Clear invalid token
       await AsyncStorage.removeItem('token');
@@ -230,7 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await apiClient.post('/register', {
+      await apiClient.post('/register', {
         email,
         password,
         full_name: fullName,
@@ -333,7 +332,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await apiClient.delete('/me');
+      await apiClient.delete('/me');
       
       // Clear local state
       await AsyncStorage.removeItem('token');

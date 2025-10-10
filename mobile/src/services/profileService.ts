@@ -20,7 +20,7 @@ export interface UserProfile {
   health_data?: HealthProfile;
   goals: string[];
   bodyTypeGoal?: string;
-  bodyTypeGoals?: any[]; // User's body type goals
+  bodyTypeGoals?: Record<string, unknown>[]; // User's body type goals
   preferences: {
     notifications: boolean;
     reminders: boolean;
@@ -35,7 +35,7 @@ export const profileService = {
     try {
       const response = await apiClient.get('/profile');
       return response.data;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
@@ -46,7 +46,7 @@ export const profileService = {
     try {
       const response = await apiClient.put('/profile', profileData);
       return response.data;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }
@@ -88,7 +88,7 @@ export const profileService = {
   },
 
   // Convert onboarding data to backend profile format
-  convertToProfileData: (onboardingData: any): Partial<UserProfile> => {
+  convertToProfileData: (onboardingData: Record<string, unknown>): Partial<UserProfile> => {
     return {
       health_data: onboardingData.healthData ? {
         age: onboardingData.healthData.age,

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
-import { COMMON_STYLES } from '../../theme/constants';
+import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 interface MobileOptimizedCardProps {
   children: React.ReactNode;
@@ -36,7 +36,7 @@ export default function MobileOptimizedCard({
   title,
   subtitle,
   icon,
-  iconColor = '#3b82f6',
+  iconColor = COLORS.primary.main, // '#3b82f6' -> COLORS.primary.main
   variant = 'default',
   size = 'medium',
   disabled = false,
@@ -142,7 +142,7 @@ export default function MobileOptimizedCard({
         <View style={styles.headerContent}>
           {icon && (
             <View style={styles.iconContainer}>
-              <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={20} color={iconColor} />
+              <Ionicons name={icon as keyof typeof Ionicons.glyphMap} size={FONT_SIZE.xl} color={iconColor} /> {/* 20 -> FONT_SIZE.xl */}
             </View>
           )}
           <View style={styles.textContainer}>
@@ -153,8 +153,8 @@ export default function MobileOptimizedCard({
         {onPress && (
           <Ionicons 
             name="chevron-forward" 
-            size={16} 
-            color="#9ca3af" 
+            size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
+            color={COLORS.text.tertiary} // '#9ca3af' -> COLORS.text.tertiary
           />
         )}
       </View>
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     minHeight: touchUtils.MIN_TOUCH_TARGET_SIZE,
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg, // 16 -> SPACING.lg
   },
   pressed: {
     opacity: 0.9,
@@ -209,43 +209,21 @@ const styles = StyleSheet.create({
 
   // Variants
   defaultCard: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.small, // Replaced individual shadow properties with SHADOWS.small
   },
   elevatedCard: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...SHADOWS.medium, // Replaced individual shadow properties with SHADOWS.medium
   },
   outlinedCard: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    borderColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
+    ...SHADOWS.none, // Replaced individual shadow properties with SHADOWS.none
   },
   filledCard: {
     backgroundColor: COMMON_STYLES.secondaryBackground,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
+    borderColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
+    ...SHADOWS.none, // Replaced individual shadow properties with SHADOWS.none
   },
 
   // Sizes
@@ -253,19 +231,19 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   smallContent: {
-    padding: 12,
+    padding: SPACING.md, // 12 -> SPACING.md
   },
   mediumCard: {
     minHeight: 80,
   },
   mediumContent: {
-    padding: 16,
+    padding: SPACING.lg, // 16 -> SPACING.lg
   },
   largeCard: {
     minHeight: 100,
   },
   largeContent: {
-    padding: 20,
+    padding: SPACING.xl, // 20 -> SPACING.xl
   },
 
   // Header
@@ -273,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: SPACING.md, // 12 -> SPACING.md
   },
   headerContent: {
     flexDirection: 'row',
@@ -284,22 +262,22 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary, // '#f3f4f6' -> COLORS.background.tertiary
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md, // 12 -> SPACING.md
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 2,
+    fontSize: FONT_SIZE.lg, // 16 -> FONT_SIZE.lg
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
+    marginBottom: 2, // Keep as is for precise spacing
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
   },
 });

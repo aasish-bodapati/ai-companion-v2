@@ -84,7 +84,7 @@ class IndianFoodService {
         return response.data.data;
       }
       throw new Error(response.data.message || 'Search failed');
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
     }

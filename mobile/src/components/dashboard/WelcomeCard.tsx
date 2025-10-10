@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZE } from '../../theme/constants';
+import { COLORS, FONT_SIZE, SPACING } from '../../theme/constants';
 import { useWeather } from '../../hooks/useWeather';
 import weatherService from '../../services/weatherService';
 import WeatherDetailsModal from '../weather/WeatherDetailsModal';
@@ -216,11 +216,11 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 16,
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.lg,
     borderRadius: 16,
-    padding: 20,
+    padding: SPACING.xl,
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   textContent: {
     flex: 1,
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   rightContent: {
     alignItems: 'flex-end',
@@ -247,10 +247,10 @@ const styles = StyleSheet.create({
   greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   icon: {
-    marginRight: 8,
+    marginRight: SPACING.sm,
   },
   greeting: {
     fontSize: FONT_SIZE.lg,
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.xl,
     fontWeight: '700',
     color: COLORS.text.primary,
-    marginBottom: 4,
+    marginBottom: SPACING.xs,
   },
   message: {
     fontSize: FONT_SIZE.sm,
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   },
   weatherContainer: {
     alignItems: 'flex-end',
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   weatherRow: {
     flexDirection: 'row',
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   temperature: {
     fontSize: FONT_SIZE.lg,
     fontWeight: '700',
-    marginLeft: 4,
+    marginLeft: SPACING.xs,
   },
   weatherDescription: {
     fontSize: FONT_SIZE.xs,
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   arrowContainer: {
-    marginLeft: 12,
+    marginLeft: SPACING.md,
     opacity: 0.7,
   },
 });

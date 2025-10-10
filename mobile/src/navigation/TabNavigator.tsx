@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, View, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { useAppStore } from '../stores';
 
 import DashboardScreen from '../screens/main/DashboardScreen';
 import FitnessScreen from '../screens/main/FitnessScreen';
@@ -27,18 +26,17 @@ export type TabParamList = {
 const Tab = createBottomTabNavigator<TabParamList>();
 
 // Custom tab bar with floating plus button
-function CustomTabBar({ state, descriptors, navigation }: any) {
+function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown>) {
   const [showLogTodaysWorkoutModal, setShowLogTodaysWorkoutModal] = useState(false);
   const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [showLogMealModal, setShowLogMealModal] = useState(false);
-  const { refreshData } = useAppStore();
 
   return (
     <>
       <View style={styles.tabBarContainer}>
         <View style={styles.tabBar}>
-          {state.routes.map((route: any, index: number) => {
+          {state.routes.map((route: Record<string, unknown>, index: number) => {
             const { options } = descriptors[route.key];
             const label = options.tabBarLabel !== undefined
               ? options.tabBarLabel

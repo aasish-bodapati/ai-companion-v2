@@ -82,7 +82,6 @@ export default function QuickAddModal({
   ];
 
   const handleActionPress = async (action: typeof quickActions[0]) => {
-    console.log('🍽️ QuickAddModal: Action pressed:', action.title);
     onClose();
     
     // Let the modal handle the check for "Log Today's Workout"

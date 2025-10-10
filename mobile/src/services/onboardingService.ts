@@ -41,7 +41,7 @@ export const onboardingService = {
     try {
       const data = await AsyncStorage.getItem(ONBOARDING_DATA_KEY);
       return data ? JSON.parse(data) : null;
-    } catch (error) {
+    } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
     }

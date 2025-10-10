@@ -41,7 +41,7 @@ export default function OnboardingContainer({
   const [isAnimating, setIsAnimating] = useState(false);
   const translateX = useRef(new Animated.Value(0)).current;
 
-  const handleSwipeGesture = (event: any) => {
+  const handleSwipeGesture = (event: Record<string, unknown>) => {
     if (!enableSwipe || isAnimating) return;
 
     const { translationX, velocityX, state } = event.nativeEvent;

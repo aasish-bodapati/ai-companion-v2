@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 // Base Card Component
 interface HealthCardProps {
@@ -81,9 +82,9 @@ interface HealthIconButtonProps {
 
 export function HealthIconButton({
   icon,
-  size = 24,
-  color = '#6b7280',
-  backgroundColor = '#f8fafc',
+  size = FONT_SIZE.xl, // 24 -> FONT_SIZE.xl
+  color = COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
+  backgroundColor = COLORS.background.secondary, // '#f8fafc' -> COLORS.background.secondary
   onPress,
   disabled = false,
   style,
@@ -92,7 +93,7 @@ export function HealthIconButton({
     <TouchableOpacity
       style={[
         styles.iconButton,
-        { backgroundColor: disabled ? '#f3f4f6' : backgroundColor },
+        { backgroundColor: disabled ? COLORS.background.tertiary : backgroundColor }, // '#f3f4f6' -> COLORS.background.tertiary
         style,
       ]}
       onPress={onPress}
@@ -102,7 +103,7 @@ export function HealthIconButton({
       <Ionicons 
         name={icon as keyof typeof Ionicons.glyphMap} 
         size={size} 
-        color={disabled ? '#9ca3af' : color} 
+        color={disabled ? COLORS.text.tertiary : color} // '#9ca3af' -> COLORS.text.tertiary 
       />
     </TouchableOpacity>
   );
@@ -163,7 +164,7 @@ interface HealthDividerProps {
 export function HealthDivider({
   orientation = 'horizontal',
   thickness = 1,
-  color = '#e5e7eb',
+  color = COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
   style,
 }: HealthDividerProps) {
   return (
@@ -212,39 +213,29 @@ export function HealthSkeleton({
 const styles = StyleSheet.create({
   // Card styles
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
   },
   defaultCard: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.small, // Replaced individual shadow properties with SHADOWS.small
   },
   elevatedCard: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...SHADOWS.medium, // Replaced individual shadow properties with SHADOWS.medium
   },
   outlinedCard: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    shadowOpacity: 0,
-    elevation: 0,
+    borderColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
+    ...SHADOWS.none, // Replaced individual shadow properties with SHADOWS.none
   },
   filledCard: {
-    backgroundColor: '#f8fafc',
-    shadowOpacity: 0,
-    elevation: 0,
+    backgroundColor: COLORS.background.secondary, // '#f8fafc' -> COLORS.background.secondary
+    ...SHADOWS.none, // Replaced individual shadow properties with SHADOWS.none
   },
-  smallPadding: { padding: 12 },
-  mediumPadding: { padding: 16 },
-  largePadding: { padding: 20 },
-  smallBorderRadius: { borderRadius: 8 },
-  mediumBorderRadius: { borderRadius: 12 },
-  largeBorderRadius: { borderRadius: 16 },
+  smallPadding: { padding: SPACING.md }, // 12 -> SPACING.md
+  mediumPadding: { padding: SPACING.lg }, // 16 -> SPACING.lg
+  largePadding: { padding: SPACING.xl }, // 20 -> SPACING.xl
+  smallBorderRadius: { borderRadius: BORDER_RADIUS.md }, // 8 -> BORDER_RADIUS.md
+  mediumBorderRadius: { borderRadius: BORDER_RADIUS.lg }, // 12 -> BORDER_RADIUS.lg
+  largeBorderRadius: { borderRadius: BORDER_RADIUS.xl }, // 16 -> BORDER_RADIUS.xl
 
   // Icon button styles
   iconButton: {
@@ -257,52 +248,52 @@ const styles = StyleSheet.create({
 
   // Badge styles
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.sm, // 8 -> SPACING.sm
+    paddingVertical: SPACING.xs, // 4 -> SPACING.xs
+    borderRadius: BORDER_RADIUS.lg, // 12 -> BORDER_RADIUS.lg
     alignSelf: 'flex-start',
   },
   defaultBadge: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary, // '#f3f4f6' -> COLORS.background.tertiary
   },
   successBadge: {
-    backgroundColor: '#d1fae5',
+    backgroundColor: COLORS.successLight, // '#d1fae5' -> COLORS.successLight
   },
   warningBadge: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: COLORS.warningLight, // '#fef3c7' -> COLORS.warningLight
   },
   errorBadge: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: COLORS.dangerLight, // '#fee2e2' -> COLORS.dangerLight
   },
   infoBadge: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: COLORS.info + '20', // '#dbeafe' -> COLORS.info with opacity
   },
   smallBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: SPACING.xs, // 6 -> SPACING.xs
+    paddingVertical: 2, // Keep as is for precise spacing
   },
   mediumBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.sm, // 8 -> SPACING.sm
+    paddingVertical: SPACING.xs, // 4 -> SPACING.xs
   },
   largeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: SPACING.md, // 12 -> SPACING.md
+    paddingVertical: SPACING.sm, // 6 -> SPACING.sm
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
   },
 
   // Divider styles
   divider: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.border.light, // '#e5e7eb' -> COLORS.border.light
   },
 
   // Skeleton styles
   skeleton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary, // '#f3f4f6' -> COLORS.background.tertiary
     opacity: 0.6,
   },
 });

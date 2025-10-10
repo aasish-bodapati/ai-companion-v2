@@ -2,29 +2,31 @@ import React from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import DashboardHeaderCard from '../components/dashboard/DashboardHeaderCard';
 import WelcomeCard from '../components/dashboard/WelcomeCard';
-import BodyTypeCard from '../components/shared/BodyTypeCard';
 import WaterLogger from '../components/health/WaterLogger';
 import DailyStreaks from '../components/dashboard/DailyStreaks';
 import AchievementBadges from '../components/dashboard/AchievementBadges';
+import ManualExerciseLoggingCard from '../components/dashboard/ManualExerciseLoggingCard';
 // import PredictiveInsights from '../components/dashboard/PredictiveInsights'; // REMOVED
 // import TrendAnalysis from '../components/dashboard/TrendAnalysis'; // REMOVED
 import { useProgressMetricsData } from '../hooks/useProgressMetrics';
 import { useAchievements, useStreaks } from '../stores';
 import { useAuth } from '../contexts/AuthContext';
 import useResponsive from '../hooks/useResponsive';
-import { useBodyTypeGoalMetrics } from '../hooks/useBodyTypeGoalMetrics';
 
 interface DashboardModuleProps {
   onRefresh?: () => Promise<void>;
   refreshing?: boolean;
-  onNavigate?: (screen: string, params?: any) => void;
+  onNavigate?: (screen: string, params?: Record<string, unknown>) => void;
+  activeRoutineId?: number | null;
 }
 
 export default function DashboardModule({
   onRefresh,
   refreshing = false,
   onNavigate,
+  activeRoutineId,
 }: DashboardModuleProps) {
+  console.log('🔄 [DASHBOARD MODULE] Rendering with activeRoutineId:', activeRoutineId);
   
   const { user } = useAuth();
   // Re-enable useProgressMetricsData hook
@@ -33,17 +35,6 @@ export default function DashboardModule({
   const { achievements } = useAchievements();
   const { streaks } = useStreaks();
   const responsive = useResponsive();
-  // Re-enable useBodyTypeGoalMetrics with fixes - TEMPORARILY DISABLED TO DEBUG
-  // const bodyTypeMetrics = useBodyTypeGoalMetrics();
-  const bodyTypeMetrics = {
-    goalName: 'Strong & Steady',
-    dailyScore: 0,
-    weeklyAlignment: 0,
-    weeklyTrend: 'stable' as const,
-    alignment: 'same' as const,
-    suggestions: [],
-    loading: false,
-  };
   
 
   const quickStats = [
@@ -120,8 +111,24 @@ export default function DashboardModule({
           headerActions={headerActions}
         />
 
-              {/* Water Logging - Simple and clean */}
-              <WaterLogger />
+        {/* Manual Exercise Logging Card */}
+        <ManualExerciseLoggingCard
+          activeRoutineId={activeRoutineId}
+          onExercisePress={(exercise) => {
+            // Navigate to exercise logging screen with the selected exercise
+            onNavigate?.('Fitness', { 
+              selectedExercise: exercise,
+              mode: 'manual'
+            });
+          }}
+          onLogWorkout={() => {
+            // Navigate to workout logging screen
+            onNavigate?.('Fitness', { mode: 'workout' });
+          }}
+        />
+
+        {/* Water Logging - Simple and clean */}
+        <WaterLogger />
 
         {/* Body Type Goal - TEMPORARILY DISABLED TO DEBUG INFINITE LOOP */}
         {/* <BodyTypeCard
@@ -139,7 +146,7 @@ export default function DashboardModule({
 
         {/* Daily Streaks */}
         <DailyStreaks
-          streaks={streaks as any}
+          streaks={streaks as Record<string, unknown>}
           onStreakPress={(streak) => {
           }}
           onViewAll={() => onNavigate?.('Streaks')}
@@ -147,7 +154,7 @@ export default function DashboardModule({
 
         {/* Achievements */}
         <AchievementBadges
-          achievements={achievements as any}
+          achievements={achievements as Record<string, unknown>}
           onAchievementPress={(achievement) => {
           }}
           onViewAll={() => onNavigate?.('Achievements')}
@@ -172,13 +179,3 @@ export default function DashboardModule({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  content: {
-    flex: 1,
-  },
-});

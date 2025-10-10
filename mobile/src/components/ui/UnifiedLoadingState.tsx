@@ -12,14 +12,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Animated,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { isFeatureEnabled } from '../../config/featureFlags';
 // Removed deprecationUtils import
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
-const { width } = Dimensions.get('window');
 
 // Combined interface supporting all loading variants
 interface UnifiedLoadingStateProps {
@@ -49,7 +46,7 @@ interface UnifiedLoadingStateProps {
   animated?: boolean;
   
   // Style props
-  style?: any;
+  style?: object;
   testID?: string;
   
   // Legacy props for backward compatibility
@@ -186,7 +183,7 @@ export const UnifiedLoadingState = ({
       >
         {icon ? (
           <Ionicons
-            name={icon as any}
+            name={icon as keyof typeof Ionicons.glyphMap}
             size={sizeConfig.iconSize}
             color={color}
           />

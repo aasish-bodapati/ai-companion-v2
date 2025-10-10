@@ -41,6 +41,7 @@ export default function WorkoutLoggingModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
   const [saving, setSaving] = useState(false);
+  // const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string | number>>(new Set()); // Unused for now
 
   // Reset form when modal opens
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function WorkoutLoggingModal({
       setExercises([]);
       setSearchQuery('');
       setSearchResults([]);
+      setNewlyAddedIds(new Set());
       if (todaysWorkout) {
         // Pre-populate with today's workout exercises if available
         if (todaysWorkout.exercises) {
@@ -90,13 +92,6 @@ export default function WorkoutLoggingModal({
   }, []);
 
   const handleSelectExercise = useCallback(async (exercise: ExerciseType) => {
-    // Debug logging for selected exercise
-    console.log('🔍 WorkoutLoggingModal - Selected exercise:', {
-      name: exercise.name,
-      category: exercise.category,
-      muscle_group: exercise.muscle_group
-    });
-    
     // Clear search and close dropdown
     setSearchQuery('');
     setSearchResults([]);
@@ -117,17 +112,15 @@ export default function WorkoutLoggingModal({
       // Fetch latest workout data for this exercise first
       let latestWorkout = null;
       try {
-        console.log('🔍 Fetching latest workout data for exercise:', exercise.name);
         latestWorkout = await fitnessService.getLatestExerciseData(exercise.name);
-        console.log('🔍 Raw API response for', exercise.name, ':', latestWorkout);
       } catch {
-        // Silent error handling - no console logging to prevent Expo Go notifications
+        // Silent error handling
       }
       
       // Add new exercise with latest data if available
       const newItem: LoggingItemData = {
         id: `exercise-${Date.now()}`,
-        name: exercise.name,
+        name: exercise.name || '',
         sets: latestWorkout?.sets || undefined,
         reps: latestWorkout?.reps || '',
         weight_kg: (latestWorkout?.weight_kg || latestWorkout?.weight_used) || undefined,
@@ -135,14 +128,12 @@ export default function WorkoutLoggingModal({
         distance: latestWorkout?.distance || undefined,
         rest_time: latestWorkout?.rest_time || '',
         notes: latestWorkout?.notes || '',
-        category: exercise.category,
-        muscle_group: exercise.muscle_group,
-        equipment: exercise.equipment,
-        instructions: exercise.instructions,
-        difficulty: exercise.difficulty,
+        category: exercise.category || '',
+        muscle_group: exercise.muscle_group || '',
+        equipment: exercise.equipment || '',
+        instructions: exercise.instructions || '',
+        difficulty: exercise.difficulty || '',
       };
-      
-      console.log('🔍 WorkoutLoggingModal - Created new exercise item with latest data:', newItem);
       
       // Add the new exercise
       setExercises(prevExercises => [...prevExercises, newItem]);
@@ -240,7 +231,6 @@ export default function WorkoutLoggingModal({
 
   const handleSave = async (data: unknown) => {
     if (saving) {
-      console.log('🚫 [WORKOUT MODAL] Save already in progress, ignoring duplicate request');
       return;
     }
     
@@ -262,26 +252,23 @@ export default function WorkoutLoggingModal({
       }
 
       // Create separate log entries for each exercise
-      console.log('🔍 [WORKOUT MODAL] Creating separate log entries for each exercise');
       
       const logPromises = exercises.map((exercise: LoggingItemData, index: number) => {
         const exerciseData = {
           activity_type: 'strength_training',
-          activity_name: `${exercise.name} Workout`,
+          activity_name: `${exercise.name || 'Exercise'} Workout`,
           duration_minutes: exercise.duration_minutes || 10, // Default 10 minutes per exercise
           exercises: JSON.stringify([exercise]), // Single exercise as array
           notes: exercise.notes || '',
           activity_date: (data as { activity_date?: string }).activity_date || new Date().toISOString(),
         };
         
-        console.log(`🔍 [WORKOUT MODAL] Logging exercise ${index + 1}:`, exercise.name);
         return fitnessService.logWorkout(exerciseData);
       });
 
       // Wait for all exercises to be logged
       await Promise.all(logPromises);
       
-      console.log('✅ [WORKOUT MODAL] All exercises logged successfully');
       onWorkoutLogged();
       onClose();
     } catch {
@@ -388,8 +375,8 @@ export default function WorkoutLoggingModal({
                     onPress={() => handleSelectExercise(exercise)}
                   >
                     <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultName}>{exercise.name}</Text>
-                      <Text style={styles.searchResultCategory}>{exercise.category}</Text>
+                      <Text style={styles.searchResultName}>{String(exercise.name || 'Exercise')}</Text>
+                      <Text style={styles.searchResultCategory}>{String(exercise.category || '')}</Text>
                     </View>
                     <Ionicons name="add-circle-outline" size={24} color={COLORS.primary.main} />
                   </TouchableOpacity>
@@ -407,12 +394,12 @@ export default function WorkoutLoggingModal({
                 <View style={styles.exerciseHeader}>
                   <View style={styles.exerciseTitleRow}>
                     <Text style={styles.exerciseNumber}>#{index + 1}</Text>
-                    <Text style={styles.exerciseName}>{exercise.name}</Text>
+                    <Text style={styles.exerciseName}>{String(exercise.name || 'Exercise')}</Text>
                     {exercise.category && (
                       <CategoryBadge 
-                        category={exercise.category} 
+                        category={String(exercise.category)} 
                         size="small" 
-                        outline 
+                        outline
                       />
                     )}
                   </View>

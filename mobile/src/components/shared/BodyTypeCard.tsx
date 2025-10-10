@@ -182,7 +182,7 @@ export default function BodyTypeCard({
         
         <View style={styles.profileStat}>
           <Ionicons 
-            name={getTrendIcon() as any} 
+            name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
             size={24} 
             color={getTrendColor()} 
           />
@@ -202,7 +202,7 @@ export default function BodyTypeCard({
       <View style={styles.compactProgress}>
         <Text style={styles.compactAlignment}>{weeklyAlignment}% aligned</Text>
         <Ionicons 
-          name={getTrendIcon() as any} 
+          name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
           size={16} 
           color={getTrendColor()} 
         />

@@ -134,7 +134,7 @@ const LoggingItem = React.memo(function LoggingItem({
     
     // Default to weighted for unknown categories
     return 'weighted';
-  }, [item.logging_category, item.category, categories]);
+  }, [item.logging_category, item.category]);
 
   const getCategoryConfig = (category: string) => {
     const categoryData = categories.find(cat => cat.id === category);

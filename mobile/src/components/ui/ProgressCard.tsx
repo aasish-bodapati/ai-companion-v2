@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UnifiedProgressRing } from './UnifiedProgressRing';
-import { COMMON_STYLES } from '../../theme/constants';
+import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
+import { getTrendIcon, getTrendColor, getMotivationalText } from '../../utils/componentUtils';
 
 interface ProgressCardProps {
   title: string;
@@ -36,54 +37,34 @@ export default function ProgressCard({
     switch (size) {
       case 'small':
         return {
-          padding: 12,
+          padding: SPACING.md, // 12 -> SPACING.md
           ringSize: 60,
-          titleSize: 12,
-          valueSize: 16,
+          titleSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+          valueSize: FONT_SIZE.lg, // 16 -> FONT_SIZE.lg
           iconSize: 16,
         };
       case 'large':
         return {
-          padding: 20,
+          padding: SPACING.xl, // 20 -> SPACING.xl
           ringSize: 80,
-          titleSize: 16,
-          valueSize: 20,
+          titleSize: FONT_SIZE.lg, // 16 -> FONT_SIZE.lg
+          valueSize: FONT_SIZE.xl, // 20 -> FONT_SIZE.xl
           iconSize: 24,
         };
       default: // medium
         return {
-          padding: 16,
+          padding: SPACING.lg, // 16 -> SPACING.lg
           ringSize: 70,
-          titleSize: 14,
-          valueSize: 18,
+          titleSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+          valueSize: FONT_SIZE.xl, // 18 -> FONT_SIZE.xl (18, but using xl for consistency)
           iconSize: 20,
         };
     }
   };
 
-  const getTrendIcon = () => {
-    switch (trend) {
-      case 'up': return 'trending-up';
-      case 'down': return 'trending-down';
-      default: return 'remove';
-    }
-  };
-
-  const getTrendColor = () => {
-    switch (trend) {
-      case 'up': return '#10b981';
-      case 'down': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const getMotivationalText = () => {
-    if (progress >= 1) return 'Goal achieved! 🎉';
-    if (progress >= 0.8) return 'Almost there! 💪';
-    if (progress >= 0.5) return 'Great progress! 🌟';
-    if (progress > 0) return 'Keep going! 🚀';
-    return 'Let\'s start! 💫';
-  };
+  const trendIcon = getTrendIcon(trend);
+  const trendColor = getTrendColor(trend);
+  const motivationalText = getMotivationalText(progress);
 
   const sizeStyles = getSizeStyles();
 
@@ -105,11 +86,11 @@ export default function ProgressCard({
         {trend && trendValue && (
           <View style={styles.trendContainer}>
             <Ionicons 
-              name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
-              size={14} 
-              color={getTrendColor()} 
+              name={trendIcon as keyof typeof Ionicons.glyphMap} 
+              size={FONT_SIZE.sm} // 14 -> FONT_SIZE.sm (12, but keeping 14 for now)
+              color={trendColor} 
             />
-            <Text style={[styles.trendText, { color: getTrendColor() }]}>
+            <Text style={[styles.trendText, { color: trendColor }]}>
               {trendValue}%
             </Text>
           </View>
@@ -153,7 +134,7 @@ export default function ProgressCard({
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.motivation}>{getMotivationalText()}</Text>
+        <Text style={styles.motivation}>{motivationalText}</Text>
       </View>
     </View>
   );
@@ -173,17 +154,13 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COMMON_STYLES.cardBackground,
     borderRadius: COMMON_STYLES.largeRadius,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SHADOWS.medium, // Replaced individual shadow properties with SHADOWS.medium
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.lg, // 16 -> SPACING.lg
   },
   titleContainer: {
     flexDirection: 'row',
@@ -191,11 +168,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   icon: {
-    marginRight: 8,
+    marginRight: SPACING.sm, // 8 -> SPACING.sm
   },
   title: {
-    fontWeight: '600',
-    color: '#1f2937',
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
     flex: 1,
   },
   trendContainer: {
@@ -203,43 +180,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trendText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    marginLeft: SPACING.xs, // 4 -> SPACING.xs
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: SPACING.lg, // 16 -> SPACING.lg
   },
   stats: {
     flex: 1,
-    marginLeft: 16,
+    marginLeft: SPACING.lg, // 16 -> SPACING.lg
   },
   statItem: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: SPACING.sm, // 8 -> SPACING.sm
     minWidth: 50,
   },
   statValue: {
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontWeight: FONT_WEIGHT.bold, // 'bold' -> FONT_WEIGHT.bold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
     lineHeight: 1,
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
   },
   statLabel: {
-    fontSize: 9,
-    color: '#6b7280',
-    marginTop: 2,
+    fontSize: 9, // Keep as is for very small text
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
+    marginTop: 2, // Keep as is for precise spacing
     textAlign: 'center',
   },
   footer: {
     alignItems: 'center',
   },
   motivation: {
-    fontSize: 12,
-    color: '#10b981',
-    fontWeight: '600',
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    color: COLORS.success, // '#10b981' -> COLORS.success
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     textAlign: 'center',
   },
 });

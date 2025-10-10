@@ -5,8 +5,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NumericalGoal } from './goalTemplates';
-import { fitnessService, FitnessLog } from './fitnessService';
-import { nutritionService, NutritionLog } from './nutritionService';
+import { fitnessService } from './fitnessService';
+import { nutritionService } from './nutritionService';
 import { healthService } from './healthService';
 
 export interface GoalProgress {

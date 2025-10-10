@@ -2,6 +2,18 @@ import { apiClient } from './api';
 import { BaseService } from './BaseService';
 import { getTodayLocal } from '../utils/dateUtils';
 
+interface FoodItem {
+  food_code: string;
+  food_name: string;
+  calories: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  fiber_g: number;
+  sugar_g: number;
+  sodium_mg: number;
+}
+
 export interface NutritionLog {
   id: number;
   user_id: number;
@@ -256,7 +268,7 @@ class NutritionService extends BaseService {
     const foods = response || [];
     if (foods && Array.isArray(foods)) {
       // Removed duplicate logging
-      const transformed = foods.map((item: any) => ({
+      const transformed = foods.map((item: FoodItem) => ({
         id: item.food_code,
         name: item.food_name,
         brand: '',
@@ -301,7 +313,7 @@ class NutritionService extends BaseService {
     const foods = response || [];
     if (foods && Array.isArray(foods)) {
       // Removed duplicate logging
-      const transformed = foods.map((item: any) => ({
+      const transformed = foods.map((item: FoodItem) => ({
         id: item.food_code,
         name: item.food_name,
         brand: '',

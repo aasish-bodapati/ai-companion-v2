@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  TouchableOpacity,
   Text,
   StyleSheet,
   ViewStyle,
@@ -11,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
-import { COMMON_STYLES } from '../../theme/constants';
+import { COMMON_STYLES, COLORS, SPACING } from '../../theme/constants';
 
 interface TouchOptimizedButtonProps {
   title: string;
@@ -125,7 +124,7 @@ export default function TouchOptimizedButton({
         <>
           <ActivityIndicator 
             size="small" 
-            color={variant === 'primary' ? '#ffffff' : '#3b82f6'} 
+            color={variant === 'primary' ? COLORS.text.inverse : COLORS.primary.main} 
           />
           <Text style={[getTextStyle(), { marginLeft: 8 }]}>
             Loading...
@@ -137,9 +136,9 @@ export default function TouchOptimizedButton({
     if (icon) {
       const iconElement = (
         <Ionicons
-          name={icon as any}
+          name={icon as keyof typeof Ionicons.glyphMap}
           size={size === 'small' ? 16 : size === 'large' ? 24 : 20}
-          color={variant === 'primary' ? '#ffffff' : '#3b82f6'}
+          color={variant === 'primary' ? COLORS.text.inverse : COLORS.primary.main}
         />
       );
 
@@ -211,27 +210,27 @@ const styles = StyleSheet.create({
 
   // Variants
   primaryButton: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
+    borderColor: COLORS.primary.main,
   },
   primaryText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
 
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
-    borderColor: '#d1d5db',
+    backgroundColor: COLORS.gray[100],
+    borderColor: COLORS.gray[300],
   },
   secondaryText: {
-    color: '#374151',
+    color: COLORS.gray[700],
   },
 
   outlineButton: {
     backgroundColor: 'transparent',
-    borderColor: '#3b82f6',
+    borderColor: COLORS.primary.main,
   },
   outlineText: {
-    color: '#3b82f6',
+    color: COLORS.primary.main,
   },
 
   ghostButton: {
@@ -239,21 +238,21 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   ghostText: {
-    color: '#3b82f6',
+    color: COLORS.primary.main,
   },
 
   dangerButton: {
-    backgroundColor: '#ef4444',
-    borderColor: '#ef4444',
+    backgroundColor: COLORS.danger,
+    borderColor: COLORS.danger,
   },
   dangerText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
 
   // Sizes
   smallButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     minHeight: 36,
   },
   smallText: {
@@ -261,8 +260,8 @@ const styles = StyleSheet.create({
   },
 
   mediumButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     minHeight: 44,
   },
   mediumText: {
@@ -270,8 +269,8 @@ const styles = StyleSheet.create({
   },
 
   largeButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.lg,
     minHeight: 52,
   },
   largeText: {

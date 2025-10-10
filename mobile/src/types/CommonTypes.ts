@@ -19,7 +19,7 @@ export type ModalSize = 'small' | 'medium' | 'large' | 'full';
 export interface LoadingState {
   isLoading: boolean;
   error?: string;
-  data?: any;
+  data?: Record<string, unknown>;
 }
 
 // Common form state
@@ -162,7 +162,7 @@ export interface ValidationRule {
   min?: number;
   max?: number;
   pattern?: RegExp;
-  custom?: (value: any) => string | undefined;
+  custom?: (value: unknown) => string | undefined;
   message?: string;
 }
 
@@ -174,7 +174,7 @@ export interface FormFieldConfig {
   placeholder?: string;
   required?: boolean;
   validation?: ValidationRule;
-  options?: { label: string; value: any }[];
+  options?: { label: string; value: unknown }[];
   multiline?: boolean;
   numberOfLines?: number;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryBadge } from './Badge';
+import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 export interface SimpleLoggingItemData {
   id: number | string;
@@ -22,7 +23,6 @@ interface SimpleLoggingItemProps {
 }
 
 export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable = true }: SimpleLoggingItemProps) {
-  console.log('🔄 [SIMPLE LOGGING ITEM] Rendering:', item.name);
   
   // Local state for input values
   const [sets, setSets] = useState(item.sets?.toString() || '');
@@ -87,52 +87,53 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
   
   // Get category configuration
   const getCategoryConfig = (category: string) => {
-    switch (category) {
+    const safeCategory = category || '';
+    switch (safeCategory) {
       case 'bodyweight':
         return { 
-          color: '#10b981', 
+          color: COLORS.success, // '#10b981' -> COLORS.success
           icon: 'person', 
           name: 'BODYWEIGHT',
           fields: ['sets', 'reps'] // Standard bodyweight exercises use sets and reps
         };
       case 'weighted':
         return { 
-          color: '#f59e0b', 
+          color: COLORS.warning, // '#f59e0b' -> COLORS.warning
           icon: 'barbell', 
           name: 'WEIGHTED',
           fields: ['sets', 'reps', 'weight_kg', 'rest_time']
         };
       case 'cardio_duration':
         return { 
-          color: '#ef4444', 
+          color: COLORS.danger, // '#ef4444' -> COLORS.danger
           icon: 'heart', 
           name: 'CARDIO',
           fields: ['duration_minutes']
         };
       case 'distance_based':
         return { 
-          color: '#3b82f6', 
+          color: COLORS.primary.main, // '#3b82f6' -> COLORS.primary.main
           icon: 'walk', 
           name: 'DISTANCE',
           fields: ['distance', 'duration_minutes']
         };
       case 'flexibility':
         return { 
-          color: '#8b5cf6', 
+          color: '#8b5cf6', // Keep as is - not in theme constants
           icon: 'leaf', 
           name: 'FLEXIBILITY',
           fields: ['duration_minutes', 'reps'] // Reps for hold counts
         };
       case 'sports':
         return { 
-          color: '#06b6d4', 
+          color: '#06b6d4', // Keep as is - not in theme constants
           icon: 'football', 
           name: 'SPORTS',
           fields: ['duration_minutes', 'distance']
         };
       default:
         return { 
-          color: '#6b7280', 
+          color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
           icon: 'fitness', 
           name: 'EXERCISE',
           fields: ['sets', 'reps', 'weight_kg', 'duration_minutes', 'distance'] // Show all for unknown types
@@ -140,7 +141,7 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
     }
   };
   
-  const categoryConfig = getCategoryConfig(item.category || '');
+  const categoryConfig = getCategoryConfig(String(item.category || ''));
   
   // Field configurations
   const fieldConfigs = {
@@ -158,7 +159,7 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
       keyboardType: 'numeric' as const,
       value: reps,
       onChange: handleRepsChange,
-      getDisplayValue: () => item.reps || 'N/A'
+      getDisplayValue: () => String(item.reps || 'N/A')
     },
     weight_kg: {
       label: 'Weight (kg)',
@@ -188,11 +189,11 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
       label: 'Rest (sec)',
       placeholder: '0',
       keyboardType: 'numeric' as const,
-      value: item.rest_time || '',
+      value: String(item.rest_time || ''),
       onChange: (text: string) => {
         updateParent('rest_time', text);
       },
-      getDisplayValue: () => `${item.rest_time || 0}s`
+      getDisplayValue: () => `${String(item.rest_time || 0)}s`
     }
   };
 
@@ -203,7 +204,7 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
           <View style={styles.exerciseTitleRow}>
             <View style={styles.exerciseTitleLeft}>
               <Text style={styles.exerciseTitle}>
-                {item.name}
+                {String(item.name || 'Exercise')}
               </Text>
             </View>
             <View style={styles.exerciseTitleRight}>
@@ -215,8 +216,9 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
                 <TouchableOpacity
                   style={styles.removeButton}
                   onPress={() => onRemove(item.id)}
+                  testID="remove-button"
                 >
-                  <Ionicons name="trash" size={16} color="#ef4444" />
+                  <Ionicons name="trash" size={FONT_SIZE.lg} color={COLORS.danger} /> {/* 16 -> FONT_SIZE.lg, '#ef4444' -> COLORS.danger */}
                 </TouchableOpacity>
               )}
             </View>
@@ -255,21 +257,17 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
+    borderRadius: BORDER_RADIUS.lg, // 12 -> BORDER_RADIUS.lg
+    marginHorizontal: SPACING.lg, // 16 -> SPACING.lg
+    marginBottom: SPACING.md, // 12 -> SPACING.md
+    ...SHADOWS.small, // Replaced individual shadow properties with SHADOWS.small
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg, // 16 -> SPACING.lg
   },
   header: {
-    marginBottom: 12,
+    marginBottom: SPACING.md, // 12 -> SPACING.md
   },
   exerciseTitleRow: {
     flexDirection: 'row',
@@ -280,48 +278,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg, // 16 -> FONT_SIZE.lg
+    fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
   },
   exerciseTitleRight: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   workoutFields: {
-    marginTop: 8,
+    marginTop: SPACING.sm, // 8 -> SPACING.sm
   },
   fieldRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: SPACING.md, // 12 -> SPACING.md
   },
   fieldContainer: {
     flex: 1,
     minWidth: '30%',
   },
   fieldLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
+    fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
+    color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
+    marginBottom: SPACING.xs, // 4 -> SPACING.xs
   },
   fieldValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    fontSize: 14,
-    color: '#1f2937',
-    backgroundColor: '#ffffff',
+    borderColor: COLORS.border.medium, // '#d1d5db' -> COLORS.border.medium
+    borderRadius: BORDER_RADIUS.sm, // 6 -> BORDER_RADIUS.sm
+    paddingHorizontal: SPACING.sm, // 8 -> SPACING.sm
+    paddingVertical: SPACING.xs, // 6 -> SPACING.xs
+    fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md
+    color: COLORS.text.primary, // '#1f2937' -> COLORS.text.primary
+    backgroundColor: COLORS.background.primary, // '#ffffff' -> COLORS.background.primary
   },
   removeButton: {
-    marginLeft: 8,
-    padding: 4,
+    marginLeft: SPACING.sm, // 8 -> SPACING.sm
+    padding: SPACING.xs, // 4 -> SPACING.xs
   },
 });

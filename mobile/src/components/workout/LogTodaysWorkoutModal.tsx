@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   Modal,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
   Alert,
 } from 'react-native';
@@ -16,10 +15,7 @@ import DynamicExerciseForm from '../fitness/DynamicExerciseForm';
 import { ExerciseData } from '../../services/fitnessService';
 // import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { useToast } from '../../contexts/ToastContext';
-import { useCreateLoadingState } from '../../utils/duplicateCodeUtils';
-import { isFeatureEnabled } from '../../config/featureFlags';
 import { CategoryBadge, StatusBadge } from '../ui/Badge';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 interface Exercise {
   id: string | number;
@@ -61,18 +57,12 @@ export default function LogTodaysWorkoutModal({
   const [workoutData, setWorkoutData] = useState<WorkoutData | null>(null);
   
   // Always call hooks, but conditionally use the result
-  const newLoadingState = useCreateLoadingState();
   const [loading, setLoading] = useState(false);
   
-  // Use new loading state management if feature is enabled
-  const loadingState = isFeatureEnabled('USE_NEW_LOADING_UTILS') 
-    ? newLoadingState
-    : { loading, setLoading, withLoading: async (fn: () => Promise<unknown>) => fn(), resetError: () => {} };
   const [exerciseData, setExerciseData] = useState<{ [key: string | number]: Record<string, string> }>({});
   const [loggedExercises, setLoggedExercises] = useState<Set<string | number>>(new Set());
   const [skippedExercises, setSkippedExercises] = useState<Set<string | number>>(new Set());
   const [exercisesLoggedToday, setExercisesLoggedToday] = useState<Set<string | number>>(new Set());
-  const weightInputRefs = useRef<{ [key: string | number]: TextInput | null }>({});
 
   // Use exercise categories store
   // const { categories } = useExerciseCategoriesWithAutoLoad();
@@ -83,18 +73,6 @@ export default function LogTodaysWorkoutModal({
     }
   }, [visible, loadTodaysWorkout]);
 
-  // Function to get category display info (same as other components)
-  const getCategoryInfo = (category: string) => {
-    const categoryMap: { [key: string]: { name: string; color: string; icon: string } } = {
-      'bodyweight': { name: 'Bodyweight', color: '#3b82f6', icon: 'person-outline' },
-      'weighted': { name: 'Weighted', color: '#f59e0b', icon: 'barbell-outline' },
-      'cardio_duration': { name: 'Cardio', color: '#ef4444', icon: 'heart-outline' },
-      'distance_based': { name: 'Distance', color: '#10b981', icon: 'walk-outline' },
-      'mixed': { name: 'Mixed', color: '#8b5cf6', icon: 'fitness-outline' }
-    };
-    
-    return categoryMap[category] || { name: category, color: '#6b7280', icon: 'fitness-outline' };
-  };
 
 
   const loadTodaysWorkout = useCallback(async () => {
@@ -165,7 +143,7 @@ export default function LogTodaysWorkoutModal({
                 }
               };
             }
-          } catch (error) {
+          } catch {
             // Silent error handling - no console logging to prevent Expo Go notifications
             return {
               id: exercise.id,
@@ -342,7 +320,7 @@ export default function LogTodaysWorkoutModal({
   };
 
   // Check if an exercise is completed based on its type
-  const checkExerciseCompletion = (exercise: Exercise, loggedData: any) => {
+  const checkExerciseCompletion = (exercise: Exercise, loggedData: Record<string, unknown>) => {
     const category = exercise.logging_category;
     const exerciseName = exercise.exercise_name || exercise.name || 'Unknown';
     

@@ -2,13 +2,17 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppStore } from '../../stores';
 import DashboardModule from '../../modules/DashboardModule';
+import { useActiveRoutine } from '../../hooks/useActiveRoutine';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
   // Re-enable Zustand store with fixes
   const { refreshData } = useAppStore();
+  const { activeRoutineId } = useActiveRoutine();
   const [refreshing, setRefreshing] = useState(false);
   const hasRefreshedRef = useRef(false);
+  
+  console.log('🔄 [DASHBOARD SCREEN] Rendering with activeRoutineId:', activeRoutineId);
 
   // Initialize store data when component mounts
   useEffect(() => {
@@ -33,6 +37,7 @@ export default function DashboardScreen() {
       onRefresh={onRefresh}
       refreshing={refreshing}
       onNavigate={handleNavigate}
+      activeRoutineId={activeRoutineId}
     />
   );
 }
