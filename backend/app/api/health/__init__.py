@@ -10,7 +10,6 @@ from . import (
     exercises,
     foods,
     contextual_logging,
-    insights,
     fitness_logs,
     nutrition_logs,
     water_logs,
@@ -35,7 +34,6 @@ router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 router.include_router(exercises.router, prefix="/exercises", tags=["exercises"])
 router.include_router(foods.router, prefix="/foods", tags=["foods"])
 router.include_router(contextual_logging.router, prefix="/contextual-logging", tags=["contextual-logging"])
-router.include_router(insights.router, prefix="/insights", tags=["insights"])
 router.include_router(fitness_logs.router, prefix="/fitness-logs", tags=["fitness-logs"])  # Re-enabled for latest-exercise endpoint
 router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nutrition-logs"])
 router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs"])
