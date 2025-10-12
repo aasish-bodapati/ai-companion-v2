@@ -9,12 +9,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import TodaysSnapshot, { TodaysWorkout } from '../../components/fitness/TodaysSnapshot';
+import { TodaysWorkout } from '../../components/fitness/TodaysSnapshot';
 import SimpleRoutineDisplay from '../../components/fitness/SimpleRoutineDisplay';
 import { routineService, SimpleRoutineWithProgress } from '../../services/RoutineService';
-import ProgressTracking from '../../components/fitness/ProgressTracking';
 import SimpleFitnessLogs from '../../components/fitness/SimpleFitnessLogs';
-import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
 import { useActiveRoutine } from '../../hooks/useActiveRoutine';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
@@ -180,120 +178,51 @@ export default function FitnessScreen() {
   // Calculate weekly workout count from activity data
   const weeklyWorkoutCount = Object.values(weeklyActivityData).reduce((sum, count) => sum + count, 0);
 
-  const progressRings = [
-    {
-      id: '1',
-      title: 'Weekly Goal',
-      current: weeklyWorkoutCount,
-      target: 5,
-      color: '#3b82f6',
-      icon: 'fitness-outline',
-      unit: 'workouts',
-    },
-    {
-      id: '2',
-      title: 'Calories',
-      current: 1200, // Mock data for now
-      target: 2000,
-      color: '#f97316',
-      icon: 'flame-outline',
-      unit: 'cal',
-    },
-    {
-      id: '3',
-      title: 'Duration',
-      current: 180, // Mock data for now
-      target: 300,
-      color: '#10b981',
-      icon: 'time-outline',
-      unit: 'min',
-    },
-  ];
-
-  const achievements = [
-    {
-      id: '1',
-      title: 'First Workout',
-      description: 'Complete your first workout',
-      icon: 'trophy',
-      color: '#f59e0b',
-      unlocked: true,
-      unlockedAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      title: 'Week Warrior',
-      description: 'Complete 5 workouts in a week',
-      icon: 'flame',
-      color: '#ef4444',
-      unlocked: false,
-      progress: 80,
-    },
-    {
-      id: '3',
-      title: 'Consistency King',
-      description: 'Work out 7 days in a row',
-      icon: 'checkmark-circle',
-      color: '#10b981',
-      unlocked: false,
-      progress: 60,
-    },
-  ];
-
-  const streaks = [
-    {
-      type: 'Workout',
-      count: 3,
-      icon: 'fitness',
-      color: '#3b82f6',
-    },
-    {
-      type: 'Calories',
-      count: 5,
-      icon: 'flame',
-      color: '#f97316',
-    },
-  ];
-
   const renderOverview = () => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      {/* Today's Snapshot */}
-      <TodaysSnapshot
-        weeklyWorkouts={weeklyWorkoutCount}
-        alignmentScore={Math.min(100, Math.max(0, (weeklyWorkoutCount / 5) * 100))}
-        caloriesBurned={1200}
-        streak={7}
-        todaysWorkout={todaysWorkout || undefined}
-        onQuickLog={() => {}}
-        onViewWorkout={(workout) => {
-        }}
-        onViewProgress={() => {
-        }}
-      />
-
-      {/* Progress Tracking */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Progress Tracking</Text>
-        <ProgressTracking
-          progressRings={progressRings}
-          achievements={achievements}
-          streaks={streaks}
-          onRingPress={(ring) => {
-          }}
-          onAchievementPress={(achievement) => {
-          }}
-          onStreakPress={(streak) => {
-          }}
-        />
+      {/* Simple Stats Cards */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <View style={styles.statIcon}>
+            <Ionicons name="fitness-outline" size={24} color="#3b82f6" />
+          </View>
+          <Text style={styles.statValue}>{weeklyWorkoutCount}</Text>
+          <Text style={styles.statLabel}>Workouts This Week</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <View style={styles.statIcon}>
+            <Ionicons name="flame-outline" size={24} color="#f97316" />
+          </View>
+          <Text style={styles.statValue}>1,200</Text>
+          <Text style={styles.statLabel}>Calories Burned</Text>
+        </View>
       </View>
 
-      {/* Weekly Activity Chart */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weekly Activity</Text>
-        <WeeklyActivityChart
-          weeklyData={weeklyActivityData}
-          color="#f97316"
-        />
+      {/* Today's Workout */}
+      {todaysWorkout && (
+        <View style={styles.todaysWorkoutCard}>
+          <Text style={styles.cardTitle}>Today's Workout</Text>
+          <Text style={styles.workoutName}>{todaysWorkout.name}</Text>
+          <Text style={styles.workoutDescription}>
+            {todaysWorkout.exercises?.length || 0} exercises planned
+          </Text>
+        </View>
+      )}
+
+      {/* Quick Actions */}
+      <View style={styles.quickActionsCard}>
+        <Text style={styles.cardTitle}>Quick Actions</Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="add-circle-outline" size={20} color="#3b82f6" />
+            <Text style={styles.actionButtonText}>Log Workout</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton}>
+            <Ionicons name="list-outline" size={20} color="#10b981" />
+            <Text style={styles.actionButtonText}>View Logs</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -520,22 +449,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
   },
-  statCard: {
-    flex: 1,
-    minWidth: '45%',
-    borderRadius: BORDER_RADIUS.md,
-    padding: SPACING.md,
-    marginHorizontal: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
   statContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -543,12 +456,6 @@ const styles = StyleSheet.create({
   },
   statInfo: {
     flex: 1,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.text.inverse,
-    marginBottom: 4,
   },
   statTitle: {
     fontSize: FONT_SIZE.md,
@@ -700,5 +607,106 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.lg,
     color: COLORS.text.secondary,
     textAlign: 'center',
+  },
+  // Simplified overview styles
+  statsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0f9ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+  },
+  todaysWorkoutCard: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 12,
+  },
+  workoutName: {
+    fontSize: FONT_SIZE.xl,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  workoutDescription: {
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
+  },
+  quickActionsCard: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  actionButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '500',
+    color: COLORS.text.primary,
+    marginLeft: 8,
   },
 });

@@ -14,7 +14,6 @@ import { nutritionService } from '../../services/api';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
-import NutritionOverviewDashboard from '../../components/nutrition/NutritionOverviewDashboard';
 import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
@@ -132,13 +131,66 @@ export default function NutritionScreen() {
   }, [refreshNutritionData, activeTab]);
 
   const renderOverview = () => (
-    <NutritionOverviewDashboard
-      onLogMeal={() => setShowLogMealModal(true)}
-      onViewLogs={() => setActiveTab('logs')}
-      onViewAnalytics={() => setActiveTab('meals')}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-    />
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Simple Stats Cards */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <View style={styles.statIcon}>
+            <Ionicons name="restaurant-outline" size={24} color="#10b981" />
+          </View>
+          <Text style={styles.statValue}>3</Text>
+          <Text style={styles.statLabel}>Meals Today</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <View style={styles.statIcon}>
+            <Ionicons name="flame-outline" size={24} color="#f97316" />
+          </View>
+          <Text style={styles.statValue}>1,850</Text>
+          <Text style={styles.statLabel}>Calories</Text>
+        </View>
+      </View>
+
+      {/* Macro Summary */}
+      <View style={styles.macroCard}>
+        <Text style={styles.cardTitle}>Today's Macros</Text>
+        <View style={styles.macroRow}>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroLabel}>Protein</Text>
+            <Text style={styles.macroValue}>120g</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroLabel}>Carbs</Text>
+            <Text style={styles.macroValue}>180g</Text>
+          </View>
+          <View style={styles.macroItem}>
+            <Text style={styles.macroLabel}>Fat</Text>
+            <Text style={styles.macroValue}>65g</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.quickActionsCard}>
+        <Text style={styles.cardTitle}>Quick Actions</Text>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => setShowLogMealModal(true)}
+          >
+            <Ionicons name="add-circle-outline" size={20} color="#10b981" />
+            <Text style={styles.actionButtonText}>Log Meal</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={() => setActiveTab('logs')}
+          >
+            <Ionicons name="list-outline" size={20} color="#3b82f6" />
+            <Text style={styles.actionButtonText}>View Logs</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
   );
 
   const renderMeals = () => (
@@ -792,5 +844,113 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: COLORS.text.primary,
+  },
+  // Simplified overview styles
+  statsContainer: {
+    flexDirection: 'row',
+    marginHorizontal: 16,
+    marginBottom: 20,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  statIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f0fdf4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    textAlign: 'center',
+  },
+  macroCard: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: '600',
+    color: COLORS.text.primary,
+    marginBottom: 12,
+  },
+  macroRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  macroItem: {
+    alignItems: 'center',
+  },
+  macroLabel: {
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    marginBottom: 4,
+  },
+  macroValue: {
+    fontSize: FONT_SIZE.lg,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+  },
+  quickActionsCard: {
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  actionButtonText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: '500',
+    color: COLORS.text.primary,
+    marginLeft: 8,
   },
 });
