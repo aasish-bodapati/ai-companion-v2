@@ -142,7 +142,7 @@ export const renderHook = <T,>(hook: () => T) => {
     return null;
   };
   
-  render(<TestComponent />);
+  render(React.createElement(TestComponent));
   return { result: result! };
 };
 
@@ -150,14 +150,10 @@ export const waitForHookUpdate = () => new Promise(resolve => setTimeout(resolve
 
 // Component testing utilities
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <ErrorProvider>
-      <AuthProvider>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
-      </AuthProvider>
-    </ErrorProvider>
+  return React.createElement(ErrorProvider, null,
+    React.createElement(AuthProvider, null,
+      React.createElement(ToastProvider, null, children)
+    )
   );
 };
 

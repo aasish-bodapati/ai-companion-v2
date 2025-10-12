@@ -9,7 +9,6 @@ import NutritionScreen from '../screens/main/NutritionScreen';
 // import AnalyticsScreen from '../screens/main/AnalyticsScreen'; // REMOVED
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 // Removed MigrationScreen import
-import LogTodaysWorkoutModal from '../components/workout/LogTodaysWorkoutModal';
 import QuickAddModal from '../components/common/QuickAddModal';
 import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
 import UnifiedNutritionLogger from '../components/nutrition/UnifiedNutritionLogger';
@@ -27,7 +26,6 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 // Custom tab bar with floating plus button
 function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown>) {
-  const [showLogTodaysWorkoutModal, setShowLogTodaysWorkoutModal] = useState(false);
   const [showLogWorkoutModal, setShowLogWorkoutModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [showLogMealModal, setShowLogMealModal] = useState(false);
@@ -118,17 +116,8 @@ function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown
         onClose={() => setShowQuickAddModal(false)}
         onLogWorkout={() => setShowLogWorkoutModal(true)}
         onLogMeal={() => setShowLogMealModal(true)}
-        onLogTodaysWorkout={() => setShowLogTodaysWorkoutModal(true)}
       />
 
-      {/* Log Today's Workout Modal */}
-      <LogTodaysWorkoutModal
-        visible={showLogTodaysWorkoutModal}
-        onClose={() => setShowLogTodaysWorkoutModal(false)}
-        onWorkoutLogged={() => {
-          setShowLogTodaysWorkoutModal(false);
-        }}
-      />
 
       {/* Log Workout Modal */}
       <WorkoutLoggingModal

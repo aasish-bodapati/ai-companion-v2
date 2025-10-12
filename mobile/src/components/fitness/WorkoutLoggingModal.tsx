@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import BaseModal from '../ui/BaseModal.simple';
+import { modalConfigs } from '../ui/BaseModal.utils';
+import ExerciseSelector, { exerciseSelectorConfigs } from '../ui/ExerciseSelector';
 import SimpleLoggingItem from '../ui/SimpleLoggingItem';
 import { fitnessService, ExerciseType } from '../../services/fitnessService';
 import { hapticFeedback } from '../../utils/haptics';
-import { COLORS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 import { useToast } from '../../contexts/ToastContext';
 import { CategoryBadge } from '../ui/Badge';
 
@@ -38,17 +41,16 @@ export default function WorkoutLoggingModal({
 }: WorkoutLoggingModalProps) {
   const [exercises, setExercises] = useState<LoggingItemData[]>([]);
   const exercisesRef = useRef<LoggingItemData[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<ExerciseType[]>([]);
   const [saving, setSaving] = useState(false);
-  // const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string | number>>(new Set()); // Unused for now
+  const [newlyAddedIds, setNewlyAddedIds] = useState<Set<string | number>>(new Set());
+  const [showExerciseSelector, setShowExerciseSelector] = useState(false);
+  const [availableExercises, setAvailableExercises] = useState<ExerciseType[]>([]);
+  const [loadingExercises, setLoadingExercises] = useState(false);
 
   // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setExercises([]);
-      setSearchQuery('');
-      setSearchResults([]);
       setNewlyAddedIds(new Set());
       if (todaysWorkout) {
         // Pre-populate with today's workout exercises if available
@@ -56,7 +58,7 @@ export default function WorkoutLoggingModal({
           const workoutExercises = todaysWorkout.exercises.map((exercise: WorkoutExercise, index: number) => {
             return {
             id: `workout-${index}`,
-            name: exercise.exercise_name || exercise.name,
+            name: String(exercise.exercise_name || exercise.name || 'Exercise'),
             sets: exercise.sets,
             reps: exercise.reps,
             weight_kg: exercise.weight_kg,
@@ -76,79 +78,57 @@ export default function WorkoutLoggingModal({
     exercisesRef.current = exercises;
   }, [exercises]);
 
-  const searchExercises = useCallback(async (query: string) => {
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
 
+  // Load available exercises for selector
+  const loadAvailableExercises = useCallback(async () => {
     try {
-      const results = await fitnessService.searchExercises(query);
-      setSearchResults(results);
-    } catch {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      setSearchResults([]);
+      setLoadingExercises(true);
+      const exercises = await fitnessService.getExercises();
+      setAvailableExercises(exercises);
+    } catch (error) {
+      console.error('Error loading exercises:', error);
+      setAvailableExercises([]);
+    } finally {
+      setLoadingExercises(false);
     }
   }, []);
 
-  const handleSelectExercise = useCallback(async (exercise: ExerciseType) => {
-    // Clear search and close dropdown
-    setSearchQuery('');
-    setSearchResults([]);
-    
+  // Handle exercise selection from selector
+  const handleExerciseSelectorSelect = useCallback((exercise: ExerciseType) => {
     // Check if exercise already exists
     const existingItem = exercisesRef.current.find(item => item.name === exercise.name);
     
     if (existingItem) {
       // Update sets if exercise already exists
-      setExercises(prevExercises => 
-        prevExercises.map(item =>
-          item.name === exercise.name
-            ? { ...item, sets: (item.sets || 0) + 1 }
-            : item
-        )
+      const updatedExercises = exercisesRef.current.map(item => 
+        item.name === exercise.name 
+          ? { ...item, sets: (item.sets || 0) + 1 }
+          : item
       );
+      setExercises(updatedExercises);
     } else {
-      // Fetch latest workout data for this exercise first
-      let latestWorkout = null;
-      try {
-        latestWorkout = await fitnessService.getLatestExerciseData(exercise.name);
-      } catch {
-        // Silent error handling
-      }
-      
-      // Add new exercise with latest data if available
-      const newItem: LoggingItemData = {
-        id: `exercise-${Date.now()}`,
-        name: exercise.name || '',
-        sets: latestWorkout?.sets || undefined,
-        reps: latestWorkout?.reps || '',
-        weight_kg: (latestWorkout?.weight_kg || latestWorkout?.weight_used) || undefined,
-        duration_minutes: latestWorkout?.duration_minutes || undefined,
-        distance: latestWorkout?.distance || undefined,
-        rest_time: latestWorkout?.rest_time || '',
-        notes: latestWorkout?.notes || '',
-        category: exercise.category || '',
-        muscle_group: exercise.muscle_group || '',
-        equipment: exercise.equipment || '',
-        instructions: exercise.instructions || '',
-        difficulty: exercise.difficulty || '',
+      // Add new exercise
+      const newExercise: LoggingItemData = {
+        id: `exercise-${Date.now()}-${Math.random()}`,
+        name: exercise.name,
+        sets: 1,
+        reps: '8-12',
+        weight_kg: 0,
+        duration_minutes: 0,
+        distance: 0,
+        category: exercise.category || exercise.logging_category || '',
+        notes: '',
       };
       
-      // Add the new exercise
-      setExercises(prevExercises => [...prevExercises, newItem]);
-      
-      // Mark this item as newly added
-      setNewlyAddedIds(prev => new Set([...prev, newItem.id]));
-      
-      // Show haptic feedback if data was populated
-      if (latestWorkout) {
-        hapticFeedback.light();
-      }
+      const updatedExercises = [...exercisesRef.current, newExercise];
+      setExercises(updatedExercises);
+      setNewlyAddedIds(prev => new Set([...prev, newExercise.id]));
     }
     
-    hapticFeedback.selection();
+    setShowExerciseSelector(false);
+    hapticFeedback.impact('light');
   }, []);
+
 
   const handleRemoveItem = useCallback((id: number | string) => {
     setExercises(prevExercises => prevExercises.filter(item => item.id !== id));
@@ -307,82 +287,44 @@ export default function WorkoutLoggingModal({
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.modal}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Text style={styles.title}>
-                {todaysWorkout ? "Log Today's Workout" : "Log Workout"}
-              </Text>
-              <Text style={styles.subtitle}>
-                {todaysWorkout ? `${todaysWorkout.routine_name} - ${todaysWorkout.workout_name}` : "Track your fitness progress"}
-              </Text>
-              {exercises.length > 0 && (
-                <View style={styles.workoutCategories}>
-                  {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => (
-                    <CategoryBadge 
-                      key={index} 
-                      category={category} 
-                      size="small" 
-                      outline 
-                    />
-                  ))}
-                </View>
-              )}
+    <BaseModal
+      visible={visible}
+      onClose={onClose}
+      title={todaysWorkout ? "Log Today's Workout" : "Log Workout"}
+      {...modalConfigs.workoutLogging}
+    >
+      <View style={styles.container}>
+        {/* Subtitle */}
+        <View style={styles.subtitleContainer}>
+          <Text style={styles.subtitle}>
+            {todaysWorkout ? `${String(todaysWorkout.routine_name || '')} - ${String(todaysWorkout.workout_name || '')}` : "Track your fitness progress"}
+          </Text>
+          {exercises.length > 0 && (
+            <View style={styles.workoutCategories}>
+              {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => (
+                <CategoryBadge 
+                  key={index} 
+                  category={String(category || '')} 
+                  size="small" 
+                  outline 
+                />
+              ))}
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#6b7280" />
-            </TouchableOpacity>
-          </View>
+          )}
+        </View>
 
-          {/* Search Section */}
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search for exercises..."
-                value={searchQuery}
-                onChangeText={(text) => {
-                  setSearchQuery(text);
-                  searchExercises(text);
-                }}
-                placeholderTextColor="#9ca3af"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => {
-                  setSearchQuery('');
-                  setSearchResults([]);
-                }} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color="#9ca3af" />
-                </TouchableOpacity>
-              )}
-            </View>
-            
-            {/* Search Results */}
-            {searchResults.length > 0 && (
-              <ScrollView style={styles.searchResults} showsVerticalScrollIndicator={false}>
-                {searchResults.map((exercise, index) => (
-                  <TouchableOpacity
-                    key={exercise.id}
-                    style={styles.searchResultItem}
-                    onPress={() => handleSelectExercise(exercise)}
-                  >
-                    <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultName}>{String(exercise.name || 'Exercise')}</Text>
-                      <Text style={styles.searchResultCategory}>{String(exercise.category || '')}</Text>
-                    </View>
-                    <Ionicons name="add-circle-outline" size={24} color={COLORS.primary.main} />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
+          {/* Add Exercise Button */}
+          <View style={styles.addExerciseContainer}>
+            <TouchableOpacity
+              style={styles.addExerciseButton}
+              onPress={() => {
+                loadAvailableExercises();
+                setShowExerciseSelector(true);
+              }}
+            >
+              <Ionicons name="add-circle" size={24} color={COLORS.primary.main} />
+              <Text style={styles.addExerciseText}>Add Exercise</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Exercises List */}
@@ -450,54 +392,40 @@ export default function WorkoutLoggingModal({
               </TouchableOpacity>
             </View>
           </View>
-          </View>
-        </ScrollView>
       </View>
-    </Modal>
+
+      {/* Exercise Selector Modal */}
+      <BaseModal
+        visible={showExerciseSelector}
+        onClose={() => setShowExerciseSelector(false)}
+        title="Select Exercise"
+        {...modalConfigs.exerciseBrowser}
+      >
+        <ExerciseSelector
+          visible={showExerciseSelector}
+          onClose={() => setShowExerciseSelector(false)}
+          onSelect={handleExerciseSelectorSelect}
+          exercises={availableExercises}
+          loading={loadingExercises}
+          onRefresh={loadAvailableExercises}
+          refreshing={loadingExercises}
+          {...exerciseSelectorConfigs.workoutLogging}
+        />
+      </BaseModal>
+    </BaseModal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
-  modal: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '90%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-    overflow: 'hidden',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 20,
+  subtitleContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-  },
-  headerContent: {
-    flex: 1,
-    marginRight: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
@@ -509,64 +437,27 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  closeButton: {
-    padding: 4,
-  },
-  searchContainer: {
-    padding: 20,
+  addExerciseContainer: {
+    padding: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: COLORS.border.primary,
   },
-  searchInputContainer: {
+  addExerciseButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary.light,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderColor: COLORS.primary.main,
   },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#111827',
-    paddingVertical: 4,
-  },
-  clearButton: {
-    padding: 4,
-  },
-  searchResults: {
-    maxHeight: 200,
-    marginTop: 8,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  searchResultContent: {
-    flex: 1,
-  },
-  searchResultName: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  searchResultCategory: {
-    fontSize: 12,
-    color: '#6b7280',
+  addExerciseText: {
+    fontSize: FONT_SIZE.md,
+    fontWeight: FONT_WEIGHT.medium,
+    color: COLORS.primary.main,
+    marginLeft: SPACING.sm,
   },
   exercisesContainer: {
     padding: 20,

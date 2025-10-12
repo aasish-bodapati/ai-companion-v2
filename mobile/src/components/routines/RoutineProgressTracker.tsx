@@ -6,12 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
 // import { fitnessService } from '../../services/fitnessService'; // Unused for now
 import { COMMON_STYLES } from '../../theme/constants';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
+import { confirmationDialogConfigs } from '../ui/ConfirmationDialog.utils';
 
 interface RoutineProgressTrackerProps {
   routine: SimpleRoutineWithProgress;
@@ -38,6 +39,9 @@ export default function RoutineProgressTracker({
   const [workoutProgress, setWorkoutProgress] = useState<WorkoutProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   const loadWorkoutProgress = useCallback(async () => {
     try {
@@ -95,19 +99,11 @@ export default function RoutineProgressTracker({
       // TODO: Log the workout completion
       // This would typically involve calling the fitness service to log the workout
       
-      Alert.alert(
-        'Workout Completed!',
-        `Great job completing your ${updatedProgress[dayIndex].workoutName}!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => onWorkoutCompleted?.(),
-          },
-        ]
-      );
+      setSuccessMessage(`Great job completing your ${updatedProgress[dayIndex].workoutName}!`);
+      setShowSuccessDialog(true);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      Alert.alert('Error', 'Failed to mark workout as completed. Please try again.');
+      setShowErrorDialog(true);
     } finally {
       setActionLoading(null);
     }
@@ -256,6 +252,35 @@ export default function RoutineProgressTracker({
           </TouchableOpacity>
         </View>
       </View>
+
+      <ConfirmationDialog
+        visible={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        onConfirm={() => {
+          setShowSuccessDialog(false);
+          onWorkoutCompleted?.();
+        }}
+        title="Workout Completed!"
+        message={successMessage}
+        confirmText="OK"
+        variant="success"
+        showCancel={false}
+        confirmIcon="checkmark-outline"
+        {...confirmationDialogConfigs.saveWorkoutConfirmation}
+      />
+
+      <ConfirmationDialog
+        visible={showErrorDialog}
+        onClose={() => setShowErrorDialog(false)}
+        onConfirm={() => setShowErrorDialog(false)}
+        title="Error"
+        message="Failed to mark workout as completed. Please try again."
+        confirmText="OK"
+        variant="danger"
+        showCancel={false}
+        confirmIcon="alert-circle-outline"
+        {...confirmationDialogConfigs.networkError}
+      />
     </ScrollView>
   );
 }

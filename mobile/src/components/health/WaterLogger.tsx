@@ -4,13 +4,15 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING } from '../../theme/constants';
 import { simpleWaterService, SimpleWaterStats } from '../../services/simpleWaterService';
+import LoadingState from '../ui/LoadingState';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
+import { loadingStateConfigs } from '../ui/LoadingState.utils';
+import { confirmationDialogConfigs } from '../ui/ConfirmationDialog.utils';
 
 interface WaterLoggerProps {
   onWaterLogged?: () => void;
@@ -26,6 +28,8 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
     logs_today: 0,
   });
   const [loading, setLoading] = useState(false);
+  const [showErrorDialog, setShowErrorDialog] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Load initial stats
   useEffect(() => {
@@ -62,7 +66,8 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
     } catch (error) {
       console.error('🚰 [WATER LOGGER] Failed to log water:', error);
       hapticFeedback.error();
-      Alert.alert('Error', 'Failed to log water. Please try again.');
+      setErrorMessage('Failed to log water. Please try again.');
+      setShowErrorDialog(true);
     } finally {
       setLoading(false);
     }
@@ -89,7 +94,8 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
     } catch (error) {
       console.error('🚰 [WATER LOGGER] Failed to remove water log:', error);
       hapticFeedback.error();
-      Alert.alert('Error', 'Failed to remove water log. Please try again.');
+      setErrorMessage('Failed to remove water log. Please try again.');
+      setShowErrorDialog(true);
     } finally {
       setLoading(false);
     }
@@ -157,12 +163,27 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
             : `Tap + to add 250ml, - to remove last log`
           }
         </Text>
-        <View style={styles.loaderContainer}>
-          {loading && (
-            <ActivityIndicator size="small" color={COLORS.primary.main} />
-          )}
-        </View>
+        <LoadingState
+          loading={loading}
+          message=""
+          size="small"
+          variant="inline"
+          showMessage={false}
+          {...loadingStateConfigs.dataFetching}
+        />
       </View>
+
+      <ConfirmationDialog
+        visible={showErrorDialog}
+        onClose={() => setShowErrorDialog(false)}
+        onConfirm={() => setShowErrorDialog(false)}
+        title="Error"
+        message={errorMessage}
+        confirmText="OK"
+        variant="danger"
+        showCancel={false}
+        {...confirmationDialogConfigs.networkError}
+      />
     </View>
   );
 }
@@ -255,11 +276,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.text.secondary,
     textAlign: 'center',
-  },
-  loaderContainer: {
-    height: 20, // Reserve space for ActivityIndicator
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: SPACING.xs,
   },
 });

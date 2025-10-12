@@ -40,14 +40,14 @@ export default function DynamicExerciseForm({
   showRemove = true
 }: DynamicExerciseFormProps) {
   // Use exercise categories store with manual loading
-  const { categories, loadCategories, loaded, loading } = useExerciseCategoriesWithAutoLoad();
+  const { loadCategories, loaded, loading } = useExerciseCategoriesWithAutoLoad();
   
   // Load categories on component mount if not already loaded
   useEffect(() => {
     if (!loaded && !loading) {
       loadCategories();
     }
-  }, [loaded, loading, loadCategories]);
+  }, [loaded, loading]);
   
   
   // Use category from database (backend provides logging_category)

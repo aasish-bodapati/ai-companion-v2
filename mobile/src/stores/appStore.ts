@@ -4,8 +4,9 @@
  */
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppStore, ProgressMetrics, Achievement, Streak } from './types';
 import { dashboardService } from '../services/dashboardService';
 // import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService'; // REMOVED
@@ -124,6 +125,7 @@ export const useAppStore = create<AppStore>()(
       }),
       {
         name: 'app-store-persist',
+        storage: createJSONStorage(() => AsyncStorage),
         partialize: (state) => ({
           progressMetrics: state.progressMetrics,
           achievements: state.achievements,

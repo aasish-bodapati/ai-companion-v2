@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -19,6 +18,8 @@ import EditPreferencesModal from '../../components/profile/EditPreferencesModal'
 import { numericalGoalsService, GoalProgress } from '../../services/numericalGoalsService';
 import { hapticFeedback } from '../../utils/haptics';
 import { useToast } from '../../contexts/ToastContext';
+import ConfirmationDialog from '../../components/ui/ConfirmationDialog';
+import { confirmationDialogConfigs } from '../../components/ui/ConfirmationDialog.utils';
 import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
 
 // Body Type Goals Display Component
@@ -194,6 +195,7 @@ export default function EnhancedProfileScreen() {
   const [showPreferencesModal, setShowPreferencesModal] = useState(false);
   const [showNumericalGoalsModal, setShowNumericalGoalsModal] = useState(false);
   const [bodyTypeGoalName, setBodyTypeGoalName] = useState<string>('');
+  const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
 
   const loadNumericalGoals = useCallback(async () => {
     try {
@@ -281,35 +283,22 @@ export default function EnhancedProfileScreen() {
 
   const handleDeleteAccount = async () => {
     hapticFeedback.medium();
-    
-    // Show confirmation alert
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const result = await deleteAccount();
-              if (result.success) {
-                showToast('Account deleted successfully', 'success', 4000);
-                // The user will be automatically logged out and redirected to login
-              } else {
-                showToast(`Failed to delete account: ${result.error}`, 'error', 5000);
-              }
-            } catch {
-              showToast('Failed to delete account. Please try again.', 'error', 5000);
-            }
-          },
-        },
-      ]
-    );
+    setShowDeleteAccountDialog(true);
+  };
+
+  const handleConfirmDeleteAccount = async () => {
+    try {
+      const result = await deleteAccount();
+      if (result.success) {
+        showToast('Account deleted successfully', 'success', 4000);
+        // The user will be automatically logged out and redirected to login
+      } else {
+        showToast(`Failed to delete account: ${result.error}`, 'error', 5000);
+      }
+    } catch {
+      showToast('Failed to delete account. Please try again.', 'error', 5000);
+    }
+    setShowDeleteAccountDialog(false);
   };
 
   const handlePreferencesSave = async (data: {
@@ -553,6 +542,20 @@ export default function EnhancedProfileScreen() {
           gender: onboardingData.healthData.gender,
           activityLevel: onboardingData.healthData.activityLevel,
         } : undefined}
+      />
+
+      <ConfirmationDialog
+        visible={showDeleteAccountDialog}
+        onClose={() => setShowDeleteAccountDialog(false)}
+        onConfirm={handleConfirmDeleteAccount}
+        title="Delete Account"
+        message="Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        confirmIcon="trash-outline"
+        cancelIcon="close-outline"
+        {...confirmationDialogConfigs.deleteConfirmation}
       />
     </ScrollView>
   );

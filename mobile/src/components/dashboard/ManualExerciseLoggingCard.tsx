@@ -5,12 +5,15 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTodaysWorkout } from '../../hooks/useTodaysWorkout';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import LoadingState from '../ui/LoadingState';
+import EmptyState from '../ui/EmptyState';
+import { loadingStateConfigs } from '../ui/LoadingState.utils';
+import { emptyStateConfigs } from '../ui/EmptyState.utils';
 
 interface Exercise {
   exercise_name: string;
@@ -87,11 +90,12 @@ export default function ManualExerciseLoggingCard({
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Log Manual Exercise</Text>
-          <ActivityIndicator size="small" color={COLORS.primary.main} />
         </View>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading today's workout...</Text>
-        </View>
+        <LoadingState
+          loading={true}
+          message="Loading today's workout..."
+          {...loadingStateConfigs.dataFetching}
+        />
       </View>
     );
   }
@@ -103,24 +107,15 @@ export default function ManualExerciseLoggingCard({
           <Text style={styles.title}>Log Manual Exercise</Text>
           <Ionicons name="fitness" size={24} color={COLORS.primary.main} />
         </View>
-        <View style={styles.emptyContainer}>
-          <Ionicons 
-            name="calendar-outline" 
-            size={48} 
-            color={COLORS.text.tertiary} 
-          />
-          <Text style={styles.emptyTitle}>No Workout Scheduled</Text>
-          <Text style={styles.emptySubtitle}>
-            No exercises are scheduled for today. You can still log a manual workout.
-          </Text>
-          <TouchableOpacity
-            style={styles.logWorkoutButton}
-            onPress={handleLogWorkoutPress}
-          >
-            <Ionicons name="add" size={20} color={COLORS.text.inverse} />
-            <Text style={styles.logWorkoutButtonText}>Log Manual Workout</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          title="No Workout Scheduled"
+          subtitle="No exercises are scheduled for today. You can still log a manual workout."
+          icon="calendar-outline"
+          actionText="Log Manual Workout"
+          onActionPress={handleLogWorkoutPress}
+          actionIcon="add"
+          {...emptyStateConfigs.noWorkouts}
+        />
       </View>
     );
   }
@@ -328,33 +323,5 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: BORDER_RADIUS.small,
     textTransform: 'capitalize',
-  },
-  loadingContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.large,
-  },
-  loadingText: {
-    fontSize: FONT_SIZE.medium,
-    color: COLORS.text.secondary,
-    marginTop: SPACING.small,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.large,
-  },
-  emptyTitle: {
-    fontSize: FONT_SIZE.large,
-    fontWeight: '600',
-    color: COLORS.text.primary,
-    marginTop: SPACING.medium,
-    marginBottom: SPACING.small,
-  },
-  emptySubtitle: {
-    fontSize: FONT_SIZE.medium,
-    color: COLORS.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: SPACING.large,
-    paddingHorizontal: SPACING.medium,
   },
 });

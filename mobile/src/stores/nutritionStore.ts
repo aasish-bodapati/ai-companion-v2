@@ -4,8 +4,9 @@
  */
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NutritionStore } from './types';
 import { nutritionService } from '../services/nutritionService';
 
@@ -89,6 +90,7 @@ export const useNutritionStore = create<NutritionStore>()(
     }),
     {
       name: 'nutrition-store-persist',
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         todayStats: state.todayStats,
         weekStats: state.weekStats,

@@ -76,7 +76,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
     } finally {
       setLoading(false);
     }
-  }, [loadFromStorage, saveActiveRoutine]);
+  }, [loadFromStorage, saveActiveRoutine, activeRoutineId]);
 
   const refreshActiveRoutine = useCallback(async () => {
     console.log('🔄 [USE ACTIVE ROUTINE] Refreshing active routine...');

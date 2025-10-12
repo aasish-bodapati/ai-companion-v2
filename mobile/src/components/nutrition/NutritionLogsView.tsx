@@ -15,6 +15,10 @@ import { nutritionService, NutritionLog } from '../../services/nutritionService'
 // Removed unused import
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
+import DataTable from '../ui/DataTable';
+import Pagination from '../ui/Pagination';
+import { dataTableConfigs } from '../ui/DataTable.utils';
+import { paginationConfigs } from '../ui/Pagination.utils';
 
 interface FoodItem {
   id?: string;
@@ -43,6 +47,121 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [logs, setLogs] = useState<NutritionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  
+  // DataTable columns configuration
+  const columns = [
+    {
+      key: 'food_name',
+      title: 'Food Item',
+      dataIndex: 'food_name',
+      sortable: true,
+      render: (value: string, record: any) => (
+        <Text style={styles.tableText} numberOfLines={1}>
+          {value} ({record.quantity} {record.quantity_unit})
+        </Text>
+      ),
+    },
+    {
+      key: 'meal_type',
+      title: 'Meal',
+      dataIndex: 'meal_type',
+      sortable: true,
+      width: 80,
+      align: 'center' as const,
+      render: (value: string) => (
+        <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(value) }]}>
+          <Ionicons 
+            name={getMealTypeIcon(value) as keyof typeof Ionicons.glyphMap} 
+            size={8} 
+            color="#ffffff"
+            style={styles.badgeIcon}
+          />
+          <Text style={styles.mealTypeBadgeText}>
+            {value.toUpperCase()}
+          </Text>
+        </View>
+      ),
+    },
+    {
+      key: 'calories',
+      title: 'Calories',
+      dataIndex: 'calories',
+      sortable: true,
+      width: 80,
+      align: 'center' as const,
+      render: (value: number) => (
+        <Text style={styles.tableText}>
+          {value}
+        </Text>
+      ),
+    },
+    {
+      key: 'protein_g',
+      title: 'Protein',
+      dataIndex: 'protein_g',
+      sortable: true,
+      width: 70,
+      align: 'center' as const,
+      render: (value: number) => (
+        <Text style={styles.tableText}>
+          {value.toFixed(1)}g
+        </Text>
+      ),
+    },
+    {
+      key: 'carbs_g',
+      title: 'Carbs',
+      dataIndex: 'carbs_g',
+      sortable: true,
+      width: 70,
+      align: 'center' as const,
+      render: (value: number) => (
+        <Text style={styles.tableText}>
+          {value.toFixed(1)}g
+        </Text>
+      ),
+    },
+    {
+      key: 'fat_g',
+      title: 'Fat',
+      dataIndex: 'fat_g',
+      sortable: true,
+      width: 70,
+      align: 'center' as const,
+      render: (value: number) => (
+        <Text style={styles.tableText}>
+          {value.toFixed(1)}g
+        </Text>
+      ),
+    },
+    {
+      key: 'actions',
+      title: 'Actions',
+      dataIndex: 'actions',
+      sortable: false,
+      width: 80,
+      align: 'center' as const,
+      render: (value: any, record: any) => (
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleEditSingleFood(record.log_id, record)}
+          >
+            <Ionicons name="pencil-outline" size={16} color="#3b82f6" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleRemoveFoodItem(record.log_id, record.id)}
+          >
+            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+          </TouchableOpacity>
+        </View>
+      ),
+    },
+  ];
+  
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editFoodItems, setEditFoodItems] = useState<{id: string, quantity: number, quantity_unit: string}[]>([]);
@@ -486,8 +605,8 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
     }
   };
 
-  const renderMealCards = () => {
-    // Flatten all food items from all logs into individual cards
+  // Flatten all food items from all logs for DataTable
+  const getAllFoodItems = () => {
     const allFoodItems: {
       id: string;
       food_name: string;
@@ -541,62 +660,18 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       }
     });
 
-    return allFoodItems.map((foodItem) => (
-      <View key={foodItem.id} style={styles.mealCard}>
-        <View style={styles.mealHeader}>
-          <Text style={styles.mealTitle} numberOfLines={1}>
-            {foodItem.food_name} ({foodItem.quantity} {foodItem.quantity_unit})
-          </Text>
-          <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(foodItem.meal_type) }]}>
-            <Ionicons 
-              name={getMealTypeIcon(foodItem.meal_type) as keyof typeof Ionicons.glyphMap} 
-              size={8} 
-              color="#ffffff"
-              style={styles.badgeIcon}
-            />
-            <Text style={styles.mealTypeBadgeText}>
-              {foodItem.meal_type.toUpperCase()}
-            </Text>
-          </View>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleEditSingleFood(foodItem.log_id, foodItem)}
-              disabled={deletingLogId === foodItem.log_id}
-            >
-              <Ionicons name="pencil-outline" size={14} color="#3b82f6" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => handleDeleteFoodItem(foodItem.log_id, foodItem.id)}
-              disabled={deletingLogId === foodItem.log_id}
-            >
-              {deletingLogId === foodItem.log_id ? (
-                <ActivityIndicator size="small" color="#ef4444" />
-              ) : (
-                <Ionicons name="trash-outline" size={14} color="#ef4444" />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
+    return allFoodItems;
+  };
 
-        <View style={styles.mealStatsRow}>
-          <View style={styles.mealStatsLeft}>
-            <Text style={styles.mealCalories}>{foodItem.calories} calories</Text>
-            <Text style={styles.mealServingSize}>
-              {foodItem.quantity_grams}g • {foodItem.protein_g}g protein • {foodItem.carbs_g}g carbs • {foodItem.fat_g}g fat
-            </Text>
-          </View>
-          <View style={styles.mealTimeContainer}>
-            <Text style={styles.mealTimeText}>
-              {formatTime(foodItem.meal_date || foodItem.created_at)}
-            </Text>
-          </View>
-        </View>
+  // Pagination logic
+  const allFoodItems = getAllFoodItems();
+  const totalPages = Math.ceil(allFoodItems.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedFoodItems = allFoodItems.slice(startIndex, endIndex);
 
-        {/* Notes section removed for individual food items */}
-      </View>
-    ));
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   if (loading) {
@@ -685,9 +760,27 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           </Text>
         </View>
       ) : (
-        <View style={styles.mealsContainer}>
-          {renderMealCards()}
-        </View>
+        <>
+          <DataTable
+            data={paginatedFoodItems}
+            columns={columns}
+            loading={loading}
+            refreshing={refreshing}
+            onRefresh={onRefreshLogs}
+            testID="nutrition-logs-table"
+            {...dataTableConfigs.nutritionLogs}
+          />
+          
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              testID="nutrition-logs-pagination"
+              {...paginationConfigs.dataTable}
+            />
+          )}
+        </>
       )}
 
       {/* Edit Modal */}
@@ -1206,5 +1299,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
+  },
+  // DataTable styles
+  tableText: {
+    fontSize: 14,
+    color: '#1f2937',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    padding: 4,
   },
 });

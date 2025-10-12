@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryBadge } from './Badge';
+import SmartInput, { inputPresets } from './SmartInput';
 import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 export interface SimpleLoggingItemData {
@@ -24,22 +25,6 @@ interface SimpleLoggingItemProps {
 
 export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable = true }: SimpleLoggingItemProps) {
   
-  // Local state for input values
-  const [sets, setSets] = useState(item.sets?.toString() || '');
-  const [reps, setReps] = useState(item.reps || '');
-  const [weight, setWeight] = useState(item.weight_kg?.toString() || '');
-  const [duration, setDuration] = useState(item.duration_minutes?.toString() || '');
-  const [distance, setDistance] = useState(item.distance?.toString() || '');
-  
-  // Update local state when item prop changes
-  useEffect(() => {
-    setSets(item.sets?.toString() || '');
-    setReps(item.reps || '');
-    setWeight(item.weight_kg?.toString() || '');
-    setDuration(item.duration_minutes?.toString() || '');
-    setDistance(item.distance?.toString() || '');
-  }, [item.sets, item.reps, item.weight_kg, item.duration_minutes, item.distance]);
-  
   // Helper function to update parent
   const updateParent = (field: string, value: string | number) => {
     if (onUpdate) {
@@ -47,9 +32,8 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
     }
   };
   
-  // Handle input changes
+  // Handle input changes with SmartInput
   const handleSetsChange = (text: string) => {
-    setSets(text);
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('sets', numValue);
@@ -57,12 +41,10 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
   };
   
   const handleRepsChange = (text: string) => {
-    setReps(text);
     updateParent('reps', text);
   };
   
   const handleWeightChange = (text: string) => {
-    setWeight(text);
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('weight_kg', numValue);
@@ -70,7 +52,6 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
   };
   
   const handleDurationChange = (text: string) => {
-    setDuration(text);
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('duration_minutes', numValue);
@@ -78,7 +59,6 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
   };
   
   const handleDistanceChange = (text: string) => {
-    setDistance(text);
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('distance', numValue);
@@ -143,57 +123,38 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
   
   const categoryConfig = getCategoryConfig(String(item.category || ''));
   
-  // Field configurations
+  // Field configurations using SmartInput presets
   const fieldConfigs = {
     sets: {
-      label: 'Sets',
-      placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: sets,
-      onChange: handleSetsChange,
-      getDisplayValue: () => item.sets || 0
+      ...inputPresets.sets,
+      value: item.sets?.toString() || '',
+      onChangeText: handleSetsChange,
     },
     reps: {
-      label: 'Reps',
-      placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: reps,
-      onChange: handleRepsChange,
-      getDisplayValue: () => String(item.reps || 'N/A')
+      ...inputPresets.reps,
+      value: item.reps || '',
+      onChangeText: handleRepsChange,
     },
     weight_kg: {
-      label: 'Weight (kg)',
-      placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: weight,
-      onChange: handleWeightChange,
-      getDisplayValue: () => `${item.weight_kg || 0} kg`
+      ...inputPresets.weight,
+      value: item.weight_kg?.toString() || '',
+      onChangeText: handleWeightChange,
     },
     duration_minutes: {
-      label: 'Duration (min)',
-      placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: duration,
-      onChange: handleDurationChange,
-      getDisplayValue: () => `${item.duration_minutes || 0} min`
+      ...inputPresets.duration,
+      value: item.duration_minutes?.toString() || '',
+      onChangeText: handleDurationChange,
     },
     distance: {
-      label: 'Distance (km)',
-      placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: distance,
-      onChange: handleDistanceChange,
-      getDisplayValue: () => `${item.distance || 0} km`
+      ...inputPresets.distance,
+      value: item.distance?.toString() || '',
+      onChangeText: handleDistanceChange,
     },
     rest_time: {
-      label: 'Rest (sec)',
+      type: 'numeric' as const,
       placeholder: '0',
-      keyboardType: 'numeric' as const,
-      value: String(item.rest_time || ''),
-      onChange: (text: string) => {
-        updateParent('rest_time', text);
-      },
-      getDisplayValue: () => `${String(item.rest_time || 0)}s`
+      value: item.rest_time?.toString() || '',
+      onChangeText: (text: string) => updateParent('rest_time', text),
     }
   };
 
@@ -209,7 +170,7 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
             </View>
             <View style={styles.exerciseTitleRight}>
               <CategoryBadge 
-                category={item.category || ''} 
+                category={String(item.category || '')} 
                 size="small"
               />
               {editable && onRemove && (
@@ -233,17 +194,17 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
               
               return (
                 <View key={fieldKey} style={styles.fieldContainer}>
-                  <Text style={styles.fieldLabel}>{fieldConfig.label}</Text>
                   {editable ? (
-                    <TextInput
-                      style={styles.input}
-                      value={fieldConfig.value}
-                      onChangeText={fieldConfig.onChange}
-                      placeholder={fieldConfig.placeholder}
-                      keyboardType={fieldConfig.keyboardType}
+                    <SmartInput
+                      {...fieldConfig}
+                      size="small"
+                      containerStyle={styles.smartInputContainer}
                     />
                   ) : (
-                    <Text style={styles.fieldValue}>{fieldConfig.getDisplayValue()}</Text>
+                    <View style={styles.displayField}>
+                      <Text style={styles.fieldLabel}>{fieldConfig.label}</Text>
+                      <Text style={styles.fieldValue}>{fieldConfig.value || 'N/A'}</Text>
+                    </View>
                   )}
                 </View>
               );
@@ -302,6 +263,12 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
     color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
     marginBottom: SPACING.xs, // 4 -> SPACING.xs
+  },
+  smartInputContainer: {
+    marginBottom: 0, // Override SmartInput's default margin
+  },
+  displayField: {
+    paddingVertical: SPACING.xs, // 4 -> SPACING.xs
   },
   fieldValue: {
     fontSize: FONT_SIZE.md, // 14 -> FONT_SIZE.md

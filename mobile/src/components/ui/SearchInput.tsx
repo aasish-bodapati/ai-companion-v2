@@ -1,396 +1,446 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
-  TextInput,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
+  ViewStyle,
+  TextStyle,
+  KeyboardTypeOptions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { hapticFeedback } from '../../utils/haptics';
-import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
-export interface SearchResult {
-  id: number | string;
-  name: string;
-  [key: string]: unknown; // Allow additional properties
-}
+export type SearchInputSize = 'small' | 'medium' | 'large';
+export type SearchInputVariant = 'default' | 'minimal' | 'filled' | 'outlined';
+export type SearchInputState = 'default' | 'focused' | 'error' | 'success';
 
 interface SearchInputProps {
-  placeholder: string;
-  searchResults: SearchResult[];
-  onSearch: (query: string) => void;
-  onSelect: (item: SearchResult) => void;
+  // Core props
+  value: string;
+  onChangeText: (text: string) => void;
+  onSearch?: (query: string) => void;
   onClear?: () => void;
-  loading?: boolean;
-  error?: string;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  
+  // Configuration
+  placeholder?: string;
+  size?: SearchInputSize;
+  variant?: SearchInputVariant;
+  state?: SearchInputState;
   disabled?: boolean;
-  showResults?: boolean;
-  maxResults?: number;
-  value?: string;
-  onChangeText?: (text: string) => void;
-  results?: SearchResult[];
-  renderResultItem?: (item: SearchResult, index: number) => React.ReactNode;
-  searchDelay?: number;
-  containerStyle?: object;
-  inputStyle?: object;
-  resultsStyle?: object;
+  autoFocus?: boolean;
+  clearable?: boolean;
+  searchable?: boolean;
+  
+  // Styling
+  containerStyle?: ViewStyle;
+  inputStyle?: TextStyle;
+  placeholderTextColor?: string;
+  iconColor?: string;
+  
+  // Customization
+  leftIcon?: keyof typeof Ionicons.glyphMap;
+  rightIcon?: keyof typeof Ionicons.glyphMap;
+  customLeftIcon?: React.ReactNode;
+  customRightIcon?: React.ReactNode;
+  
+  // Behavior
+  debounceMs?: number;
+  minLength?: number;
+  maxLength?: number;
+  keyboardType?: KeyboardTypeOptions;
+  returnKeyType?: 'search' | 'done' | 'go' | 'next';
+  
+  // Accessibility
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
   testID?: string;
-  onDropdownToggle?: (isOpen: boolean) => void;
 }
 
 export default function SearchInput({
-  placeholder,
-  searchResults,
+  value,
+  onChangeText,
   onSearch,
-  onSelect,
   onClear,
-  loading = false,
-  error,
+  onFocus,
+  onBlur,
+  placeholder = 'Search...',
+  size = 'medium',
+  variant = 'default',
+  state = 'default',
   disabled = false,
-  showResults = true,
-  maxResults = 10,
-  renderResultItem,
-  searchDelay = 300,
+  autoFocus = false,
+  clearable = true,
+  searchable = true,
   containerStyle,
   inputStyle,
-  resultsStyle,
+  placeholderTextColor = COLORS.text.placeholder,
+  iconColor = COLORS.text.secondary,
+  leftIcon = 'search-outline',
+  rightIcon,
+  customLeftIcon,
+  customRightIcon,
+  debounceMs = 300,
+  minLength = 0,
+  maxLength,
+  keyboardType = 'default',
+  returnKeyType = 'search',
+  accessibilityLabel,
+  accessibilityHint,
   testID,
-  onDropdownToggle,
 }: SearchInputProps) {
-  const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [internalValue, setInternalValue] = useState(value);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<TextInput>(null);
+
+  // Sync internal value with external value
+  useEffect(() => {
+    setInternalValue(value);
+  }, [value]);
 
   // Debounced search
   useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
     }
 
-    if (query.trim().length > 0) {
-      searchTimeoutRef.current = setTimeout(() => {
-        onSearch(query.trim());
-        // Don't set showDropdown here - let the useEffect handle it
-      }, searchDelay);
-    } else {
-      setShowDropdown(false);
-      onClear?.();
+    if (onSearch && internalValue.length >= minLength) {
+      debounceRef.current = setTimeout(() => {
+        onSearch(internalValue);
+      }, debounceMs);
     }
 
     return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
       }
     };
-  }, [query, onSearch, onClear, searchDelay]);
+  }, [internalValue, onSearch, debounceMs, minLength]);
 
-  // Show dropdown when results are available
-  useEffect(() => {
-    if (searchResults.length > 0 && query.trim().length > 0) {
-      setShowDropdown(true);
-      onDropdownToggle?.(true); // Notify parent to disable modal scrolling
-    } else {
-      setShowDropdown(false);
-      onDropdownToggle?.(false); // Notify parent to enable modal scrolling
-    }
-  }, [searchResults, query, onDropdownToggle]);
+  const handleTextChange = useCallback((text: string) => {
+    setInternalValue(text);
+    onChangeText(text);
+  }, [onChangeText]);
 
-  // Don't automatically hide dropdown when keyboard is dismissed
-  // Let the user control when to close the dropdown
-
-  const handleFocus = () => {
+  const handleFocus = useCallback(() => {
     setIsFocused(true);
-    hapticFeedback.light();
-  };
+    onFocus?.();
+  }, [onFocus]);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     setIsFocused(false);
-    // Only close dropdown if there are no search results or query is empty
-    // This prevents closing when user taps elsewhere to dismiss keyboard
-    if (!query.trim() || searchResults.length === 0) {
-      setTimeout(() => setShowDropdown(false), 150);
-    }
-  };
+    onBlur?.();
+  }, [onBlur]);
 
-  const handleChangeText = (text: string) => {
-    setQuery(text);
-  };
-
-  const handleSelectItem = (item: SearchResult) => {
-    setQuery(''); // Clear the search query
-    setShowDropdown(false);
-    onDropdownToggle?.(false);
-    onSelect(item);
-    hapticFeedback.selection();
-    inputRef.current?.blur();
-  };
-
-  const handleClear = () => {
-    setQuery('');
-    setShowDropdown(false);
-    onDropdownToggle?.(false);
+  const handleClear = useCallback(() => {
+    setInternalValue('');
+    onChangeText('');
     onClear?.();
-    hapticFeedback.light();
     inputRef.current?.focus();
+  }, [onChangeText, onClear]);
+
+  const handleSearch = useCallback(() => {
+    if (onSearch && internalValue.length >= minLength) {
+      onSearch(internalValue);
+    }
+  }, [onSearch, internalValue, minLength]);
+
+  const getContainerStyles = (): ViewStyle[] => {
+    const baseStyles = [styles.container];
+    
+    // Size-based styles
+    switch (size) {
+      case 'small':
+        baseStyles.push(styles.containerSmall);
+        break;
+      case 'medium':
+        baseStyles.push(styles.containerMedium);
+        break;
+      case 'large':
+        baseStyles.push(styles.containerLarge);
+        break;
+    }
+    
+    // Variant-based styles
+    switch (variant) {
+      case 'minimal':
+        baseStyles.push(styles.containerMinimal);
+        break;
+      case 'filled':
+        baseStyles.push(styles.containerFilled);
+        break;
+      case 'outlined':
+        baseStyles.push(styles.containerOutlined);
+        break;
+      default:
+        baseStyles.push(styles.containerDefault);
+        break;
+    }
+    
+    // State-based styles
+    switch (state) {
+      case 'focused':
+        baseStyles.push(styles.containerFocused);
+        break;
+      case 'error':
+        baseStyles.push(styles.containerError);
+        break;
+      case 'success':
+        baseStyles.push(styles.containerSuccess);
+        break;
+    }
+    
+    // Focus state
+    if (isFocused) {
+      baseStyles.push(styles.containerFocused);
+    }
+    
+    // Disabled state
+    if (disabled) {
+      baseStyles.push(styles.containerDisabled);
+    }
+    
+    if (containerStyle) baseStyles.push(containerStyle);
+    
+    return baseStyles;
   };
 
-  const handleCloseDropdown = () => {
-    setShowDropdown(false);
-    onDropdownToggle?.(false);
-    inputRef.current?.blur();
+  const getInputStyles = (): TextStyle[] => {
+    const baseStyles = [styles.input];
+    
+    // Size-based input styles
+    switch (size) {
+      case 'small':
+        baseStyles.push(styles.inputSmall);
+        break;
+      case 'medium':
+        baseStyles.push(styles.inputMedium);
+        break;
+      case 'large':
+        baseStyles.push(styles.inputLarge);
+        break;
+    }
+    
+    // State-based styles
+    switch (state) {
+      case 'error':
+        baseStyles.push(styles.inputError);
+        break;
+      case 'success':
+        baseStyles.push(styles.inputSuccess);
+        break;
+    }
+    
+    if (inputStyle) baseStyles.push(inputStyle);
+    
+    return baseStyles;
   };
 
-  // Sort results by relevance (exact matches first, then partial matches)
-  const sortedResults = (searchResults || []).sort((a, b) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    const queryLower = query.toLowerCase();
-    
-    // Calculate relevance scores
-    const getRelevanceScore = (name: string, query: string) => {
-      let score = 0;
-      
-      // Exact match gets highest score
-      if (name === query) return 1000;
-      
-      // Starts with query gets high score
-      if (name.startsWith(query)) score += 100;
-      
-      // Word boundary matches get medium-high score
-      const words = name.split(/\s+/);
-      const wordMatches = words.filter(word => word.startsWith(query)).length;
-      score += wordMatches * 50;
-      
-      // Contains query gets lower score
-      if (name.includes(query)) score += 10;
-      
-      // Shorter names get slight bonus (more specific)
-      score += Math.max(0, 20 - name.length);
-      
-      return score;
-    };
-    
-    const aScore = getRelevanceScore(aName, queryLower);
-    const bScore = getRelevanceScore(bName, queryLower);
-    
-    
-    // Higher score first
-    if (aScore !== bScore) return bScore - aScore;
-    
-    // Alphabetical order for ties
-    return aName.localeCompare(bName);
-  });
-  
-  const displayResults = sortedResults.slice(0, 5); // Limit to 5 results
+  const showClearButton = clearable && internalValue.length > 0 && !disabled;
+  const showSearchButton = searchable && internalValue.length >= minLength && !disabled;
 
   return (
-    <View style={[styles.container, containerStyle]}>
-      <View style={[
-        styles.inputContainer,
-        isFocused && styles.inputContainerFocused,
-        error && styles.inputContainerError,
-        disabled && styles.inputContainerDisabled,
-      ]}>
-        <Ionicons 
-          name="search" 
-          size={20} 
-          color={isFocused ? COLORS.primary.main : COLORS.text.secondary} 
-          style={styles.searchIcon}
-        />
-        
-        <TextInput
-          ref={inputRef}
-          style={[styles.input, inputStyle]}
-          placeholder={placeholder}
-          placeholderTextColor={COLORS.text.secondary}
-          value={query}
-          onChangeText={handleChangeText}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          editable={!disabled}
-          testID={testID}
-        />
-
-        {loading && (
-          <ActivityIndicator 
-            size="small" 
-            color={COLORS.primary.main} 
-            style={styles.loadingIndicator}
-          />
-        )}
-
-        {query.length > 0 && !loading && (
-          <TouchableOpacity
-            onPress={handleClear}
-            style={styles.clearButton}
-            testID={`${testID}-clear`}
-          >
-            <Ionicons name="close-circle" size={20} color={COLORS.text.secondary} />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {error && (
-        <Text style={styles.errorText}>{error}</Text>
-      )}
-
-      {/* Simple dropdown - no complex components */}
-      {showResults && showDropdown && displayResults.length > 0 && (
-        <View style={styles.dropdownContainer}>
-          <View style={styles.dropdown}>
-            <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle}>
-                {displayResults.length} result{displayResults.length !== 1 ? 's' : ''}
-              </Text>
-              <TouchableOpacity
-                onPress={handleCloseDropdown}
-                style={styles.dropdownCloseButton}
-              >
-                <Ionicons name="close" size={16} color={COLORS.text.secondary} />
-              </TouchableOpacity>
-            </View>
-            
-            <ScrollView 
-              style={styles.dropdownList}
-              showsVerticalScrollIndicator={true}
-              keyboardShouldPersistTaps="handled"
-              bounces={false}
-            >
-              {displayResults.map((item, index) => (
-                <TouchableOpacity
-                  key={item.id.toString()}
-                  style={styles.dropdownItem}
-                  onPress={() => handleSelectItem(item)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.dropdownItemText} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Ionicons name="chevron-forward" size={16} color={COLORS.text.tertiary} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+    <View style={getContainerStyles()} testID={testID}>
+      {/* Left Icon */}
+      {(leftIcon || customLeftIcon) && (
+        <View style={styles.leftIconContainer}>
+          {customLeftIcon || (
+            <Ionicons
+              name={leftIcon}
+              size={getIconSize()}
+              color={getIconColor()}
+            />
+          )}
         </View>
       )}
+
+      {/* Input */}
+      <TextInput
+        ref={inputRef}
+        style={getInputStyles()}
+        value={internalValue}
+        onChangeText={handleTextChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onSubmitEditing={handleSearch}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        keyboardType={keyboardType}
+        returnKeyType={returnKeyType}
+        editable={!disabled}
+        autoFocus={autoFocus}
+        maxLength={maxLength}
+        accessibilityLabel={accessibilityLabel || placeholder}
+        accessibilityHint={accessibilityHint}
+        testID={`${testID}-input`}
+      />
+
+      {/* Right Icons */}
+      <View style={styles.rightIconsContainer}>
+        {/* Clear Button */}
+        {showClearButton && (
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleClear}
+            accessibilityLabel="Clear search"
+            accessibilityHint="Tap to clear the search text"
+            testID={`${testID}-clear`}
+          >
+            <Ionicons
+              name="close-circle"
+              size={getIconSize()}
+              color={iconColor}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Search Button */}
+        {showSearchButton && (
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleSearch}
+            accessibilityLabel="Search"
+            accessibilityHint="Tap to search"
+            testID={`${testID}-search`}
+          >
+            <Ionicons
+              name="search"
+              size={getIconSize()}
+              color={COLORS.primary.main}
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* Custom Right Icon */}
+        {rightIcon && !showClearButton && !showSearchButton && (
+          <View style={styles.iconButton}>
+            <Ionicons
+              name={rightIcon}
+              size={getIconSize()}
+              color={iconColor}
+            />
+          </View>
+        )}
+
+        {/* Custom Right Icon Component */}
+        {customRightIcon && !showClearButton && !showSearchButton && (
+          <View style={styles.iconButton}>
+            {customRightIcon}
+          </View>
+        )}
+      </View>
     </View>
   );
+
+  function getIconSize(): number {
+    switch (size) {
+      case 'small': return 16;
+      case 'medium': return 20;
+      case 'large': return 24;
+      default: return 20;
+    }
+  }
+
+  function getIconColor(): string {
+    if (disabled) return COLORS.text.disabled;
+    if (state === 'error') return COLORS.error.main;
+    if (state === 'success') return COLORS.success.main;
+    if (isFocused) return COLORS.primary.main;
+    return iconColor;
+  }
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    zIndex: 1000,
-  },
-  overlay: {
-    position: 'absolute',
-    top: -1000,
-    left: -1000,
-    right: -1000,
-    bottom: -1000,
-    zIndex: 999,
-    backgroundColor: 'transparent',
-  },
-  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.background.secondary,
-    borderRadius: BORDER_RADIUS.medium,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border.primary,
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    minHeight: 48,
   },
-  inputContainerFocused: {
-    borderColor: COLORS.primary.main,
+  containerDefault: {
     backgroundColor: COLORS.background.primary,
+    borderColor: COLORS.border.primary,
   },
-  inputContainerError: {
+  containerMinimal: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderRadius: 0,
+  },
+  containerFilled: {
+    backgroundColor: COLORS.background.secondary,
+    borderColor: COLORS.border.light,
+  },
+  containerOutlined: {
+    backgroundColor: 'transparent',
+    borderColor: COLORS.border.primary,
+  },
+  containerSmall: {
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    minHeight: 36,
+  },
+  containerMedium: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    minHeight: 44,
+  },
+  containerLarge: {
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    minHeight: 52,
+  },
+  containerFocused: {
+    borderColor: COLORS.primary.main,
+    ...SHADOWS.small,
+  },
+  containerError: {
     borderColor: COLORS.error.main,
   },
-  inputContainerDisabled: {
+  containerSuccess: {
+    borderColor: COLORS.success.main,
+  },
+  containerDisabled: {
     backgroundColor: COLORS.background.disabled,
     borderColor: COLORS.border.disabled,
   },
-  searchIcon: {
-    marginRight: SPACING.small,
+  leftIconContainer: {
+    marginRight: SPACING.sm,
   },
   input: {
     flex: 1,
-    fontSize: FONT_SIZE.medium,
+    fontSize: FONT_SIZE.md,
     color: COLORS.text.primary,
-    paddingVertical: 0,
+    padding: 0,
   },
-  loadingIndicator: {
-    marginLeft: SPACING.small,
+  inputSmall: {
+    fontSize: FONT_SIZE.sm,
   },
-  clearButton: {
-    marginLeft: SPACING.small,
-    padding: 2,
+  inputMedium: {
+    fontSize: FONT_SIZE.md,
   },
-  errorText: {
-    fontSize: FONT_SIZE.small,
+  inputLarge: {
+    fontSize: FONT_SIZE.lg,
+  },
+  inputError: {
     color: COLORS.error.main,
-    marginTop: SPACING.xs,
-    marginLeft: SPACING.small,
   },
-  dropdownContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    elevation: 10, // For Android
-    maxHeight: 200, // Limit height to prevent keyboard overlap
+  inputSuccess: {
+    color: COLORS.success.main,
   },
-  dropdown: {
-    backgroundColor: COLORS.background.primary,
-    borderRadius: BORDER_RADIUS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border.primary,
-    marginTop: SPACING.xs,
-    ...SHADOWS.medium,
-  },
-  dropdownHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-  },
-  dropdownTitle: {
-    fontSize: FONT_SIZE.small,
-    fontWeight: '500',
-    color: COLORS.text.secondary,
-  },
-  dropdownCloseButton: {
-    padding: 2,
-  },
-  dropdownList: {
-    // No height restrictions - shows all 5 items
-  },
-  dropdownItem: {
+  rightIconsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.medium,
-    paddingVertical: SPACING.small,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.light,
-    backgroundColor: COLORS.background.primary,
+    marginLeft: SPACING.sm,
   },
-  dropdownItemText: {
-    flex: 1,
-    fontSize: FONT_SIZE.medium,
-    color: COLORS.text.primary,
-    marginRight: SPACING.small,
+  iconButton: {
+    padding: SPACING.xs,
+    marginLeft: SPACING.xs,
   },
 });

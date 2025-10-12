@@ -17,7 +17,6 @@ interface QuickAddModalProps {
   onClose: () => void;
   onLogWorkout: () => void;
   onLogMeal: () => void;
-  onLogTodaysWorkout: () => void;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -27,7 +26,6 @@ export default function QuickAddModal({
   onClose,
   onLogWorkout,
   onLogMeal,
-  onLogTodaysWorkout,
 }: QuickAddModalProps) {
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -71,20 +69,10 @@ export default function QuickAddModal({
       onPress: onLogMeal,
       position: 'top-right',
     },
-    {
-      id: 'today-workout',
-      title: 'Log Today\'s Workout',
-      icon: 'flash',
-      color: '#3b82f6',
-      onPress: onLogTodaysWorkout,
-      position: 'bottom',
-    },
   ];
 
   const handleActionPress = async (action: typeof quickActions[0]) => {
     onClose();
-    
-    // Let the modal handle the check for "Log Today's Workout"
     action.onPress();
   };
 
@@ -108,8 +96,8 @@ export default function QuickAddModal({
                   }
                 ]}
               >
-                {/* Half Circle Modal */}
-                <View style={styles.halfCircleModal}>
+                {/* Two Quarter Modal */}
+                <View style={styles.twoQuarterModal}>
                   {/* Top Quarters */}
                   <View style={styles.topQuarters}>
                     {/* Top Left Quarter - Log Workout */}
@@ -132,16 +120,6 @@ export default function QuickAddModal({
                       <Text style={styles.quarterText}>Log Meal</Text>
                     </TouchableOpacity>
                   </View>
-
-                  {/* Bottom Half Circle - Quick Workout */}
-                  <TouchableOpacity
-                    style={[styles.halfCircleButton, { backgroundColor: '#3b82f6' }]}
-                    onPress={() => handleActionPress(quickActions[2])}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="flash" size={24} color="#ffffff" />
-                    <Text style={styles.halfCircleText}>Log Today's Workout</Text>
-                  </TouchableOpacity>
                 </View>
               </Animated.View>
             </TouchableWithoutFeedback>
@@ -166,20 +144,20 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     width: screenWidth * 0.8,
-    height: screenHeight * 0.3,
+    height: screenHeight * 0.2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  halfCircleModal: {
+  twoQuarterModal: {
     width: '100%',
     height: '100%',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   topQuarters: {
     flexDirection: 'row',
     width: '100%',
-    height: '50%',
+    height: '100%',
     justifyContent: 'space-between',
   },
   quarterButton: {
@@ -211,32 +189,6 @@ const styles = StyleSheet.create({
   },
   quarterText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#ffffff',
-    marginTop: 6,
-    textAlign: 'center',
-  },
-  halfCircleButton: {
-    width: '100%',
-    height: '45%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 40,
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  halfCircleText: {
-    fontSize: 14,
     fontWeight: '600',
     color: '#ffffff',
     marginTop: 6,

@@ -8,16 +8,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-// Store imports removed to prevent infinite loops
-// import { 
-//   useFitnessStore, 
-//   useFitnessWeekStats, 
-//   useFitnessLoading,
-//   useFitnessTodayStats,
-//   useFitnessError,
-//   useFitnessLastUpdated,
-//   useFitnessActions
-// } from '../../stores';
 import { useAuth } from '../../contexts/AuthContext';
 import TodaysSnapshot, { TodaysWorkout } from '../../components/fitness/TodaysSnapshot';
 import SimpleRoutineDisplay from '../../components/fitness/SimpleRoutineDisplay';
@@ -26,32 +16,18 @@ import ProgressTracking from '../../components/fitness/ProgressTracking';
 import SimpleFitnessLogs from '../../components/fitness/SimpleFitnessLogs';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
-import { fitnessService } from '../../services/fitnessService';
 import { useActiveRoutine } from '../../hooks/useActiveRoutine';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
-import usePerformance from '../../hooks/usePerformance';
 
 export default function FitnessScreen() {
   const { user } = useAuth();
   
-  // Performance monitoring
-  const { renderCount } = usePerformance.usePerformanceMonitor('FitnessScreen');
-  
-  // Store selectors - REMOVED TO PREVENT INFINITE LOOPS
-  // const weekStats = useFitnessWeekStats();
-  // const todayStats = useFitnessTodayStats();
-  // const loading = useFitnessLoading();
-  // const error = useFitnessError();
-  // const lastUpdated = useFitnessLastUpdated();
-  // const { refreshFitnessData, addWorkout } = useFitnessActions();
   
   // Local state
   const [activeTab, setActiveTab] = useState('overview');
-  // const [refreshing, setRefreshing] = useState(false); // Unused for now
-  const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
   const { activeRoutineId, refreshActiveRoutine } = useActiveRoutine();
-  const { weeklyActivityData, refreshWeeklyActivity } = useWeeklyActivity();
+  const { weeklyActivityData } = useWeeklyActivity();
   const [settingActiveRoutine, setSettingActiveRoutine] = useState<number | null>(null);
   const [routines, setRoutines] = useState<SimpleRoutineWithProgress[]>([]);
   const [routinesLoading, setRoutinesLoading] = useState(false);
@@ -89,18 +65,13 @@ export default function FitnessScreen() {
     }
   };
 
-  // const onRefresh = async () => { // Unused for now
-  //   setRefreshing(true);
-  //   await loadOverviewData();
-  //   setRefreshing(false);
-  // };
 
   // Handler functions - optimized with useCallback
-  const handleCreateRoutine = usePerformance.useStableCallback(() => {
+  const handleCreateRoutine = useCallback(() => {
     setShowCreateRoutineModal(true);
   }, []);
 
-  const handleSetActiveRoutine = usePerformance.useStableCallback(async (routine: SimpleRoutineWithProgress) => {
+  const handleSetActiveRoutine = useCallback(async (routine: SimpleRoutineWithProgress) => {
     setSettingActiveRoutine(routine.id);
     try {
       await routineService.setActiveRoutine(routine.id.toString());
@@ -167,32 +138,9 @@ export default function FitnessScreen() {
   //   setFitnessLogsKey(prev => prev + 1);
   // }, []);
 
-  // Remove automatic data loading to prevent infinite loops
-  // Data will be loaded only when user explicitly refreshes
-
-  // Reset to overview tab every time the screen comes into focus - TEMPORARILY COMMENTED OUT FOR DEBUGGING
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     setActiveTab('overview');
-  //   }, [])
-  // );
-
-  // const handleRoutineCreated = () => {
-  //   setShowCreateRoutineModal(false);
-  // }; // DISABLED - using placeholder
 
 
 
-  const handleSetInactiveRoutine = useCallback(async () => {
-    try {
-      await routineService.clearActiveRoutine();
-      // Refresh data to show updated active routine
-      setFitnessLogsKey(prev => prev + 1);
-    } catch (_error) {
-      console.error('🔄 [FITNESS SCREEN] Error clearing active routine:', _error);
-      // Handle error silently for MVP
-    }
-  }, []);
 
 
 
@@ -307,7 +255,7 @@ export default function FitnessScreen() {
         caloriesBurned={1200}
         streak={7}
         todaysWorkout={todaysWorkout || undefined}
-        onQuickLog={() => setShowUnifiedWorkoutLogger(true)}
+        onQuickLog={() => {}}
         onViewWorkout={(workout) => {
         }}
         onViewProgress={() => {
@@ -443,14 +391,6 @@ export default function FitnessScreen() {
         />
       )}
 
-      {/* Unified Workout Logger - CAUSES INFINITE LOOP */}
-      {/* <UnifiedWorkoutLogger
-        visible={showUnifiedWorkoutLogger}
-        onClose={() => setShowUnifiedWorkoutLogger(false)}
-        onSave={handleWorkoutLogged}
-        initialWorkout={recommendedWorkout}
-        routineId={recommendedWorkout?.routine_id}
-      /> */}
 
       {/* Create Routine Modal */}
       <ComprehensiveRoutineModal

@@ -77,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
           const response = await apiClient.get('/users/me');
           setUser(response.data);
-        } catch (_userError: unknown) {
+        } catch (error: unknown) {
           // Don't clear tokens on error during app startup/reload
           // This prevents the logout issue when reloading Expo Go
           if (__DEV__) {
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (__DEV__) {
             console.log('🔍 Auth check - onboarding:', completed ? 'completed' : 'needed');
           }
-        } catch (_onboardingError) {
+        } catch (error) {
           if (__DEV__) {
             console.log('🔍 Auth check - onboarding error, defaulting to needed');
           }
@@ -148,15 +148,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const userResponse = await apiClient.get('/users/me');
         setUser(userResponse.data);
+        // Store user data in AsyncStorage
+        await AsyncStorage.setItem('user', JSON.stringify(userResponse.data));
       } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
-        setUser({
+        const basicUser = {
           id: 13, // This should come from the token or a separate call
           email: email,
           full_name: 'User',
           is_active: true,
-        });
+        };
+        setUser(basicUser);
+        // Store basic user data in AsyncStorage
+        await AsyncStorage.setItem('user', JSON.stringify(basicUser));
       }
 
       // Check onboarding status
@@ -284,6 +289,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       // Clear local storage
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
       setToken(null);
       setUser(null);
       setNeedsOnboarding(false);

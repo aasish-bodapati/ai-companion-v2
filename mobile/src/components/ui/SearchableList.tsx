@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
@@ -11,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, MIXINS, SHADOWS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
+import SearchInput from './SearchInput';
+import { searchInputConfigs } from './SearchInput.utils';
 
 interface SearchableItem {
   id: number;
@@ -92,7 +93,6 @@ export default function SearchableList({
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredItems, setFilteredItems] = useState<SearchableItem[]>(items);
   const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update filtered items when items or search query changes
   useEffect(() => {
@@ -105,11 +105,7 @@ export default function SearchableList({
     setIsSearching(true);
     
     // Debounce search
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       const filtered = filterItems 
         ? filterItems(items, searchQuery)
         : items.filter(item => 
@@ -122,12 +118,12 @@ export default function SearchableList({
       setIsSearching(false);
     }, searchDebounceMs);
 
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, items, filterItems, minSearchLength, searchDebounceMs]);
+
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+  };
 
   const handleItemPress = (item: SearchableItem) => {
     hapticFeedback.light();
@@ -265,44 +261,16 @@ export default function SearchableList({
 
   const renderSearchBar = () => (
     <View style={[styles.searchContainer, searchContainerStyle]}>
-      <View style={styles.searchInputContainer}>
-        {showSearchIcon && (
-          <Ionicons 
-            name="search-outline" 
-            size={20} 
-            color={COLORS.text.secondary}
-            style={styles.searchIcon}
-          />
-        )}
-        <TextInput
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={searchPlaceholder}
-          placeholderTextColor={COLORS.text.tertiary}
-          autoCorrect={false}
-          autoCapitalize="none"
-        />
-        {isSearching && (
-          <ActivityIndicator 
-            size="small" 
-            color={COLORS.primary.main}
-            style={styles.searchLoader}
-          />
-        )}
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => setSearchQuery('')}
-          >
-            <Ionicons 
-              name="close-circle" 
-              size={20} 
-              color={COLORS.text.tertiary}
-            />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SearchInput
+        value={searchQuery}
+        onChangeText={handleSearchChange}
+        onSearch={handleSearchChange}
+        placeholder={searchPlaceholder}
+        testID="searchable-list-search"
+        debounceMs={searchDebounceMs}
+        minLength={minSearchLength}
+        {...searchInputConfigs.general}
+      />
     </View>
   );
 
@@ -355,34 +323,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
   
-  searchInputContainer: {
-    ...MIXINS.row,
-    backgroundColor: COLORS.background.secondary,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderWidth: 1,
-    borderColor: COLORS.border.light,
-  },
-  
-  searchIcon: {
-    marginRight: SPACING.sm,
-  },
-  
-  searchInput: {
-    flex: 1,
-    fontSize: FONT_SIZE.md,
-    color: COLORS.text.primary,
-  },
-  
-  searchLoader: {
-    marginLeft: SPACING.sm,
-  },
-  
-  clearButton: {
-    marginLeft: SPACING.sm,
-    padding: SPACING.xs,
-  },
   
   list: {
     flex: 1,

@@ -1,17 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
+import ConfirmationDialog from '../../components/ui/ConfirmationDialog';
+import { confirmationDialogConfigs } from '../../components/ui/ConfirmationDialog.utils';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const ProfileItem = ({ icon, title, onPress, showArrow = true }: {
     icon: string;
@@ -33,14 +35,12 @@ export default function ProfileScreen() {
   );
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Logout', style: 'destructive', onPress: logout },
-      ]
-    );
+    setShowLogoutDialog(true);
+  };
+
+  const handleConfirmLogout = () => {
+    logout();
+    setShowLogoutDialog(false);
   };
 
   return (
@@ -127,6 +127,20 @@ export default function ProfileScreen() {
           showArrow={false}
         />
       </View>
+
+      <ConfirmationDialog
+        visible={showLogoutDialog}
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={handleConfirmLogout}
+        title="Logout"
+        message="Are you sure you want to logout?"
+        confirmText="Logout"
+        cancelText="Cancel"
+        variant="warning"
+        confirmIcon="log-out-outline"
+        cancelIcon="close-outline"
+        {...confirmationDialogConfigs.logoutConfirmation}
+      />
     </ScrollView>
   );
 }

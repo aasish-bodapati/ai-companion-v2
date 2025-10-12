@@ -67,7 +67,6 @@ const LoggingItem = React.memo(function LoggingItem({
   
   // Use exercise categories store
   const categories = useExerciseCategories();
-  const { loadCategories } = useExerciseCategoriesActions();
   
   // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
   // useEffect(() => {
@@ -136,38 +135,6 @@ const LoggingItem = React.memo(function LoggingItem({
     return 'weighted';
   }, [item.logging_category, item.category]);
 
-  const getCategoryConfig = (category: string) => {
-    const categoryData = categories.find(cat => cat.id === category);
-    if (categoryData) {
-      return {
-        color: categoryData.color,
-        icon: categoryData.icon,
-        displayName: categoryData.display_name,
-      };
-    }
-    
-    // Try alternative matching - maybe the category is stored differently
-    const alternativeMatch = categories.find(cat => 
-      cat.category === category || 
-      cat.name === category ||
-      cat.display_name?.toLowerCase() === category?.toLowerCase()
-    );
-    
-    if (alternativeMatch) {
-      return {
-        color: alternativeMatch.color,
-        icon: alternativeMatch.icon,
-        displayName: alternativeMatch.display_name,
-      };
-    }
-    
-    // Return "Category Not Found" config
-    return {
-      color: '#6b7280',
-      icon: 'help-outline',
-      displayName: 'Category Not Found',
-    };
-  };
 
 
   const renderDynamicWorkoutFields = useCallback(() => {

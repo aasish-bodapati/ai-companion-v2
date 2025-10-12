@@ -4,8 +4,9 @@
  */
 
 import { create } from 'zustand';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ExerciseCategoriesStore } from './types';
 import { exerciseCategoryService } from '../services/exerciseCategoryService';
 
@@ -166,6 +167,7 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
     }),
     {
       name: 'exercise-categories-store-persist',
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         categories: state.categories,
         loaded: state.loaded,
@@ -205,17 +207,14 @@ export const useExerciseCategoriesActions = () => useExerciseCategoriesStore(
 
 // Convenience hook that provides categories with manual loading
 export const useExerciseCategoriesWithAutoLoad = () => {
-  const categories = useExerciseCategories();
-  const loading = useExerciseCategoriesLoading();
-  const error = useExerciseCategoriesError();
-  const loaded = useExerciseCategoriesLoaded();
-  const { loadCategories: loadCategoriesAction } = useExerciseCategoriesActions();
-
-  return {
-    categories,
-    loading,
-    error,
-    loaded,
-    loadCategories: loadCategoriesAction,
-  };
+  return useExerciseCategoriesStore(
+    (state) => ({
+      categories: state.categories,
+      loading: state.loading,
+      error: state.error,
+      loaded: state.loaded,
+      loadCategories: state.loadCategories,
+    }),
+    shallow
+  );
 };
