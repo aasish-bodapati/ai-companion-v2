@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { AppStore, ProgressMetrics, Achievement, Streak } from './types';
 import { dashboardService } from '../services/dashboardService';
@@ -29,10 +29,11 @@ const initialState = {
   streaks: [],
 };
 
-// Create the main app store
+// Create the main app store with persistence
 export const useAppStore = create<AppStore>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
         ...initialState,
 
         // Basic setters
@@ -121,6 +122,16 @@ export const useAppStore = create<AppStore>()(
         // Reset state
         resetState: () => set(initialState, false, 'resetState'),
       }),
+      {
+        name: 'app-store-persist',
+        partialize: (state) => ({
+          progressMetrics: state.progressMetrics,
+          achievements: state.achievements,
+          streaks: state.streaks,
+          lastUpdated: state.lastUpdated,
+        }),
+      }
+    ),
     {
       name: 'app-store',
     }

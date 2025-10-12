@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-interface TodaysWorkout {
+export interface TodaysWorkout {
   id: string;
   name: string;
   type: 'routine' | 'quick' | 'custom';

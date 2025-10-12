@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { NutritionStore } from './types';
 import { nutritionService } from '../services/nutritionService';
@@ -19,10 +19,11 @@ const initialState = {
   lastUpdated: null,
 };
 
-// Create the nutrition store
+// Create the nutrition store with persistence
 export const useNutritionStore = create<NutritionStore>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       ...initialState,
 
       // Basic setters
@@ -75,8 +76,9 @@ export const useNutritionStore = create<NutritionStore>()(
           
           set({ lastUpdated: new Date().toISOString() }, false, 'refreshNutritionData');
         } catch (error) {
-          console.error('Error refreshing nutrition data:', error);
-          setError('Failed to refresh nutrition data');
+          const errorMessage = error instanceof Error ? error.message : 'Failed to refresh nutrition data';
+          console.error('❌ [NUTRITION STORE] Error refreshing nutrition data:', error);
+          setError(`Nutrition data refresh failed: ${errorMessage}`);
         } finally {
           setLoading(false);
         }
@@ -86,9 +88,19 @@ export const useNutritionStore = create<NutritionStore>()(
       resetNutritionState: () => set(initialState, false, 'resetNutritionState'),
     }),
     {
-      name: 'nutrition-store',
+      name: 'nutrition-store-persist',
+      partialize: (state) => ({
+        todayStats: state.todayStats,
+        weekStats: state.weekStats,
+        recentMeals: state.recentMeals,
+        lastUpdated: state.lastUpdated,
+      }),
     }
-  )
+  ),
+  {
+    name: 'nutrition-store',
+  }
+)
 );
 
 // Selector hooks for better performance with shallow comparison

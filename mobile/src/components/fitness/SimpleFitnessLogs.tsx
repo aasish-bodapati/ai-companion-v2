@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fitnessService } from '../../services/fitnessService';
 import { useToast } from '../../contexts/ToastContext';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 import { CategoryBadge } from '../ui/Badge';
 import { exerciseCategoryService } from '../../services/exerciseCategoryService';
 import { 
@@ -57,8 +58,15 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   const [editNotes, setEditNotes] = useState('');
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<unknown[]>([]);
-  // DISABLED: Use exercise categories store to prevent infinite loops
-  // const { categories, loadCategories, loaded } = useExerciseCategoriesWithAutoLoad();
+  // Use exercise categories store with manual loading
+  const { categories, loadCategories, loaded, loading: categoriesLoading } = useExerciseCategoriesWithAutoLoad();
+  
+  // Load categories on component mount if not already loaded
+  useEffect(() => {
+    if (!loaded && !categoriesLoading) {
+      loadCategories();
+    }
+  }, [loaded, categoriesLoading, loadCategories]);
 
   // Load logs on component mount
   useEffect(() => {

@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 //   useFitnessActions
 // } from '../../stores';
 import { useAuth } from '../../contexts/AuthContext';
-import TodaysSnapshot from '../../components/fitness/TodaysSnapshot';
+import TodaysSnapshot, { TodaysWorkout } from '../../components/fitness/TodaysSnapshot';
 import SimpleRoutineDisplay from '../../components/fitness/SimpleRoutineDisplay';
 import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
 import ProgressTracking from '../../components/fitness/ProgressTracking';
@@ -27,9 +27,15 @@ import SimpleFitnessLogs from '../../components/fitness/SimpleFitnessLogs';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
 import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRoutineModal';
 import { fitnessService } from '../../services/fitnessService';
+import { useActiveRoutine } from '../../hooks/useActiveRoutine';
+import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
+import usePerformance from '../../hooks/usePerformance';
 
 export default function FitnessScreen() {
   const { user } = useAuth();
+  
+  // Performance monitoring
+  const { renderCount } = usePerformance.usePerformanceMonitor('FitnessScreen');
   
   // Store selectors - REMOVED TO PREVENT INFINITE LOOPS
   // const weekStats = useFitnessWeekStats();
@@ -42,24 +48,16 @@ export default function FitnessScreen() {
   // Local state
   const [activeTab, setActiveTab] = useState('overview');
   // const [refreshing, setRefreshing] = useState(false); // Unused for now
-  // const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false); // Unused for now
+  const [showUnifiedWorkoutLogger, setShowUnifiedWorkoutLogger] = useState(false);
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
-  const [activeRoutineId, setActiveRoutineId] = useState<number | null>(null);
+  const { activeRoutineId, refreshActiveRoutine } = useActiveRoutine();
+  const { weeklyActivityData, refreshWeeklyActivity } = useWeeklyActivity();
   const [settingActiveRoutine, setSettingActiveRoutine] = useState<number | null>(null);
   const [routines, setRoutines] = useState<SimpleRoutineWithProgress[]>([]);
   const [routinesLoading, setRoutinesLoading] = useState(false);
   const routinesLoadedRef = React.useRef(false);
   const [showCreateRoutineModal, setShowCreateRoutineModal] = useState(false);
-  const [weeklyActivityData, setWeeklyActivityData] = useState({
-    monday: 0,
-    tuesday: 0,
-    wednesday: 0,
-    thursday: 0,
-    friday: 0,
-    saturday: 0,
-    sunday: 0,
-  });
-  const [recommendedWorkout, setRecommendedWorkout] = useState(null);
+  const [recommendedWorkout, setRecommendedWorkout] = useState<TodaysWorkout | null>(null);
   
   // Refs
   const isLoadingRef = useRef(false);
@@ -82,24 +80,7 @@ export default function FitnessScreen() {
       } else {
       }
       
-      // Load weekly activity data
-      try {
-        const weeklyData = await fitnessService.getWeeklyActivity();
-        if (weeklyData) {
-          setWeeklyActivityData(weeklyData);
-        }
-      } catch {
-        // Set default weekly data if service fails
-        setWeeklyActivityData({
-          monday: 2,
-          tuesday: 1,
-          wednesday: 3,
-          thursday: 0,
-          friday: 2,
-          saturday: 1,
-          sunday: 0,
-        });
-      }
+      // Weekly activity data is now handled by useWeeklyActivity hook
       
     } catch (_error) {
       console.error('❌ [FITNESS SCREEN] Error loading overview data:', _error);
@@ -114,22 +95,22 @@ export default function FitnessScreen() {
   //   setRefreshing(false);
   // };
 
-  // Handler functions
-  const handleCreateRoutine = () => {
+  // Handler functions - optimized with useCallback
+  const handleCreateRoutine = usePerformance.useStableCallback(() => {
     setShowCreateRoutineModal(true);
-  };
+  }, []);
 
-  const handleSetActiveRoutine = async (routine: SimpleRoutineWithProgress) => {
+  const handleSetActiveRoutine = usePerformance.useStableCallback(async (routine: SimpleRoutineWithProgress) => {
     setSettingActiveRoutine(routine.id);
     try {
-      await routineService.setActiveRoutine(routine.id);
-      setActiveRoutineId(routine.id);
+      await routineService.setActiveRoutine(routine.id.toString());
+      await refreshActiveRoutine(); // Refresh the global state
     } catch (error) {
       console.error('Error setting active routine:', error);
     } finally {
       setSettingActiveRoutine(null);
     }
-  };
+  }, [refreshActiveRoutine]);
 
   const loadRoutines = async () => {
     setRoutinesLoading(true);
@@ -235,24 +216,6 @@ export default function FitnessScreen() {
     }
   }, [activeTab]);
 
-  // Load active routine on component mount
-  React.useEffect(() => {
-    loadActiveRoutine();
-  }, []);
-
-  const loadActiveRoutine = async () => {
-    try {
-      const activeRoutine = await routineService.getActiveRoutine();
-      if (activeRoutine) {
-        setActiveRoutineId(activeRoutine.id);
-      } else {
-        setActiveRoutineId(null);
-      }
-    } catch (_error) {
-      console.error('❌ [FITNESS SCREEN] Error loading active routine:', _error);
-      setActiveRoutineId(null);
-    }
-  };
 
   // No predefined workout - users create their own
   const todaysWorkout = recommendedWorkout || null;
@@ -343,7 +306,7 @@ export default function FitnessScreen() {
         alignmentScore={Math.min(100, Math.max(0, (weeklyWorkoutCount / 5) * 100))}
         caloriesBurned={1200}
         streak={7}
-        todaysWorkout={todaysWorkout}
+        todaysWorkout={todaysWorkout || undefined}
         onQuickLog={() => setShowUnifiedWorkoutLogger(true)}
         onViewWorkout={(workout) => {
         }}

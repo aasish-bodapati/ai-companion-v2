@@ -60,26 +60,30 @@ export {
 
 // Combined refresh function that refreshes all stores
 export const refreshAllStores = async () => {
-  const { refreshData } = useAppStore.getState();
-  const { refreshNutritionData } = useNutritionStore.getState();
-  const { refreshFitnessData } = useFitnessStore.getState();
-  // const { refreshAnalyticsData } = useAnalyticsStore.getState(); // REMOVED
-  // const { loadCategories } = useExerciseCategoriesStore.getState(); // REMOVED - causes infinite loop
-
-  await Promise.all([
-    refreshData(),
-    refreshNutritionData(),
-    refreshFitnessData(),
-    // refreshAnalyticsData(), // REMOVED
-    // loadCategories(), // REMOVED - causes infinite loop
-  ]);
+  try {
+    // Use Promise.all to refresh all stores concurrently
+    await Promise.all([
+      useAppStore.getState().refreshData(),
+      useNutritionStore.getState().refreshNutritionData(),
+      useFitnessStore.getState().refreshFitnessData(),
+      useExerciseCategoriesStore.getState().refreshCategories(),
+    ]);
+  } catch (error) {
+    console.error('❌ [STORE REFRESH] Error refreshing stores:', error);
+    throw error;
+  }
 };
 
 // Combined reset function that resets all stores
 export const resetAllStores = () => {
-  useAppStore.getState().resetState();
-  useNutritionStore.getState().resetNutritionState();
-  useFitnessStore.getState().resetFitnessState();
-  // useAnalyticsStore.getState().resetAnalyticsState(); // REMOVED
-  useExerciseCategoriesStore.getState().resetExerciseCategoriesState();
+  try {
+    // Reset all stores synchronously
+    useAppStore.getState().resetState();
+    useNutritionStore.getState().resetNutritionState();
+    useFitnessStore.getState().resetFitnessState();
+    useExerciseCategoriesStore.getState().resetExerciseCategoriesState();
+  } catch (error) {
+    console.error('❌ [STORE RESET] Error resetting stores:', error);
+    throw error;
+  }
 };

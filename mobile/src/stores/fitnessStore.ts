@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { FitnessStore } from './types';
 import { fitnessService } from '../services/fitnessService';
@@ -19,10 +19,11 @@ const initialState = {
   lastUpdated: null,
 };
 
-// Create the fitness store
+// Create the fitness store with persistence
 export const useFitnessStore = create<FitnessStore>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       ...initialState,
 
       // Basic setters
@@ -86,9 +87,19 @@ export const useFitnessStore = create<FitnessStore>()(
       resetFitnessState: () => set(initialState, false, 'resetFitnessState'),
     }),
     {
-      name: 'fitness-store',
+      name: 'fitness-store-persist',
+      partialize: (state) => ({
+        todayStats: state.todayStats,
+        weekStats: state.weekStats,
+        recentWorkouts: state.recentWorkouts,
+        lastUpdated: state.lastUpdated,
+      }),
     }
-  )
+  ),
+  {
+    name: 'fitness-store',
+  }
+)
 );
 
 // Selector hooks for better performance with shallow comparison

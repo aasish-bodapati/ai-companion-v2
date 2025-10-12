@@ -4,7 +4,7 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import { ExerciseCategoriesStore } from './types';
 import { exerciseCategoryService } from '../services/exerciseCategoryService';
@@ -18,10 +18,11 @@ const initialState = {
   loaded: false,
 };
 
-// Create the exercise categories store
+// Create the exercise categories store with persistence
 export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
   devtools(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       ...initialState,
 
       // Basic setters
@@ -164,9 +165,18 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       resetExerciseCategoriesState: () => set(initialState, false, 'resetExerciseCategoriesState'),
     }),
     {
-      name: 'exercise-categories-store',
+      name: 'exercise-categories-store-persist',
+      partialize: (state) => ({
+        categories: state.categories,
+        loaded: state.loaded,
+        lastUpdated: state.lastUpdated,
+      }),
     }
-  )
+  ),
+  {
+    name: 'exercise-categories-store',
+  }
+)
 );
 
 // Selector hooks for better performance
@@ -193,20 +203,13 @@ export const useExerciseCategoriesActions = () => useExerciseCategoriesStore(
   shallow
 );
 
-// Convenience hook that automatically loads categories if not loaded
+// Convenience hook that provides categories with manual loading
 export const useExerciseCategoriesWithAutoLoad = () => {
-  console.log('🔄 [EXERCISE CATEGORIES HOOK] useExerciseCategoriesWithAutoLoad called');
   const categories = useExerciseCategories();
   const loading = useExerciseCategoriesLoading();
   const error = useExerciseCategoriesError();
   const loaded = useExerciseCategoriesLoaded();
   const { loadCategories: loadCategoriesAction } = useExerciseCategoriesActions();
-
-  console.log('🔄 [EXERCISE CATEGORIES HOOK] State - loaded:', loaded, 'loading:', loading);
-
-  // DISABLED AUTO-LOAD COMPLETELY TO PREVENT INFINITE LOOPS
-  // The issue is that even with proper dependencies, the Zustand store
-  // is causing infinite re-renders. We'll load categories manually when needed.
 
   return {
     categories,

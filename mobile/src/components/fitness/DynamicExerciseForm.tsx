@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
 export interface ExerciseData {
   exercise_name: string;
@@ -38,8 +39,15 @@ export default function DynamicExerciseForm({
   activityType,
   showRemove = true
 }: DynamicExerciseFormProps) {
-  // DISABLED: Use exercise categories store to prevent infinite loops
-  // const { categories, loadCategories } = useExerciseCategoriesWithAutoLoad();
+  // Use exercise categories store with manual loading
+  const { categories, loadCategories, loaded, loading } = useExerciseCategoriesWithAutoLoad();
+  
+  // Load categories on component mount if not already loaded
+  useEffect(() => {
+    if (!loaded && !loading) {
+      loadCategories();
+    }
+  }, [loaded, loading, loadCategories]);
   
   
   // Use category from database (backend provides logging_category)

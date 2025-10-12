@@ -11,6 +11,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutritionStore, useNutritionLoading } from '../../stores';
 import { nutritionService } from '../../services/nutritionService';
+import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
 import NutritionOverviewDashboard from '../../components/nutrition/NutritionOverviewDashboard';
@@ -26,15 +27,7 @@ export default function NutritionScreen() {
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
   const nutritionLogsRef = useRef<{ refreshLogs: () => void } | null>(null);
-  const [weeklyActivityData, setWeeklyActivityData] = useState({
-    monday: 0,
-    tuesday: 0,
-    wednesday: 0,
-    thursday: 0,
-    friday: 0,
-    saturday: 0,
-    sunday: 0,
-  });
+  const { weeklyActivityData } = useWeeklyActivity();
   const [refreshing, setRefreshing] = useState(false);
 
   // Modal is now handled directly in TabNavigator
@@ -44,74 +37,11 @@ export default function NutritionScreen() {
     await refreshNutritionData();
   }, [refreshNutritionData]);
 
-  const loadWeeklyActivityData = useCallback(async () => {
-    try {
-      
-      // Calculate date range for the past 7 days
-      const today = new Date();
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 7);
-      
-      const startDate = sevenDaysAgo.toISOString().split('T')[0];
-      const endDate = today.toISOString().split('T')[0];
-      
-      
-      // Get recent meals for the week using date range
-      const meals = await nutritionService.getNutritionLogs({ 
-        start_date: startDate, 
-        end_date: endDate 
-      });
-      
-      // Group meals by day of week
-      const weeklyData = {
-        monday: 0,
-        tuesday: 0,
-        wednesday: 0,
-        thursday: 0,
-        friday: 0,
-        saturday: 0,
-        sunday: 0,
-      };
-      
-      if (Array.isArray(meals)) {
-        meals.forEach(meal => {
-          // Parse the meal_date as UTC and convert to user's timezone
-          const mealDateUTC = new Date(meal.meal_date);
-          
-          // Use the local day of week (this handles timezone conversion automatically)
-          const dayOfWeek = mealDateUTC.getDay(); // 0 = Sunday, 1 = Monday, etc.
-          
-          switch (dayOfWeek) {
-            case 0: weeklyData.sunday++; break;
-            case 1: weeklyData.monday++; break;
-            case 2: weeklyData.tuesday++; break;
-            case 3: weeklyData.wednesday++; break;
-            case 4: weeklyData.thursday++; break;
-            case 5: weeklyData.friday++; break;
-            case 6: weeklyData.saturday++; break;
-          }
-        });
-      }
-      
-      setWeeklyActivityData(weeklyData);
-    } catch {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-      // Set fallback data
-      setWeeklyActivityData({
-        monday: 0,
-        tuesday: 0,
-        wednesday: 0,
-        thursday: 0,
-        friday: 0,
-        saturday: 0,
-        sunday: 0,
-      });
-    }
-  }, []);
+  // Weekly activity data is now handled by useWeeklyActivity hook
 
   const loadOverviewData = useCallback(async () => {
-    await Promise.all([loadWeekStats(), loadWeeklyActivityData()]);
-  }, [loadWeekStats, loadWeeklyActivityData]); // Add missing dependencies
+    await loadWeekStats();
+  }, [loadWeekStats]);
 
   const onRefresh = async () => {
     setRefreshing(true);

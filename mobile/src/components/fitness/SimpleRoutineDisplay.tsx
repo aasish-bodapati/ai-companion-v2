@@ -5,30 +5,11 @@ import { SimpleRoutineWithProgress } from '../../services/routineService';
 import RoutineDetailsModal from './RoutineDetailsModal';
 import { DifficultyBadge } from '../ui/Badge';
 
-interface Routine {
-  id: number;
-  name: string;
-  description: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  duration_weeks: number;
-  workout_schedule: {
-    day: string;
-    workouts: {
-      activity_name: string;
-      activity_type: string;
-      sets?: number;
-      reps?: string;
-      duration?: number;
-    }[];
-  }[];
-  total_workouts_per_week: number;
-}
-
 interface SimpleRoutineDisplayProps {
-  routines: Routine[];
-  onRoutineSelect?: (routine: Routine) => void;
+  routines: SimpleRoutineWithProgress[];
+  onRoutineSelect?: (routine: SimpleRoutineWithProgress) => void;
   onCreateRoutine?: () => void;
-  onSetActive?: (routine: Routine) => void;
+  onSetActive?: (routine: SimpleRoutineWithProgress) => void;
   activeRoutineId?: number | null;
   settingActiveRoutine?: number | null;
 }
