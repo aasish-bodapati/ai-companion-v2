@@ -13,6 +13,7 @@ import LoadingState from '../ui/LoadingState';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import { loadingStateConfigs } from '../ui/LoadingState.utils';
 import { confirmationDialogConfigs } from '../ui/ConfirmationDialog.utils';
+import { useToast } from '../../contexts/ToastContext';
 
 import { DebugUtils } from '../../utils/debugUtils';
 
@@ -21,6 +22,7 @@ interface WaterLoggerProps {
 }
 
 export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
+  const { showToast } = useToast();
   const [stats, setStats] = useState<SimpleWaterStats>({
     total_ml_today: 0,
     total_oz_today: 0,
@@ -44,6 +46,7 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
       setStats(newStats);
     } catch (error) {
       DebugUtils.error('🚰 [WATER LOGGER] Failed to load stats:', error);
+      showToast.error('Failed to load water stats', 'Please try again later');
     }
   };
 
@@ -62,12 +65,14 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
       onWaterLogged?.();
 
       DebugUtils.log('🚰 [WATER LOGGER] Water logged successfully');
+      showToast.success(`${amount_ml}ml water logged!`);
 
       // Add a small delay to prevent rapid state changes
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       DebugUtils.error('🚰 [WATER LOGGER] Failed to log water:', error);
       hapticFeedback.error();
+      showToast.error('Failed to log water', 'Please try again');
       setErrorMessage('Failed to log water. Please try again.');
       setShowErrorDialog(true);
     } finally {
@@ -90,12 +95,14 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
       onWaterLogged?.();
 
       DebugUtils.log('🚰 [WATER LOGGER] Last water log removed');
+      showToast.success('Water log removed');
 
       // Add a small delay to prevent rapid state changes
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
       DebugUtils.error('🚰 [WATER LOGGER] Failed to remove water log:', error);
       hapticFeedback.error();
+      showToast.error('Failed to remove water log', 'Please try again');
       setErrorMessage('Failed to remove water log. Please try again.');
       setShowErrorDialog(true);
     } finally {

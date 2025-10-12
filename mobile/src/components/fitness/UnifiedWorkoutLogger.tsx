@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fitnessService } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';
@@ -75,6 +76,7 @@ export default function UnifiedWorkoutLogger({
   initialWorkout,
   routineId,
 }: UnifiedWorkoutLoggerProps) {
+  const { showToast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [workout, setWorkout] = useState<WorkoutLog>({
     name: 'Workout Not Found',
@@ -139,6 +141,7 @@ export default function UnifiedWorkoutLogger({
       setExercises(mappedExercises);
     } catch (error) {
       DebugUtils.error('Error loading exercises:', error);
+      showToast.error('Failed to load exercises', 'Please try again later');
       // Set empty array as fallback to prevent UI issues
       setExercises([]);
     } finally {
@@ -163,10 +166,12 @@ export default function UnifiedWorkoutLogger({
     try {
       setLoading(true);
       await onSave(workout);
+      showToast.success('Workout saved successfully!');
       onClose();
       resetForm();
-    } catch {
-      Alert.alert('Error', 'Failed to save workout');
+    } catch (error) {
+      DebugUtils.error('Error saving workout:', error);
+      showToast.error('Failed to save workout', 'Please try again');
     } finally {
       setLoading(false);
     }

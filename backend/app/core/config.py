@@ -103,7 +103,7 @@ class Settings(BaseSettings):
     LOG_RETENTION_DAYS: int = 365  # Keep logs for 1 year
     
     # Security settings
-    RATE_LIMITING_ENABLED: bool = False  # Disabled for MVP - enable in production
+    RATE_LIMITING_ENABLED: bool = True  # Enabled for MVP security
     REDIS_URL: Optional[str] = None  # Redis URL for rate limiting and caching
 
     # External API settings

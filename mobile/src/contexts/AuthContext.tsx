@@ -194,7 +194,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Getting user data
         const userResponse = await api.get('/api/v1/users/me');
-        userData = userResponse.data;
+        userData = userResponse; // Use response directly, not .data
         setUser(userData);
         // Store user data in AsyncStorage
         await AsyncStorage.setItem('user', JSON.stringify(userData));
@@ -205,7 +205,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
         userData = {
-          id: 13, // This should come from the token or a separate call
+          id: 0, // Temporary ID - will be updated when API call succeeds
           email: email,
           full_name: 'User',
           is_active: true,

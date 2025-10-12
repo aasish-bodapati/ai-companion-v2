@@ -8,14 +8,14 @@ from app.schemas.common.health_enums import (
 
 # Base schemas
 class FitnessLogBase(BaseModel):
-    activity_type: Union[ActivityType, str] = Field(..., description="Type of activity")
-    activity_name: Optional[str] = None
-    duration_minutes: int = Field(..., gt=0, le=1440)  # Max 24 hours
-    calories_burned: Optional[int] = Field(None, ge=0)
-    notes: Optional[str] = None
+    activity_type: Union[ActivityType, str] = Field(..., description="Type of activity", min_length=1, max_length=50)
+    activity_name: Optional[str] = Field(None, max_length=100)
+    duration_minutes: int = Field(..., gt=0, le=1440, description="Duration in minutes (max 24 hours)")
+    calories_burned: Optional[int] = Field(None, ge=0, le=10000, description="Calories burned (max 10,000)")
+    notes: Optional[str] = Field(None, max_length=500)
     activity_date: Optional[datetime] = None
     exercises: Optional[Union[str, list]] = Field(None, description="JSON string or list containing exercise data")
-    unit: Optional[str] = Field(None, description="Unit for weight measurements")
+    unit: Optional[str] = Field(None, max_length=20, description="Unit for weight measurements")
     
     def __init__(self, **data):
         # Convert string activity_type to enum if needed
@@ -31,14 +31,14 @@ class FitnessLogCreate(FitnessLogBase):
     timezone_offset: Optional[int] = Field(None, description="Timezone offset in minutes from UTC")
 
 class FitnessLogUpdate(BaseModel):
-    activity_type: Optional[Union[ActivityType, str]] = None
-    activity_name: Optional[str] = None
+    activity_type: Optional[Union[ActivityType, str]] = Field(None, min_length=1, max_length=50)
+    activity_name: Optional[str] = Field(None, max_length=100)
     duration_minutes: Optional[int] = Field(None, gt=0, le=1440)
-    calories_burned: Optional[int] = Field(None, ge=0)
-    notes: Optional[str] = None
+    calories_burned: Optional[int] = Field(None, ge=0, le=10000)
+    notes: Optional[str] = Field(None, max_length=500)
     activity_date: Optional[datetime] = None
     exercises: Optional[Union[str, list]] = Field(None, description="JSON string or list containing exercise data")
-    unit: Optional[str] = Field(None, description="Unit for weight measurements")
+    unit: Optional[str] = Field(None, max_length=20, description="Unit for weight measurements")
     
     def __init__(self, **data):
         # Convert string activity_type to enum if needed
