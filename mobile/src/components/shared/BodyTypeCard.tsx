@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -6,7 +6,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { UnifiedProgressRing } from '../ui/UnifiedProgressRing';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface BodyTypeCardProps {
   goalName: string;
@@ -66,7 +70,6 @@ export default function BodyTypeCard({
     }
   };
 
-
   const renderDashboardVariant = () => (
     <View style={styles.dashboardCard}>
       <View style={styles.header}>
@@ -76,7 +79,7 @@ export default function BodyTypeCard({
             {loading ? 'Calculating...' : getAlignmentText()}
           </Text>
         </View>
-        
+
         <View style={styles.scoreContainer}>
           <Text style={styles.dailyScore}>
             {loading ? '...' : dailyScore}
@@ -93,15 +96,15 @@ export default function BodyTypeCard({
               {loading ? '...' : `${weeklyAlignment}%`}
             </Text>
             {!loading && (
-              <Ionicons 
-                name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
-                size={16} 
-                color={getTrendColor()} 
+              <Ionicons
+                name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
+                size={16}
+                color={getTrendColor()}
               />
             )}
           </View>
         </View>
-        
+
         <UnifiedProgressRing
           value={loading ? 0 : weeklyAlignment}
           target={100}
@@ -132,7 +135,7 @@ export default function BodyTypeCard({
           <Ionicons name="fitness" size={16} color="#ffffff" />
           <Text style={styles.actionText}>Log Workout</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.actionButton, styles.secondaryAction]}
           onPress={onLogMeal}
@@ -140,7 +143,7 @@ export default function BodyTypeCard({
           <Ionicons name="restaurant" size={16} color="#3b82f6" />
           <Text style={[styles.actionText, styles.secondaryActionText]}>Log Meal</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={styles.analyticsButton}
           onPress={onViewAnalytics}
@@ -160,7 +163,7 @@ export default function BodyTypeCard({
             {getAlignmentText()}
           </Text>
         </View>
-        
+
         <TouchableOpacity
           style={styles.editButton}
           onPress={onEditGoals}
@@ -174,17 +177,17 @@ export default function BodyTypeCard({
           <Text style={styles.profileStatValue}>{dailyScore}</Text>
           <Text style={styles.profileStatLabel}>Daily Score</Text>
         </View>
-        
+
         <View style={styles.profileStat}>
           <Text style={styles.profileStatValue}>{weeklyAlignment}%</Text>
           <Text style={styles.profileStatLabel}>Weekly Alignment</Text>
         </View>
-        
+
         <View style={styles.profileStat}>
-          <Ionicons 
-            name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
-            size={24} 
-            color={getTrendColor()} 
+          <Ionicons
+            name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
+            size={24}
+            color={getTrendColor()}
           />
           <Text style={styles.profileStatLabel}>Trend</Text>
         </View>
@@ -198,13 +201,13 @@ export default function BodyTypeCard({
         <Text style={styles.compactGoalName}>{goalName}</Text>
         <Text style={styles.compactScore}>{dailyScore}</Text>
       </View>
-      
+
       <View style={styles.compactProgress}>
         <Text style={styles.compactAlignment}>{weeklyAlignment}% aligned</Text>
-        <Ionicons 
-          name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
-          size={16} 
-          color={getTrendColor()} 
+        <Ionicons
+          name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
+          size={16}
+          color={getTrendColor()}
         />
       </View>
     </View>
@@ -223,9 +226,9 @@ export default function BodyTypeCard({
 const styles = StyleSheet.create({
   // Dashboard variant
   dashboardCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -244,14 +247,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   goalName: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '700',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   alignmentText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   scoreContainer: {
     alignItems: 'center',
@@ -262,8 +265,8 @@ const styles = StyleSheet.create({
     color: '#3b82f6',
   },
   scoreLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   progressSection: {
     flexDirection: 'row',
@@ -275,8 +278,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   weeklyLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   weeklyValueContainer: {
@@ -287,20 +290,20 @@ const styles = StyleSheet.create({
   weeklyValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   suggestionsContainer: {
     marginBottom: 20,
   },
   suggestionsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
   suggestion: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   actionsContainer: {
@@ -313,38 +316,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 8,
   },
   primaryAction: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
   },
   secondaryAction: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   actionText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   secondaryActionText: {
     color: '#3b82f6',
   },
   analyticsButton: {
-    padding: 12,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    padding: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.background.secondary,
   },
 
   // Profile variant
   profileCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -359,19 +362,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   profileGoalName: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   profileAlignmentText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   editButton: {
-    padding: 8,
+    padding: SPACING.xs,
     borderRadius: 6,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   profileStats: {
     flexDirection: 'row',
@@ -381,21 +384,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileStatValue: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   profileStatLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
 
   // Compact variant
   compactCard: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -407,12 +410,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   compactGoalName: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   compactScore: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
     color: '#3b82f6',
   },
@@ -422,7 +425,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   compactAlignment: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
 });

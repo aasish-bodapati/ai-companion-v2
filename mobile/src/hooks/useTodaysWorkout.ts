@@ -1,5 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { routineService } from '../services/routineService';
+
+import { routineService } from '../services/api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 interface Exercise {
   exercise_name: string;
@@ -38,22 +41,31 @@ export function useTodaysWorkout(activeRoutineId?: number | null): UseTodaysWork
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔄 [USE TODAYS WORKOUT] Loading today\'s workout...');
+
+      DebugUtils.log('🔄 [USE TODAYS WORKOUT] Loading today\'s workout...');
       const workoutData = await routineService.getTodaysWorkout();
-      console.log('📋 [USE TODAYS WORKOUT] Workout data:', workoutData);
-      
+      DebugUtils.log('📋 [USE TODAYS WORKOUT] Workout data:', workoutData);
+
       if (workoutData) {
         setTodaysWorkout(workoutData as TodaysWorkout);
-        console.log('✅ [USE TODAYS WORKOUT] Set workout data');
+        DebugUtils.log('✅ [USE TODAYS WORKOUT] Set workout data');
       } else {
         setTodaysWorkout(null);
-        console.log('❌ [USE TODAYS WORKOUT] No workout data');
+        DebugUtils.log('ℹ️ [USE TODAYS WORKOUT] No workout scheduled for today');
       }
-    } catch (err) {
-      console.error('❌ [USE TODAYS WORKOUT] Error:', err);
-      setError('Failed to load today\'s workout');
-      setTodaysWorkout(null);
+    } catch (err: any) {
+      // Handle 404 as expected behavior (no workout scheduled)
+      if (err?.response?.status === 404 || 
+          err?.status === 404 || 
+          (err?.data && err.data.status === 404)) {
+        DebugUtils.log('ℹ️ [USE TODAYS WORKOUT] No workout scheduled for today (404)');
+        setTodaysWorkout(null);
+        setError(null); // Clear error for expected 404
+      } else {
+        DebugUtils.error('❌ [USE TODAYS WORKOUT] Error:', err);
+        setError('Failed to load today\'s workout');
+        setTodaysWorkout(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,7 +76,7 @@ export function useTodaysWorkout(activeRoutineId?: number | null): UseTodaysWork
   }, [loadTodaysWorkout]);
 
   useEffect(() => {
-    console.log('🔄 [USE TODAYS WORKOUT] Effect triggered - activeRoutineId:', activeRoutineId);
+    DebugUtils.log('🔄 [USE TODAYS WORKOUT] Effect triggered - activeRoutineId:', activeRoutineId);
     loadTodaysWorkout();
   }, [loadTodaysWorkout, activeRoutineId]);
 

@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import React from 'react';
+
 import DashboardHeaderCard from '../components/dashboard/DashboardHeaderCard';
 import WelcomeCard from '../components/dashboard/WelcomeCard';
 import WaterLogger from '../components/health/WaterLogger';
@@ -12,6 +14,8 @@ import { useProgressMetricsData } from '../hooks/useProgressMetrics';
 import { useAchievements, useStreaks } from '../stores';
 import { useAuth } from '../contexts/AuthContext';
 import useResponsive from '../hooks/useResponsive';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 interface DashboardModuleProps {
   onRefresh?: () => Promise<void>;
@@ -26,8 +30,8 @@ export default function DashboardModule({
   onNavigate,
   activeRoutineId,
 }: DashboardModuleProps) {
-  console.log('🔄 [DASHBOARD MODULE] Rendering with activeRoutineId:', activeRoutineId);
-  
+  // DebugUtils.log('🔄 [DASHBOARD MODULE] Rendering with activeRoutineId:', activeRoutineId);
+
   const { user } = useAuth();
   // Re-enable useProgressMetricsData hook
   const progressData = useProgressMetricsData();
@@ -35,7 +39,6 @@ export default function DashboardModule({
   const { achievements } = useAchievements();
   const { streaks } = useStreaks();
   const responsive = useResponsive();
-  
 
   const quickStats = [
     {
@@ -116,7 +119,7 @@ export default function DashboardModule({
           activeRoutineId={activeRoutineId}
           onExercisePress={(exercise) => {
             // Navigate to exercise logging screen with the selected exercise
-            onNavigate?.('Fitness', { 
+            onNavigate?.('Fitness', {
               selectedExercise: exercise,
               mode: 'manual'
             });

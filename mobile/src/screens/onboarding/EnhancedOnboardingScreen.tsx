@@ -13,7 +13,12 @@ import HealthDataStep from '../../components/onboarding/HealthDataStep';
 import BodyTypeGoalsStep from '../../components/onboarding/BodyTypeGoalsStep';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
-import { profileService } from '../../services/profileService';
+import { profileService } from '../../services/api';
+
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface HealthData {
   age: string;
@@ -102,19 +107,17 @@ export default function EnhancedOnboardingScreen() {
   const { completeOnboarding } = useAuth();
   const completionRef = useRef(false);
 
-
-
   // Load existing profile data to pre-populate onboarding
   const loadExistingProfileData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const profileData = await profileService.getUserProfile();
-      
+
       if (profileData) {
         // Convert backend data to onboarding format
         const existingData = profileService.convertToOnboardingData(profileData);
-        
+
         // Pre-populate the form with existing data
         setOnboardingData(existingData);
       }
@@ -134,22 +137,22 @@ export default function EnhancedOnboardingScreen() {
       // Load existing data to pre-populate the form
       loadExistingProfileData();
     } else {
-      console.log('🔄 Component mounted but completion already in progress, preventing reset');
+      DebugUtils.log('🔄 Component mounted but completion already in progress, preventing reset');
     }
   }, [loadExistingProfileData]);
 
   // Check if we should prevent rendering (but don't return early to avoid hooks violation)
-  const shouldPreventRender = hasCompleted || isCompleting || completionRef.current || 
+  const shouldPreventRender = hasCompleted || isCompleting || completionRef.current ||
     (typeof window !== 'undefined' && (window as unknown as { __onboardingCompleted?: boolean }).__onboardingCompleted);
-  
+
   if (shouldPreventRender) {
-    console.log('🔄 Onboarding completed/completing, preventing re-render');
+    DebugUtils.log('🔄 Onboarding completed/completing, preventing re-render');
   }
 
   // Check if onboarding should be completed and redirect
   useEffect(() => {
     if (hasCompleted && !isCompleting) {
-      console.log('🔄 Onboarding completed, component should unmount soon');
+      DebugUtils.log('🔄 Onboarding completed, component should unmount soon');
     }
   }, [hasCompleted, isCompleting]);
 
@@ -164,12 +167,12 @@ export default function EnhancedOnboardingScreen() {
 
   useEffect(() => {
     if (__DEV__) {
-      console.log('🔄 EnhancedOnboardingScreen useEffect - currentStep:', currentStep);
+      DebugUtils.log('🔄 EnhancedOnboardingScreen useEffect - currentStep:', currentStep);
     }
-    
+
     return () => {
       if (__DEV__) {
-        console.log('🧹 EnhancedOnboardingScreen cleanup - currentStep:', currentStep);
+        DebugUtils.log('🧹 EnhancedOnboardingScreen cleanup - currentStep:', currentStep);
       }
     };
   }, [currentStep]);
@@ -177,9 +180,9 @@ export default function EnhancedOnboardingScreen() {
   const currentStepData = ONBOARDING_STEPS[currentStep];
   const isLastStep = currentStep === ONBOARDING_STEPS.length - 1;
   const isFirstStep = currentStep === 0;
-  
+
   if (__DEV__) {
-    console.log('📊 Step info - currentStep:', currentStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isLastStep:', isLastStep, 'currentStepData:', currentStepData?.id);
+    DebugUtils.log('📊 Step info - currentStep:', currentStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isLastStep:', isLastStep, 'currentStepData:', currentStepData?.id);
   }
 
   const handlePrevious = useCallback(() => {
@@ -191,32 +194,32 @@ export default function EnhancedOnboardingScreen() {
 
   const handleNext = useCallback(() => {
     if (__DEV__) {
-      console.log('🔄 handleNext called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
+      DebugUtils.log('🔄 handleNext called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
     }
-    
+
     if (hasCompleted || completionRef.current) {
       if (__DEV__) {
-        console.log('⚠️ Onboarding already completed, skipping navigation');
+        DebugUtils.log('⚠️ Onboarding already completed, skipping navigation');
       }
       return;
     }
-    
+
     if (isCompleting) {
       if (__DEV__) {
-        console.log('⚠️ Already completing onboarding, skipping');
+        DebugUtils.log('⚠️ Already completing onboarding, skipping');
       }
       return;
     }
-    
+
     if (currentStep < ONBOARDING_STEPS.length - 1) {
       if (__DEV__) {
-        console.log('➡️ Moving to next step');
+        DebugUtils.log('➡️ Moving to next step');
       }
       hapticFeedback.medium();
       setCurrentStep(prev => prev + 1);
     } else if (isLastStep) {
       if (__DEV__) {
-        console.log('✅ On last step, completing onboarding immediately');
+        DebugUtils.log('✅ On last step, completing onboarding immediately');
       }
       // Set completion ref immediately to prevent any re-mounting
       completionRef.current = true;
@@ -226,18 +229,18 @@ export default function EnhancedOnboardingScreen() {
   }, [currentStep, isLastStep, isCompleting, hasCompleted, handleComplete]);
 
   const handleComplete = useCallback(async () => {
-    console.log('🎯 handleComplete called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
-    
+    DebugUtils.log('🎯 handleComplete called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
+
     if (hasCompleted) {
-      console.log('⚠️ Onboarding already completed, skipping');
+      DebugUtils.log('⚠️ Onboarding already completed, skipping');
       return;
     }
-    
+
     if (isCompleting) {
-      console.log('⚠️ handleComplete already in progress, skipping');
+      DebugUtils.log('⚠️ handleComplete already in progress, skipping');
       return;
     }
-    
+
     try {
       // Set completion flags immediately to prevent double calls
       completionRef.current = true;
@@ -246,10 +249,10 @@ export default function EnhancedOnboardingScreen() {
       }
       setHasCompleted(true);
       setIsCompleting(true);
-      
-      console.log('🎯 Starting onboarding completion process');
+
+      DebugUtils.log('🎯 Starting onboarding completion process');
       hapticFeedback.success();
-      
+
       // Convert onboarding data to backend format
       const backendData = {
         age: parseInt(onboardingData.healthData.age) || 25,
@@ -263,9 +266,9 @@ export default function EnhancedOnboardingScreen() {
         bodyTypeGoal: onboardingData.bodyTypeGoal,
         timezone: onboardingData.timezone
       };
-      
+
       await completeOnboarding(backendData);
-      
+
       showToast.success('Welcome!', 'Your profile has been set up successfully');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -282,15 +285,14 @@ export default function EnhancedOnboardingScreen() {
     }
   }, [onboardingData, completeOnboarding, currentStep, isLastStep, isCompleting, hasCompleted]);
 
-
   const handleHealthDataChange = useCallback((healthData: HealthData) => {
     setOnboardingData(prev => ({ ...prev, healthData }));
   }, []);
 
   const handleBodyTypeChange = useCallback((bodyTypeGoal: string, editedGoal?: Record<string, unknown>) => {
-    console.log('🔍 handleBodyTypeChange called with:', { bodyTypeGoal, editedGoal });
-    setOnboardingData(prev => ({ 
-      ...prev, 
+    DebugUtils.log('🔍 handleBodyTypeChange called with:', { bodyTypeGoal, editedGoal });
+    setOnboardingData(prev => ({
+      ...prev,
       bodyTypeGoal,
       editedBodyTypeGoal: editedGoal
     }));
@@ -298,9 +300,8 @@ export default function EnhancedOnboardingScreen() {
 
   const handleBodyTypeValidationChange = useCallback((isValid: boolean) => {
     // Update validation state for this step
-    console.log('Body type validation changed:', isValid);
+    DebugUtils.log('Body type validation changed:', isValid);
   }, []);
-
 
   const canGoNext = () => {
     switch (currentStepData.id) {
@@ -314,12 +315,12 @@ export default function EnhancedOnboardingScreen() {
           'eda6cd66-d5f8-44a9-8891-7d4ef4f4e5ec', // Strong & Steady
           '76f3a745-02b9-4040-b90e-a1f94d9b91cf'  // Big & Bold
         ];
-        const isValid = !!(onboardingData.bodyTypeGoal && 
-                       onboardingData.bodyTypeGoal.length > 0 && 
+        const isValid = !!(onboardingData.bodyTypeGoal &&
+                       onboardingData.bodyTypeGoal.length > 0 &&
                        validBodyTypeIds.includes(onboardingData.bodyTypeGoal));
-        console.log('🔍 Body type validation check:', { 
-          bodyTypeGoal: onboardingData.bodyTypeGoal, 
-          length: onboardingData.bodyTypeGoal?.length, 
+        DebugUtils.log('🔍 Body type validation check:', {
+          bodyTypeGoal: onboardingData.bodyTypeGoal,
+          length: onboardingData.bodyTypeGoal?.length,
           isValid,
           validBodyTypeIds
         });
@@ -393,7 +394,6 @@ export default function EnhancedOnboardingScreen() {
     );
   }
 
-
   // If we should prevent rendering, return null but only after all hooks
   if (shouldPreventRender) {
     return null;
@@ -402,7 +402,7 @@ export default function EnhancedOnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8fafc" />
-      
+
         <OnboardingContainer
           currentStep={currentStep}
           totalSteps={ONBOARDING_STEPS.length}
@@ -423,30 +423,30 @@ export default function EnhancedOnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xl,
     backgroundColor: '#1a1a1a',
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     textAlign: 'center',
   },
   completionLoadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    backgroundColor: '#f8fafc',
+    paddingHorizontal: SPACING.xl,
+    backgroundColor: COLORS.background.secondary,
   },
   completionLoadingText: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
     color: '#3b82f6',
     textAlign: 'center',

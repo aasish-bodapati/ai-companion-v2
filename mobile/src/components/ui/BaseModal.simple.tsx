@@ -23,34 +23,34 @@ interface BaseModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
-  
+
   // Modal configuration
   size?: ModalSize;
   position?: ModalPosition;
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
   closeOnSwipe?: boolean;
-  
+
   // Content configuration
   scrollable?: boolean;
   keyboardAvoiding?: boolean;
   showHeader?: boolean;
-  
+
   // Styling
   containerStyle?: any;
   contentStyle?: any;
   headerStyle?: any;
   titleStyle?: any;
-  
+
   // Animation
   animationType?: 'fade' | 'slide' | 'none';
   animationDuration?: number;
-  
+
   // Callbacks
   onShow?: () => void;
   onHide?: () => void;
   onBackdropPress?: () => void;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -99,7 +99,7 @@ export default function BaseModal({
 
   const showModal = () => {
     const animations = [];
-    
+
     if (animationType === 'fade' || animationType === 'slide') {
       animations.push(
         Animated.timing(fadeAnim, {
@@ -109,7 +109,7 @@ export default function BaseModal({
         })
       );
     }
-    
+
     if (animationType === 'slide') {
       animations.push(
         Animated.timing(slideAnim, {
@@ -119,7 +119,7 @@ export default function BaseModal({
         })
       );
     }
-    
+
     if (animationType === 'fade') {
       animations.push(
         Animated.timing(scaleAnim, {
@@ -129,13 +129,13 @@ export default function BaseModal({
         })
       );
     }
-    
+
     Animated.parallel(animations).start();
   };
 
   const hideModal = () => {
     const animations = [];
-    
+
     if (animationType === 'fade' || animationType === 'slide') {
       animations.push(
         Animated.timing(fadeAnim, {
@@ -145,7 +145,7 @@ export default function BaseModal({
         })
       );
     }
-    
+
     if (animationType === 'slide') {
       animations.push(
         Animated.timing(slideAnim, {
@@ -155,7 +155,7 @@ export default function BaseModal({
         })
       );
     }
-    
+
     if (animationType === 'fade') {
       animations.push(
         Animated.timing(scaleAnim, {
@@ -165,7 +165,7 @@ export default function BaseModal({
         })
       );
     }
-    
+
     Animated.parallel(animations).start(() => {
       onHide?.();
     });

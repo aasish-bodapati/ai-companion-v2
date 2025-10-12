@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -9,6 +9,10 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface PageLayoutProps {
   title: string;
@@ -54,7 +58,7 @@ export default function PageLayout({
             <Text style={styles.subtitle}>{subtitle}</Text>
           )}
         </View>
-        
+
         {headerActions.length > 0 && (
           <View style={styles.headerActions}>
             {headerActions.map((action, index) => (
@@ -63,10 +67,10 @@ export default function PageLayout({
                 style={styles.headerAction}
                 onPress={action.onPress}
               >
-                <Ionicons 
-                  name={action.icon as keyof typeof Ionicons.glyphMap} 
-                  size={24} 
-                  color={action.color || '#6b7280'} 
+                <Ionicons
+                  name={action.icon as keyof typeof Ionicons.glyphMap}
+                  size={24}
+                  color={action.color || '#6b7280'}
                 />
               </TouchableOpacity>
             ))}
@@ -77,8 +81,8 @@ export default function PageLayout({
       {/* Quick Stats */}
       {showQuickStats && quickStats.length > 0 && (
         <View style={styles.quickStatsContainer}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.quickStats}
           >
@@ -121,15 +125,15 @@ export default function PageLayout({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -137,13 +141,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '700',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   headerActions: {
@@ -151,18 +155,18 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerAction: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8fafc',
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.background.secondary,
   },
   quickStatsContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   quickStats: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     gap: 16,
   },
   quickStat: {
@@ -172,30 +176,30 @@ const styles = StyleSheet.create({
   quickStatIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   quickStatValue: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   quickStatLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   content: {
     flex: 1,
   },
   footer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
 });

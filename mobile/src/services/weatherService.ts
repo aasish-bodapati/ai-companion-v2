@@ -1,5 +1,8 @@
 import Constants from 'expo-constants';
 
+
+import { DebugUtils } from '../utils/debugUtils';
+
 const OPENWEATHER_API_KEY = Constants.expoConfig?.extra?.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY;
 
 export interface WeatherData {
@@ -47,7 +50,7 @@ class WeatherService {
       }
 
       const data = await response.json();
-      
+
       return {
         temperature: Math.round(data.main.temp),
         description: data.weather[0].description,
@@ -58,7 +61,7 @@ class WeatherService {
         country: data.sys.country,
       };
     } catch (error) {
-      console.error('Weather API error:', error);
+      DebugUtils.error('Weather API error:', error);
       throw error;
     }
   }
@@ -79,7 +82,7 @@ class WeatherService {
       }
 
       const data = await response.json();
-      
+
       return {
         temperature: Math.round(data.main.temp),
         description: data.weather[0].description,
@@ -90,7 +93,7 @@ class WeatherService {
         country: data.sys.country,
       };
     } catch (error) {
-      console.error('Weather API error:', error);
+      DebugUtils.error('Weather API error:', error);
       throw error;
     }
   }
@@ -137,14 +140,13 @@ class WeatherService {
       }
 
       const data = await response.json();
-      
-      
+
       // Process the API data to create hourly forecasts
       const forecasts: HourlyForecast[] = [];
       const now = new Date();
       const currentTime = now.getTime();
       const currentHour = now.getHours();
-      
+
       // Filter and sort the API data to get the most relevant forecasts
       const relevantForecasts = data.list
         .map((item: any) => ({
@@ -157,41 +159,41 @@ class WeatherService {
           return timeDiff >= -6 * 60 * 60 * 1000 && timeDiff <= 18 * 60 * 60 * 1000;
         })
         .sort((a: any, b: any) => a.timestamp - b.timestamp);
-      
+
       // Generate hourly data by interpolating between 3-hour intervals
       const allHourlyData: { time: Date; data: unknown }[] = [];
-      
+
       for (let i = 0; i < relevantForecasts.length - 1; i++) {
         const current = relevantForecasts[i];
         const next = relevantForecasts[i + 1];
-        
+
         // Get the time range for this 3-hour period
         const startTime = new Date(current.timestamp);
         const endTime = new Date(next.timestamp);
-        
+
         // Generate hourly data for this 3-hour period
         for (let hour = 0; hour < 3; hour++) {
           const targetTime = new Date(startTime.getTime() + hour * 60 * 60 * 1000);
-          
+
           // Skip if this hour is more than 6 hours in the past
           if (targetTime.getTime() < currentTime - 6 * 60 * 60 * 1000) {
             continue;
           }
-          
+
           // Skip if this hour is more than 18 hours in the future
           if (targetTime.getTime() > currentTime + 18 * 60 * 60 * 1000) {
             continue;
           }
-          
+
           // Interpolate temperature between current and next forecast
           const progress = hour / 3;
           const interpolatedTemp = current.main.temp + (next.main.temp - current.main.temp) * progress;
-          
+
           // Use current forecast data for other properties (they don't change much in 3 hours)
           const forecastData = {
-            time: targetTime.toLocaleTimeString([], { 
+            time: targetTime.toLocaleTimeString([], {
               hour: 'numeric',
-              hour12: true 
+              hour12: true
             }),
             temperature: Math.round(interpolatedTemp),
             description: current.weather[0].description,
@@ -200,23 +202,23 @@ class WeatherService {
             windSpeed: Math.round((current.wind.speed + (next.wind.speed - current.wind.speed) * progress) * 10) / 10,
             precipitation: Math.round(((current.rain?.['3h'] || 0) + (current.snow?.['3h'] || 0)) / 3 * 10) / 10,
           };
-          
+
           allHourlyData.push({ time: targetTime, data: forecastData });
         }
       }
-      
+
       // Add the last forecast if it's within our time range
       if (relevantForecasts.length > 0) {
         const last = relevantForecasts[relevantForecasts.length - 1];
         const lastTime = new Date(last.timestamp);
-        
+
         if (lastTime.getTime() <= currentTime + 18 * 60 * 60 * 1000) {
           allHourlyData.push({
             time: lastTime,
             data: {
-              time: lastTime.toLocaleTimeString([], { 
+              time: lastTime.toLocaleTimeString([], {
                 hour: 'numeric',
-                hour12: true 
+                hour12: true
               }),
               temperature: Math.round(last.main.temp),
               description: last.weather[0].description,
@@ -228,33 +230,33 @@ class WeatherService {
           });
         }
       }
-      
+
       // Sort by time
       allHourlyData.sort((a, b) => a.time.getTime() - b.time.getTime());
-      
+
       // If we don't have enough past data, generate some using the first available data point
       if (allHourlyData.length > 0) {
         const firstDataPoint = allHourlyData[0];
         const firstTime = firstDataPoint.time;
         const currentTimeDate = new Date(currentTime);
-        
+
         // Generate past hours if we don't have them
         for (let i = 1; i <= 6; i++) {
           const pastHour = new Date(currentTimeDate);
           pastHour.setHours(currentHour - i, 0, 0, 0);
-          
+
           // Only add if this hour is not already in our data
-          const exists = allHourlyData.some(item => 
-            item.time.getHours() === pastHour.getHours() && 
+          const exists = allHourlyData.some(item =>
+            item.time.getHours() === pastHour.getHours() &&
             item.time.getDate() === pastHour.getDate()
           );
-          
+
           if (!exists) {
             // Use the first data point as a base for past hours
             const pastData = {
-              time: pastHour.toLocaleTimeString([], { 
+              time: pastHour.toLocaleTimeString([], {
                 hour: 'numeric',
-                hour12: true 
+                hour12: true
               }),
               temperature: Math.round(firstDataPoint.data.temperature - (i * 0.5)), // Slight temperature variation
               description: firstDataPoint.data.description,
@@ -263,34 +265,33 @@ class WeatherService {
               windSpeed: firstDataPoint.data.windSpeed,
               precipitation: firstDataPoint.data.precipitation,
             };
-            
+
             allHourlyData.unshift({ time: pastHour, data: pastData });
           }
         }
       }
-      
+
       // Create a clean hourly forecast: 6 past + 1 current + 12 future = 19 hours total
       // Structure: [past6, past5, past4, past3, past2, past1, current, future1, future2, ...]
       const finalForecasts: HourlyForecast[] = [];
-      
-      
+
       // Find the closest data point to current time for the current hour
       let currentHourData = allHourlyData.find(item => {
         const itemTime = item.time.getTime();
         const timeDiff = Math.abs(itemTime - currentTime);
         return timeDiff <= 60 * 60 * 1000; // Within 1 hour
       });
-      
+
       if (!currentHourData && allHourlyData.length > 0) {
         // If no close match, use the first available data point
         currentHourData = allHourlyData[0];
       }
-      
+
       // Create current hour entry
       const currentHourEntry = currentHourData ? {
-        time: new Date(currentTime).toLocaleTimeString([], { 
+        time: new Date(currentTime).toLocaleTimeString([], {
           hour: 'numeric',
-          hour12: true 
+          hour12: true
         }),
         temperature: Math.round(currentHourData.data.temperature),
         description: currentHourData.data.description,
@@ -299,9 +300,9 @@ class WeatherService {
         windSpeed: currentHourData.data.windSpeed,
         precipitation: currentHourData.data.precipitation,
       } : {
-        time: new Date(currentTime).toLocaleTimeString([], { 
+        time: new Date(currentTime).toLocaleTimeString([], {
           hour: 'numeric',
-          hour12: true 
+          hour12: true
         }),
         temperature: 22,
         description: 'Clear',
@@ -310,23 +311,23 @@ class WeatherService {
         windSpeed: 5,
         precipitation: 0,
       };
-      
+
       // Add 6 past hours first (indices 0-5) - in reverse chronological order for left scrolling
       for (let i = 6; i >= 1; i--) {
         const pastHour = new Date(currentTime);
         pastHour.setHours(currentHour - i, 0, 0, 0);
-        
+
         // Find the closest data point for this past hour
         const closestData = allHourlyData.find(item => {
           const itemTime = item.time.getTime();
           const timeDiff = Math.abs(itemTime - pastHour.getTime());
           return timeDiff <= 90 * 60 * 1000; // Within 1.5 hours
         });
-        
+
         const pastHourEntry = closestData ? {
-          time: pastHour.toLocaleTimeString([], { 
+          time: pastHour.toLocaleTimeString([], {
             hour: 'numeric',
-            hour12: true 
+            hour12: true
           }),
           temperature: Math.round(closestData.data.temperature),
           description: closestData.data.description,
@@ -335,9 +336,9 @@ class WeatherService {
           windSpeed: closestData.data.windSpeed,
           precipitation: closestData.data.precipitation,
         } : {
-          time: pastHour.toLocaleTimeString([], { 
+          time: pastHour.toLocaleTimeString([], {
             hour: 'numeric',
-            hour12: true 
+            hour12: true
           }),
           temperature: Math.round((currentHourEntry.temperature || 22) - (i * 0.5)),
           description: currentHourEntry.description || 'Clear',
@@ -346,29 +347,29 @@ class WeatherService {
           windSpeed: currentHourEntry.windSpeed || 5,
           precipitation: currentHourEntry.precipitation || 0,
         };
-        
+
         finalForecasts.push(pastHourEntry);
       }
-      
+
       // Add current hour (index 6)
       finalForecasts.push(currentHourEntry);
-      
+
       // Add 12 future hours (indices 7-18)
       for (let i = 1; i <= 12; i++) {
         const futureHour = new Date(currentTime);
         futureHour.setHours(currentHour + i, 0, 0, 0);
-        
+
         // Find the closest data point for this future hour
         const closestData = allHourlyData.find(item => {
           const itemTime = item.time.getTime();
           const timeDiff = Math.abs(itemTime - futureHour.getTime());
           return timeDiff <= 90 * 60 * 1000; // Within 1.5 hours
         });
-        
+
         const futureHourEntry = closestData ? {
-          time: futureHour.toLocaleTimeString([], { 
+          time: futureHour.toLocaleTimeString([], {
             hour: 'numeric',
-            hour12: true 
+            hour12: true
           }),
           temperature: Math.round(closestData.data.temperature),
           description: closestData.data.description,
@@ -377,9 +378,9 @@ class WeatherService {
           windSpeed: closestData.data.windSpeed,
           precipitation: closestData.data.precipitation,
         } : {
-          time: futureHour.toLocaleTimeString([], { 
+          time: futureHour.toLocaleTimeString([], {
             hour: 'numeric',
-            hour12: true 
+            hour12: true
           }),
           temperature: Math.round((currentHourEntry.temperature || 22) + (i * 0.3)),
           description: currentHourEntry.description || 'Clear',
@@ -388,16 +389,15 @@ class WeatherService {
           windSpeed: currentHourEntry.windSpeed || 5,
           precipitation: currentHourEntry.precipitation || 0,
         };
-        
+
         finalForecasts.push(futureHourEntry);
       }
-      
+
       forecasts.push(...finalForecasts);
-      
-      
+
       return forecasts;
     } catch (error) {
-      console.error('Weather forecast API error:', error);
+      DebugUtils.error('Weather forecast API error:', error);
       throw error;
     }
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
 export interface DropdownItem {
@@ -76,7 +78,7 @@ export default function Dropdown({
             </TouchableOpacity>
           </View>
         )}
-        
+
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={true}

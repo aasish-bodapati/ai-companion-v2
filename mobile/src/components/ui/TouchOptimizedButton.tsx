@@ -122,9 +122,9 @@ export default function TouchOptimizedButton({
     if (loading) {
       return (
         <>
-          <ActivityIndicator 
-            size="small" 
-            color={variant === 'primary' ? COLORS.text.inverse : COLORS.primary.main} 
+          <ActivityIndicator
+            size="small"
+            color={variant === 'primary' ? COLORS.text.inverse : COLORS.primary.main}
           />
           <Text style={[getTextStyle(), { marginLeft: 8 }]}>
             Loading...

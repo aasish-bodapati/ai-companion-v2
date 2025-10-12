@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 
 export interface TodayStats {
   workouts: number;
@@ -78,8 +79,8 @@ export interface QuickStats {
 export const dashboardService = {
   async getDashboardSummary(): Promise<DashboardSummary> {
     try {
-      const response = await apiClient.get('/health/dashboard/summary');
-      return response.data;
+      const response = await api.get('/api/v1/health/dashboard/summary');
+      return response;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
@@ -88,8 +89,8 @@ export const dashboardService = {
 
   async getQuickStats(): Promise<QuickStats> {
     try {
-      const response = await apiClient.get('/health/dashboard/quick-stats');
-      return response.data;
+      const response = await api.get('/api/v1/health/dashboard/quick-stats');
+      return response;
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
@@ -98,3 +99,6 @@ export const dashboardService = {
 
   // getAnalyticsData method removed - analytics functionality deleted
 };
+
+// Export singleton instance
+// export const dashboardService = new DashboardService(); // Duplicate export removed

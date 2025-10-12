@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
+import React from 'react';
+
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
 export type LoadingSize = 'small' | 'medium' | 'large';
 export type LoadingVariant = 'default' | 'overlay' | 'inline' | 'button';
@@ -17,25 +19,28 @@ interface LoadingStateProps {
   // Core props
   loading: boolean;
   message?: string;
-  
+
   // Configuration
   size?: LoadingSize;
   variant?: LoadingVariant;
   showSpinner?: boolean;
   showMessage?: boolean;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   messageStyle?: TextStyle;
   spinnerColor?: string;
-  
+
   // Customization
   customSpinner?: React.ReactNode;
   customMessage?: React.ReactNode;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  
+  // Testing
+  testID?: string;
 }
 
 export default function LoadingState({
@@ -52,6 +57,7 @@ export default function LoadingState({
   customMessage,
   accessibilityLabel,
   accessibilityHint,
+  testID,
 }: LoadingStateProps) {
   if (!loading) return null;
 
@@ -70,7 +76,7 @@ export default function LoadingState({
 
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     // Size-based styles
     switch (size) {
       case 'small':
@@ -83,7 +89,7 @@ export default function LoadingState({
         baseStyles.push(styles.containerLarge);
         break;
     }
-    
+
     // Variant-based styles
     switch (variant) {
       case 'overlay':
@@ -99,15 +105,15 @@ export default function LoadingState({
         baseStyles.push(styles.containerDefault);
         break;
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   const getMessageStyles = (): TextStyle[] => {
     const baseStyles = [styles.message];
-    
+
     // Size-based message styles
     switch (size) {
       case 'small':
@@ -120,9 +126,9 @@ export default function LoadingState({
         baseStyles.push(styles.messageLarge);
         break;
     }
-    
+
     if (messageStyle) baseStyles.push(messageStyle);
-    
+
     return baseStyles;
   };
 
@@ -131,6 +137,7 @@ export default function LoadingState({
       style={getContainerStyles()}
       accessibilityLabel={accessibilityLabel || 'Loading'}
       accessibilityHint={accessibilityHint || 'Content is being loaded'}
+      testID={testID}
     >
       {showSpinner && (
         <View style={styles.spinnerContainer}>
@@ -138,11 +145,12 @@ export default function LoadingState({
             <ActivityIndicator
               size={getSpinnerSize()}
               color={spinnerColor}
+              testID="activity-indicator"
             />
           )}
         </View>
       )}
-      
+
       {showMessage && message && (
         <View style={styles.messageContainer}>
           {customMessage || (

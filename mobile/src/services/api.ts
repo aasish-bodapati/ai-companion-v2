@@ -1,118 +1,257 @@
-import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logger } from '../utils/logger';
+/**
+ * API Service Client
+ * Centralized API client for all backend communication
+ */
 
-const API_URL = 'http://192.168.1.11:8000';
-const API_BASE_URL = `${API_URL}/api/v1`;
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
-logger.api('API_URL:', API_URL);
-logger.api('API_BASE_URL:', API_BASE_URL);
 
-// API Client configured
+import { DebugUtils } from '../utils/debugUtils';
 
-export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 25000, // 25 second timeout - backend has 30s timeout
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
+// API Configuration
+const API_CONFIG = {
+  baseURL: __DEV__ ? 'http://192.168.1.11:8000' : 'https://api.healthlog.app',
+  timeout: 30000,
+  retryAttempts: 3,
+  retryDelay: 1000,
+};
 
-// Request interceptor for adding auth tokens if needed
-apiClient.interceptors.request.use(
-  async config => {
-    // Only log important requests in development mode
-    if (__DEV__ && config.url?.includes('/login') || config.url?.includes('/register')) {
-      logger.api('Making request to:', config.url, 'Method:', config.method);
-    }
-    
-    // Add auth token for non-public endpoints
-    const isPublicAuthEndpoint = config.url === '/login/access-token' || config.url === '/register';
-    const isIndianFoodEndpoint = config.url?.includes('/indian-foods/');
-    
-    if (!isPublicAuthEndpoint && !isIndianFoodEndpoint) {
-      try {
-        // AsyncStorage is now imported at the top
-        const token = await AsyncStorage.getItem('token');
-        
-        if (token && !config.headers.Authorization) {
-          config.headers.Authorization = `Bearer ${token}`;
-        } else if (!token) {
-          console.warn('🔐 [API] No auth token found for request to:', config.url);
-        }
-      } catch (error) {
-        console.error('🔐 [API] Error getting auth token:', error);
-      }
-    }
-    
-    return config;
-  },
-  error => {
-    // Silent error handling - no console logging to prevent Expo Go notifications
-    return Promise.reject(error);
+// Request interceptor
+const requestInterceptor = (config: AxiosRequestConfig) => {
+  const startTime = Date.now();
+  config.metadata = { startTime };
+  
+  // Add auth token if available
+  const token = getAuthToken();
+  if (token) {
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${token}`,
+    };
   }
-);
+  
+  DebugUtils.network(
+    config.method?.toUpperCase() || 'GET',
+    config.url || '',
+    undefined,
+    undefined
+  );
+  
+  return config;
+};
 
-// Response interceptor for handling errors
-apiClient.interceptors.response.use(
-  response => {
-    // Only log important responses in development
-    if (__DEV__ && (response.config.url?.includes('/login') || response.config.url?.includes('/register'))) {
-      logger.api('Response received:', response.status, response.config.url);
+// Response interceptor
+const responseInterceptor = (response: AxiosResponse) => {
+  const duration = Date.now() - (response.config.metadata?.startTime || 0);
+  
+  DebugUtils.network(
+    response.config.method?.toUpperCase() || 'GET',
+    response.config.url || '',
+    response.status,
+    duration
+  );
+  
+  return response;
+};
+
+// Error interceptor
+const errorInterceptor = (error: AxiosError) => {
+  const duration = Date.now() - (error.config?.metadata?.startTime || 0);
+  
+  DebugUtils.network(
+    error.config?.method?.toUpperCase() || 'GET',
+    error.config?.url || '',
+    error.response?.status,
+    duration
+  );
+  
+  DebugUtils.error('API Error:', {
+    url: error.config?.url,
+    method: error.config?.method,
+    status: error.response?.status,
+    message: error.message,
+    data: error.response?.data,
+  });
+  
+  return Promise.reject(error);
+};
+
+// Create axios instance
+const apiClient: AxiosInstance = axios.create(API_CONFIG);
+
+// Add interceptors
+apiClient.interceptors.request.use(requestInterceptor);
+apiClient.interceptors.response.use(responseInterceptor, errorInterceptor);
+
+// Auth token management
+let authToken: string | null = null;
+
+export const getAuthToken = (): string | null => {
+  return authToken;
+};
+
+export const setAuthToken = (token: string | null): void => {
+  authToken = token;
+  DebugUtils.log('Auth token updated:', token ? 'Set' : 'Cleared');
+};
+
+// Clear auth token
+export const clearAuthToken = (): void => {
+  authToken = null;
+  DebugUtils.log('Auth token cleared');
+};
+
+// API Methods
+export const api = {
+  // GET request
+  get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const response = await apiClient.get<T>(url, config);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
     }
-    return response;
   },
-  async error => {
-    // Handle authentication errors
-    if (error.response?.status === 401) {
-      console.error('🔐 [API CLIENT] Authentication error:', {
-        status: error.response?.status,
-        message: error.message,
-        url: error.config?.url,
-        headers: error.config?.headers
+
+  // POST request
+  post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const response = await apiClient.post<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // PUT request
+  put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const response = await apiClient.put<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // PATCH request
+  patch: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const response = await apiClient.patch<T>(url, data, config);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // DELETE request
+  delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const response = await apiClient.delete<T>(url, config);
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Upload file
+  upload: async <T = any>(url: string, file: File | FormData, config?: AxiosRequestConfig): Promise<T> => {
+    try {
+      const formData = file instanceof FormData ? file : new FormData();
+      if (file instanceof File) {
+        formData.append('file', file);
+      }
+      
+      const response = await apiClient.post<T>(url, formData, {
+        ...config,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...config?.headers,
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  // Download file
+  download: async (url: string, filename?: string): Promise<void> => {
+    try {
+      const response = await apiClient.get(url, {
+        responseType: 'blob',
       });
       
-      // Clear tokens on 401 error
-      try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
-      } catch (clearError) {
-        console.error('🔐 [API CLIENT] Error clearing tokens:', clearError);
-      }
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename || 'download';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      throw handleApiError(error);
     }
-    // Only log important errors
-    else if (error.response?.status >= 500 || error.config?.url?.includes('/login') || error.config?.url?.includes('/register')) {
-      console.error('❌ [API CLIENT] Error:', {
-        status: error.response?.status,
-        message: error.message,
-        url: error.config?.url
-      });
-    }
-    
-    // Handle different error types more gracefully - NO CONSOLE LOGGING
-    // This prevents technical errors from showing in Expo Go notifications
-    if (error.response?.status === 404) {
-      // 404s are often expected (e.g., no workout scheduled, server starting up)
-      // Silent - no logging
-    } else if (error.response?.status === 401) {
-      // 401s are authentication issues, not critical errors
-      // Silent - no logging
-    } else if (error.response?.status === 403) {
-      // 403s are permission issues
-      // Silent - no logging
-    } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
-      // Network errors are common and not critical
-      // Silent - no logging
-    } else if (error.code === 'ECONNABORTED') {
-      // Timeout errors
-      // Silent - no logging
-    } else {
-      // Silent error handling - no console logging to prevent Expo Go notifications
-    }
-    return Promise.reject(error);
-  }
-);
+  },
+};
 
-export default apiClient;
+// Error handling
+const handleApiError = (error: any): Error => {
+  if (error.response) {
+    // Server responded with error status
+    const { status, data } = error.response;
+    const message = data?.message || data?.detail || `HTTP ${status} Error`;
+    
+    DebugUtils.error('API Error Response:', {
+      status,
+      message,
+      data,
+    });
+    
+    return new Error(message);
+  } else if (error.request) {
+    // Request was made but no response received
+    DebugUtils.error('API Network Error:', error.message);
+    return new Error('Network error - please check your connection');
+  } else {
+    // Something else happened
+    DebugUtils.error('API Error:', error.message);
+    return new Error(error.message || 'An unexpected error occurred');
+  }
+};
+
+// Retry logic
+export const withRetry = async <T>(
+  apiCall: () => Promise<T>,
+  retries: number = API_CONFIG.retryAttempts
+): Promise<T> => {
+  try {
+    return await apiCall();
+  } catch (error) {
+    if (retries > 0) {
+      DebugUtils.warn(`API call failed, retrying... (${retries} attempts left)`);
+      await new Promise(resolve => setTimeout(resolve, API_CONFIG.retryDelay));
+      return withRetry(apiCall, retries - 1);
+    }
+    throw error;
+  }
+};
+
+// Health check
+export const healthCheck = async (): Promise<boolean> => {
+  try {
+    await api.get('/health');
+    DebugUtils.log('API health check: ✅ Healthy');
+    return true;
+  } catch (error) {
+    DebugUtils.error('API health check: ❌ Unhealthy', error);
+    return false;
+  }
+};
+
+// Export the axios instance for advanced usage
+export { apiClient };
+
+// Export default
+export default api;

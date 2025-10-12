@@ -3,7 +3,8 @@
  * Handles Indian food database operations and nutrition calculations
  */
 
-import { apiClient } from './api';
+import { api } from './api';
+
 
 export interface IndianFood {
   food_code: string;
@@ -76,10 +77,10 @@ class IndianFoodService {
    */
   async searchFoods(query: string, limit: number = 20): Promise<IndianFood[]> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/search`, {
+      const response = await api.get(`${this.baseUrl}/search`, {
         params: { q: query, limit }
       });
-      
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -95,8 +96,8 @@ class IndianFoodService {
    */
   async getFoodByCode(foodCode: string): Promise<IndianFood> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/food/${foodCode}`);
-      
+      const response = await api.get(`${this.baseUrl}/food/${foodCode}`);
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -112,10 +113,10 @@ class IndianFoodService {
    */
   async getFoodNutrition(foodCode: string, servingQty: number = 1.0): Promise<IndianFoodNutrition> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/nutrition/${foodCode}`, {
+      const response = await api.get(`${this.baseUrl}/nutrition/${foodCode}`, {
         params: { serving_qty: servingQty }
       });
-      
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -131,10 +132,10 @@ class IndianFoodService {
    */
   async getPopularFoods(limit: number = 20): Promise<IndianFood[]> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/popular`, {
+      const response = await api.get(`${this.baseUrl}/popular`, {
         params: { limit }
       });
-      
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -150,13 +151,13 @@ class IndianFoodService {
    */
   async getFoodsByCategory(keywords: string[], limit: number = 20): Promise<IndianFood[]> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/category`, {
-        params: { 
-          keywords: keywords.join(','), 
-          limit 
+      const response = await api.get(`${this.baseUrl}/category`, {
+        params: {
+          keywords: keywords.join(','),
+          limit
         }
       });
-      
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -175,8 +176,8 @@ class IndianFoodService {
     serving_qty: number;
   }[]): Promise<MealNutrition> {
     try {
-      const response = await apiClient.post(`${this.baseUrl}/calculate-meal`, foodItems);
-      
+      const response = await api.post(`${this.baseUrl}/calculate-meal`, foodItems);
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -192,8 +193,8 @@ class IndianFoodService {
    */
   async getFoodCategories(): Promise<FoodCategory> {
     try {
-      const response = await apiClient.get(`${this.baseUrl}/categories`);
-      
+      const response = await api.get(`${this.baseUrl}/categories`);
+
       if (response.data.success) {
         return response.data.data;
       }
@@ -208,13 +209,13 @@ class IndianFoodService {
    * Search foods with debouncing for better UX
    */
   private searchTimeout: NodeJS.Timeout | null = null;
-  
+
   async searchFoodsDebounced(query: string, limit: number = 20, delay: number = 300): Promise<IndianFood[]> {
     return new Promise((resolve, reject) => {
       if (this.searchTimeout) {
         clearTimeout(this.searchTimeout);
       }
-      
+
       this.searchTimeout = setTimeout(async () => {
         try {
           const results = await this.searchFoods(query, limit);
@@ -263,7 +264,7 @@ class IndianFoodService {
   calculateCustomNutrition(food: IndianFood, customQty: number, customUnit: string = 'g'): IndianFoodNutrition {
     const baseNutrition = food.nutrition_per_100g;
     const multiplier = customQty / 100; // Assuming custom unit is in grams
-    
+
     return {
       food_code: food.food_code,
       food_name: food.food_name,

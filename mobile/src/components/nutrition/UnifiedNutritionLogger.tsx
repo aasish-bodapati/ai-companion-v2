@@ -9,9 +9,13 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService } from '../../services/nutritionService';
+import { nutritionService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface FoodItem {
   id: string | number;
@@ -64,7 +68,7 @@ interface UnifiedNutritionLoggerProps {
 
 const getMealTypeByTime = (): 'breakfast' | 'lunch' | 'dinner' | 'snack' => {
   const hour = new Date().getHours();
-  
+
   if (hour >= 5 && hour < 11) {
     return 'breakfast';
   } else if (hour >= 11 && hour < 15) {
@@ -124,7 +128,7 @@ export default function UnifiedNutritionLogger({
       setFoodItems(data);
       showToast('Food database loaded successfully', 'success');
     } catch (error) {
-      console.error('Error loading food items:', error);
+      DebugUtils.error('Error loading food items:', error);
       showToast('Failed to load food database', 'error');
     } finally {
       setLoading(false);
@@ -137,15 +141,15 @@ export default function UnifiedNutritionLogger({
       return;
     }
 
-    console.log('🔍 [NUTRITION LOGGER] Searching for:', query);
+    DebugUtils.log('🔍 [NUTRITION LOGGER] Searching for:', query);
     setSearching(true);
     try {
       const results = await nutritionService.searchFoods(query);
-      console.log('🔍 [NUTRITION LOGGER] Found', results.length, 'food items');
+      DebugUtils.log('🔍 [NUTRITION LOGGER] Found', results.length, 'food items');
       // Limit to 5 results
       setSearchResults(results.slice(0, 5));
     } catch (error) {
-      console.error('Error searching foods:', error);
+      DebugUtils.error('Error searching foods:', error);
       setSearchResults([]);
     } finally {
       setSearching(false);
@@ -182,14 +186,14 @@ export default function UnifiedNutritionLogger({
         notes: '',
         meal_date: new Date().toISOString(), // Send current time in ISO format
       };
-      
+
       await nutritionService.logMeal(mealData);
       showToast('Meal logged successfully!', 'success');
       onMealLogged();
       onClose();
       resetForm();
     } catch (error) {
-      console.error('Error saving meal:', error);
+      DebugUtils.error('Error saving meal:', error);
       showToast('Failed to save meal. Please try again.', 'error');
     } finally {
       setLoading(false);
@@ -216,7 +220,7 @@ export default function UnifiedNutritionLogger({
       const protein = (item.food_item.protein_per_100g || 0) * item.quantity;
       const carbs = (item.food_item.carbs_per_100g || 0) * item.quantity;
       const fat = (item.food_item.fat_per_100g || 0) * item.quantity;
-      
+
       return {
         total_calories: acc.total_calories + calories,
         total_protein: acc.total_protein + protein,
@@ -224,13 +228,13 @@ export default function UnifiedNutritionLogger({
         total_fat: acc.total_fat + fat,
       };
     }, { total_calories: 0, total_protein: 0, total_carbs: 0, total_fat: 0 });
-    
+
     return totals;
   };
 
   const addFoodItem = (foodItem: FoodItem) => {
     const existingItem = meal.food_items.find(item => item.food_item.id === foodItem.id);
-    
+
     if (existingItem) {
       // Update quantity if item already exists
       updateFoodQuantity(foodItem.id.toString(), existingItem.quantity + 1);
@@ -242,10 +246,10 @@ export default function UnifiedNutritionLogger({
         quantity: 1,
         unit: foodItem.serving_unit,
       };
-      
+
       const newFoodItems = [...meal.food_items, newFoodItem];
       const totals = calculateTotals(newFoodItems);
-      
+
       setMeal(prev => ({
         ...prev,
         food_items: newFoodItems,
@@ -257,11 +261,11 @@ export default function UnifiedNutritionLogger({
 
   const updateFoodQuantity = (foodId: string, quantity: number) => {
     setMeal(prev => {
-      const updatedFoodItems = prev.food_items.map(item => 
+      const updatedFoodItems = prev.food_items.map(item =>
         item.food_item.id === foodId ? { ...item, quantity } : item
       );
       const totals = calculateTotals(updatedFoodItems);
-      
+
       return {
         ...prev,
         food_items: updatedFoodItems,
@@ -273,23 +277,20 @@ export default function UnifiedNutritionLogger({
   const removeFoodItem = (foodId: string) => {
     const foodItem = meal.food_items.find(item => item.food_item.id === foodId);
     const foodName = foodItem?.food_item.name || 'Food item';
-    
+
     setMeal(prev => {
       const updatedFoodItems = prev.food_items.filter(item => item.food_item.id !== foodId);
       const totals = calculateTotals(updatedFoodItems);
-      
+
       return {
         ...prev,
         food_items: updatedFoodItems,
         ...totals,
       };
     });
-    
+
     showToast(`${foodName} removed from meal`, 'info');
   };
-
-
-
 
   const renderContent = () => {
     return (
@@ -308,17 +309,17 @@ export default function UnifiedNutritionLogger({
                 key={mealTypeOption.type}
                 style={[
                   styles.mealTypeCard,
-                  { 
+                  {
                     borderColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color : '#e5e7eb',
                     backgroundColor: meal.meal_type === mealTypeOption.type ? mealTypeOption.color + '10' : '#ffffff',
                   }
                 ]}
                 onPress={() => setMeal(prev => ({ ...prev, meal_type: mealTypeOption.type as 'breakfast' | 'lunch' | 'dinner' | 'snack' }))}
               >
-                <Ionicons 
-                  name={mealTypeOption.icon as keyof typeof Ionicons.glyphMap} 
-                  size={16} 
-                  color={mealTypeOption.color} 
+                <Ionicons
+                  name={mealTypeOption.icon as keyof typeof Ionicons.glyphMap}
+                  size={16}
+                  color={mealTypeOption.color}
                 />
                 <Text style={[
                   styles.mealTypeLabel,
@@ -334,7 +335,7 @@ export default function UnifiedNutritionLogger({
         {/* Search and Add Foods */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Add Foods</Text>
-          
+
           <View style={styles.searchContainer}>
             <Ionicons name="search" size={20} color="#6b7280" style={styles.searchIcon} />
             <TextInput
@@ -465,7 +466,6 @@ export default function UnifiedNutritionLogger({
 
         </View>
 
-
       </View>
     );
   };
@@ -486,7 +486,7 @@ export default function UnifiedNutritionLogger({
           </View>
 
           {/* Content */}
-          <ScrollView 
+          <ScrollView
             style={styles.contentScrollView}
             showsVerticalScrollIndicator={false}
           >
@@ -525,11 +525,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
+    padding: SPACING.xs,
   },
   modal: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.xxl,
     maxHeight: '70%',
     marginHorizontal: 20,
     marginVertical: 40,
@@ -548,7 +548,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    padding: 20,
+    padding: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -556,23 +556,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
     marginLeft: 16,
   },
   progressContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     backgroundColor: '#f9fafb',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -584,32 +584,32 @@ const styles = StyleSheet.create({
   stepCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   stepText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     textAlign: 'center',
   },
   content: {
-    padding: 12,
+    padding: SPACING.sm,
   },
   section: {
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 12,
   },
   searchResults: {
     maxHeight: 200,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     marginTop: 12,
@@ -622,8 +622,8 @@ const styles = StyleSheet.create({
   },
   searchResultsOverlay: {
     maxHeight: 150,
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     shadowColor: '#000',
@@ -637,8 +637,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -646,46 +646,46 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchResultName: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: '#111827',
     lineHeight: 18,
   },
   searchResultCategory: {
     fontSize: 13,
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     lineHeight: 18,
   },
   clearButton: {
-    padding: 4,
+    padding: SPACING.xxs,
     marginLeft: 8,
   },
   selectedFoodsArea: {
     flex: 1,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 2,
     borderColor: '#e5e7eb',
     borderStyle: 'dashed',
-    padding: 20,
+    padding: SPACING.lg,
     marginTop: 16,
   },
   placeholderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
+    padding: SPACING.sm,
   },
   placeholderTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginTop: 6,
     marginBottom: 2,
   },
   placeholderSubtitle: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     textAlign: 'center',
     lineHeight: 16,
   },
@@ -693,9 +693,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 20,
   },
   mealTypeGrid: {
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderStyle: 'solid',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   mealTypeLabel: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '500',
     marginTop: 2,
     textAlign: 'center',
@@ -727,11 +727,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
     marginBottom: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -744,9 +744,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1f2937',
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
   foodItemsList: {
     maxHeight: 300,
@@ -754,8 +754,8 @@ const styles = StyleSheet.create({
   selectedFoodCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#ffffff',
-    padding: 8,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.xs,
     marginBottom: 4,
     borderRadius: 6,
     borderWidth: 1,
@@ -770,16 +770,16 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
     marginTop: 1,
   },
   foodNumberText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   selectedFoodInfo: {
     flex: 1,
@@ -791,7 +791,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   selectedFoodName: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     color: '#111827',
     flex: 1,
@@ -803,22 +803,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   servingInput: {
-    fontSize: 10,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.primary,
     fontWeight: '500',
     backgroundColor: '#f9fafb',
     borderWidth: 1,
     borderColor: '#e5e7eb',
     borderRadius: 3,
-    paddingHorizontal: 4,
+    paddingHorizontal: SPACING.xxs,
     paddingVertical: 1,
     minWidth: 35,
     textAlign: 'center',
     height: 20,
   },
   servingUnit: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     fontWeight: '500',
     marginLeft: 3,
   },
@@ -835,13 +835,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   macroValue: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   macroLabel: {
     fontSize: 8,
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginTop: 0,
   },
   removeFoodButton: {
@@ -851,8 +851,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    padding: 12,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.sm,
     borderRadius: 6,
     marginBottom: 6,
     borderWidth: 1,
@@ -867,14 +867,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   foodItemName: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#111827',
     marginBottom: 2,
   },
   foodItemServing: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   foodItemMacros: {
@@ -882,17 +882,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   macroText: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   quantitiesList: {
     maxHeight: 400,
   },
   quantityCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -904,13 +904,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quantityTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     flex: 1,
   },
   removeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   quantityControls: {
     flexDirection: 'row',
@@ -921,8 +921,8 @@ const styles = StyleSheet.create({
   quantityButton: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.background.tertiary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -931,53 +931,53 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
   },
   quantityValue: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   quantityUnit: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   quantityMacros: {
     flexDirection: 'row',
     gap: 12,
   },
   quantityMacroText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   footer: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background.primary,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },
   button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
   },
   primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   primaryButtonTextDisabled: {
-    color: '#9ca3af',
+    color: COLORS.text.tertiary,
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary,
   },
   secondaryButtonText: {
     color: '#374151',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
   },
 });

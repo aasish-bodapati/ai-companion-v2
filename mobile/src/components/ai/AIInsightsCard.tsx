@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { aiInsightsService, AIInsight, HealthPattern, HealthRecommendation } from '../../services/aiInsightsService';
+import { aiInsightsService, AIInsight, HealthPattern, HealthRecommendation } from '../../services/AiInsightsService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
 import { DifficultyBadge } from '../ui/Badge';
@@ -38,7 +38,7 @@ export default function AIInsightsCard({
         aiInsightsService.getHealthPatterns(),
         aiInsightsService.getRecommendations(),
       ]);
-      
+
       setInsights(insightsData || []);
       setPatterns(patternsData || []);
       setRecommendations(Array.isArray(recommendationsData) ? recommendationsData.slice(0, 3) : []);
@@ -187,8 +187,8 @@ export default function AIInsightsCard({
           />
           <Text style={styles.recommendationTitle}>{recommendation.title}</Text>
         </View>
-        <DifficultyBadge 
-          difficulty={recommendation.difficulty} 
+        <DifficultyBadge
+          difficulty={recommendation.difficulty}
           size="small"
         />
       </View>

@@ -19,32 +19,32 @@ interface SmartInputProps extends Omit<TextInputProps, 'onChangeText'> {
   onChangeText: (value: string) => void;
   type?: InputType;
   size?: InputSize;
-  
+
   // Label and placeholder
   label?: string;
   placeholder?: string;
   helperText?: string;
   errorText?: string;
-  
+
   // Validation
   validation?: (value: string) => boolean;
   required?: boolean;
-  
+
   // Formatting
   format?: (value: string) => string;
   parse?: (value: string) => string;
-  
+
   // UI customization
   icon?: keyof typeof Ionicons.glyphMap;
   iconPosition?: 'left' | 'right';
   showClearButton?: boolean;
   disabled?: boolean;
-  
+
   // Styling
   containerStyle?: any;
   inputStyle?: any;
   labelStyle?: any;
-  
+
   // Callbacks
   onFocus?: () => void;
   onBlur?: () => void;
@@ -95,23 +95,23 @@ export default function SmartInput({
   // Handle input changes
   const handleChangeText = useCallback((text: string) => {
     let processedText = text;
-    
+
     // Apply parsing if provided
     if (parse) {
       processedText = parse(text);
     }
-    
+
     // Apply formatting if provided
     if (format) {
       processedText = format(processedText);
     }
-    
+
     // Type-specific processing
     if (type === 'numeric') {
       // Only allow numbers and decimal point
       processedText = processedText.replace(/[^0-9.]/g, '');
     }
-    
+
     setInternalValue(processedText);
     onChangeText(processedText);
   }, [onChangeText, type, format, parse]);
@@ -155,32 +155,32 @@ export default function SmartInput({
   // Get container styles
   const getContainerStyles = () => {
     const baseStyles = [styles.container];
-    
+
     if (size === 'small') baseStyles.push(styles.containerSmall);
     if (size === 'large') baseStyles.push(styles.containerLarge);
-    
+
     if (disabled) baseStyles.push(styles.containerDisabled);
     if (isFocused) baseStyles.push(styles.containerFocused);
     if (errorText || !isValid) baseStyles.push(styles.containerError);
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   // Get input styles
   const getInputStyles = () => {
     const baseStyles = [styles.input];
-    
+
     if (size === 'small') baseStyles.push(styles.inputSmall);
     if (size === 'large') baseStyles.push(styles.inputLarge);
-    
+
     if (disabled) baseStyles.push(styles.inputDisabled);
     if (icon && iconPosition === 'left') baseStyles.push(styles.inputWithLeftIcon);
     if (showClearButton || (icon && iconPosition === 'right')) baseStyles.push(styles.inputWithRightIcon);
-    
+
     if (inputStyle) baseStyles.push(inputStyle);
-    
+
     return baseStyles;
   };
 
@@ -193,7 +193,7 @@ export default function SmartInput({
           {required && <Text style={styles.required}> *</Text>}
         </Text>
       )}
-      
+
       {/* Input Container */}
       <View style={getContainerStyles()}>
         {/* Left Icon */}
@@ -205,7 +205,7 @@ export default function SmartInput({
             style={styles.leftIcon}
           />
         )}
-        
+
         {/* Text Input */}
         <TextInput
           {...textInputProps}
@@ -220,7 +220,7 @@ export default function SmartInput({
           editable={!disabled}
           style={getInputStyles()}
         />
-        
+
         {/* Right Icon or Clear Button */}
         {showClearButton && internalValue.length > 0 ? (
           <TouchableOpacity
@@ -243,7 +243,7 @@ export default function SmartInput({
           />
         ) : null}
       </View>
-      
+
       {/* Helper Text or Error Text */}
       {(helperText || errorText || (!isValid && validation)) && (
         <Text style={[

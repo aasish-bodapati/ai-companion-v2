@@ -1,3 +1,6 @@
+import { DebugUtils } from '../utils/debugUtils';
+
+
 interface NetworkConfig {
   timeout?: number;
   retries?: number;
@@ -54,7 +57,7 @@ class NetworkUtils {
 
         if (isLastAttempt) {
           if (__DEV__) {
-            console.log(`Network request failed after ${retries + 1} attempts:`, errorMessage);
+            DebugUtils.log(`Network request failed after ${retries + 1} attempts:`, errorMessage);
           }
           return {
             data: null,
@@ -80,7 +83,7 @@ class NetworkUtils {
   // Check if error is network-related
   static isNetworkError(error: unknown): boolean {
     if (!error) return false;
-    
+
     const errorMessage = error.message || error.toString();
     const networkErrorPatterns = [
       'Network request failed',
@@ -93,7 +96,7 @@ class NetworkUtils {
       'ERR_CONNECTION_TIMED_OUT',
     ];
 
-    return networkErrorPatterns.some(pattern => 
+    return networkErrorPatterns.some(pattern =>
       errorMessage.toLowerCase().includes(pattern.toLowerCase())
     );
   }
@@ -129,7 +132,7 @@ class NetworkUtils {
       const response = await this.fetchWithRetry(url, {
         method: 'HEAD',
       }, { timeout: 3000, retries: 1 });
-      
+
       return response.data !== null;
     } catch {
       return false;
@@ -147,7 +150,7 @@ class NetworkUtils {
         const result = await apiCall();
         return result;
       } catch (error) {
-        console.warn(`${serviceName} API unavailable, using fallback data:`, error);
+        DebugUtils.warn(`${serviceName} API unavailable, using fallback data:`, error);
         return fallbackData;
       }
     };

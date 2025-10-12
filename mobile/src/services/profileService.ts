@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 
 export interface HealthProfile {
   age?: string;
@@ -33,8 +34,8 @@ export const profileService = {
   // Get user profile from backend
   getUserProfile: async (): Promise<UserProfile | null> => {
     try {
-      const response = await apiClient.get('/profile');
-      return response.data;
+      const response = await api.get('/profile');
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
@@ -44,8 +45,8 @@ export const profileService = {
   // Update user profile on backend
   updateUserProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile | null> => {
     try {
-      const response = await apiClient.put('/profile', profileData);
-      return response.data;
+      const response = await api.put('/profile', profileData);
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;

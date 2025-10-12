@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { useTodaysWorkout } from '../../hooks/useTodaysWorkout';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
@@ -14,6 +16,8 @@ import LoadingState from '../ui/LoadingState';
 import EmptyState from '../ui/EmptyState';
 import { loadingStateConfigs } from '../ui/LoadingState.utils';
 import { emptyStateConfigs } from '../ui/EmptyState.utils';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface Exercise {
   exercise_name: string;
@@ -38,7 +42,7 @@ export default function ManualExerciseLoggingCard({
   onExercisePress,
   onLogWorkout,
 }: ManualExerciseLoggingCardProps) {
-  console.log('🔄 [MANUAL EXERCISE CARD] Rendering with activeRoutineId:', activeRoutineId);
+  // DebugUtils.log('🔄 [MANUAL EXERCISE CARD] Rendering with activeRoutineId:', activeRoutineId);
   const { todaysWorkout, loading, error } = useTodaysWorkout(activeRoutineId);
 
   const handleExercisePress = (exercise: Exercise) => {
@@ -145,7 +149,7 @@ export default function ManualExerciseLoggingCard({
         </View>
       )}
 
-      <ScrollView 
+      <ScrollView
         style={styles.exercisesContainer}
         showsVerticalScrollIndicator={false}
       >
@@ -165,7 +169,7 @@ export default function ManualExerciseLoggingCard({
                 />
                 <Text style={styles.exerciseName}>{exercise.exercise_name}</Text>
               </View>
-              
+
               <View style={styles.exerciseDetails}>
                 {exercise.sets && exercise.reps && (
                   <Text style={styles.exerciseDetail}>
@@ -197,11 +201,11 @@ export default function ManualExerciseLoggingCard({
                 </View>
               )}
             </View>
-            
-            <Ionicons 
-              name="chevron-forward" 
-              size={16} 
-              color={COLORS.text.tertiary} 
+
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={COLORS.text.tertiary}
             />
           </TouchableOpacity>
         ))}

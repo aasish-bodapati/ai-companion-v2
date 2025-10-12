@@ -5,6 +5,7 @@
 
 import { COLORS, SPACING, FONT_SIZE } from '../theme/constants';
 
+
 // ============================================================================
 // FORM VALIDATION UTILITIES
 // ============================================================================
@@ -57,14 +58,14 @@ export const validateField = (value: string, rules: ValidationRule[]): string | 
  */
 export const validateForm = (data: Record<string, string>, rules: Record<string, ValidationRule[]>): Record<string, string> => {
   const errors: Record<string, string> = {};
-  
+
   for (const [fieldName, fieldRules] of Object.entries(rules)) {
     const error = validateField(data[fieldName] || '', fieldRules);
     if (error) {
       errors[fieldName] = error;
     }
   }
-  
+
   return errors;
 };
 
@@ -81,7 +82,7 @@ export const getInputStyles = (state: InputState) => {
     backgroundColor: COLORS.background.primary,
     color: COLORS.text.primary,
   };
-  
+
   if (state.focused) {
     return {
       ...baseStyles,
@@ -89,7 +90,7 @@ export const getInputStyles = (state: InputState) => {
       borderWidth: 2,
     };
   }
-  
+
   if (state.error) {
     return {
       ...baseStyles,
@@ -97,7 +98,7 @@ export const getInputStyles = (state: InputState) => {
       borderWidth: 2,
     };
   }
-  
+
   if (state.disabled) {
     return {
       ...baseStyles,
@@ -105,7 +106,7 @@ export const getInputStyles = (state: InputState) => {
       color: COLORS.text.disabled,
     };
   }
-  
+
   return baseStyles;
 };
 
@@ -118,21 +119,21 @@ export const getLabelStyles = (state: InputState) => {
     color: COLORS.text.secondary,
     marginBottom: SPACING.xs,
   };
-  
+
   if (state.focused) {
     return {
       ...baseStyles,
       color: COLORS.primary.main,
     };
   }
-  
+
   if (state.error) {
     return {
       ...baseStyles,
       color: COLORS.danger,
     };
   }
-  
+
   return baseStyles;
 };
 
@@ -218,7 +219,7 @@ export const handleInputChange = (
  */
 export const prepareFormData = (data: Record<string, unknown>): Record<string, unknown> => {
   const prepared: Record<string, unknown> = {};
-  
+
   for (const [key, value] of Object.entries(data)) {
     // Convert empty strings to null
     if (value === '') {
@@ -233,7 +234,7 @@ export const prepareFormData = (data: Record<string, unknown>): Record<string, u
       prepared[key] = value;
     }
   }
-  
+
   return prepared;
 };
 
@@ -310,56 +311,56 @@ export const commonValidationRules = {
   required: (message: string = validationMessages.required): ValidationRule => ({
     validator: (value: string) => value.trim() === '' ? message : null,
   }),
-  
+
   email: (message: string = validationMessages.email): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.trim() === '' || validationPatterns.email.test(value) ? null : message,
   }),
-  
+
   phone: (message: string = validationMessages.phone): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.trim() === '' || validationPatterns.phone.test(value) ? null : message,
   }),
-  
+
   password: (message: string = validationMessages.password): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.trim() === '' || validationPatterns.password.test(value) ? null : message,
   }),
-  
+
   minLength: (min: number, message?: string): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.length >= min ? null : (message || validationMessages.minLength(min)),
   }),
-  
+
   maxLength: (max: number, message?: string): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.length <= max ? null : (message || validationMessages.maxLength(max)),
   }),
-  
+
   numeric: (message: string = validationMessages.numeric): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.trim() === '' || validationPatterns.numeric.test(value) ? null : message,
   }),
-  
+
   decimal: (message: string = validationMessages.decimal): ValidationRule => ({
-    validator: (value: string) => 
+    validator: (value: string) =>
       value.trim() === '' || validationPatterns.decimal.test(value) ? null : message,
   }),
-  
+
   min: (min: number, message?: string): ValidationRule => ({
     validator: (value: string) => {
       const num = parseFloat(value);
       return isNaN(num) || num >= min ? null : (message || validationMessages.min(min));
     },
   }),
-  
+
   max: (max: number, message?: string): ValidationRule => ({
     validator: (value: string) => {
       const num = parseFloat(value);
       return isNaN(num) || num <= max ? null : (message || validationMessages.max(max));
     },
   }),
-  
+
   match: (otherValue: string, message: string = validationMessages.match): ValidationRule => ({
     validator: (value: string) => value === otherValue ? null : message,
   }),

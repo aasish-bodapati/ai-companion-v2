@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, MIXINS } from '../../theme/constants';
 import { hapticFeedback } from '../../utils/haptics';
 
@@ -31,10 +33,10 @@ interface ActionCardProps {
   description?: string;
   icon?: string;
   iconColor?: string;
-  
+
   // Badges
   badges?: Badge[];
-  
+
   // Details (key-value pairs)
   details?: {
     label: string;
@@ -42,18 +44,18 @@ interface ActionCardProps {
     icon?: string;
     color?: string;
   }[];
-  
+
   // Actions
   primaryAction?: Action;
   secondaryActions?: Action[];
-  
+
   // Status indicators
   status?: {
     text: string;
     variant: 'active' | 'inactive' | 'pending' | 'completed' | 'error';
     icon?: string;
   };
-  
+
   // Styling
   variant?: 'default' | 'compact' | 'detailed';
   backgroundColor?: string;
@@ -80,14 +82,14 @@ export default function ActionCard({
 
   const handleActionPress = (action: Action) => {
     if (action.disabled || action.loading) return;
-    
+
     hapticFeedback.light();
     action.onPress();
   };
 
   const getBadgeStyle = (badge: Badge) => {
     const baseStyle = styles.badge;
-    
+
     switch (badge.variant) {
       case 'success':
         return [baseStyle, styles.successBadge];
@@ -104,7 +106,7 @@ export default function ActionCard({
 
   const getBadgeTextStyle = (badge: Badge) => {
     const baseStyle = styles.badgeText;
-    
+
     switch (badge.variant) {
       case 'success':
         return [baseStyle, styles.successBadgeText];
@@ -121,7 +123,7 @@ export default function ActionCard({
 
   const getActionStyle = (action: Action) => {
     const baseStyle = styles.actionButton;
-    
+
     switch (action.variant) {
       case 'secondary':
         return [baseStyle, styles.secondaryAction];
@@ -140,7 +142,7 @@ export default function ActionCard({
 
   const getActionTextStyle = (action: Action) => {
     const baseStyle = styles.actionText;
-    
+
     switch (action.variant) {
       case 'secondary':
         return [baseStyle, styles.secondaryActionText];
@@ -159,9 +161,9 @@ export default function ActionCard({
 
   const getStatusStyle = () => {
     if (!status) return null;
-    
+
     const baseStyle = styles.statusBadge;
-    
+
     switch (status.variant) {
       case 'active':
         return [baseStyle, styles.activeStatus];
@@ -182,8 +184,8 @@ export default function ActionCard({
     <View style={styles.header}>
       <View style={styles.titleContainer}>
         {icon && (
-          <Ionicons 
-            name={icon as keyof typeof Ionicons.glyphMap} 
+          <Ionicons
+            name={icon as keyof typeof Ionicons.glyphMap}
             size={FONT_SIZE.xl} // 20 -> FONT_SIZE.xl
             color={iconColor}
             style={styles.titleIcon}
@@ -194,13 +196,13 @@ export default function ActionCard({
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
         </View>
       </View>
-      
+
       <View style={styles.headerRight}>
         {badges.map((badge, index) => (
           <View key={index} style={getBadgeStyle(badge)}>
             {badge.icon && (
-              <Ionicons 
-                name={badge.icon as keyof typeof Ionicons.glyphMap} 
+              <Ionicons
+                name={badge.icon as keyof typeof Ionicons.glyphMap}
                 size={FONT_SIZE.sm} // 12 -> FONT_SIZE.sm
                 color={COLORS.text.inverse}
                 style={styles.badgeIcon}
@@ -211,12 +213,12 @@ export default function ActionCard({
             </Text>
           </View>
         ))}
-        
+
         {status && (
           <View style={getStatusStyle()}>
             {status.icon && (
-              <Ionicons 
-                name={status.icon as keyof typeof Ionicons.glyphMap} 
+              <Ionicons
+                name={status.icon as keyof typeof Ionicons.glyphMap}
                 size={FONT_SIZE.sm} // 12 -> FONT_SIZE.sm
                 color={COLORS.text.inverse}
                 style={styles.statusIcon}
@@ -233,7 +235,7 @@ export default function ActionCard({
 
   const renderDescription = () => {
     if (!description) return null;
-    
+
     return (
       <Text style={styles.description}>{description}</Text>
     );
@@ -241,14 +243,14 @@ export default function ActionCard({
 
   const renderDetails = () => {
     if (details.length === 0) return null;
-    
+
     return (
       <View style={styles.detailsContainer}>
         {details.map((detail, index) => (
           <View key={index} style={styles.detailItem}>
             {detail.icon && (
-              <Ionicons 
-                name={detail.icon as keyof typeof Ionicons.glyphMap} 
+              <Ionicons
+                name={detail.icon as keyof typeof Ionicons.glyphMap}
                 size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                 color={detail.color || COLORS.text.secondary}
                 style={styles.detailIcon}
@@ -266,7 +268,7 @@ export default function ActionCard({
 
   const renderActions = () => {
     if (!primaryAction && secondaryActions.length === 0) return null;
-    
+
     return (
       <View style={styles.actionsContainer}>
         {primaryAction && (
@@ -279,15 +281,15 @@ export default function ActionCard({
             disabled={primaryAction.disabled || primaryAction.loading}
           >
             {primaryAction.loading ? (
-              <ActivityIndicator 
-                size="small" 
+              <ActivityIndicator
+                size="small"
                 color={COLORS.text.inverse}
                 style={styles.actionLoader}
               />
             ) : (
               primaryAction.icon && (
-                <Ionicons 
-                  name={primaryAction.icon as keyof typeof Ionicons.glyphMap} 
+                <Ionicons
+                  name={primaryAction.icon as keyof typeof Ionicons.glyphMap}
                   size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                   color={COLORS.text.inverse}
                   style={styles.actionIcon}
@@ -299,7 +301,7 @@ export default function ActionCard({
             </Text>
           </TouchableOpacity>
         )}
-        
+
         {secondaryActions.map((action, index) => (
           <TouchableOpacity
             key={index}
@@ -311,15 +313,15 @@ export default function ActionCard({
             disabled={action.disabled || action.loading}
           >
             {action.loading ? (
-              <ActivityIndicator 
-                size="small" 
+              <ActivityIndicator
+                size="small"
                 color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                 style={styles.actionLoader}
               />
             ) : (
               action.icon && (
-                <Ionicons 
-                  name={action.icon as keyof typeof Ionicons.glyphMap} 
+                <Ionicons
+                  name={action.icon as keyof typeof Ionicons.glyphMap}
                   size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
                   color={action.variant === 'ghost' ? COLORS.primary.main : COLORS.text.inverse}
                   style={styles.actionIcon}
@@ -370,52 +372,52 @@ const styles = StyleSheet.create({
     ...MIXINS.card,
     marginBottom: SPACING.lg,
   },
-  
+
   compactCard: {
     padding: SPACING.md,
     marginBottom: SPACING.md,
   },
-  
+
   detailedCard: {
     padding: SPACING.xl,
   },
-  
+
   header: {
     ...MIXINS.rowSpaceBetween,
     marginBottom: SPACING.md,
   },
-  
+
   titleContainer: {
     ...MIXINS.row,
     flex: 1,
   },
-  
+
   titleIcon: {
     marginRight: SPACING.sm,
   },
-  
+
   titleTextContainer: {
     flex: 1,
   },
-  
+
   title: {
     fontSize: FONT_SIZE.lg,
     fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.primary,
     marginBottom: 2, // Keep as is for precise spacing
   },
-  
+
   subtitle: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text.secondary,
   },
-  
+
   headerRight: {
     ...MIXINS.row,
     gap: SPACING.sm,
     flexWrap: 'wrap',
   },
-  
+
   // Badge styles
   badge: {
     paddingHorizontal: SPACING.sm,
@@ -424,7 +426,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
   successBadge: {
     backgroundColor: COLORS.success,
   },
@@ -440,23 +442,23 @@ const styles = StyleSheet.create({
   neutralBadge: {
     backgroundColor: COLORS.gray[200],
   },
-  
+
   badgeText: {
     fontSize: FONT_SIZE.xs,
     fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.inverse,
   },
-  
+
   successBadgeText: { color: COLORS.text.inverse },
   warningBadgeText: { color: COLORS.text.inverse },
   infoBadgeText: { color: COLORS.text.inverse },
   dangerBadgeText: { color: COLORS.text.inverse },
   neutralBadgeText: { color: COLORS.text.primary },
-  
+
   badgeIcon: {
     marginRight: SPACING.xs,
   },
-  
+
   // Status styles
   statusBadge: {
     paddingHorizontal: SPACING.sm,
@@ -465,7 +467,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  
+
   activeStatus: {
     backgroundColor: COLORS.success,
   },
@@ -484,17 +486,17 @@ const styles = StyleSheet.create({
   neutralStatus: {
     backgroundColor: COLORS.gray[200],
   },
-  
+
   statusText: {
     fontSize: FONT_SIZE.xs,
     fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
     color: COLORS.text.inverse,
   },
-  
+
   statusIcon: {
     marginRight: SPACING.xs,
   },
-  
+
   // Content styles
   description: {
     fontSize: FONT_SIZE.md,
@@ -502,51 +504,51 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: SPACING.md,
   },
-  
+
   detailsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: SPACING.md,
     marginBottom: SPACING.lg,
   },
-  
+
   detailItem: {
     ...MIXINS.row,
     alignItems: 'center',
     marginRight: SPACING.lg,
     marginBottom: SPACING.xs,
   },
-  
+
   detailIcon: {
     marginRight: SPACING.xs,
   },
-  
+
   detailText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.medium, // '500' -> FONT_WEIGHT.medium
     color: COLORS.text.primary,
     marginRight: SPACING.xs,
   },
-  
+
   detailLabel: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text.secondary,
   },
-  
+
   // Action styles
   actionsContainer: {
     ...MIXINS.row,
     gap: SPACING.sm,
     flexWrap: 'wrap',
   },
-  
+
   actionButton: {
     ...MIXINS.buttonBase,
     minHeight: 36,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
   },
-  
+
   primaryAction: {
     backgroundColor: COLORS.primary.main,
     flex: 1,
@@ -569,12 +571,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
-  
+
   actionText: {
     fontSize: FONT_SIZE.sm,
     fontWeight: FONT_WEIGHT.semibold, // '600' -> FONT_WEIGHT.semibold
   },
-  
+
   primaryActionText: {
     color: COLORS.text.inverse,
   },
@@ -593,15 +595,15 @@ const styles = StyleSheet.create({
   ghostActionText: {
     color: COLORS.primary.main,
   },
-  
+
   actionIcon: {
     marginRight: SPACING.xs,
   },
-  
+
   actionLoader: {
     marginRight: SPACING.xs,
   },
-  
+
   disabledAction: {
     opacity: 0.5,
   },

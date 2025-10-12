@@ -8,7 +8,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
 export type PaginationSize = 'small' | 'medium' | 'large';
 export type PaginationVariant = 'default' | 'minimal' | 'bordered' | 'dots';
@@ -19,7 +19,7 @@ export interface PaginationProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
-  
+
   // Configuration
   size?: PaginationSize;
   variant?: PaginationVariant;
@@ -28,7 +28,7 @@ export interface PaginationProps {
   showFirstLast?: boolean;
   showPrevNext?: boolean;
   maxVisiblePages?: number;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   buttonStyle?: ViewStyle;
@@ -38,18 +38,18 @@ export interface PaginationProps {
   activeTextStyle?: TextStyle;
   disabledTextStyle?: TextStyle;
   infoStyle?: TextStyle;
-  
+
   // Customization
   firstButtonText?: string;
   lastButtonText?: string;
   prevButtonText?: string;
   nextButtonText?: string;
   infoText?: (current: number, total: number, totalItems?: number) => string;
-  
+
   // Behavior
   disabled?: boolean;
   hideWhenSinglePage?: boolean;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   testID?: string;
@@ -84,7 +84,7 @@ export default function Pagination({
   accessibilityLabel,
   testID,
 }: PaginationProps) {
-  
+
   // Hide pagination if only one page and hideWhenSinglePage is true
   if (hideWhenSinglePage && totalPages <= 1) {
     return null;
@@ -123,7 +123,7 @@ export default function Pagination({
   // Get button styles
   const getButtonStyles = (isActive: boolean, isDisabled: boolean): ViewStyle[] => {
     const baseStyles = [styles.button];
-    
+
     // Size-based styles
     switch (size) {
       case 'small':
@@ -136,7 +136,7 @@ export default function Pagination({
         baseStyles.push(styles.buttonLarge);
         break;
     }
-    
+
     // Variant-based styles
     switch (variant) {
       case 'minimal':
@@ -152,26 +152,26 @@ export default function Pagination({
         baseStyles.push(styles.buttonDefault);
         break;
     }
-    
+
     // State-based styles
     if (isActive) {
       baseStyles.push(styles.buttonActive);
       if (activeButtonStyle) baseStyles.push(activeButtonStyle);
     }
-    
+
     if (isDisabled) {
       baseStyles.push(styles.buttonDisabled);
       if (disabledButtonStyle) baseStyles.push(disabledButtonStyle);
     }
-    
+
     if (buttonStyle) baseStyles.push(buttonStyle);
-    
+
     return baseStyles;
   };
 
   const getTextStyles = (isActive: boolean, isDisabled: boolean): TextStyle[] => {
     const baseStyles = [styles.text];
-    
+
     // Size-based text styles
     switch (size) {
       case 'small':
@@ -184,26 +184,26 @@ export default function Pagination({
         baseStyles.push(styles.textLarge);
         break;
     }
-    
+
     // State-based text styles
     if (isActive) {
       baseStyles.push(styles.textActive);
       if (activeTextStyle) baseStyles.push(activeTextStyle);
     }
-    
+
     if (isDisabled) {
       baseStyles.push(styles.textDisabled);
       if (disabledTextStyle) baseStyles.push(disabledTextStyle);
     }
-    
+
     if (textStyle) baseStyles.push(textStyle);
-    
+
     return baseStyles;
   };
 
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     // Alignment-based styles
     switch (alignment) {
       case 'left':
@@ -219,16 +219,16 @@ export default function Pagination({
         baseStyles.push(styles.containerSpaceBetween);
         break;
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   const renderPageButton = (page: number) => {
     const isActive = page === currentPage;
     const isDisabled = disabled;
-    
+
     return (
       <TouchableOpacity
         key={page}
@@ -261,7 +261,7 @@ export default function Pagination({
     testID: string
   ) => {
     const isDisabled = disabled || page < 1 || page > totalPages;
-    
+
     return (
       <TouchableOpacity
         style={getButtonStyles(false, isDisabled)}
@@ -296,7 +296,7 @@ export default function Pagination({
   const renderInfo = () => {
     if (!showInfo) return null;
 
-    const infoTextContent = infoText 
+    const infoTextContent = infoText
       ? infoText(currentPage, totalPages)
       : `Page ${currentPage} of ${totalPages}`;
 
@@ -339,7 +339,7 @@ export default function Pagination({
   return (
     <View style={getContainerStyles()} testID={testID}>
       {renderInfo()}
-      
+
       <View style={styles.navigation}>
         {/* First button */}
         {showFirstLast && renderNavigationButton(
@@ -348,7 +348,7 @@ export default function Pagination({
           'chevron-back-outline',
           `${testID}-first`
         )}
-        
+
         {/* Previous button */}
         {showPrevNext && renderNavigationButton(
           currentPage - 1,
@@ -356,12 +356,12 @@ export default function Pagination({
           'chevron-back',
           `${testID}-prev`
         )}
-        
+
         {/* Page numbers */}
         <View style={styles.pageNumbers}>
           {renderPageNumbers()}
         </View>
-        
+
         {/* Next button */}
         {showPrevNext && renderNavigationButton(
           currentPage + 1,
@@ -369,7 +369,7 @@ export default function Pagination({
           'chevron-forward',
           `${testID}-next`
         )}
-        
+
         {/* Last button */}
         {showFirstLast && renderNavigationButton(
           totalPages,

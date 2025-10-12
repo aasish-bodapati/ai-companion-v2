@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import SearchInput from '../SearchInput';
 import FilterBar from '../FilterBar';
-import { searchInputConfigs, filterBarConfigs } from '../SearchInput.utils';
+import { filterBarConfigs } from '../../../test-utils/testConfigs';
 
 // Test component that uses both SearchInput and FilterBar
 function SearchAndFilterTest() {

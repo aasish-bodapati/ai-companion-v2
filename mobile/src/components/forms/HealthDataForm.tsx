@@ -111,7 +111,7 @@ export default function HealthDataForm({
 
   const updateData = (field: keyof HealthData, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
@@ -221,7 +221,7 @@ export default function HealthDataForm({
         placeholder="e.g., 60.5"
         testID="ffm-input"
       />
-      
+
       <FormField
         name="smm"
         label="Skeletal Muscle Mass (kg)"
@@ -233,7 +233,7 @@ export default function HealthDataForm({
         placeholder="e.g., 30.2"
         testID="smm-input"
       />
-      
+
       <FormField
         name="bodyFat"
         label="Body Fat Percentage (%)"
@@ -285,7 +285,7 @@ export default function HealthDataForm({
           required
           testID="age-input"
         />
-        
+
         <FormField
           name="height"
           label="Height (cm)"
@@ -298,7 +298,7 @@ export default function HealthDataForm({
           required
           testID="height-input"
         />
-        
+
         <FormField
           name="weight"
           label="Weight (kg)"

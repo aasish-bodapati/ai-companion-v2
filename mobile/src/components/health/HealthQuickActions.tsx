@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -6,8 +6,12 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { useHealthLogger } from '../../hooks/useHealthLogger';
 import WaterLogger from './WaterLogger';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface QuickAction {
   id: string;
@@ -100,7 +104,6 @@ export default function HealthQuickActions({
     }
   };
 
-
   const getContainerStyle = () => {
     switch (layout) {
       case 'horizontal':
@@ -161,9 +164,9 @@ export default function HealthQuickActions({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderRadius: 6,
-    padding: 4,
+    padding: SPACING.xxs,
     marginHorizontal: 8,
     marginBottom: 6,
     shadowColor: '#000',
@@ -173,9 +176,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   title: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 6,
   },
   gridContainer: {
@@ -218,15 +221,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionTitle: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     fontSize: 8,
     fontWeight: '600',
     marginTop: 1,
     textAlign: 'center',
   },
   actionDescription: {
-    color: '#ffffff',
-    fontSize: 12,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.sm,
     marginTop: 4,
     textAlign: 'center',
     opacity: 0.9,
@@ -236,13 +239,13 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
   shortcutText: {
-    color: '#ffffff',
-    fontSize: 10,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
   },
 });

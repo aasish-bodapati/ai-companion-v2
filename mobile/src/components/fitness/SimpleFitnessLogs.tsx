@@ -10,11 +10,11 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fitnessService } from '../../services/fitnessService';
+import { fitnessService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
 import { useExerciseCategories, useExerciseCategoriesLoaded, useExerciseCategoriesLoading, useExerciseCategoriesStore } from '../../stores';
 import { CategoryBadge } from '../ui/Badge';
-import { exerciseCategoryService } from '../../services/exerciseCategoryService';
+import { exerciseCategoryService } from '../../services/api';
 import { getExerciseCategory } from '../../utils/exerciseCategoryUtils';
 import LoadingState from '../ui/LoadingState';
 import EmptyState from '../ui/EmptyState';
@@ -24,13 +24,18 @@ import DataTable from '../ui/DataTable';
 import Pagination from '../ui/Pagination';
 import { dataTableConfigs } from '../ui/DataTable.utils';
 import { paginationConfigs } from '../ui/Pagination.utils';
-import { 
-  formatTimeInUserTimezone, 
-  formatDateInUserTimezone, 
+import {
+  formatTimeInUserTimezone,
+  formatDateInUserTimezone,
   getDateInUserTimezone,
   getUserTimezone
 } from '../../utils/timezoneUtils';
 import CalendarComponent from '../common/CalendarComponent';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface WorkoutLog {
   id: number;
@@ -55,7 +60,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  
+
   // DataTable columns configuration
   const columns = [
     {
@@ -157,7 +162,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       ),
     },
   ];
-  
+
   const [selectedDate, setSelectedDate] = useState(() => {
     const now = new Date();
     const userTimezone = getUserTimezone();
@@ -171,23 +176,23 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   const [editNotes, setEditNotes] = useState('');
   const [allLogs, setAllLogs] = useState<WorkoutLog[]>([]);
   const [exerciseDatabase, setExerciseDatabase] = useState<unknown[]>([]);
-  
+
   // Use ref to avoid stale closure issues
   const selectedDateRef = useRef(selectedDate);
-  
+
   // Use individual selectors (safe - no infinite loops)
   const categories = useExerciseCategories();
   const loaded = useExerciseCategoriesLoaded();
   const categoriesLoading = useExerciseCategoriesLoading();
-  
+
   // Get actions directly from store (avoid useExerciseCategoriesActions)
   const loadCategories = useExerciseCategoriesStore.getState().loadCategories;
-  
+
   // Update ref when selectedDate changes
   useEffect(() => {
     selectedDateRef.current = selectedDate;
   }, [selectedDate]);
-  
+
   // Load categories on component mount if not already loaded
   useEffect(() => {
     if (!loaded && !categoriesLoading) {
@@ -200,28 +205,28 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
     loadLogs();
     loadExerciseDatabase();
     loadCategoryConfigs();
-  }, []); // Only run once on mount
+  }, [loadLogs]); // Only run once on mount
 
   // Load logs when selectedDate changes
   useEffect(() => {
     loadLogs(selectedDate);
-  }, [selectedDate]);
+  }, [selectedDate, loadLogs]);
 
   const loadExerciseDatabase = async () => {
     try {
       const exercises = await fitnessService.getExerciseTypes();
       setExerciseDatabase(exercises);
     } catch (_error) {
-      console.error('Error loading exercise database:', _error);
+      DebugUtils.error('Error loading exercise database:', _error);
     }
   };
 
   const loadCategoryConfigs = async () => {
     try {
       const categories = await exerciseCategoryService.getCategories();
-      console.log('Loaded categories:', categories.length);
+      DebugUtils.log('Loaded categories:', categories.length);
     } catch (_error) {
-      console.log('Error loading category configs:', _error);
+      DebugUtils.log('Error loading category configs:', _error);
     }
   };
 
@@ -229,14 +234,14 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
     try {
       setLoading(true);
       const targetDate = date || selectedDateRef.current;
-      
+
       // Load all logs for the month first for calendar indicators
       const allLogsResponse = await fitnessService.getFitnessLogs({
         period: 'month',
         page: 1,
         size: 50
       });
-      
+
       // Process all logs for calendar indicators
       const processedAllLogs = (allLogsResponse || []).map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
@@ -249,7 +254,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
         return log;
       });
       setAllLogs(processedAllLogs);
-      
+
       // Get date string in user's timezone
       let targetDateStr;
       try {
@@ -257,14 +262,14 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       } catch {
         targetDateStr = targetDate.toISOString().split('T')[0];
       }
-      
+
       const response = await fitnessService.getFitnessLogs({
         start_date: targetDateStr,
         end_date: targetDateStr,
         page: 1,
         size: 50
       });
-      
+
       // Parse exercises from JSON string if needed
       const processedLogs = (response || []).map((log: WorkoutLog) => {
         if (log.exercises && typeof log.exercises === 'string') {
@@ -276,22 +281,22 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
         }
         return log;
       });
-      
+
       // Sort by time (earliest first)
       const sortedLogs = processedLogs.sort((a: WorkoutLog, b: WorkoutLog) => {
         const timeA = new Date(a.activity_date || a.logged_at || 0).getTime();
         const timeB = new Date(b.activity_date || b.logged_at || 0).getTime();
         return timeA - timeB;
       });
-      
+
       setLogs(sortedLogs);
     } catch (_error) {
-      console.error('Error loading logs:', _error);
+      DebugUtils.error('Error loading logs:', _error);
       showToast('Failed to load fitness logs', 'error');
     } finally {
       setLoading(false);
     }
-  }, []); // No dependencies to prevent infinite loops
+  }, [showToast]); // Include showToast dependency
 
   const onRefreshLogs = async () => {
     setRefreshing(true);
@@ -352,7 +357,6 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
     showToast('Delete functionality coming soon', 'info');
   };
 
-
   const getCategoryConfig = (categoryId: string) => {
     // Simplified category config without store dependency
     const categoryConfigs: { [key: string]: { name: string; icon: string; color: string } } = {
@@ -360,34 +364,34 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       'weighted': { name: 'Weighted', icon: 'barbell-outline', color: '#f97316' },
       'cardio_duration': { name: 'Cardio', icon: 'heart-outline', color: '#10b981' },
       'distance_based': { name: 'Distance', icon: 'walk-outline', color: '#8b5cf6' },
-      'unknown': { name: 'Other', icon: 'help-outline', color: '#6b7280' }
+      'unknown': { name: 'Other', icon: 'help-outline', color: COLORS.text.secondary }
     };
-    
+
     return categoryConfigs[categoryId] || categoryConfigs['unknown'];
   };
 
   const handleSaveEdit = async () => {
     if (!editingLog) return;
-    
+
     try {
       // Here you would call your API to update the log
       // await fitnessService.updateLog(editingLog.id, { notes: editNotes });
-      
+
       // For now, just update local state
-      setLogs(prevLogs => 
-        prevLogs.map(log => 
-          log.id === editingLog.id 
+      setLogs(prevLogs =>
+        prevLogs.map(log =>
+          log.id === editingLog.id
             ? { ...log, notes: editNotes }
             : log
         )
       );
-      
+
       setEditModalVisible(false);
       setEditingLog(null);
       setEditNotes('');
       showToast('Log updated successfully', 'success');
     } catch (error) {
-      console.error('Error updating log:', error);
+      DebugUtils.error('Error updating log:', error);
       showToast('Failed to update log', 'error');
     }
   };
@@ -407,7 +411,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Fitness Logs</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.dateButton}
           onPress={() => setShowDatePicker(true)}
         >
@@ -418,21 +422,21 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
 
       {/* Date Navigation */}
       <View style={styles.dateNavigation}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('prev')}
         >
           <Ionicons name="chevron-back" size={24} color="#3b82f6" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.todayButton}
           onPress={goToToday}
         >
           <Text style={styles.todayButtonText}>Today</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('next')}
         >
@@ -441,7 +445,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
       </View>
 
       {/* Logs List */}
-      <ScrollView 
+      <ScrollView
         style={styles.logsContainer}
         refreshControl={
           <RefreshControl
@@ -475,7 +479,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
               testID="fitness-logs-table"
               {...dataTableConfigs.exerciseLogs}
             />
-            
+
             {totalPages > 1 && (
               <Pagination
                 currentPage={currentPage}
@@ -537,7 +541,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
               <Text style={styles.modalLabel}>Notes</Text>
               <TextInput
@@ -549,7 +553,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
                 numberOfLines={4}
               />
             </View>
-            
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={styles.cancelButton}
@@ -557,7 +561,7 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.saveButton}
                 onPress={handleSaveEdit}
@@ -575,34 +579,34 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 20,
     paddingBottom: 16,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   dateButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background.tertiary,
+    borderRadius: BORDER_RADIUS.sm,
   },
   dateText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
     color: '#3b82f6',
     marginRight: 8,
@@ -611,35 +615,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   navButton: {
-    padding: 8,
+    padding: SPACING.xs,
   },
   todayButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.primary.main,
+    borderRadius: BORDER_RADIUS.sm,
   },
   todayButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
   },
   logsContainer: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 16,
   },
   logEntry: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -672,20 +676,20 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   logNumber: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginRight: 8,
   },
   exerciseName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     flex: 1,
   },
   exerciseTime: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   exerciseHeaderRight: {
@@ -694,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   editButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   exerciseStats: {
     flexDirection: 'row',
@@ -703,19 +707,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   exerciseStat: {
-    fontSize: 12,
-    color: '#6b7280',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    backgroundColor: COLORS.background.secondary,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     fontWeight: '500',
   },
   exerciseNotes: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     fontStyle: 'italic',
     lineHeight: 20,
   },
@@ -726,18 +730,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   workoutName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   workoutDuration: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   workoutNotes: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     lineHeight: 20,
   },
   modalOverlay: {
@@ -745,17 +749,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.lg,
   },
   modalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     width: '100%',
     maxWidth: 400,
   },
   editModalContent: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     width: '100%',
     maxWidth: 400,
   },
@@ -763,23 +767,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.lg,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   modalBody: {
-    padding: 20,
+    padding: SPACING.lg,
   },
   modalLabel: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 8,
@@ -787,9 +791,9 @@ const styles = StyleSheet.create({
   notesInput: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
+    fontSize: FONT_SIZE.lg,
     color: '#374151',
     backgroundColor: '#f9fafb',
     textAlignVertical: 'top',
@@ -799,54 +803,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'flex-end',
     gap: 12,
-    padding: 20,
+    padding: SPACING.lg,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
   },
   cancelButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.background.tertiary,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
     color: '#374151',
   },
   saveButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#3b82f6',
+    borderRadius: BORDER_RADIUS.sm,
+    backgroundColor: COLORS.primary.main,
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   // DataTable styles
   tableText: {
-    fontSize: 14,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.primary,
   },
   exercisesList: {
     flexDirection: 'column',
     gap: 4,
   },
-  exerciseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  exerciseName: {
-    fontSize: 12,
-    color: '#6b7280',
-    flex: 1,
-  },
   moreExercises: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: COLORS.text.tertiary,
     fontStyle: 'italic',
   },
   actionButtons: {
@@ -854,6 +848,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
 });

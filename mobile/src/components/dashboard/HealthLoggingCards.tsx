@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface LastActivity {
   type: 'workout' | 'meal';
@@ -83,10 +87,10 @@ export default function HealthLoggingCards({
           {lastActivities.length > 0 ? (
             lastActivities.map((activity, index) => (
               <View key={index} style={styles.activityItem}>
-                <Ionicons 
-                  name={getActivityIcon(activity.type) as keyof typeof Ionicons.glyphMap} 
-                  size={16} 
-                  color={getActivityColor(activity.type)} 
+                <Ionicons
+                  name={getActivityIcon(activity.type) as keyof typeof Ionicons.glyphMap}
+                  size={16}
+                  color={getActivityColor(activity.type)}
                 />
                 <View style={styles.activityInfo}>
                   <Text style={styles.activityName}>{activity.name}</Text>
@@ -106,15 +110,15 @@ export default function HealthLoggingCards({
         </View>
 
         <View style={styles.cardActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={onLogWorkout}
           >
             <Ionicons name="fitness-outline" size={16} color="#10b981" />
             <Text style={styles.actionButtonText}>Log Workout</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.actionButton}
             onPress={onLogMeal}
           >
@@ -132,7 +136,7 @@ export default function HealthLoggingCards({
         </View>
 
         <View style={styles.wellnessGrid}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.wellnessItem}
             onPress={onLogWater}
           >
@@ -142,10 +146,10 @@ export default function HealthLoggingCards({
             <Text style={styles.wellnessValue}>{wellness.water.current}L</Text>
             <Text style={styles.wellnessTarget}>/{wellness.water.target}L</Text>
             <View style={styles.circularProgress}>
-              <View 
+              <View
                 style={[
                   styles.circularProgressFill,
-                  { 
+                  {
                     transform: [{ rotate: `${(wellness.water.current / wellness.water.target) * 360}deg` }]
                   }
                 ]}
@@ -153,15 +157,15 @@ export default function HealthLoggingCards({
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.wellnessItem}
             onPress={onLogMood}
           >
             <View style={styles.wellnessIconContainer}>
-              <Ionicons 
-                name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap} 
-                size={20} 
-                color={getMoodColor(wellness.mood)} 
+              <Ionicons
+                name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap}
+                size={20}
+                color={getMoodColor(wellness.mood)}
               />
             </View>
             <Text style={[styles.wellnessValue, { color: getMoodColor(wellness.mood) }]}>
@@ -170,7 +174,7 @@ export default function HealthLoggingCards({
             <Text style={styles.wellnessLabel}>Mood</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.wellnessItem}
             onPress={onLogSleep}
           >
@@ -180,10 +184,10 @@ export default function HealthLoggingCards({
             <Text style={styles.wellnessValue}>{wellness.sleep.current}h</Text>
             <Text style={styles.wellnessTarget}>/{wellness.sleep.target}h</Text>
             <View style={styles.circularProgress}>
-              <View 
+              <View
                 style={[
                   styles.circularProgressFill,
-                  { 
+                  {
                     transform: [{ rotate: `${(wellness.sleep.current / wellness.sleep.target) * 360}deg` }]
                   }
                 ]}
@@ -191,7 +195,7 @@ export default function HealthLoggingCards({
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.wellnessItem}
             onPress={onAddNote}
           >
@@ -209,13 +213,13 @@ export default function HealthLoggingCards({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     gap: 12,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -228,14 +232,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
     flex: 1,
   },
   addButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   activitiesList: {
     marginBottom: 16,
@@ -243,7 +247,7 @@ const styles = StyleSheet.create({
   activityItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: SPACING.xs,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
@@ -252,26 +256,26 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   activityName: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   activityTime: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   activityCalories: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: SPACING.lg,
   },
   emptyText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 8,
   },
   cardActions: {
@@ -284,16 +288,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#f8fafc',
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 6,
   },
   wellnessGrid: {
@@ -304,16 +308,16 @@ const styles = StyleSheet.create({
   wellnessItem: {
     width: '47%',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
     position: 'relative',
   },
   wellnessIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -324,18 +328,18 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   wellnessValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   wellnessTarget: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   wellnessLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   circularProgress: {
     position: 'absolute',
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     right: 8,
     width: 16,
     height: 16,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 2,
     borderColor: '#e5e7eb',
     overflow: 'hidden',
@@ -351,7 +355,7 @@ const styles = StyleSheet.create({
   circularProgressFill: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#3b82f6',
-    borderRadius: 8,
+    backgroundColor: COLORS.primary.main,
+    borderRadius: BORDER_RADIUS.sm,
   },
 });

@@ -1,3 +1,4 @@
+
 /**
  * Base types and interfaces for all log entries
  * This provides a foundation for consistent log structures across the app

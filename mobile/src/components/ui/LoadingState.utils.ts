@@ -2,6 +2,7 @@
 
 import { LoadingSize, LoadingVariant } from './LoadingState';
 
+
 export const loadingStatePresets = {
   // Small loading states
   small: {

@@ -8,8 +8,11 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { moodService, MoodLog, MoodStats } from '../../services/moodService';
+import { moodService, MoodLog, MoodStats } from '../../services/MoodService';
 import { hapticFeedback } from '../../utils/haptics';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface MoodLoggingCardProps {
   compact?: boolean;
@@ -38,7 +41,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
     const timer = setTimeout(() => {
       loadStats();
     }, 800); // Load after 800ms delay
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -62,7 +65,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
   const handleQuickLog = async (rating: number, label?: string, emoji?: string) => {
     try {
       hapticFeedback.light();
-      
+
       // Optimistic update - show the mood immediately
       const tempMoodLog = {
         id: Date.now(), // Use timestamp as temporary ID
@@ -73,43 +76,43 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
-      
+
       // Update UI immediately
       setTodaysLog(tempMoodLog);
-      
+
       // Try to log mood with shorter timeout
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 3000)
       );
-      
+
       await Promise.race([
         moodService.quickLogMood(rating, label, emoji),
         timeoutPromise
       ]);
-      
+
       // Reload stats in background to get real data
       loadStats();
-      
+
       hapticFeedback.success();
     } catch (err) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       hapticFeedback.error();
-      
+
       // Add to retry queue for later sync
       setRetryQueue(prev => [...prev, rating]);
-      
+
       // Keep the optimistic update even if API fails
       // This provides a better user experience
-      
+
       // Show a more user-friendly error message
-      const errorMessage = (err as Error).message === 'Request timeout' 
+      const errorMessage = (err as Error).message === 'Request timeout'
         ? 'Connection is slow. Your mood is saved locally and will sync when connection improves.'
         : 'Connection issue. Your mood is saved locally and will sync when connection improves.';
-        
+
       Alert.alert('Offline Mode', errorMessage, [
-        { 
-          text: 'Retry', 
-          onPress: () => handleQuickLog(rating) 
+        {
+          text: 'Retry',
+          onPress: () => handleQuickLog(rating)
         },
         { text: 'OK', style: 'default' }
       ]);
@@ -127,7 +130,7 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
   const buttonWidth = Math.min(50, (availableWidth - 20) / 6); // 6 buttons in single row
 
   const moodOptions = [
-    { emoji: '😴', label: 'Tired', rating: 2, color: '#6b7280' },
+    { emoji: '😴', label: 'Tired', rating: 2, color: COLORS.text.secondary },
     { emoji: '😰', label: 'Stressed', rating: 3, color: '#ef4444' },
     { emoji: '😔', label: 'Down', rating: 2, color: '#dc2626' },
     { emoji: '😐', label: 'Neutral', rating: 5, color: '#f59e0b' },
@@ -148,7 +151,6 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
     return '#8b5cf6';
   };
 
-
   return (
     <View style={[styles.card, compact && styles.compactCard]}>
       {/* Mood Heading */}
@@ -163,8 +165,8 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
           <TouchableOpacity
             key={`${index}-${mood.label}`}
             style={[
-              styles.moodButton, 
-              { 
+              styles.moodButton,
+              {
                 backgroundColor: mood.color,
                 width: buttonWidth,
                 height: buttonWidth + 10, // Slightly taller for text
@@ -223,9 +225,9 @@ export default function MoodLoggingCard({ compact = false }: MoodLoggingCardProp
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -235,7 +237,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   compactCard: {
-    padding: 12,
+    padding: SPACING.sm,
     marginBottom: 8,
   },
   titleContainer: {
@@ -244,15 +246,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
   },
   moodContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    paddingHorizontal: SPACING.xxs,
     marginBottom: 16,
   },
   moodButton: {
@@ -264,11 +266,11 @@ const styles = StyleSheet.create({
     minWidth: 35,
   },
   moodEmoji: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
   },
   moodLabel: {
     fontSize: 9,
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     fontWeight: 'bold',
     marginTop: 2,
     textAlign: 'center',
@@ -286,13 +288,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   todaysMoodRating: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   todaysMoodTime: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   stats: {
     flexDirection: 'row',
@@ -305,14 +307,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
 });

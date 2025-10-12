@@ -23,14 +23,14 @@ export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOption
   const saveData = useCallback(async (data: unknown) => {
     try {
       setLoading(true);
-      
+
       // Here you would call the appropriate service based on type
       // For now, we'll just simulate the save
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Refresh global data
       await refreshData();
-      
+
       onSuccess?.(data);
       closeLogger();
     } catch (error) {

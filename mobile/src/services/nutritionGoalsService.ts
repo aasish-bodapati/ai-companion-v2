@@ -1,4 +1,5 @@
 
+
 export interface NutritionGoals {
   calories: number;
   protein_g: number;
@@ -246,7 +247,7 @@ export class NutritionGoalsService {
       very_active: 1.6,
     };
 
-    return (baseProtein[bodyTypeGoal as keyof typeof baseProtein] || 1.6) * 
+    return (baseProtein[bodyTypeGoal as keyof typeof baseProtein] || 1.6) *
            (activityMultiplier[activityLevel as keyof typeof activityMultiplier] || 1.0);
   }
 
@@ -330,15 +331,15 @@ export class NutritionGoalsService {
 
   private getSupplementRecommendations(bodyTypeGoal: string, activityLevel: string): string[] {
     const baseSupplements = ['Multivitamin', 'Omega-3'];
-    
+
     if (bodyTypeGoal === 'bold' && activityLevel === 'very_active') {
       return [...baseSupplements, 'Creatine', 'Whey Protein', 'BCAA'];
     }
-    
+
     if (bodyTypeGoal === 'sleek') {
       return [...baseSupplements, 'Green Tea Extract', 'L-Carnitine'];
     }
-    
+
     return baseSupplements;
   }
 

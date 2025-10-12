@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import SmartInput, { inputPresets } from '../SmartInput';
+import SmartInput from '../SmartInput';
+import { inputPresets } from '../../../test-utils/testConfigs';
 
 describe('SmartInput', () => {
   it('renders correctly with basic props', () => {

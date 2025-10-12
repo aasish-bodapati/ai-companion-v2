@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import BaseModal from '../BaseModal.simple';
-import SmartInput, { inputPresets } from '../SmartInput';
-import { modalConfigs } from '../BaseModal.utils';
+import SmartInput from '../SmartInput';
+import { inputPresets, modalConfigs } from '../../../test-utils/testConfigs';
 
 describe('Component Integration', () => {
   it('BaseModal and SmartInput work together', () => {

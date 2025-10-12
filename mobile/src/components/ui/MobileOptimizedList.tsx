@@ -12,6 +12,8 @@ import {
 import { performanceUtils, componentOptimization } from '../../utils/performance';
 import { UnifiedLoadingState } from './UnifiedLoadingState';
 
+import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+
 interface MobileOptimizedListProps<T> extends Omit<FlatListProps<T>, 'renderItem'> {
   data: T[];
   renderItem: ListRenderItem<T>;
@@ -56,7 +58,7 @@ export default function MobileOptimizedList<T>({
   const optimizedRenderItem = useCallback<ListRenderItem<T>>(
     (itemInfo) => {
       const { item, index } = itemInfo;
-      
+
       // Only render if item is visible (basic optimization)
       if (enableVirtualization && !componentOptimization.optimizeListItem(item, index, data)) {
         return null;
@@ -152,7 +154,7 @@ export default function MobileOptimizedList<T>({
   // Render footer with load more indicator
   const renderFooter = () => {
     if (!loadingMore) return null;
-    
+
     return (
       <View style={styles.footerContainer}>
         <ActivityIndicator size="small" color="#3b82f6" />
@@ -164,7 +166,7 @@ export default function MobileOptimizedList<T>({
   // Get optimized props based on device performance
   const optimizedProps = useMemo(() => {
     const isLowEnd = performanceUtils.isLowEndDevice();
-    
+
     return {
       // Performance optimizations
       removeClippedSubviews: isLowEnd,
@@ -172,20 +174,20 @@ export default function MobileOptimizedList<T>({
       windowSize: performanceUtils.list.getWindowSize(),
       initialNumToRender: isLowEnd ? 5 : 10,
       updateCellsBatchingPeriod: isLowEnd ? 100 : 50,
-      
+
       // Memory optimizations
       getItemLayout: getItemLayout,
       keyExtractor,
-      
+
       // Interaction optimizations
       onEndReached: handleEndReached,
       onEndReachedThreshold: 0.5,
       onRefresh: handleRefresh,
       refreshing: refreshing,
-      
+
       // Accessibility
       testID,
-      
+
       // Visual optimizations
       showsVerticalScrollIndicator: !isLowEnd,
       showsHorizontalScrollIndicator: false,
@@ -237,15 +239,15 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -261,21 +263,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
     color: '#ef4444',
     marginBottom: 8,
     textAlign: 'center',
   },
   errorText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 16,
   },
   retryText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     textAlign: 'center',
   },
@@ -283,11 +285,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
+    paddingVertical: SPACING.md,
   },
   footerText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
   },
 });

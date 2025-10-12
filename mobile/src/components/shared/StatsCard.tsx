@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { UnifiedProgressRing } from '../ui/UnifiedProgressRing';
 import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
@@ -62,7 +64,7 @@ export default function StatsCard({
           </TouchableOpacity>
         )}
       </View>
-      
+
       <ScrollView
         horizontal={layout === 'horizontal'}
         showsHorizontalScrollIndicator={false}
@@ -70,7 +72,7 @@ export default function StatsCard({
       >
         {stats.map((stat) => {
           const percentage = Math.min((stat.value / stat.target) * 100, 100);
-          
+
           switch (stat.type) {
             case 'ring':
               return (
@@ -87,7 +89,7 @@ export default function StatsCard({
                    variant="shared"
                  />
               );
-            
+
             case 'bar':
               return (
                 <TouchableOpacity
@@ -105,13 +107,13 @@ export default function StatsCard({
                       {stat.value}{stat.unit}
                     </Text>
                   </View>
-                  
+
                   <View style={styles.barContainer}>
                     <View style={[styles.barBackground, { backgroundColor: stat.color + '20' }]}>
-                      <View 
+                      <View
                         style={[
                           styles.barFill,
-                          { 
+                          {
                             width: `${percentage}%`,
                             backgroundColor: stat.color
                           }
@@ -120,7 +122,7 @@ export default function StatsCard({
                     </View>
                     <Text style={styles.barPercentage}>{Math.round(percentage)}%</Text>
                   </View>
-                  
+
                   {showTargets && (
                     <Text style={styles.barTarget}>
                       Target: {stat.target}{stat.unit}
@@ -128,7 +130,7 @@ export default function StatsCard({
                   )}
                 </TouchableOpacity>
               );
-            
+
             case 'number':
               return (
                 <TouchableOpacity
@@ -149,7 +151,7 @@ export default function StatsCard({
                   )}
                 </TouchableOpacity>
               );
-            
+
             default:
               return null;
           }
@@ -197,7 +199,7 @@ const styles = StyleSheet.create({
     gap: SPACING.xs, // 4 -> SPACING.xs
   },
   // Ring stats (handled by ProgressRing component)
-  
+
   // Bar stats
   barStat: {
     backgroundColor: COLORS.background.secondary, // '#f8fafc' -> COLORS.background.secondary
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZE.sm, // 12 -> FONT_SIZE.sm
     color: COLORS.text.tertiary, // '#9ca3af' -> COLORS.text.tertiary
   },
-  
+
   // Number stats
   numberStat: {
     alignItems: 'center',

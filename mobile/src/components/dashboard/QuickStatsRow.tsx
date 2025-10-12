@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
@@ -32,10 +34,10 @@ export default function QuickStatsRow({ stats }: QuickStatsRowProps) {
           </View>
           <Text style={styles.statLabel}>{stat.label}</Text>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.max(5, stat.progress)}%`,
                   backgroundColor: stat.color
                 }

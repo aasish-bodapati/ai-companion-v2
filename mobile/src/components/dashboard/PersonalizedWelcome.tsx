@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface PersonalizedWelcomeProps {
   userName: string;
@@ -9,11 +13,11 @@ interface PersonalizedWelcomeProps {
   onTapMicroGoal?: () => void;
 }
 
-export default function PersonalizedWelcome({ 
-  userName, 
-  dailyMicroGoal, 
+export default function PersonalizedWelcome({
+  userName,
+  dailyMicroGoal,
   alignmentPercentage,
-  onTapMicroGoal 
+  onTapMicroGoal
 }: PersonalizedWelcomeProps) {
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -41,7 +45,7 @@ export default function PersonalizedWelcome({
         <Text style={styles.greeting}>{getGreeting()}, {userName}!</Text>
         <Text style={styles.motivation}>{getMotivationalMessage()}</Text>
       </View>
-      
+
       <View style={styles.microGoalContainer}>
         <View style={styles.microGoalHeader}>
           <Ionicons name="flag-outline" size={16} color="#3b82f6" />
@@ -50,10 +54,10 @@ export default function PersonalizedWelcome({
         <Text style={styles.microGoalText}>{dailyMicroGoal}</Text>
         <View style={styles.alignmentIndicator}>
           <View style={styles.alignmentBar}>
-            <View 
+            <View
               style={[
                 styles.alignmentFill,
-                { 
+                {
                   width: `${Math.max(10, alignmentPercentage)}%`,
                   backgroundColor: getAlignmentColor(alignmentPercentage)
                 }
@@ -71,9 +75,9 @@ export default function PersonalizedWelcome({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     margin: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -88,17 +92,17 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   motivation: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   microGoalContainer: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
   },
   microGoalHeader: {
     flexDirection: 'row',
@@ -106,14 +110,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   microGoalLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#3b82f6',
     marginLeft: 6,
   },
   microGoalText: {
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
     marginBottom: 12,
     lineHeight: 22,
   },
@@ -124,7 +128,7 @@ const styles = StyleSheet.create({
   alignmentBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 3,
     marginRight: 12,
   },
@@ -133,7 +137,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   alignmentText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
   },
 });

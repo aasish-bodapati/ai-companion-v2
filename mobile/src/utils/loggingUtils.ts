@@ -3,7 +3,9 @@
  * Extracted from various components to reduce duplication
  */
 
+import { DebugUtils } from '../utils/debugUtils';
 import React from 'react';
+
 
 // ============================================================================
 // LOGGING LEVELS
@@ -35,23 +37,23 @@ const LOG_CONFIG = {
  */
 const log = (level: LogLevel, category: string, message: string, data?: unknown) => {
   if (level < LOG_CONFIG.level) return;
-  
+
   const timestamp = LOG_CONFIG.enableTimestamps ? `[${new Date().toISOString()}] ` : '';
   const prefix = `${timestamp}[${category}]`;
-  
+
   if (LOG_CONFIG.enableConsole) {
     switch (level) {
       case LogLevel.DEBUG:
-        console.log(`${prefix} ${message}`, data || '');
+        DebugUtils.log(`${prefix} ${message}`, data || '');
         break;
       case LogLevel.INFO:
-        console.info(`${prefix} ${message}`, data || '');
+        DebugUtils.info(`${prefix} ${message}`, data || '');
         break;
       case LogLevel.WARN:
-        console.warn(`${prefix} ${message}`, data || '');
+        DebugUtils.warn(`${prefix} ${message}`, data || '');
         break;
       case LogLevel.ERROR:
-        console.error(`${prefix} ${message}`, data || '');
+        DebugUtils.error(`${prefix} ${message}`, data || '');
         break;
     }
   }
@@ -68,17 +70,17 @@ export const componentLogger = {
   mount: (componentName: string, props?: unknown) => {
     log(LogLevel.DEBUG, 'COMPONENT', `🔄 ${componentName} mounted`, props);
   },
-  
+
   unmount: (componentName: string) => {
     log(LogLevel.DEBUG, 'COMPONENT', `🔄 ${componentName} unmounted`);
   },
-  
+
   render: (componentName: string, renderCount?: number) => {
     if (renderCount && renderCount > 1) {
       log(LogLevel.DEBUG, 'COMPONENT', `🔄 ${componentName} re-rendered (${renderCount})`);
     }
   },
-  
+
   error: (componentName: string, error: Error, context?: unknown) => {
     log(LogLevel.ERROR, 'COMPONENT', `❌ ${componentName} error: ${error.message}`, { error, context });
   },
@@ -91,14 +93,14 @@ export const apiLogger = {
   request: (method: string, url: string, data?: unknown) => {
     log(LogLevel.DEBUG, 'API', `📤 ${method} ${url}`, data);
   },
-  
+
   response: (method: string, url: string, status: number, data?: unknown) => {
     const emoji = status >= 200 && status < 300 ? '✅' : '❌';
     log(LogLevel.DEBUG, 'API', `${emoji} ${method} ${url} - ${status}`, data);
   },
-  
+
   error: (method: string, url: string, error: unknown) => {
-    const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+    const errorMessage = error && typeof error === 'object' && 'message' in error ?
       (error as Error).message : String(error);
     log(LogLevel.ERROR, 'API', `❌ ${method} ${url} failed: ${errorMessage}`, error);
   },
@@ -111,15 +113,15 @@ export const actionLogger = {
   click: (element: string, context?: unknown) => {
     log(LogLevel.DEBUG, 'ACTION', `👆 Clicked ${element}`, context);
   },
-  
+
   input: (field: string, value: unknown) => {
     log(LogLevel.DEBUG, 'ACTION', `⌨️ Input ${field}: ${value}`);
   },
-  
+
   submit: (form: string, data?: unknown) => {
     log(LogLevel.DEBUG, 'ACTION', `📝 Submitted ${form}`, data);
   },
-  
+
   navigation: (from: string, to: string) => {
     log(LogLevel.DEBUG, 'ACTION', `🧭 Navigated from ${from} to ${to}`);
   },
@@ -132,18 +134,18 @@ export const dataLogger = {
   loading: (resource: string) => {
     log(LogLevel.DEBUG, 'DATA', `⏳ Loading ${resource}`);
   },
-  
+
   loaded: (resource: string, count?: number) => {
     const countText = count !== undefined ? ` (${count} items)` : '';
     log(LogLevel.DEBUG, 'DATA', `✅ Loaded ${resource}${countText}`);
   },
-  
+
   error: (resource: string, error: unknown) => {
-    const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+    const errorMessage = error && typeof error === 'object' && 'message' in error ?
       (error as Error).message : String(error);
     log(LogLevel.ERROR, 'DATA', `❌ Failed to load ${resource}: ${errorMessage}`);
   },
-  
+
   refresh: (resource: string) => {
     log(LogLevel.DEBUG, 'DATA', `🔄 Refreshing ${resource}`);
   },
@@ -156,11 +158,11 @@ export const performanceLogger = {
   start: (operation: string) => {
     log(LogLevel.DEBUG, 'PERF', `⏱️ Started ${operation}`);
   },
-  
+
   end: (operation: string, duration: number) => {
     log(LogLevel.DEBUG, 'PERF', `⏱️ Completed ${operation} in ${duration}ms`);
   },
-  
+
   slow: (operation: string, duration: number, threshold: number = 1000) => {
     if (duration > threshold) {
       log(LogLevel.WARN, 'PERF', `🐌 Slow operation ${operation}: ${duration}ms (threshold: ${threshold}ms)`);
@@ -175,9 +177,9 @@ export const stateLogger = {
   update: (store: string, action: string, data?: unknown) => {
     log(LogLevel.DEBUG, 'STATE', `🔄 ${store}: ${action}`, data);
   },
-  
+
   error: (store: string, action: string, error: unknown) => {
-    const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+    const errorMessage = error && typeof error === 'object' && 'message' in error ?
       (error as Error).message : String(error);
     log(LogLevel.ERROR, 'STATE', `❌ ${store}: ${action} failed: ${errorMessage}`);
   },
@@ -206,7 +208,7 @@ export const logExecutionTime = async <T>(
 ): Promise<T> => {
   const start = Date.now();
   performanceLogger.start(operation);
-  
+
   try {
     const result = await fn();
     const duration = Date.now() - start;
@@ -233,10 +235,10 @@ export const withLifecycleLogging = <T extends React.ComponentType<any>>(
       componentLogger.mount(componentName, props);
       return () => componentLogger.unmount(componentName);
     }, [componentName, props]);
-    
+
     return React.createElement(Component, props);
   };
-  
+
   WrappedComponent.displayName = `withLifecycleLogging(${componentName})`;
   return WrappedComponent as T;
 };
@@ -251,11 +253,11 @@ export const withLifecycleLogging = <T extends React.ComponentType<any>>(
 export const useRenderLogger = (componentName: string, props?: unknown) => {
   const renderCount = React.useRef(0);
   renderCount.current += 1;
-  
+
   React.useEffect(() => {
     componentLogger.render(componentName, renderCount.current);
   });
-  
+
   React.useEffect(() => {
     if (props) {
       log(LogLevel.DEBUG, componentName, 'Props changed', props);
@@ -269,11 +271,11 @@ export const useRenderLogger = (componentName: string, props?: unknown) => {
 export const useAsyncLogger = (operation: string) => {
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<any>(null);
-  
+
   const execute = React.useCallback(async <T>(fn: () => Promise<T>): Promise<T> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const result = await logExecutionTime(operation, fn);
       return result;
@@ -284,7 +286,7 @@ export const useAsyncLogger = (operation: string) => {
       setIsLoading(false);
     }
   }, [operation]);
-  
+
   return { execute, isLoading, error };
 };
 

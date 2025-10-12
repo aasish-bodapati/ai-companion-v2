@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
 export type EmptyStateSize = 'small' | 'medium' | 'large';
@@ -18,18 +20,18 @@ interface EmptyStateProps {
   title: string;
   subtitle?: string;
   visible?: boolean;
-  
+
   // Configuration
   size?: EmptyStateSize;
   variant?: EmptyStateVariant;
   showIcon?: boolean;
   icon?: keyof typeof Ionicons.glyphMap;
-  
+
   // Action button
   actionText?: string;
   onActionPress?: () => void;
   actionIcon?: keyof typeof Ionicons.glyphMap;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   titleStyle?: TextStyle;
@@ -37,11 +39,11 @@ interface EmptyStateProps {
   actionStyle?: ViewStyle;
   actionTextStyle?: TextStyle;
   iconColor?: string;
-  
+
   // Customization
   customIcon?: React.ReactNode;
   customAction?: React.ReactNode;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -86,7 +88,7 @@ export default function EmptyState({
 
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     // Size-based styles
     switch (size) {
       case 'small':
@@ -99,7 +101,7 @@ export default function EmptyState({
         baseStyles.push(styles.containerLarge);
         break;
     }
-    
+
     // Variant-based styles
     switch (variant) {
       case 'minimal':
@@ -115,15 +117,15 @@ export default function EmptyState({
         baseStyles.push(styles.containerDefault);
         break;
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   const getTitleStyles = (): TextStyle[] => {
     const baseStyles = [styles.title];
-    
+
     // Size-based title styles
     switch (size) {
       case 'small':
@@ -136,15 +138,15 @@ export default function EmptyState({
         baseStyles.push(styles.titleLarge);
         break;
     }
-    
+
     if (titleStyle) baseStyles.push(titleStyle);
-    
+
     return baseStyles;
   };
 
   const getSubtitleStyles = (): TextStyle[] => {
     const baseStyles = [styles.subtitle];
-    
+
     // Size-based subtitle styles
     switch (size) {
       case 'small':
@@ -157,15 +159,15 @@ export default function EmptyState({
         baseStyles.push(styles.subtitleLarge);
         break;
     }
-    
+
     if (subtitleStyle) baseStyles.push(subtitleStyle);
-    
+
     return baseStyles;
   };
 
   const getActionStyles = (): ViewStyle[] => {
     const baseStyles = [styles.action];
-    
+
     // Size-based action styles
     switch (size) {
       case 'small':
@@ -178,9 +180,9 @@ export default function EmptyState({
         baseStyles.push(styles.actionLarge);
         break;
     }
-    
+
     if (actionStyle) baseStyles.push(actionStyle);
-    
+
     return baseStyles;
   };
 
@@ -202,19 +204,19 @@ export default function EmptyState({
           )}
         </View>
       )}
-      
+
       {/* Title */}
       <Text style={getTitleStyles()}>
         {title}
       </Text>
-      
+
       {/* Subtitle */}
       {subtitle && (
         <Text style={getSubtitleStyles()}>
           {subtitle}
         </Text>
       )}
-      
+
       {/* Action Button */}
       {actionText && onActionPress && (
         <View style={styles.actionContainer}>

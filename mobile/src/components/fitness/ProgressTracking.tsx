@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface ProgressRing {
   id: string;
@@ -58,7 +62,7 @@ export default function ProgressTracking({
       >
         <View style={styles.ringWrapper}>
           <View style={styles.ringBackground}>
-            <View style={[styles.ringProgress, { 
+            <View style={[styles.ringProgress, {
               borderColor: ring.color,
               transform: [{ rotate: `${(percentage / 100) * 360}deg` }]
             }]} />
@@ -79,7 +83,7 @@ export default function ProgressTracking({
     <TouchableOpacity
       style={[
         styles.achievementCard,
-        { 
+        {
           backgroundColor: achievement.unlocked ? '#f0f9ff' : '#f8fafc',
           borderColor: achievement.unlocked ? achievement.color : '#e5e7eb'
         }
@@ -91,10 +95,10 @@ export default function ProgressTracking({
         styles.achievementIcon,
         { backgroundColor: achievement.unlocked ? achievement.color : '#e5e7eb' }
       ]}>
-        <Ionicons 
-          name={achievement.icon as keyof typeof Ionicons.glyphMap} 
-          size={20} 
-          color={achievement.unlocked ? '#ffffff' : '#9ca3af'} 
+        <Ionicons
+          name={achievement.icon as keyof typeof Ionicons.glyphMap}
+          size={20}
+          color={achievement.unlocked ? '#ffffff' : '#9ca3af'}
         />
       </View>
       <View style={styles.achievementContent}>
@@ -113,10 +117,10 @@ export default function ProgressTracking({
         {achievement.progress !== undefined && !achievement.unlocked && (
           <View style={styles.achievementProgress}>
             <View style={styles.progressBar}>
-              <View 
+              <View
                 style={[
                   styles.progressFill,
-                  { 
+                  {
                     width: `${achievement.progress}%`,
                     backgroundColor: achievement.color
                   }
@@ -197,9 +201,9 @@ export default function ProgressTracking({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -218,9 +222,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   section: {
     marginBottom: 20,
@@ -270,25 +274,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 2,
   },
   ringUnit: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
   },
   ringTitle: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 2,
   },
   ringProgressText: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
   },
   streaksContainer: {
     flexDirection: 'row',
@@ -298,16 +302,16 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.background.secondary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   streakIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -316,13 +320,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   streakCount: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   streakType: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   achievementsHeader: {
     flexDirection: 'row',
@@ -331,7 +335,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     fontWeight: '500',
   },
@@ -341,15 +345,15 @@ const styles = StyleSheet.create({
   achievementCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     marginHorizontal: 0,
   },
   achievementIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -358,12 +362,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   achievementTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     marginBottom: 2,
   },
   achievementDescription: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     marginBottom: 4,
   },
   achievementProgress: {
@@ -374,7 +378,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 2,
     marginRight: 8,
     overflow: 'hidden',
@@ -384,11 +388,11 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
   },
   unlockedText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     color: '#10b981',
     fontStyle: 'italic',
   },

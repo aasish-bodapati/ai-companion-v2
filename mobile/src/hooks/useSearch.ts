@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
+
 import { SearchState } from '../types/CommonTypes';
 import { SearchParams } from '../types/BaseLog';
 import { SearchResult } from '../types/BaseLog';
@@ -179,7 +180,7 @@ export function useSearch<T>(
         return [];
       }
 
-      const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+      const errorMessage = error && typeof error === 'object' && 'message' in error ?
         (error as Error).message : 'Search failed';
       setSearchState(prev => ({
         ...prev,
@@ -196,7 +197,7 @@ export function useSearch<T>(
   // Update search parameters
   const updateSearchParams = useCallback((newParams: Partial<SearchParams>) => {
     const updatedParams = { ...searchParams, ...newParams };
-    
+
     // If there's a current query, re-search with new params
     if (searchState.query) {
       debouncedSearch(searchState.query);
@@ -245,19 +246,19 @@ export function useSearch<T>(
     isSearching: searchState.isSearching,
     hasSearched: searchState.hasSearched,
     error: searchState.error,
-    
+
     // Actions
     setQuery,
     clearSearch,
     searchImmediate,
     updateSearchParams,
-    
+
     // Computed values
     getSearchResults,
     isSearchActive,
     hasResults,
     isEmpty,
-    
+
     // Cleanup
     cleanup,
   };

@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, ViewStyle, TextStyle, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT } from '../../theme/constants';
 
@@ -9,37 +11,37 @@ export type BadgeSize = 'small' | 'medium' | 'large';
 export interface BadgeProps {
   /** Badge text content */
   children: React.ReactNode;
-  
+
   /** Badge variant for predefined styling */
   variant?: BadgeVariant;
-  
+
   /** Badge size */
   size?: BadgeSize;
-  
+
   /** Custom background color (overrides variant) */
   backgroundColor?: string;
-  
+
   /** Custom text color (overrides variant) */
   textColor?: string;
-  
+
   /** Icon to display before text */
   icon?: keyof typeof Ionicons.glyphMap;
-  
+
   /** Icon size (defaults based on badge size) */
   iconSize?: number;
-  
+
   /** Whether to show as outline style */
   outline?: boolean;
-  
+
   /** Custom styles */
   style?: ViewStyle;
-  
+
   /** Custom text styles */
   textStyle?: TextStyle;
-  
+
   /** Whether badge is pressable */
   onPress?: () => void;
-  
+
   /** Test ID for testing */
   testID?: string;
 }
@@ -101,7 +103,7 @@ const Badge = React.memo(function Badge({
 
   const variantColors = getVariantColors(variant);
   const sizeConfig = getSizeConfig(size);
-  
+
   // Use custom colors if provided, otherwise use variant colors
   const finalBgColor = backgroundColor || variantColors.bg;
   const finalTextColor = textColor || variantColors.text;
@@ -183,26 +185,26 @@ export const CategoryBadge = React.memo(function CategoryBadge({
       'bodyweight': { variant: 'info', icon: 'person' },
       'weighted': { variant: 'primary', icon: 'barbell' },
       'strength': { variant: 'primary', icon: 'barbell' },
-      
+
       // Cardio & Endurance
       'cardio_duration': { variant: 'success', icon: 'heart' },
       'cardio': { variant: 'success', icon: 'heart' },
       'running': { variant: 'success', icon: 'walk' },
       'distance_based': { variant: 'success', icon: 'map' },
-      
+
       // Flexibility & Recovery
       'flexibility': { variant: 'warning', icon: 'leaf' },
       'hold_static': { variant: 'warning', icon: 'time' },
-      
+
       // Repetition-based
       'repetition_only': { variant: 'secondary', icon: 'repeat' },
     };
-    
+
     return categoryMap[safeCategory] || { variant: 'secondary', icon: 'help-outline' };
   };
 
   const config = category ? getCategoryConfig(String(category)) : { variant: 'secondary' as BadgeVariant, icon: 'help-outline' as keyof typeof Ionicons.glyphMap };
-  
+
   return (
     <Badge
       variant={config.variant}
@@ -231,12 +233,12 @@ export const StatusBadge = React.memo(function StatusBadge({
       'intermediate': { variant: 'warning' },
       'advanced': { variant: 'error' },
     };
-    
+
     return statusMap[status] || { variant: 'secondary' };
   };
 
   const config = status ? getStatusConfig(status) : { variant: 'secondary' as BadgeVariant };
-  
+
   return (
     <Badge
       variant={config.variant}
@@ -262,12 +264,12 @@ export const DifficultyBadge = React.memo(function DifficultyBadge({
       'advanced': { variant: 'error', icon: 'flash' },
       'hard': { variant: 'error', icon: 'flash' },
     };
-    
+
     return difficultyMap[difficulty] || { variant: 'secondary' };
   };
 
   const config = difficulty ? getDifficultyConfig(difficulty) : { variant: 'secondary' as BadgeVariant };
-  
+
   return (
     <Badge
       variant={config.variant}

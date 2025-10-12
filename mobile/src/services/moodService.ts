@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 
 export interface MoodLog {
@@ -52,7 +53,7 @@ class MoodService extends BaseService {
     if (params?.end_date) queryParams.append('end_date', params.end_date);
 
     return this.makeRequest(
-      () => apiClient.get(`/health/logging/mood?${queryParams.toString()}`),
+      () => api.get(`/api/v1/health/logging/mood?${queryParams.toString()}`),
       'MOOD SERVICE - getMoodLogs'
     );
   }
@@ -61,7 +62,7 @@ class MoodService extends BaseService {
   async getTodaysMoodLogs(): Promise<MoodLog[]> {
     const today = new Date().toISOString().split('T')[0];
     return this.makeRequest(
-      () => apiClient.get(`/health/logging/mood?start_date=${today}&end_date=${today}`),
+      () => api.get(`/api/v1/health/logging/mood?start_date=${today}&end_date=${today}`),
       'MOOD SERVICE - getTodaysMoodLogs'
     );
   }
@@ -69,7 +70,7 @@ class MoodService extends BaseService {
   // Create a new mood log
   async createMoodLog(moodData: MoodLogCreate): Promise<MoodLog> {
     return this.makeRequest(
-      () => apiClient.post('/health/logging/mood', moodData),
+      () => api.post('/api/v1/health/logging/mood', moodData),
       'MOOD SERVICE - createMoodLog'
     );
   }
@@ -77,7 +78,7 @@ class MoodService extends BaseService {
   // Update a mood log
   async updateMoodLog(logId: string, updateData: MoodLogUpdate): Promise<MoodLog> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/mood/${logId}`, updateData),
+      () => api.put(`/health/logging/mood/${logId}`, updateData),
       'MOOD SERVICE - updateMoodLog'
     );
   }
@@ -85,7 +86,7 @@ class MoodService extends BaseService {
   // Delete a mood log
   async deleteMoodLog(logId: string): Promise<void> {
     return this.makeRequest(
-      () => apiClient.delete(`/health/logging/mood/${logId}`),
+      () => api.delete(`/health/logging/mood/${logId}`),
       'MOOD SERVICE - deleteMoodLog'
     );
   }
@@ -99,7 +100,7 @@ class MoodService extends BaseService {
       notes: notes,
       log_date: new Date().toISOString(),
     };
-    
+
     return this.createMoodLog(moodData);
   }
 
@@ -117,8 +118,8 @@ class MoodService extends BaseService {
       });
 
       const totalLogs = logs.length;
-      const averageMood = totalLogs > 0 
-        ? logs.reduce((sum, log) => sum + log.mood_rating, 0) / totalLogs 
+      const averageMood = totalLogs > 0
+        ? logs.reduce((sum, log) => sum + log.mood_rating, 0) / totalLogs
         : 0;
 
       // Calculate trend (simple comparison of first half vs second half)
@@ -127,10 +128,10 @@ class MoodService extends BaseService {
         const midpoint = Math.floor(totalLogs / 2);
         const firstHalf = logs.slice(0, midpoint);
         const secondHalf = logs.slice(midpoint);
-        
+
         const firstHalfAvg = firstHalf.reduce((sum, log) => sum + log.mood_rating, 0) / firstHalf.length;
         const secondHalfAvg = secondHalf.reduce((sum, log) => sum + log.mood_rating, 0) / secondHalf.length;
-        
+
         if (secondHalfAvg > firstHalfAvg + 0.5) moodTrend = 'increasing';
         else if (secondHalfAvg < firstHalfAvg - 0.5) moodTrend = 'decreasing';
       }
@@ -161,7 +162,7 @@ class MoodService extends BaseService {
   }> {
     try {
       const stats = await this.getMoodStats(30);
-      
+
       const insights: string[] = [];
       const recommendations: string[] = [];
 

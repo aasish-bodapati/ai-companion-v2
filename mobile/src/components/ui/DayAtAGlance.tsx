@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES } from '../../theme/constants';
 
@@ -23,18 +25,18 @@ export default function DayAtAGlance({
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Day at a Glance</Text>
-        <Text style={styles.subtitle}>{new Date().toLocaleDateString('en-US', { 
-          weekday: 'short', 
-          month: 'short', 
-          day: 'numeric' 
+        <Text style={styles.subtitle}>{new Date().toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric'
         })}</Text>
       </View>
 
       {/* Main Stats Row */}
       <View style={styles.statsRow}>
         {/* Meals */}
-        <TouchableOpacity 
-          style={[styles.statItem, styles.mealItem]} 
+        <TouchableOpacity
+          style={[styles.statItem, styles.mealItem]}
           onPress={onMealPress}
           activeOpacity={0.8}
         >

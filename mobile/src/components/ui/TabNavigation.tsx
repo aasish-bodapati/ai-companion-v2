@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
@@ -72,7 +74,6 @@ export default function TabNavigation({
         };
     }
   };
-
 
   const renderTab = (tab: TabItem) => {
     const isActive = activeTab === tab.id;

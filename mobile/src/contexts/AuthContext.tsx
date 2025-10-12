@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient } from '../services/api';
+import { api, setAuthToken, clearAuthToken } from '../services/api';
+import { DebugUtils } from '../utils/debugUtils';
+
 // Note: Toast notifications are handled by the calling component
 
 export interface User {
@@ -73,42 +75,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const storedToken = await AsyncStorage.getItem('token');
       if (storedToken) {
         setToken(storedToken);
-        // Verify token with backend
+        setAuthToken(storedToken);
+        // Set user from stored data first
         try {
-          const response = await apiClient.get('/users/me');
-          setUser(response.data);
-        } catch (error: unknown) {
-          // Don't clear tokens on error during app startup/reload
-          // This prevents the logout issue when reloading Expo Go
-          if (__DEV__) {
-            console.log('🔐 [AUTH CONTEXT] Token validation failed, but keeping session for now');
+          const storedUser = await AsyncStorage.getItem('user');
+          if (storedUser) {
+            setUser(JSON.parse(storedUser));
           }
-          // Set user from stored data instead
-          try {
-            const storedUser = await AsyncStorage.getItem('user');
-            if (storedUser) {
-              setUser(JSON.parse(storedUser));
-            }
-          } catch {
-            // Ignore stored user errors
-          }
+        } catch {
+          // Ignore stored user errors
         }
         
-        // Check onboarding completion status from backend
+        // Verify token with backend (only if we have a token)
         try {
-          const onboardingStatus = await apiClient.get('/health/onboarding/status');
-          const completed = onboardingStatus.data.completed;
-          
-          // Check if onboarding is completed
-          setNeedsOnboarding(!completed);
+          const response = await api.get('/api/v1/users/me');
+          setUser(response);
+          // Update stored user data with fresh data from server
+          await AsyncStorage.setItem('user', JSON.stringify(response));
+        } catch (error: unknown) {
+          // Token is invalid, clear it
           if (__DEV__) {
-            console.log('🔍 Auth check - onboarding:', completed ? 'completed' : 'needed');
+            DebugUtils.log('🔐 [AUTH CONTEXT] Token validation failed, clearing invalid token');
           }
-        } catch (error) {
-          if (__DEV__) {
-            console.log('🔍 Auth check - onboarding error, defaulting to needed');
+          await AsyncStorage.removeItem('token');
+          setToken(null);
+          setUser(null);
+          clearAuthToken();
+        }
+
+        // Check onboarding completion status from backend (only if we have a valid token)
+        if (storedToken) {
+          try {
+            const onboardingStatus = await api.get('/api/v1/health/onboarding/status');
+            const completed = onboardingStatus.completed;
+
+            // Check if onboarding is completed
+            setNeedsOnboarding(!completed);
+            if (__DEV__) {
+              DebugUtils.log('🔍 Auth check - onboarding:', completed ? 'completed' : 'needed');
+            }
+          } catch (error) {
+            if (__DEV__) {
+              DebugUtils.log('🔍 Auth check - onboarding error, defaulting to needed');
+            }
+            // Default to needing onboarding if we can't check
+            setNeedsOnboarding(true);
           }
-          // Default to needing onboarding if we can't check
+        } else {
+          // No token, assume onboarding is needed
           setNeedsOnboarding(true);
         }
       } else {
@@ -121,6 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await AsyncStorage.removeItem('token');
       setToken(null);
       setUser(null);
+      clearAuthToken();
     } finally {
       setIsLoading(false);
     }
@@ -128,64 +143,113 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // Login endpoint expects form-encoded data, not JSON
-      const formData = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-      
-      
-      const response = await apiClient.post('/login/access-token', formData, {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] Starting login for:', email);
+        }
 
-      const { access_token } = response.data;
-      
+      // Test basic variables first
+      if (__DEV__) {
+        DebugUtils.log('🔐 [LOGIN] Validating credentials...');
+      }
+
+      // Login endpoint expects form-encoded data, not JSON
+      let formData: string;
+      try {
+        formData = `username=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+        // Form data prepared
+      } catch (error) {
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] Error preparing form data:', error);
+        }
+        throw error;
+      }
+
+      let responseData: any;
+      try {
+        // Making API call
+        responseData = await api.post('/api/v1/login/access-token', formData, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        });
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] API call successful');
+        }
+      } catch (error) {
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] API call failed:', error);
+        }
+        throw error;
+      }
+
+      const { access_token } = responseData;
+
       // Store token
       await AsyncStorage.setItem('token', access_token);
       setToken(access_token);
-      
+      setAuthToken(access_token);
+
       // Get user data separately
+      let userData: User | null = null;
       try {
-        const userResponse = await apiClient.get('/users/me');
-        setUser(userResponse.data);
+        // Getting user data
+        const userResponse = await api.get('/api/v1/users/me');
+        userData = userResponse.data;
+        setUser(userData);
         // Store user data in AsyncStorage
-        await AsyncStorage.setItem('user', JSON.stringify(userResponse.data));
-      } catch {
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+      } catch (error) {
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] Failed to get user data from API:', error);
+        }
         // Silent error handling - no console logging to prevent Expo Go notifications
         // Set basic user data from login response if available
-        const basicUser = {
+        userData = {
           id: 13, // This should come from the token or a separate call
           email: email,
           full_name: 'User',
           is_active: true,
         };
-        setUser(basicUser);
+        setUser(userData);
         // Store basic user data in AsyncStorage
-        await AsyncStorage.setItem('user', JSON.stringify(basicUser));
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
       }
 
       // Check onboarding status
       try {
-        const onboardingStatus = await apiClient.get('/health/onboarding/status');
+        const onboardingStatus = await api.get('/api/v1/health/onboarding/status');
         if (__DEV__) {
-          console.log('🔍 login - onboarding status from API:', onboardingStatus.data);
+          DebugUtils.log('🔍 login - onboarding status from API:', onboardingStatus);
         }
-        const completed = onboardingStatus.data.completed;
+        const completed = onboardingStatus.completed;
         setNeedsOnboarding(!completed);
         if (__DEV__) {
-          console.log('🔍 login - completed:', completed, 'setNeedsOnboarding to:', !completed);
+          DebugUtils.log('🔍 login - completed:', completed, 'setNeedsOnboarding to:', !completed);
         }
-      } catch {
-        console.log('🔍 login - onboarding status error');
+      } catch (error) {
+        if (__DEV__) {
+          DebugUtils.log('🔍 login - onboarding status error:', error);
+        }
         // Default to needing onboarding if we can't check
         setNeedsOnboarding(true);
       }
 
+        if (__DEV__) {
+          DebugUtils.log('🔐 [LOGIN] Login completed successfully');
+        }
+
+      // Force a small delay to ensure state updates are processed
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       return { success: true };
     } catch (error: unknown) {
+      if (__DEV__) {
+        DebugUtils.log('🔐 [LOGIN] ===== LOGIN ERROR =====');
+        DebugUtils.log('🔐 [LOGIN] Error details:', error);
+      }
       // Handle different types of errors and show appropriate toast notifications
       let errorMessage = 'Login failed. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const errorResponse = error.response as { status?: number; data?: { detail?: string; message?: string } };
         if (errorResponse.status === 404) {
@@ -227,24 +291,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Silent error handling - no console logging to prevent Expo Go notifications
         errorMessage = 'Login failed. Please try again.';
       }
-      
+
       return { success: false, error: errorMessage };
     }
   };
 
   const register = async (email: string, password: string, fullName: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      await apiClient.post('/register', {
+      await api.post('/api/v1/register', {
         email,
         password,
         full_name: fullName,
       });
       return { success: true };
     } catch (error: unknown) {
-      
+
       // Handle specific error cases and show toast notifications
       let errorMessage = 'Registration failed. Please try again later.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const errorResponse = error.response as { status?: number; data?: { detail?: string; message?: string } };
         if (errorResponse.status === 400) {
@@ -272,8 +336,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         errorMessage = 'Registration failed. Please try again later.';
       }
-      
-      
+
       return { success: false, error: errorMessage };
     }
   };
@@ -282,7 +345,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Call logout endpoint if token exists
       if (token) {
-        await apiClient.post('/logout');
+        await api.post('/api/v1/logout');
       }
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -293,11 +356,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setToken(null);
       setUser(null);
       setNeedsOnboarding(false);
+      clearAuthToken();
     }
   };
 
   const completeOnboarding = async (data?: OnboardingData) => {
-    console.log('🎉 AuthContext completeOnboarding called with data:', data);
+    DebugUtils.log('🎉 AuthContext completeOnboarding called with data:', data);
     try {
       // Use provided data or default values
       const onboardingData = data || {
@@ -309,11 +373,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       };
 
       // Call backend API to complete onboarding
-      const response = await apiClient.post('/health/onboarding/complete', onboardingData);
-      
-      console.log('🎉 Backend onboarding completion response:', response.data);
+      const response = await api.post('/api/v1/health/onboarding/complete', onboardingData);
+
+      DebugUtils.log('🎉 Backend onboarding completion response:', response.data);
       setNeedsOnboarding(false);
-      console.log('🎉 AuthContext completeOnboarding completed - needsOnboarding set to false');
+      DebugUtils.log('🎉 AuthContext completeOnboarding completed - needsOnboarding set to false');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Still mark as completed locally to prevent infinite onboarding loop
@@ -322,12 +386,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const rerunOnboarding = async () => {
-    console.log('🔄 AuthContext rerunOnboarding called');
+    DebugUtils.log('🔄 AuthContext rerunOnboarding called');
     setNeedsOnboarding(true);
     // Note: We don't need to call backend here since we're just allowing the user
     // to go through onboarding again. The backend will handle the completion when
     // they finish onboarding.
-    console.log('🔄 AuthContext rerunOnboarding completed - needsOnboarding set to true');
+    DebugUtils.log('🔄 AuthContext rerunOnboarding completed - needsOnboarding set to true');
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -338,19 +402,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const deleteAccount = async (): Promise<{ success: boolean; error?: string }> => {
     try {
-      await apiClient.delete('/me');
-      
+      await api.delete('/api/v1/me');
+
       // Clear local state
       await AsyncStorage.removeItem('token');
       setToken(null);
       setUser(null);
       setNeedsOnboarding(true);
-      
+      clearAuthToken();
+
       return { success: true };
     } catch (error: unknown) {
-      
+
       let errorMessage = 'Failed to delete account. Please try again.';
-      
+
       if (error && typeof error === 'object' && 'response' in error) {
         const errorResponse = error.response as { status?: number };
         if (errorResponse.status === 401) {
@@ -373,15 +438,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } else {
         errorMessage = 'Failed to delete account. Please try again.';
       }
-      
+
       return { success: false, error: errorMessage };
     }
   };
 
+  const isAuthenticatedValue = !!user && !!token;
+  
+  if (__DEV__) {
+    // Only log when authentication state actually changes
+    if (isAuthenticatedValue !== (!!user && !!token)) {
+      DebugUtils.log('🔐 [AUTH CONTEXT] Auth state changed - isAuthenticated:', isAuthenticatedValue);
+    }
+  }
+
   const value: AuthContextType = {
     user,
     token,
-    isAuthenticated: !!user && !!token,
+    isAuthenticated: isAuthenticatedValue,
     isLoading,
     needsOnboarding,
     login,

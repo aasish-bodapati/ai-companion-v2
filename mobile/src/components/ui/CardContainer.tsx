@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, ViewStyle } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
@@ -148,7 +150,7 @@ export const CardContainer: React.FC<CardContainerProps> = ({
 
   const getActionIconColor = (variant: string, disabled: boolean) => {
     if (disabled) return COLORS.disabled;
-    
+
     switch (variant) {
       case 'primary':
         return 'white';

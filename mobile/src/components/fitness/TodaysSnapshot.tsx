@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 export interface TodaysWorkout {
   id: string;
@@ -64,7 +68,7 @@ export default function TodaysSnapshot({
           <Text style={styles.title}>Today's Focus</Text>
           <Text style={styles.subtitle}>{getMotivationalQuote()}</Text>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.streakButton}
           onPress={onViewProgress}
         >
@@ -80,7 +84,7 @@ export default function TodaysSnapshot({
           <Text style={styles.statValue}>{weeklyWorkouts}</Text>
           <Text style={styles.statLabel}>This Week</Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <Ionicons name="trending-up-outline" size={16} color={getAlignmentColor(alignmentScore)} />
           <Text style={[styles.statValue, { color: getAlignmentColor(alignmentScore) }]}>
@@ -88,7 +92,7 @@ export default function TodaysSnapshot({
           </Text>
           <Text style={styles.statLabel}>{getAlignmentLabel(alignmentScore)}</Text>
         </View>
-        
+
         <View style={styles.statItem}>
           <Ionicons name="flame-outline" size={16} color="#f97316" />
           <Text style={styles.statValue}>{caloriesBurned}</Text>
@@ -98,29 +102,29 @@ export default function TodaysSnapshot({
 
       {/* Today's Recommended Workout */}
       {todaysWorkout ? (
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.workoutCard}
           onPress={() => onViewWorkout?.(todaysWorkout)}
         >
           <View style={styles.workoutHeader}>
             <View style={styles.workoutInfo}>
-              <Ionicons 
-                name={todaysWorkout.type === 'routine' ? 'list-outline' : 'fitness-outline'} 
-                size={20} 
-                color="#3b82f6" 
+              <Ionicons
+                name={todaysWorkout.type === 'routine' ? 'list-outline' : 'fitness-outline'}
+                size={20}
+                color="#3b82f6"
               />
               <Text style={styles.workoutTitle}>Recommended: {todaysWorkout.name || 'Workout'}</Text>
             </View>
             <View style={styles.workoutBadge}>
               <Text style={styles.workoutBadgeText}>
-                {todaysWorkout.difficulty ? 
+                {todaysWorkout.difficulty ?
                   todaysWorkout.difficulty.charAt(0).toUpperCase() + todaysWorkout.difficulty.slice(1) :
                   'Unknown'
                 }
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.workoutDetails}>
             <View style={styles.workoutDetail}>
               <Ionicons name="time-outline" size={14} color="#6b7280" />
@@ -135,17 +139,17 @@ export default function TodaysSnapshot({
               <Text style={styles.workoutDetailText}>~{todaysWorkout.calories || 0} cal</Text>
             </View>
           </View>
-          
+
           <View style={styles.workoutActions}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.quickLogButton}
               onPress={onQuickLog}
             >
               <Ionicons name="play-outline" size={16} color="#ffffff" />
               <Text style={styles.quickLogText}>Quick Log</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.viewButton}
               onPress={() => onViewWorkout?.(todaysWorkout)}
             >
@@ -159,7 +163,7 @@ export default function TodaysSnapshot({
           <Ionicons name="fitness-outline" size={32} color="#d1d5db" />
           <Text style={styles.noWorkoutTitle}>No workout planned today</Text>
           <Text style={styles.noWorkoutSubtitle}>Start with a quick exercise or create a routine</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.quickLogButton}
             onPress={onQuickLog}
           >
@@ -174,9 +178,9 @@ export default function TodaysSnapshot({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -195,26 +199,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     fontStyle: 'italic',
   },
   streakButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fef3c7',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
   },
   streakText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
     color: '#f97316',
     marginLeft: 4,
@@ -223,29 +227,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
   },
   statItem: {
     alignItems: 'center',
     flex: 1,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 4,
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   workoutCard: {
     backgroundColor: '#f0f9ff',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: '#e0f2fe',
   },
@@ -261,22 +265,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   workoutTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
     flex: 1,
   },
   workoutBadge: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary.main,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
+    borderRadius: BORDER_RADIUS.md,
   },
   workoutBadgeText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   workoutDetails: {
     flexDirection: 'row',
@@ -290,8 +294,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   workoutDetailText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginLeft: 4,
   },
   workoutActions: {
@@ -303,15 +307,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     borderRadius: 10,
   },
   quickLogText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginLeft: 6,
   },
   viewButton: {
@@ -319,33 +323,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   viewButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#3b82f6',
     marginRight: 4,
   },
   noWorkoutCard: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: SPACING.lg,
   },
   noWorkoutTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginTop: 12,
     marginBottom: 4,
   },
   noWorkoutSubtitle: {
-    fontSize: 14,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.tertiary,
     textAlign: 'center',
     marginBottom: 16,
   },

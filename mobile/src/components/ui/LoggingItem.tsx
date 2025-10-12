@@ -12,6 +12,8 @@ import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants
 import { useExerciseCategories } from '../../stores';
 import { CategoryBadge } from './Badge';
 
+import { DebugUtils } from '../../utils/debugUtils';
+
 export interface LoggingItemData {
   id: number | string;
   name: string;
@@ -53,21 +55,21 @@ const LoggingItem = React.memo(function LoggingItem({
   testID,
   index = 0,
 }: LoggingItemProps & { index?: number }) {
-  
+
   const [servingCount, setServingCount] = useState(
-    itemType === 'workout' 
-      ? (item.sets?.toString() || '') 
+    itemType === 'workout'
+      ? (item.sets?.toString() || '')
       : (item.quantity?.toString() || '1')
   );
   const [repsCount, setRepsCount] = useState(
-    itemType === 'workout' 
-      ? (item.reps || '') 
+    itemType === 'workout'
+      ? (item.reps || '')
       : ''
   );
-  
+
   // Use exercise categories store
   const categories = useExerciseCategories();
-  
+
   // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
   // useEffect(() => {
   //   if (categories.length === 0) {
@@ -101,47 +103,43 @@ const LoggingItem = React.memo(function LoggingItem({
     hapticFeedback.medium();
   };
 
-
   const getNutritionDisplay = () => {
     if (!showNutrition) return null;
-    
+
     const nutrition = [];
     if (item.calories) nutrition.push(`${item.calories} cal`);
     if (item.protein_g) nutrition.push(`${item.protein_g}g protein`);
     if (item.carbs_g) nutrition.push(`${item.carbs_g}g carbs`);
     if (item.fat_g) nutrition.push(`${item.fat_g}g fat`);
-    
+
     return nutrition.length > 0 ? nutrition.join(' • ') : null;
   };
 
   const getExerciseDisplay = () => {
     if (!showExerciseDetails) return null;
-    
+
     const details = [];
     if (item.sets) details.push(`${item.sets} sets`);
     if (item.reps) details.push(`${item.reps} reps`);
     if (item.weight_kg) details.push(`${item.weight_kg}kg`);
-    
+
     return details.length > 0 ? details.join(' • ') : null;
   };
-
 
   const getExerciseCategory = useMemo((): string => {
     // Use logging_category first (highest priority), then category
     if (item.logging_category) return item.logging_category;
     if (item.category) return item.category;
-    
+
     // Default to weighted for unknown categories
     return 'weighted';
   }, [item.logging_category, item.category]);
 
-
-
   const renderDynamicWorkoutFields = useCallback(() => {
     const category = getExerciseCategory;
-    // console.log('🔍 [LOGGING ITEM] getExerciseCategory() returned:', category);
-    // console.log('🔍 [LOGGING ITEM] Item category:', item.category);
-    
+    // DebugUtils.log('🔍 [LOGGING ITEM] getExerciseCategory() returned:', category);
+    // DebugUtils.log('🔍 [LOGGING ITEM] Item category:', item.category);
+
     switch (category) {
       case 'bodyweight':
         return (
@@ -340,7 +338,6 @@ const LoggingItem = React.memo(function LoggingItem({
     }
   }, [getExerciseCategory, servingCount, setServingCount, onUpdate, item.id, item.distance, item.duration_minutes, item.weight_kg, repsCount, testID]);
 
-
   return (
     <View style={styles.container} testID={testID}>
       <View style={styles.content}>
@@ -354,8 +351,8 @@ const LoggingItem = React.memo(function LoggingItem({
             </View>
             <View style={styles.exerciseTitleRight}>
               {itemType === 'workout' && (
-                <CategoryBadge 
-                  category={item.category || item.logging_category || ''} 
+                <CategoryBadge
+                  category={item.category || item.logging_category || ''}
                   size="small"
                 />
               )}

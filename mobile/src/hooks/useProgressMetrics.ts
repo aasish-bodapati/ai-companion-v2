@@ -1,6 +1,8 @@
 import { useMemo, useRef } from 'react';
 import { useProgressMetrics, useStreaks, useAchievements } from '../stores';
 
+import { DebugUtils } from '../utils/debugUtils';
+
 interface ProgressMetricsData {
   rings: {
     id: string;
@@ -38,14 +40,14 @@ export function useProgressMetricsData(): ProgressMetricsData {
   const renderCountRef = useRef(0);
 
   renderCountRef.current += 1;
-  
+
   // Only log on first render in development
   if (__DEV__ && renderCountRef.current === 1) {
-    console.log('🔄 [PROGRESS METRICS HOOK] Initialized');
+    DebugUtils.log('🔄 [PROGRESS METRICS HOOK] Initialized');
   }
 
   return useMemo(() => {
-    
+
     // Default values if progressMetrics is undefined
     const defaultMetrics = {
       workouts: { current: 0, target: 0 },
@@ -54,9 +56,9 @@ export function useProgressMetricsData(): ProgressMetricsData {
       steps: { current: 0, target: 0 },
       mood: { current: 0, target: 0 },
     };
-    
+
     const metrics = progressMetrics || defaultMetrics;
-    
+
     const rings = [
       {
         id: 'workouts',

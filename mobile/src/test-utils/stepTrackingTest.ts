@@ -3,7 +3,7 @@
  * Verifies that step tracking works correctly
  */
 
-import stepTrackingService from '../services/stepTrackingService';
+import { stepTrackingService } from '../services/StepTrackingService';
 
 export const testStepTracking = {
   /**

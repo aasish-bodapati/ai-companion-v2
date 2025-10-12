@@ -1,3 +1,4 @@
+
 // mobile/src/utils/exerciseCategoryUtils.ts
 
 /**
@@ -35,11 +36,11 @@ export const EXERCISE_CATEGORY_MAPPINGS: Record<string, string> = {
 };
 
 export const VALID_CATEGORIES = [
-  'bodyweight', 
-  'weighted', 
-  'cardio_duration', 
-  'distance_based', 
-  'hold_static', 
+  'bodyweight',
+  'weighted',
+  'cardio_duration',
+  'distance_based',
+  'hold_static',
   'repetition_only'
 ];
 
@@ -72,30 +73,30 @@ export function normalizeExerciseName(name: string): string {
  * Finds exercise in database using multiple strategies
  */
 export function findExerciseInDatabase(
-  exercise: Exercise, 
+  exercise: Exercise,
   exerciseDatabase: DatabaseExercise[]
 ): DatabaseExercise | null {
   const exerciseName = exercise.exercise_name || exercise.name || 'Exercise Not Found';
-  
+
   // Strategy 1: Find by exercise_id
   if (exercise.exercise_id) {
     const byId = exerciseDatabase.find(ex => ex.id === exercise.exercise_id);
     if (byId) return byId;
   }
-  
+
   // Strategy 2: Exact name match
-  const byName = exerciseDatabase.find(ex => 
+  const byName = exerciseDatabase.find(ex =>
     ex.name && ex.name.toLowerCase() === exerciseName.toLowerCase()
   );
   if (byName) return byName;
-  
+
   // Strategy 3: Fuzzy matching
   const normalizedSearchName = normalizeExerciseName(exerciseName);
   return exerciseDatabase.find(ex => {
     if (!ex.name) return false;
-    
+
     const normalizedDbName = normalizeExerciseName(ex.name);
-    return normalizedDbName.includes(normalizedSearchName) || 
+    return normalizedDbName.includes(normalizedSearchName) ||
            normalizedSearchName.includes(normalizedDbName);
   }) || null;
 }
@@ -104,31 +105,31 @@ export function findExerciseInDatabase(
  * Gets exercise category with fallback logic
  */
 export function getExerciseCategory(
-  exercise: Exercise, 
+  exercise: Exercise,
   exerciseDatabase: DatabaseExercise[] = []
 ): string {
   const exerciseName = exercise.exercise_name || exercise.name || 'Exercise Not Found';
   const normalizedName = exerciseName.toLowerCase().trim();
-  
+
   // Check common mappings first
   if (EXERCISE_CATEGORY_MAPPINGS[normalizedName]) {
     return EXERCISE_CATEGORY_MAPPINGS[normalizedName];
   }
-  
+
   // Try to find in database
   const dbExercise = findExerciseInDatabase(exercise, exerciseDatabase);
   if (dbExercise) {
     const category = dbExercise.logging_category || dbExercise.category;
-    
+
     // Validate category
     if (category && VALID_CATEGORIES.includes(category)) {
       return category;
     }
-    
+
     // Default for exercises that exist but don't have valid category info
     return 'weighted';
   }
-  
+
   // Unknown exercise
   return 'unknown';
 }

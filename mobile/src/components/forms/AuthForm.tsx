@@ -65,7 +65,7 @@ export default function AuthForm({
     } else {
       setRegisterData(prev => ({ ...prev, [field]: value }));
     }
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
@@ -165,7 +165,7 @@ export default function AuthForm({
             testID="fullname-input"
           />
         )}
-        
+
         <FormField
           name="email"
           label="Email Address"
@@ -178,7 +178,7 @@ export default function AuthForm({
           required
           testID="email-input"
         />
-        
+
         <FormField
           name="password"
           label="Password"
@@ -193,7 +193,7 @@ export default function AuthForm({
           onIconPress={togglePasswordVisibility}
           testID="password-input"
         />
-        
+
         {!isLogin && (
           <FormField
             name="confirmPassword"

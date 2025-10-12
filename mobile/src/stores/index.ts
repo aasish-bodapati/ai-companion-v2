@@ -1,3 +1,5 @@
+import { DebugUtils } from '../utils/debugUtils';
+
 /**
  * Combined store exports
  * Centralized access to all Zustand stores
@@ -47,7 +49,6 @@ export {
 
 // Analytics store exports removed
 
-
 export {
   useExerciseCategories,
   useExerciseCategoriesLoading,
@@ -69,7 +70,7 @@ export const refreshAllStores = async () => {
       useExerciseCategoriesStore.getState().refreshCategories(),
     ]);
   } catch (error) {
-    console.error('❌ [STORE REFRESH] Error refreshing stores:', error);
+    DebugUtils.error('❌ [STORE REFRESH] Error refreshing stores:', error);
     throw error;
   }
 };
@@ -83,7 +84,7 @@ export const resetAllStores = () => {
     useFitnessStore.getState().resetFitnessState();
     useExerciseCategoriesStore.getState().resetExerciseCategoriesState();
   } catch (error) {
-    console.error('❌ [STORE RESET] Error resetting stores:', error);
+    DebugUtils.error('❌ [STORE RESET] Error resetting stores:', error);
     throw error;
   }
 };

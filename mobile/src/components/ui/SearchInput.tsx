@@ -10,7 +10,7 @@ import {
   KeyboardTypeOptions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
 export type SearchInputSize = 'small' | 'medium' | 'large';
 export type SearchInputVariant = 'default' | 'minimal' | 'filled' | 'outlined';
@@ -24,7 +24,7 @@ interface SearchInputProps {
   onClear?: () => void;
   onFocus?: () => void;
   onBlur?: () => void;
-  
+
   // Configuration
   placeholder?: string;
   size?: SearchInputSize;
@@ -34,26 +34,26 @@ interface SearchInputProps {
   autoFocus?: boolean;
   clearable?: boolean;
   searchable?: boolean;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   inputStyle?: TextStyle;
   placeholderTextColor?: string;
   iconColor?: string;
-  
+
   // Customization
   leftIcon?: keyof typeof Ionicons.glyphMap;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   customLeftIcon?: React.ReactNode;
   customRightIcon?: React.ReactNode;
-  
+
   // Behavior
   debounceMs?: number;
   minLength?: number;
   maxLength?: number;
   keyboardType?: KeyboardTypeOptions;
   returnKeyType?: 'search' | 'done' | 'go' | 'next';
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -151,7 +151,7 @@ export default function SearchInput({
 
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     // Size-based styles
     switch (size) {
       case 'small':
@@ -164,7 +164,7 @@ export default function SearchInput({
         baseStyles.push(styles.containerLarge);
         break;
     }
-    
+
     // Variant-based styles
     switch (variant) {
       case 'minimal':
@@ -180,7 +180,7 @@ export default function SearchInput({
         baseStyles.push(styles.containerDefault);
         break;
     }
-    
+
     // State-based styles
     switch (state) {
       case 'focused':
@@ -193,25 +193,25 @@ export default function SearchInput({
         baseStyles.push(styles.containerSuccess);
         break;
     }
-    
+
     // Focus state
     if (isFocused) {
       baseStyles.push(styles.containerFocused);
     }
-    
+
     // Disabled state
     if (disabled) {
       baseStyles.push(styles.containerDisabled);
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   const getInputStyles = (): TextStyle[] => {
     const baseStyles = [styles.input];
-    
+
     // Size-based input styles
     switch (size) {
       case 'small':
@@ -224,7 +224,7 @@ export default function SearchInput({
         baseStyles.push(styles.inputLarge);
         break;
     }
-    
+
     // State-based styles
     switch (state) {
       case 'error':
@@ -234,9 +234,9 @@ export default function SearchInput({
         baseStyles.push(styles.inputSuccess);
         break;
     }
-    
+
     if (inputStyle) baseStyles.push(inputStyle);
-    
+
     return baseStyles;
   };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface TrendMetric {
   id: string;
@@ -108,12 +112,12 @@ export default function TrendAnalysis({
 
   const getTrendColor = (trend: string, type: string) => {
     if (trend === 'stable') return '#6b7280';
-    
+
     // For weight, down is good (green), up is bad (red)
     if (type === 'weight') {
       return trend === 'down' ? '#10b981' : '#ef4444';
     }
-    
+
     // For other metrics, up is generally good (green), down is bad (red)
     return trend === 'up' ? '#10b981' : '#ef4444';
   };
@@ -135,7 +139,6 @@ export default function TrendAnalysis({
   //   const sign = change >= 0 ? '+' : '';
   //   return `${sign}${change.toFixed(1)} (${sign}${changePercent}%)`;
   // };
-
 
   return (
     <View style={[styles.container, style]}>
@@ -180,11 +183,11 @@ export default function TrendAnalysis({
                 <View style={[styles.metricIcon, { backgroundColor: metric.color + '20' }]}>
                   <Ionicons name={metric.icon as keyof typeof Ionicons.glyphMap} size={20} color={metric.color} />
                 </View>
-                
+
                 <View style={styles.metricInfo}>
                   <Text style={styles.metricTitle}>{metric.title}</Text>
                   <Text style={styles.metricPeriod}>
-                    {metric.period === 'week' ? 'This week' : 
+                    {metric.period === 'week' ? 'This week' :
                      metric.period === 'month' ? 'This month' : 'This quarter'}
                   </Text>
                 </View>
@@ -200,10 +203,10 @@ export default function TrendAnalysis({
 
                 <View style={styles.trendInfo}>
                   <View style={styles.trendIndicator}>
-                    <Ionicons 
-                      name={trendIcon as keyof typeof Ionicons.glyphMap} 
-                      size={16} 
-                      color={trendColor} 
+                    <Ionicons
+                      name={trendIcon as keyof typeof Ionicons.glyphMap}
+                      size={16}
+                      color={trendColor}
                     />
                     <Text style={[styles.trendText, { color: trendColor }]}>
                       {metric.changePercent}%
@@ -224,9 +227,9 @@ export default function TrendAnalysis({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: '#f0f9ff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -262,26 +265,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     fontWeight: '500',
   },
@@ -290,9 +293,9 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     width: 200,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderLeftWidth: 4,
   },
   metricHeader: {
@@ -303,7 +306,7 @@ const styles = StyleSheet.create({
   metricIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -312,17 +315,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   metricTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   metricPeriod: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   detailsButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   metricValues: {
     gap: 8,
@@ -337,8 +340,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   unitText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   trendContainer: {
     gap: 4,
@@ -349,21 +352,21 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   changeText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
   },
   previousValue: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
   },
   valueNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   valueUnit: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 4,
   },
   trendIndicator: {
@@ -372,12 +375,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   trendText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
   },
   trendLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
 });

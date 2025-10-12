@@ -7,9 +7,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZE, SPACING } from '../../theme/constants';
+import { COLORS, SPACING, FONT_WEIGHT } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 import { useWeather } from '../../hooks/useWeather';
-import weatherService from '../../services/weatherService';
+import weatherService from '../../services/WeatherService';
 import WeatherDetailsModal from '../weather/WeatherDetailsModal';
 
 interface WelcomeCardProps {
@@ -33,38 +34,38 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
 
   const getTimeBasedGreeting = () => {
     const hour = currentTime.getHours();
-    
+
     if (hour >= 5 && hour < 12) {
       return {
         greeting: 'Good Morning',
         icon: 'sunny',
-        color: '#f59e0b',
+        color: COLORS.warning,
         message: 'Ready to start your day strong?',
-        backgroundColor: '#fef3c7',
+        backgroundColor: COLORS.warningLight + '20', // 20% opacity
       };
     } else if (hour >= 12 && hour < 17) {
       return {
         greeting: 'Good Afternoon',
         icon: 'partly-sunny',
-        color: '#f97316',
+        color: '#f97316', // Orange color not in theme yet
         message: 'How\'s your day going?',
-        backgroundColor: '#fed7aa',
+        backgroundColor: '#fed7aa', // Light orange not in theme yet
       };
     } else if (hour >= 17 && hour < 21) {
       return {
         greeting: 'Good Evening',
         icon: 'moon',
-        color: '#8b5cf6',
+        color: '#8b5cf6', // Purple color not in theme yet
         message: 'Time to wind down and reflect',
-        backgroundColor: '#ede9fe',
+        backgroundColor: '#ede9fe', // Light purple not in theme yet
       };
     } else {
       return {
         greeting: 'Good Night',
         icon: 'moon',
-        color: '#6366f1',
+        color: COLORS.primary.main,
         message: 'Rest well and recharge',
-        backgroundColor: '#e0e7ff',
+        backgroundColor: COLORS.primary.light + '20', // 20% opacity
       };
     }
   };
@@ -80,7 +81,7 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
       'Consistency is key!',
       'Your health journey matters!',
     ];
-    
+
     // Use the day of the year to get a consistent message for the day
     const dayOfYear = Math.floor((currentTime.getTime() - new Date(currentTime.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
     return messages[dayOfYear % messages.length];
@@ -111,39 +112,39 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
       <View style={styles.content}>
         <View style={styles.textContent}>
           <View style={styles.greetingRow}>
-            <Ionicons 
-              name={greeting.icon as keyof typeof Ionicons.glyphMap} 
-              size={24} 
-              color={greeting.color} 
+            <Ionicons
+              name={greeting.icon as keyof typeof Ionicons.glyphMap}
+              size={24}
+              color={greeting.color}
               style={styles.icon}
             />
             <Text style={[styles.greeting, { color: greeting.color }]}>
               {greeting.greeting}
             </Text>
           </View>
-          
+
           <Text style={styles.userName}>
             {userName}!
           </Text>
-          
+
           <Text style={styles.message}>
             {greeting.message}
           </Text>
-          
+
           <Text style={styles.motivationalMessage}>
             {motivationalMessage}
           </Text>
         </View>
-        
+
         <View style={styles.rightContent}>
           {/* Weather Section */}
           {weather && !weatherLoading && (
             <View style={styles.weatherContainer}>
               <View style={styles.weatherRow}>
-                <Ionicons 
-                  name={weatherIcon as keyof typeof Ionicons.glyphMap} 
-                  size={20} 
-                  color={weatherColor} 
+                <Ionicons
+                  name={weatherIcon as keyof typeof Ionicons.glyphMap}
+                  size={20}
+                  color={weatherColor}
                 />
                 <Text style={[styles.temperature, { color: weatherColor }]}>
                   {weather.temperature}°
@@ -157,36 +158,36 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
               </Text>
             </View>
           )}
-          
+
           {weatherLoading && (
             <View style={styles.weatherContainer}>
               <ActivityIndicator size="small" color={greeting.color} />
               <Text style={styles.weatherDescription}>Loading weather...</Text>
             </View>
           )}
-          
+
           {weatherError && (
             <View style={styles.weatherContainer}>
-              <Ionicons 
-                name="cloud-offline" 
-                size={20} 
-                color={COLORS.text.tertiary} 
+              <Ionicons
+                name="cloud-offline"
+                size={20}
+                color={COLORS.text.tertiary}
               />
               <Text style={styles.weatherDescription}>Weather unavailable</Text>
             </View>
           )}
-          
+
           {/* Time Section */}
           <View style={styles.timeContainer}>
             <Text style={[styles.time, { color: greeting.color }]}>
-              {currentTime.toLocaleTimeString([], { 
-                hour: '2-digit', 
+              {currentTime.toLocaleTimeString([], {
+                hour: '2-digit',
                 minute: '2-digit',
-                hour12: true 
+                hour12: true
               })}
             </Text>
             <Text style={styles.date}>
-              {currentTime.toLocaleDateString([], { 
+              {currentTime.toLocaleDateString([], {
                 weekday: 'long',
                 month: 'short',
                 day: 'numeric'
@@ -195,12 +196,12 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
           </View>
         </View>
       </View>
-      
+
       <View style={styles.arrowContainer}>
-        <Ionicons 
-          name="chevron-forward" 
-          size={20} 
-          color={greeting.color} 
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={greeting.color}
         />
       </View>
     </TouchableOpacity>
@@ -216,21 +217,12 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
 
 const styles = StyleSheet.create({
   container: {
+    ...STYLE_PRESETS.card,
     marginHorizontal: SPACING.lg,
     marginTop: SPACING.lg,
     marginBottom: SPACING.lg,
-    borderRadius: 16,
-    padding: SPACING.xl,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
   },
   content: {
     flex: 1,
@@ -253,23 +245,19 @@ const styles = StyleSheet.create({
     marginRight: SPACING.sm,
   },
   greeting: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '600',
+    ...STYLE_PRESETS.textSubheading,
+    fontWeight: FONT_WEIGHT.semibold,
   },
   userName: {
-    fontSize: FONT_SIZE.xl,
-    fontWeight: '700',
-    color: COLORS.text.primary,
+    ...STYLE_PRESETS.textHeading,
     marginBottom: SPACING.xs,
   },
   message: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.text.secondary,
+    ...STYLE_PRESETS.textSecondary,
     marginBottom: 6,
   },
   motivationalMessage: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text.tertiary,
+    ...STYLE_PRESETS.textCaption,
     fontStyle: 'italic',
   },
   weatherContainer: {
@@ -282,33 +270,30 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   temperature: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '700',
+    ...STYLE_PRESETS.textSubheading,
+    fontWeight: FONT_WEIGHT.bold,
     marginLeft: SPACING.xs,
   },
   weatherDescription: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text.secondary,
+    ...STYLE_PRESETS.textCaption,
     textAlign: 'right',
     textTransform: 'capitalize',
     marginBottom: 2,
   },
   weatherLocation: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text.tertiary,
+    ...STYLE_PRESETS.textCaption,
     textAlign: 'right',
   },
   timeContainer: {
     alignItems: 'flex-end',
   },
   time: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '700',
+    ...STYLE_PRESETS.textSubheading,
+    fontWeight: FONT_WEIGHT.bold,
     marginBottom: 2,
   },
   date: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text.secondary,
+    ...STYLE_PRESETS.textCaption,
     textAlign: 'right',
   },
   arrowContainer: {

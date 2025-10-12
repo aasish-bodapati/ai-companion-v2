@@ -4,10 +4,13 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NumericalGoal } from './goalTemplates';
-import { fitnessService } from './fitnessService';
-import { nutritionService } from './nutritionService';
-import { healthService } from './healthService';
+
+import { NumericalGoal } from './GoalTemplatesService';
+import { fitnessService } from './api';
+import { nutritionService } from './api';
+import { healthService } from './api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface GoalProgress {
   goalId: string;
@@ -42,7 +45,7 @@ class NumericalGoalsService {
       this.goals = goals;
       const jsonValue = JSON.stringify(goals);
       await AsyncStorage.setItem(this.STORAGE_KEY, jsonValue);
-      console.log('🎯 Numerical Goals Service: Goals saved to storage:', goals.length);
+      DebugUtils.log('🎯 Numerical Goals Service: Goals saved to storage:', goals.length);
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
@@ -56,16 +59,16 @@ class NumericalGoalsService {
       if (this.goals.length > 0) {
         return this.goals;
       }
-      
+
       // Otherwise, load from storage
       const jsonValue = await AsyncStorage.getItem(this.STORAGE_KEY);
       if (jsonValue != null) {
         this.goals = JSON.parse(jsonValue);
-        console.log('🎯 Numerical Goals Service: Goals loaded from storage:', this.goals.length);
+        DebugUtils.log('🎯 Numerical Goals Service: Goals loaded from storage:', this.goals.length);
         return this.goals;
       }
-      
-      console.log('🎯 Numerical Goals Service: No goals found in storage');
+
+      DebugUtils.log('🎯 Numerical Goals Service: No goals found in storage');
       return [];
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -78,7 +81,7 @@ class NumericalGoalsService {
     try {
       this.goals = [];
       await AsyncStorage.removeItem(this.STORAGE_KEY);
-      console.log('🎯 Numerical Goals Service: Goals cleared from storage');
+      DebugUtils.log('🎯 Numerical Goals Service: Goals cleared from storage');
     } catch (error) {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
@@ -224,7 +227,7 @@ class NumericalGoalsService {
     }
 
     const progressPercentage = Math.min((currentValue / goal.targetValue) * 100, 100);
-    
+
     return {
       goalId: goal.id,
       goalName: goal.name,
@@ -243,18 +246,18 @@ class NumericalGoalsService {
   private async calculateCalorieDeficit(): Promise<number> {
     try {
       // Get today's nutrition logs
-      const nutritionLogs = await nutritionService.getNutritionLogs({ 
+      const nutritionLogs = await nutritionService.getNutritionLogs({
         period: 'day',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       // Calculate total calories consumed
       const caloriesConsumed = nutritionLogs.reduce((sum, log) => sum + (log.total_calories || 0), 0);
-      
+
       // Estimate calories burned (simplified - would use more sophisticated calculation)
       const estimatedBurned = 2000; // Base metabolic rate + activity
-      
+
       return Math.max(estimatedBurned - caloriesConsumed, 0);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -264,12 +267,12 @@ class NumericalGoalsService {
 
   private async calculateDailyProtein(): Promise<number> {
     try {
-      const nutritionLogs = await nutritionService.getNutritionLogs({ 
+      const nutritionLogs = await nutritionService.getNutritionLogs({
         period: 'day',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       return nutritionLogs.reduce((sum, log) => sum + (log.protein_g || 0), 0);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -281,17 +284,17 @@ class NumericalGoalsService {
     try {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 7);
-      
+
       const fitnessLogs = await fitnessService.getFitnessLogs({
         start_date: startDate.toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       // Count unique workout days
       const workoutDays = new Set(
         fitnessLogs.map(log => log.activity_date?.split('T')[0])
       );
-      
+
       return workoutDays.size;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -314,7 +317,7 @@ class NumericalGoalsService {
       const waterLogs = await healthService.getWaterLogs(7);
       // Use a default target of 3L, but this should ideally be dynamic based on user's goal
       const dailyTarget = 3000; // ml
-      
+
       // Group by day and check if each day meets target
       const dailyTotals = waterLogs.reduce((acc, log) => {
         const date = log.logged_at?.split('T')[0];
@@ -323,7 +326,7 @@ class NumericalGoalsService {
         }
         return acc;
       }, {} as Record<string, number>);
-      
+
       const daysMeetingGoal = Object.values(dailyTotals).filter((total: number) => total >= dailyTarget).length;
       return daysMeetingGoal;
     } catch {
@@ -334,14 +337,14 @@ class NumericalGoalsService {
 
   private async calculateDailyVegetables(): Promise<number> {
     try {
-      const nutritionLogs = await nutritionService.getNutritionLogs({ 
+      const nutritionLogs = await nutritionService.getNutritionLogs({
         period: 'day',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       // This is simplified - would need more sophisticated food categorization
-      return nutritionLogs.filter(log => 
+      return nutritionLogs.filter(log =>
         log.meal_name?.toLowerCase().includes('vegetable') ||
         log.meal_name?.toLowerCase().includes('salad') ||
         log.meal_name?.toLowerCase().includes('broccoli')
@@ -354,14 +357,14 @@ class NumericalGoalsService {
 
   private async calculateDailyFruits(): Promise<number> {
     try {
-      const nutritionLogs = await nutritionService.getNutritionLogs({ 
+      const nutritionLogs = await nutritionService.getNutritionLogs({
         period: 'day',
         start_date: new Date().toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       // This is simplified - would need more sophisticated food categorization
-      return nutritionLogs.filter(log => 
+      return nutritionLogs.filter(log =>
         log.meal_name?.toLowerCase().includes('fruit') ||
         log.meal_name?.toLowerCase().includes('apple') ||
         log.meal_name?.toLowerCase().includes('banana')
@@ -376,14 +379,14 @@ class NumericalGoalsService {
     try {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 7);
-      
+
       const nutritionLogs = await nutritionService.getNutritionLogs({
         start_date: startDate.toISOString().split('T')[0],
         end_date: new Date().toISOString().split('T')[0]
       });
-      
+
       // This is simplified - would need more sophisticated food categorization
-      return nutritionLogs.filter(log => 
+      return nutritionLogs.filter(log =>
         log.meal_name?.toLowerCase().includes('processed') ||
         log.meal_name?.toLowerCase().includes('packaged') ||
         log.meal_name?.toLowerCase().includes('fast food')
@@ -397,9 +400,9 @@ class NumericalGoalsService {
   private async calculateAverageStressLevel(): Promise<number> {
     try {
       const moodLogs = await healthService.getMoodLogs(7);
-      
+
       if (moodLogs.length === 0) return 0;
-      
+
       const totalStress = moodLogs.reduce((sum, log) => sum + (log.stress_level || 0), 0);
       return totalStress / moodLogs.length;
     } catch {
@@ -411,18 +414,18 @@ class NumericalGoalsService {
   // Get analytics summary
   async getAnalytics(): Promise<GoalAnalytics> {
     const progressData = await this.calculateProgress();
-    
+
     const totalGoals = progressData.length;
     const completedGoals = progressData.filter(goal => goal.progressPercentage >= 100).length;
     const onTrackGoals = progressData.filter(goal => goal.progressPercentage >= 70 && goal.progressPercentage < 100).length;
     const behindGoals = progressData.filter(goal => goal.progressPercentage < 70).length;
     const averageProgress = progressData.reduce((sum, goal) => sum + goal.progressPercentage, 0) / totalGoals;
-    
-    const topPerformingGoal = progressData.reduce((top, goal) => 
+
+    const topPerformingGoal = progressData.reduce((top, goal) =>
       goal.progressPercentage > top.progressPercentage ? goal : top, progressData[0]
     );
-    
-    const needsAttentionGoal = progressData.reduce((worst, goal) => 
+
+    const needsAttentionGoal = progressData.reduce((worst, goal) =>
       goal.progressPercentage < worst.progressPercentage ? goal : worst, progressData[0]
     );
 

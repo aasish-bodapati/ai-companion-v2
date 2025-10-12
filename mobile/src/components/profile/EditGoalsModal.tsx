@@ -9,7 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import FormModal from '../ui/FormModal';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
-import { onboardingService } from '../../services/onboardingService';
+import { onboardingService } from '../../services/api';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
@@ -63,7 +63,7 @@ const HEALTH_GOALS = [
     color: '#8b5cf6',
     category: 'fitness',
   },
-  
+
   // Nutrition Goals
   {
     id: 'eat_healthier',
@@ -97,7 +97,7 @@ const HEALTH_GOALS = [
     color: '#f59e0b',
     category: 'nutrition',
   },
-  
+
   // Wellness Goals
   {
     id: 'reduce_stress',
@@ -131,7 +131,7 @@ const HEALTH_GOALS = [
     color: '#f59e0b',
     category: 'wellness',
   },
-  
+
   // Lifestyle Goals
   {
     id: 'be_consistent',
@@ -200,11 +200,11 @@ export default function EditGoalsModal({
   const handleSave = async () => {
     try {
       hapticFeedback.success();
-      
+
       await onboardingService.updateGoals(selectedGoals);
       onSave(selectedGoals);
       onClose();
-      
+
       showToast.success('Success!', 'Goals updated successfully');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -253,7 +253,7 @@ export default function EditGoalsModal({
 
   const renderGoalCard = (goal: typeof HEALTH_GOALS[0]) => {
     const isSelected = selectedGoals.includes(goal.id);
-    
+
     return (
       <MobileOptimizedCard
         key={goal.id}
@@ -281,14 +281,14 @@ export default function EditGoalsModal({
               />
             )}
           </View>
-          
+
           <Text style={[
             styles.goalTitle,
             isSelected && { color: goal.color }
           ]}>
             {goal.title}
           </Text>
-          
+
           <Text style={styles.goalDescription}>
             {goal.description}
           </Text>
@@ -299,7 +299,7 @@ export default function EditGoalsModal({
 
   const renderGoalsGrid = () => {
     const goals = getFilteredGoals();
-    
+
     return (
       <View style={styles.goalsGrid}>
         {goals.map(goal => renderGoalCard(goal))}
@@ -322,7 +322,7 @@ export default function EditGoalsModal({
               {selectedGoals.length} Goal{selectedGoals.length !== 1 ? 's' : ''} Selected
             </Text>
           </View>
-          
+
           <View style={styles.summaryGoals}>
             {selectedGoals.slice(0, 3).map(goalId => {
               const goal = HEALTH_GOALS.find(g => g.id === goalId);

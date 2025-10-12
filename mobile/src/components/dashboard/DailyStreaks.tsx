@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,7 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
+import React from 'react';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_WEIGHT } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface Streak {
   id: string;
@@ -34,7 +37,7 @@ const defaultStreaks: Streak[] = [
     title: 'Workout Streak',
     current: 7,
     target: 30,
-    color: '#3b82f6',
+    color: COLORS.primary.main,
     icon: 'fitness',
     description: 'Days in a row',
   },
@@ -44,7 +47,7 @@ const defaultStreaks: Streak[] = [
     title: 'Nutrition Log',
     current: 5,
     target: 30,
-    color: '#10b981',
+    color: COLORS.success,
     icon: 'restaurant',
     description: 'Days logged',
   },
@@ -64,7 +67,7 @@ const defaultStreaks: Streak[] = [
     title: 'Mood Check',
     current: 3,
     target: 30,
-    color: '#f59e0b',
+    color: COLORS.warning,
     icon: 'happy',
     description: 'Days tracked',
   },
@@ -85,7 +88,7 @@ export default function DailyStreaks({
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <View style={styles.iconContainer}>
-            <Ionicons name="flame" size={20} color="#3b82f6" />
+            <Ionicons name="flame" size={20} color={COLORS.primary.main} />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.title}>Daily Streaks</Text>
@@ -124,7 +127,7 @@ export default function DailyStreaks({
                 <Text style={styles.streakDescription}>{streak.description}</Text>
               </View>
             </View>
-            
+
             <View style={styles.streakProgress}>
               <View style={styles.streakNumbers}>
                 <Text style={[styles.streakCurrent, { color: streak.color }]}>
@@ -132,7 +135,7 @@ export default function DailyStreaks({
                 </Text>
                 <Text style={styles.streakTarget}>/ {streak.target}</Text>
               </View>
-              
+
               <View style={styles.progressBar}>
                 <View
                   style={[
@@ -154,66 +157,52 @@ export default function DailyStreaks({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: SPACING.xl,
+    ...STYLE_PRESETS.card,
     marginHorizontal: SPACING.lg,
     marginBottom: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    ...STYLE_PRESETS.rowSpaceBetween,
     marginBottom: SPACING.lg,
     paddingBottom: SPACING.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: COLORS.border.light,
   },
   titleContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...STYLE_PRESETS.row,
   },
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f0f9ff',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.round,
+    backgroundColor: COLORS.primary.light + '20', // 20% opacity
+    ...STYLE_PRESETS.centerContent,
     marginRight: SPACING.md,
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: '600',
-    color: '#1f2937',
+    ...STYLE_PRESETS.textSubheading,
+    fontWeight: FONT_WEIGHT.semibold,
   },
   subtitle: {
-    fontSize: FONT_SIZE.sm,
-    color: COLORS.text.secondary,
+    ...STYLE_PRESETS.textSecondary,
     marginTop: 2,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...STYLE_PRESETS.row,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     backgroundColor: COLORS.background.secondary,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   actionText: {
-    fontSize: FONT_SIZE.sm,
+    ...STYLE_PRESETS.textSecondary,
     color: COLORS.primary.main,
-    fontWeight: '500',
+    fontWeight: FONT_WEIGHT.medium,
   },
   streaksContainer: {
     paddingRight: SPACING.xl,
@@ -225,54 +214,50 @@ const styles = StyleSheet.create({
     marginRight: SPACING.lg,
   },
   streakHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...STYLE_PRESETS.row,
     marginBottom: SPACING.md,
   },
   streakIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.round,
+    ...STYLE_PRESETS.centerContent,
     marginRight: SPACING.md,
   },
   streakInfo: {
     flex: 1,
   },
   streakTitle: {
-    fontSize: FONT_SIZE.sm,
-    fontWeight: '600',
-    color: COLORS.text.primary,
+    ...STYLE_PRESETS.textSecondary,
+    fontWeight: FONT_WEIGHT.semibold,
     marginBottom: 2,
   },
   streakDescription: {
-    fontSize: FONT_SIZE.xs,
-    color: COLORS.text.secondary,
+    ...STYLE_PRESETS.textCaption,
   },
   streakProgress: {
     gap: 8,
   },
   streakNumbers: {
-    flexDirection: 'row',
+    ...STYLE_PRESETS.row,
     alignItems: 'baseline',
   },
   streakCurrent: {
-    fontSize: FONT_SIZE.xxl,
-    fontWeight: 'bold',
+    ...STYLE_PRESETS.textTitle,
+    fontWeight: FONT_WEIGHT.bold,
   },
   streakTarget: {
-    fontSize: FONT_SIZE.lg,
+    ...STYLE_PRESETS.textSubheading,
     color: COLORS.text.secondary,
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 2,
+    backgroundColor: COLORS.border.light,
+    borderRadius: BORDER_RADIUS.xs,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: BORDER_RADIUS.xs,
   },
 });

@@ -1,6 +1,10 @@
 import { Pedometer } from 'expo-sensors';
+
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface StepData {
   steps: number;
@@ -38,7 +42,7 @@ class StepTrackingService {
         const today = new Date();
         const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-        
+
         const initialSteps = await Pedometer.getStepCountAsync(startOfDay, endOfDay);
         this.currentSteps = initialSteps.steps;
         logger.steps('Initial steps from device for today:', this.currentSteps);
@@ -55,7 +59,7 @@ class StepTrackingService {
       this.subscription = Pedometer.watchStepCount((result) => {
         this.currentSteps = result.steps;
         this.lastUpdateTime = Date.now();
-        
+
         // Save to storage
         this.saveStepData({
           steps: this.currentSteps,
@@ -63,12 +67,12 @@ class StepTrackingService {
           timestamp: Date.now()
         });
 
-        console.log('🚶 Steps updated:', this.currentSteps);
+        DebugUtils.log('🚶 Steps updated:', this.currentSteps);
       });
 
       return true;
     } catch (error) {
-      console.error('🚶 Error starting step tracking:', error);
+      DebugUtils.error('🚶 Error starting step tracking:', error);
       this.isTracking = false;
       return false;
     }
@@ -81,9 +85,9 @@ class StepTrackingService {
         this.subscription = null;
       }
       this.isTracking = false;
-      console.log('🚶 Step tracking stopped');
+      DebugUtils.log('🚶 Step tracking stopped');
     } catch (error) {
-      console.error('🚶 Error stopping step tracking:', error);
+      DebugUtils.error('🚶 Error stopping step tracking:', error);
     }
   }
 
@@ -93,7 +97,7 @@ class StepTrackingService {
       const stepData = await this.getStepData(today);
       return stepData?.steps || 0;
     } catch (error) {
-      console.error('🚶 Error getting today steps:', error);
+      DebugUtils.error('🚶 Error getting today steps:', error);
       return 0;
     }
   }
@@ -107,7 +111,7 @@ class StepTrackingService {
       }
       return null;
     } catch (error) {
-      console.error('🚶 Error getting step data:', error);
+      DebugUtils.error('🚶 Error getting step data:', error);
       return null;
     }
   }
@@ -119,7 +123,7 @@ class StepTrackingService {
       allData[stepData.date] = stepData;
       await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(allData));
     } catch (error) {
-      console.error('🚶 Error saving step data:', error);
+      DebugUtils.error('🚶 Error saving step data:', error);
     }
   }
 
@@ -131,7 +135,7 @@ class StepTrackingService {
       const allData = JSON.parse(data);
       const today = new Date();
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-      
+
       const weeklyData: StepData[] = [];
       for (let i = 0; i < 7; i++) {
         const date = new Date(weekAgo.getTime() + i * 24 * 60 * 60 * 1000);
@@ -141,10 +145,10 @@ class StepTrackingService {
           weeklyData.push(stepData);
         }
       }
-      
+
       return weeklyData;
     } catch (error) {
-      console.error('🚶 Error getting weekly steps:', error);
+      DebugUtils.error('🚶 Error getting weekly steps:', error);
       return [];
     }
   }
@@ -153,7 +157,7 @@ class StepTrackingService {
     try {
       return await Pedometer.isAvailableAsync();
     } catch (error) {
-      console.error('🚶 Error checking pedometer availability:', error);
+      DebugUtils.error('🚶 Error checking pedometer availability:', error);
       return false;
     }
   }
@@ -167,4 +171,7 @@ class StepTrackingService {
   }
 }
 
-export default new StepTrackingService();
+// Export singleton instance
+export const stepTrackingService = new StepTrackingService();
+
+export default stepTrackingService;

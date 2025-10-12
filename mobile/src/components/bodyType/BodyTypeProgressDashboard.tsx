@@ -8,8 +8,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
-import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
-import { DailyLog, WeeklyLog } from '../../services/bodyTypeScoringService';
+import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
+import { DailyLog, WeeklyLog } from '../../services/BodyTypeScoringService';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface BodyTypeProgressDashboardProps {
   bodyTypeGoal: BodyTypeGoal;
@@ -62,7 +65,7 @@ export default function BodyTypeProgressDashboard({
       case 'farther':
         return { name: 'trending-down', color: '#ef4444' };
       default:
-        return { name: 'help', color: '#6b7280' };
+        return { name: 'help', color: COLORS.text.secondary };
     }
   };
 
@@ -80,17 +83,17 @@ export default function BodyTypeProgressDashboard({
   };
 
   const renderGoalOverview = () => {
-    const alignmentIcon = dailyResult ? getAlignmentIcon(dailyResult.alignment) : { name: 'help', color: '#6b7280' };
+    const alignmentIcon = dailyResult ? getAlignmentIcon(dailyResult.alignment) : { name: 'help', color: COLORS.text.secondary };
     const alignmentColor = dailyResult ? getAlignmentColor(dailyResult.alignment) : '#6b7280';
 
     return (
       <View style={styles.goalOverview}>
         <View style={styles.goalHeader}>
           <View style={styles.goalIconContainer}>
-            <Ionicons 
-              name={getGoalIcon(bodyTypeGoal.name) as keyof typeof Ionicons.glyphMap} 
-              size={32} 
-              color="#3b82f6" 
+            <Ionicons
+              name={getGoalIcon(bodyTypeGoal.name) as keyof typeof Ionicons.glyphMap}
+              size={32}
+              color="#3b82f6"
             />
           </View>
           <View style={styles.goalInfo}>
@@ -99,10 +102,10 @@ export default function BodyTypeProgressDashboard({
               <Text style={styles.weeklyAlignmentText}>
                 This Week: {weeklyResult?.percentage || 0}% Aligned
               </Text>
-              <Ionicons 
-                name={alignmentIcon.name as keyof typeof Ionicons.glyphMap} 
-                size={20} 
-                color={alignmentColor} 
+              <Ionicons
+                name={alignmentIcon.name as keyof typeof Ionicons.glyphMap}
+                size={20}
+                color={alignmentColor}
               />
             </View>
           </View>
@@ -123,14 +126,14 @@ export default function BodyTypeProgressDashboard({
           <Text style={styles.progressMeterTitle}>Today's Progress</Text>
           <Text style={styles.progressMeterScore}>Score: +{dailyResult.score}</Text>
         </View>
-        
+
         <View style={styles.progressMeter}>
           <View style={styles.progressMeterLabels}>
             <Text style={styles.progressMeterLabel}>Closer ↗</Text>
             <Text style={styles.progressMeterLabel}>Farther ↘</Text>
           </View>
           <View style={styles.progressMeterBar}>
-            <View 
+            <View
               style={[
                 styles.progressMeterFill,
                 {
@@ -167,7 +170,7 @@ export default function BodyTypeProgressDashboard({
     return (
       <View style={styles.breakdownContainer}>
         <Text style={styles.breakdownTitle}>Daily Breakdown</Text>
-        
+
         <View style={styles.breakdownCard}>
           <View style={styles.breakdownItem}>
             <Ionicons name="fitness-outline" size={20} color="#10b981" />
@@ -225,10 +228,10 @@ export default function BodyTypeProgressDashboard({
           {trendData.map((value, index) => {
             const height = ((value - minValue) / (maxValue - minValue)) * 100;
             const isToday = index === trendData.length - 1;
-            
+
             return (
               <View key={index} style={styles.trendBar}>
-                <View 
+                <View
                   style={[
                     styles.trendBarFill,
                     {
@@ -268,7 +271,7 @@ export default function BodyTypeProgressDashboard({
           <Text style={styles.feedbackTitle}>Smart Feedback</Text>
         </View>
         <Text style={styles.feedbackMessage}>{getFeedbackMessage()}</Text>
-        
+
         {dailyResult.suggestions.length > 0 && (
           <View style={styles.suggestionsContainer}>
             {dailyResult.suggestions.slice(0, 2).map((suggestion, index) => (
@@ -325,13 +328,13 @@ export default function BodyTypeProgressDashboard({
       {renderTrendGraph()}
       {renderSmartFeedback()}
       {renderGamification()}
-      
+
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.logButton} onPress={onLogActivity}>
           <Ionicons name="add-circle-outline" size={20} color="#ffffff" />
           <Text style={styles.logButtonText}>Log Activity</Text>
         </TouchableOpacity>
-        
+
         {onRefresh && (
           <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
             <Ionicons name="refresh" size={20} color="#3b82f6" />
@@ -346,23 +349,23 @@ export default function BodyTypeProgressDashboard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.lg,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   goalOverview: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -386,9 +389,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   goalTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   weeklyAlignment: {
@@ -396,15 +399,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   weeklyAlignmentText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     marginRight: 8,
   },
   progressMeterContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -418,12 +421,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   progressMeterTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   progressMeterScore: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: '#3b82f6',
   },
@@ -436,8 +439,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressMeterLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   progressMeterBar: {
@@ -454,15 +457,15 @@ const styles = StyleSheet.create({
     margin: 16,
   },
   breakdownTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 12,
   },
   breakdownCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -479,26 +482,26 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   breakdownItemTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   breakdownItemScore: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#10b981',
     marginBottom: 2,
   },
   breakdownItemDetail: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   trendContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -506,9 +509,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   trendTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 16,
   },
   trendGraph: {
@@ -524,20 +527,20 @@ const styles = StyleSheet.create({
   },
   trendBarFill: {
     width: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     marginBottom: 8,
     minHeight: 4,
   },
   trendBarLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   feedbackContainer: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -550,14 +553,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   feedbackTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
   },
   feedbackMessage: {
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
     lineHeight: 24,
     marginBottom: 16,
   },
@@ -570,8 +573,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   suggestionText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
     flex: 1,
   },
@@ -584,9 +587,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   streakContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -595,15 +598,15 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   streakText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
   },
   achievementsContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -614,8 +617,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   achievementText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   actionButtons: {
@@ -628,13 +631,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3b82f6',
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.primary.main,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
   },
   logButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -644,12 +647,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
   },
   refreshButtonText: {
     color: '#3b82f6',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     marginLeft: 8,
   },

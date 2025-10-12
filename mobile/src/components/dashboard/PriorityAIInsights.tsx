@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface AIInsight {
   id: string;
@@ -70,8 +74,8 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
         <Text style={styles.subtitle}>Personalized recommendations</Text>
       </View>
 
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.insightsList}
       >
@@ -87,17 +91,17 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
           >
             <View style={styles.insightHeader}>
               <View style={styles.insightIconContainer}>
-                <Ionicons 
-                  name={getCategoryIcon(insight.category) as keyof typeof Ionicons.glyphMap} 
-                  size={18} 
-                  color={getCategoryColor(insight.category)} 
+                <Ionicons
+                  name={getCategoryIcon(insight.category) as keyof typeof Ionicons.glyphMap}
+                  size={18}
+                  color={getCategoryColor(insight.category)}
                 />
               </View>
               <View style={styles.priorityIndicator}>
-                <Ionicons 
-                  name={getPriorityIcon(insight.priority) as keyof typeof Ionicons.glyphMap} 
-                  size={14} 
-                  color={getPriorityColor(insight.priority)} 
+                <Ionicons
+                  name={getPriorityIcon(insight.priority) as keyof typeof Ionicons.glyphMap}
+                  size={14}
+                  color={getPriorityColor(insight.priority)}
                 />
               </View>
             </View>
@@ -108,10 +112,10 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
             {insight.progress !== undefined && (
               <View style={styles.progressContainer}>
                 <View style={styles.progressBar}>
-                  <View 
+                  <View
                     style={[
                       styles.progressFill,
-                      { 
+                      {
                         width: `${insight.progress}%`,
                         backgroundColor: getPriorityColor(insight.priority)
                       }
@@ -122,7 +126,7 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
               </View>
             )}
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.actionButton,
                 { backgroundColor: getPriorityColor(insight.priority) + '20' }
@@ -135,10 +139,10 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
               ]}>
                 {insight.actionText}
               </Text>
-              <Ionicons 
-                name="chevron-forward" 
-                size={14} 
-                color={getPriorityColor(insight.priority)} 
+              <Ionicons
+                name="chevron-forward"
+                size={14}
+                color={getPriorityColor(insight.priority)}
               />
             </TouchableOpacity>
           </TouchableOpacity>
@@ -150,9 +154,9 @@ export default function PriorityAIInsights({ insights, onInsightPress }: Priorit
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     margin: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -165,14 +169,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
     marginTop: 2,
   },
@@ -181,9 +185,9 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     width: 280,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginRight: 12,
     borderLeftWidth: 4,
   },
@@ -196,8 +200,8 @@ const styles = StyleSheet.create({
   insightIconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
-    backgroundColor: '#ffffff',
+    borderRadius: BORDER_RADIUS.lg,
+    backgroundColor: COLORS.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -210,18 +214,18 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   insightTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 6,
   },
   insightDescription: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#4b5563',
     lineHeight: 20,
     marginBottom: 12,
@@ -234,7 +238,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 3,
     marginRight: 8,
     overflow: 'hidden',
@@ -244,20 +248,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     marginRight: 4,
   },

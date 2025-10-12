@@ -99,7 +99,7 @@ function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown
             );
           })}
         </View>
-        
+
         {/* Floating Plus Button */}
         <TouchableOpacity
           style={styles.plusButton}
@@ -117,7 +117,6 @@ function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown
         onLogWorkout={() => setShowLogWorkoutModal(true)}
         onLogMeal={() => setShowLogMealModal(true)}
       />
-
 
       {/* Log Workout Modal */}
       <WorkoutLoggingModal
@@ -155,25 +154,25 @@ export default function TabNavigator() {
         },
       }}
     >
-      <Tab.Screen 
-        name="Dashboard" 
-        component={DashboardScreen} 
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
         options={{ title: 'Dashboard' }}
       />
-      <Tab.Screen 
-        name="Fitness" 
-        component={FitnessScreen} 
+      <Tab.Screen
+        name="Fitness"
+        component={FitnessScreen}
         options={{ title: 'Fitness' }}
       />
-      <Tab.Screen 
-        name="Nutrition" 
-        component={NutritionScreen} 
+      <Tab.Screen
+        name="Nutrition"
+        component={NutritionScreen}
         options={{ title: 'Nutrition' }}
       />
       {/* Analytics tab removed */}
-      <Tab.Screen 
-        name="Profile" 
-        component={EnhancedProfileScreen} 
+      <Tab.Screen
+        name="Profile"
+        component={EnhancedProfileScreen}
         options={{ title: 'Profile' }}
       />
       {/* Removed Migration tab */}

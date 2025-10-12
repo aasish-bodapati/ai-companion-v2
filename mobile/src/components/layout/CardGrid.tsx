@@ -1,4 +1,8 @@
+
+import { SPACING } from '../../theme/constants';
 import React from 'react';
+
+
 import {
   View,
   StyleSheet,
@@ -30,7 +34,7 @@ export default function CardGrid({
 }: CardGridProps) {
   const getItemWidth = () => {
     if (horizontal) return undefined;
-    
+
     const totalSpacing = spacing * (columns + 1);
     const availableWidth = width - totalSpacing;
     return availableWidth / columns;
@@ -83,12 +87,12 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
   gridItem: {
     marginBottom: 16,
   },
   horizontalContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
 });

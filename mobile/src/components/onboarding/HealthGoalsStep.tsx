@@ -67,7 +67,7 @@ const HEALTH_GOALS: HealthGoal[] = [
     color: '#8b5cf6',
     category: 'fitness',
   },
-  
+
   // Nutrition Goals
   {
     id: 'eat_healthier',
@@ -101,7 +101,7 @@ const HEALTH_GOALS: HealthGoal[] = [
     color: '#f59e0b',
     category: 'nutrition',
   },
-  
+
   // Wellness Goals
   {
     id: 'reduce_stress',
@@ -135,7 +135,7 @@ const HEALTH_GOALS: HealthGoal[] = [
     color: '#f59e0b',
     category: 'wellness',
   },
-  
+
   // Lifestyle Goals
   {
     id: 'be_consistent',
@@ -170,8 +170,8 @@ const CATEGORIES = [
   { id: 'lifestyle', title: 'Lifestyle', icon: 'person-outline', color: '#f59e0b' },
 ];
 
-export default function HealthGoalsStep({ 
-  onGoalsChange, 
+export default function HealthGoalsStep({
+  onGoalsChange,
   initialGoals = [],
 }: HealthGoalsStepProps) {
   const [selectedGoals, setSelectedGoals] = useState<string[]>(initialGoals);
@@ -240,10 +240,10 @@ export default function HealthGoalsStep({
               selectedCategory === category.id ? styles.categoryButtonSelected : styles.categoryButtonUnselected,
             ]}
           >
-            <Ionicons 
-              name={category.icon as keyof typeof Ionicons.glyphMap} 
-              size={16} 
-              color={selectedCategory === category.id ? '#ffffff' : category.color} 
+            <Ionicons
+              name={category.icon as keyof typeof Ionicons.glyphMap}
+              size={16}
+              color={selectedCategory === category.id ? '#ffffff' : category.color}
             />
             <Text style={[
               styles.categoryButtonText,
@@ -259,7 +259,7 @@ export default function HealthGoalsStep({
 
   const renderGoalCard = (goal: HealthGoal) => {
     const isSelected = selectedGoals.includes(goal.id);
-    
+
     return (
       <MobileOptimizedCard
         key={goal.id}
@@ -287,14 +287,14 @@ export default function HealthGoalsStep({
               />
             )}
           </View>
-          
+
           <Text style={[
             styles.goalTitle,
             isSelected && { color: goal.color }
           ]}>
             {goal.title}
           </Text>
-          
+
           <Text style={styles.goalDescription}>
             {goal.description}
           </Text>
@@ -305,7 +305,7 @@ export default function HealthGoalsStep({
 
   const renderGoalsGrid = () => {
     const goals = getFilteredGoals();
-    
+
     return (
       <View style={styles.goalsGrid}>
         {goals.map(goal => renderGoalCard(goal))}
@@ -335,7 +335,7 @@ export default function HealthGoalsStep({
                   {selectedGoals.length} Goal{selectedGoals.length !== 1 ? 's' : ''} Selected
                 </Text>
               </View>
-              
+
               <View style={styles.summaryGoals}>
                 {selectedGoals.slice(0, 3).map(goalId => {
                   const goal = HEALTH_GOALS.find(g => g.id === goalId);

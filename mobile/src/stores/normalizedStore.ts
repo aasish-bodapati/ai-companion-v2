@@ -4,12 +4,13 @@
  */
 
 import { create } from 'zustand';
+
 import { devtools, persist } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
-import { 
-  EntityManager, 
-  RoutineManager, 
-  WorkoutManager, 
+import {
+  EntityManager,
+  RoutineManager,
+  WorkoutManager,
   MealManager,
   RelationshipManager,
   NormalizedState,
@@ -90,10 +91,10 @@ interface NormalizedStoreState {
   meals: MealManager;
   exercises: EntityManager<ExerciseEntity>;
   categories: EntityManager<CategoryEntity>;
-  
+
   // Relationships
   relationships: RelationshipManager;
-  
+
   // Loading states
   loading: {
     routines: boolean;
@@ -102,7 +103,7 @@ interface NormalizedStoreState {
     exercises: boolean;
     categories: boolean;
   };
-  
+
   // Error states
   errors: {
     routines: string | null;
@@ -111,7 +112,7 @@ interface NormalizedStoreState {
     exercises: string | null;
     categories: string | null;
   };
-  
+
   // Last updated timestamps
   lastUpdated: {
     routines: string | null;
@@ -131,7 +132,7 @@ interface NormalizedStoreActions {
   removeRoutine: (id: number) => void;
   setRoutinesLoading: (loading: boolean) => void;
   setRoutinesError: (error: string | null) => void;
-  
+
   // Workout actions
   setWorkouts: (workouts: WorkoutEntity[]) => void;
   addWorkout: (workout: WorkoutEntity) => void;
@@ -139,7 +140,7 @@ interface NormalizedStoreActions {
   removeWorkout: (id: number) => void;
   setWorkoutsLoading: (loading: boolean) => void;
   setWorkoutsError: (error: string | null) => void;
-  
+
   // Meal actions
   setMeals: (meals: MealEntity[]) => void;
   addMeal: (meal: MealEntity) => void;
@@ -147,7 +148,7 @@ interface NormalizedStoreActions {
   removeMeal: (id: number) => void;
   setMealsLoading: (loading: boolean) => void;
   setMealsError: (error: string | null) => void;
-  
+
   // Exercise actions
   setExercises: (exercises: ExerciseEntity[]) => void;
   addExercise: (exercise: ExerciseEntity) => void;
@@ -155,7 +156,7 @@ interface NormalizedStoreActions {
   removeExercise: (id: number) => void;
   setExercisesLoading: (loading: boolean) => void;
   setExercisesError: (error: string | null) => void;
-  
+
   // Category actions
   setCategories: (categories: CategoryEntity[]) => void;
   addCategory: (category: CategoryEntity) => void;
@@ -163,7 +164,7 @@ interface NormalizedStoreActions {
   removeCategory: (id: string) => void;
   setCategoriesLoading: (loading: boolean) => void;
   setCategoriesError: (error: string | null) => void;
-  
+
   // Utility actions
   clearAll: () => void;
   resetErrors: () => void;
@@ -215,7 +216,7 @@ export const useNormalizedStore = create<NormalizedStore>()(
           const normalizedRoutines = normalizeData(routines);
           const mergedRoutines = mergeNormalizedData(state.routines.getState(), normalizedRoutines);
           state.routines = new RoutineManager(mergedRoutines);
-          
+
           set({
             routines: state.routines,
             lastUpdated: { ...state.lastUpdated, routines: new Date().toISOString() },
@@ -267,7 +268,7 @@ export const useNormalizedStore = create<NormalizedStore>()(
           const normalizedWorkouts = normalizeData(workouts);
           const mergedWorkouts = mergeNormalizedData(state.workouts.getState(), normalizedWorkouts);
           state.workouts = new WorkoutManager(mergedWorkouts);
-          
+
           set({
             workouts: state.workouts,
             lastUpdated: { ...state.lastUpdated, workouts: new Date().toISOString() },
@@ -319,7 +320,7 @@ export const useNormalizedStore = create<NormalizedStore>()(
           const normalizedMeals = normalizeData(meals);
           const mergedMeals = mergeNormalizedData(state.meals.getState(), normalizedMeals);
           state.meals = new MealManager(mergedMeals);
-          
+
           set({
             meals: state.meals,
             lastUpdated: { ...state.lastUpdated, meals: new Date().toISOString() },
@@ -371,7 +372,7 @@ export const useNormalizedStore = create<NormalizedStore>()(
           const normalizedExercises = normalizeData(exercises);
           const mergedExercises = mergeNormalizedData(state.exercises.getState(), normalizedExercises);
           state.exercises = new EntityManager<ExerciseEntity>(mergedExercises);
-          
+
           set({
             exercises: state.exercises,
             lastUpdated: { ...state.lastUpdated, exercises: new Date().toISOString() },
@@ -423,7 +424,7 @@ export const useNormalizedStore = create<NormalizedStore>()(
           const normalizedCategories = normalizeData(categories);
           const mergedCategories = mergeNormalizedData(state.categories.getState(), normalizedCategories);
           state.categories = new EntityManager<CategoryEntity>(mergedCategories);
-          
+
           set({
             categories: state.categories,
             lastUpdated: { ...state.lastUpdated, categories: new Date().toISOString() },

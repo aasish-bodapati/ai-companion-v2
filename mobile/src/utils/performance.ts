@@ -1,13 +1,53 @@
-import { InteractionManager, Dimensions } from 'react-native';
+/**
+ * Performance utilities for React Native optimization
+ */
 
-// Performance optimization utilities for mobile
+import React from 'react';
+import { InteractionManager, Platform } from 'react-native';
+
+// Performance measurement utilities
 export const performanceUtils = {
-  // Run expensive operations after interactions complete
+  /**
+   * Run function after interactions complete
+   */
   runAfterInteractions: (callback: () => void) => {
     InteractionManager.runAfterInteractions(callback);
   },
 
-  // Debounce function calls to prevent excessive API calls
+  /**
+   * Check if device is low-end based on platform and memory
+   */
+  isLowEndDevice: (): boolean => {
+    if (Platform.OS === 'android') {
+      // Android-specific checks
+      return Platform.Version < 26; // API level 26 = Android 8.0
+    }
+    return false; // iOS devices are generally well-optimized
+  },
+
+  /**
+   * List performance optimizations
+   */
+  list: {
+    getBatchSize: (): number => {
+      const isLowEnd = performanceUtils.isLowEndDevice();
+      return isLowEnd ? 5 : 10;
+    },
+
+    getWindowSize: (): number => {
+      const isLowEnd = performanceUtils.isLowEndDevice();
+      return isLowEnd ? 5 : 10;
+    },
+
+    getInitialNumToRender: (): number => {
+      const isLowEnd = performanceUtils.isLowEndDevice();
+      return isLowEnd ? 5 : 10;
+    },
+  },
+
+  /**
+   * Debounce function calls
+   */
   debounce: <T extends (...args: unknown[]) => unknown>(
     func: T,
     wait: number
@@ -19,7 +59,9 @@ export const performanceUtils = {
     };
   },
 
-  // Throttle function calls to limit execution frequency
+  /**
+   * Throttle function calls
+   */
   throttle: <T extends (...args: unknown[]) => unknown>(
     func: T,
     limit: number
@@ -33,8 +75,22 @@ export const performanceUtils = {
       }
     };
   },
+};
 
-  // Memoize expensive calculations
+// Component optimization utilities
+export const componentOptimization = {
+  /**
+   * Check if list item should be rendered (basic visibility check)
+   */
+  optimizeListItem: (item: unknown, index: number, data: unknown[]): boolean => {
+    // Simple optimization - render all items for now
+    // In a real implementation, this would check viewport visibility
+    return true;
+  },
+
+  /**
+   * Memoize expensive calculations
+   */
   memoize: <T extends (...args: unknown[]) => unknown>(fn: T): T => {
     const cache = new Map();
     return ((...args: Parameters<T>) => {
@@ -48,204 +104,171 @@ export const performanceUtils = {
     }) as T;
   },
 
-  // Batch state updates to prevent multiple re-renders
-  batchUpdates: (updates: (() => void)[]) => {
-    InteractionManager.runAfterInteractions(() => {
-      updates.forEach(update => update());
-    });
-  },
-
-  // Check if device is low-end for performance optimization
-  isLowEndDevice: (): boolean => {
-    // Simple heuristic - can be enhanced with actual device detection
-    const { width, height } = Dimensions.get('window');
-    const totalPixels = width * height;
-    return totalPixels < 1000000; // Less than 1MP
-  },
-
-  // Optimize image loading based on device performance
-  getImageQuality: (): 'low' | 'medium' | 'high' => {
-    if (performanceUtils.isLowEndDevice()) {
-      return 'low';
-    }
-    return 'high';
-  },
-
-  // Memory management utilities
-  memory: {
-    // Clear unused data from memory
-    clearCache: () => {
-      // Clear any cached data
-      if (global.gc) {
-        global.gc();
+  /**
+   * Create optimized key extractor for lists
+   */
+  createKeyExtractor: <T>(idField: string = 'id') => {
+    return (item: T, index: number): string => {
+      if (typeof item === 'object' && item !== null && idField in item) {
+        return String((item as Record<string, unknown>)[idField]);
       }
-    },
-
-    // Check memory usage (placeholder - would need native module)
-    getMemoryUsage: () => {
-      return {
-        used: 0,
-        total: 0,
-        percentage: 0,
-      };
-    },
-  },
-
-  // Network optimization
-  network: {
-    // Check network quality
-    getNetworkQuality: (): 'slow' | 'medium' | 'fast' => {
-      // Placeholder - would need network info module
-      return 'medium';
-    },
-
-    // Get appropriate timeout based on network quality
-    getTimeout: (): number => {
-      const quality = performanceUtils.network.getNetworkQuality();
-      switch (quality) {
-        case 'slow':
-          return 30000; // 30 seconds
-        case 'fast':
-          return 5000;  // 5 seconds
-        default:
-          return 10000; // 10 seconds
-      }
-    },
-  },
-
-  // Animation performance
-  animation: {
-    // Use native driver when possible
-    useNativeDriver: true,
-
-    // Reduce animation complexity on low-end devices
-    getAnimationConfig: () => {
-      const isLowEnd = performanceUtils.isLowEndDevice();
-      return {
-        duration: isLowEnd ? 200 : 300,
-        useNativeDriver: true,
-        reduceMotion: isLowEnd,
-      };
-    },
-  },
-
-  // List performance optimization
-  list: {
-    // Get optimal batch size for lists
-    getBatchSize: (): number => {
-      if (performanceUtils.isLowEndDevice()) {
-        return 10;
-      }
-      return 20;
-    },
-
-    // Get optimal window size for virtualized lists
-    getWindowSize: (): number => {
-      if (performanceUtils.isLowEndDevice()) {
-        return 5;
-      }
-      return 10;
-    },
+      return `item-${index}`;
+    };
   },
 };
 
-// API call optimization
-export const apiOptimization = {
-  // Cache API responses
-  cache: new Map<string, { data: unknown; timestamp: number; ttl: number }>(),
-
-  // Cache API response
-  setCache: (key: string, data: unknown, ttl: number = 300000) => { // 5 minutes default
-    apiOptimization.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-      ttl,
+// Memory management utilities
+export const memoryUtils = {
+  /**
+   * Clear unused references
+   */
+  clearUnusedReferences: (obj: Record<string, any>): void => {
+    Object.keys(obj).forEach(key => {
+      if (obj[key] === null || obj[key] === undefined) {
+        delete obj[key];
+      }
     });
   },
 
-  // Get cached API response
-  getCache: (key: string): unknown | null => {
-    const cached = apiOptimization.cache.get(key);
-    if (!cached) return null;
-
-    const now = Date.now();
-    if (now - cached.timestamp > cached.ttl) {
-      apiOptimization.cache.delete(key);
-      return null;
+  /**
+   * Deep clone with memory optimization
+   */
+  deepClone: <T>(obj: T): T => {
+    if (obj === null || typeof obj !== 'object') {
+      return obj;
     }
 
-    return cached.data;
-  },
-
-  // Clear expired cache entries
-  clearExpiredCache: () => {
-    const now = Date.now();
-    for (const [key, value] of apiOptimization.cache.entries()) {
-      if (now - value.timestamp > value.ttl) {
-        apiOptimization.cache.delete(key);
-      }
+    if (obj instanceof Date) {
+      return new Date(obj.getTime()) as T;
     }
-  },
 
-  // Clear all cache
-  clearAllCache: () => {
-    apiOptimization.cache.clear();
+    if (obj instanceof Array) {
+      return obj.map(item => memoryUtils.deepClone(item)) as T;
+    }
+
+    if (typeof obj === 'object') {
+      const cloned = {} as T;
+      Object.keys(obj).forEach(key => {
+        (cloned as any)[key] = memoryUtils.deepClone((obj as any)[key]);
+      });
+      return cloned;
+    }
+
+    return obj;
   },
 };
 
-// Image optimization
+// Image optimization utilities
 export const imageOptimization = {
-  // Get optimized image URL based on device performance
-  getOptimizedImageUrl: (baseUrl: string, width?: number, height?: number): string => {
-    const quality = performanceUtils.getImageQuality();
-    const isLowEnd = performanceUtils.isLowEndDevice();
+  /**
+   * Get optimized image dimensions
+   */
+  getOptimizedDimensions: (
+    originalWidth: number,
+    originalHeight: number,
+    maxWidth: number = 300,
+    maxHeight: number = 300
+  ): { width: number; height: number } => {
+    const aspectRatio = originalWidth / originalHeight;
     
-    let optimizedUrl = baseUrl;
-    
-    if (width && height) {
-      const scale = isLowEnd ? 0.5 : 1;
-      const optimizedWidth = Math.round(width * scale);
-      const optimizedHeight = Math.round(height * scale);
-      optimizedUrl += `?w=${optimizedWidth}&h=${optimizedHeight}`;
+    let width = originalWidth;
+    let height = originalHeight;
+
+    if (width > maxWidth) {
+      width = maxWidth;
+      height = width / aspectRatio;
     }
-    
-    if (quality === 'low') {
-      optimizedUrl += `${optimizedUrl.includes('?') ? '&' : '?'}q=60`;
-    } else if (quality === 'medium') {
-      optimizedUrl += `${optimizedUrl.includes('?') ? '&' : '?'}q=80`;
+
+    if (height > maxHeight) {
+      height = maxHeight;
+      width = height * aspectRatio;
     }
-    
-    return optimizedUrl;
+
+    return { width: Math.round(width), height: Math.round(height) };
   },
 
-  // Lazy load images
-  lazyLoad: (src: string, placeholder?: string): string => {
-    return placeholder || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMTMuMDkgOC4yNkwyMCA5TDEzLjA5IDE1Ljc0TDEyIDIyTDEwLjkxIDE1Ljc0TDQgOUwxMC45MSA4LjI2TDEyIDJaIiBmaWxsPSIjRjNGNEY2Ii8+Cjwvc3ZnPgo=';
+  /**
+   * Get image quality based on device performance
+   */
+  getImageQuality: (): number => {
+    const isLowEnd = performanceUtils.isLowEndDevice();
+    return isLowEnd ? 0.7 : 0.9;
   },
 };
 
-// Component performance optimization
-export const componentOptimization = {
-  // Should component update based on props
-  shouldUpdate: (prevProps: Record<string, unknown>, nextProps: Record<string, unknown>, keys: string[]): boolean => {
-    return keys.some(key => prevProps[key] !== nextProps[key]);
+// Animation optimization utilities
+export const animationUtils = {
+  /**
+   * Create optimized spring animation config
+   */
+  createSpringConfig: (isLowEnd: boolean = false) => ({
+    tension: isLowEnd ? 100 : 120,
+    friction: isLowEnd ? 8 : 7,
+    useNativeDriver: true,
+  }),
+
+  /**
+   * Create optimized timing animation config
+   */
+  createTimingConfig: (duration: number, isLowEnd: boolean = false) => ({
+    duration: isLowEnd ? duration * 1.5 : duration,
+    useNativeDriver: true,
+  }),
+};
+
+// Bundle size optimization
+export const bundleOptimization = {
+  /**
+   * Lazy load components
+   */
+  lazyLoad: <T extends React.ComponentType<any>>(
+    importFunc: () => Promise<{ default: T }>
+  ): React.LazyExoticComponent<T> => {
+    return React.lazy(importFunc);
   },
 
-  // Memoize component props
-  memoizeProps: <T extends Record<string, unknown>>(props: T, keys: string[]): Partial<T> => {
-    const memoizedProps: Partial<T> = {};
-    keys.forEach(key => {
-      if (key in props) {
-        (memoizedProps as Record<string, unknown>)[key] = props[key];
-      }
-    });
-    return memoizedProps;
+  /**
+   * Dynamic import with error handling
+   */
+  dynamicImport: async <T>(
+    importFunc: () => Promise<T>,
+    fallback?: T
+  ): Promise<T | undefined> => {
+    try {
+      return await importFunc();
+    } catch (error) {
+      console.warn('Dynamic import failed:', error);
+      return fallback;
+    }
+  },
+};
+
+// Performance monitoring
+export const performanceMonitoring = {
+  /**
+   * Measure component render time
+   */
+  measureRenderTime: (componentName: string, renderFn: () => void): void => {
+    if (__DEV__) {
+      const start = performance.now();
+      renderFn();
+      const end = performance.now();
+      console.log(`[Performance] ${componentName} render time: ${(end - start).toFixed(2)}ms`);
+    } else {
+      renderFn();
+    }
   },
 
-  // Optimize list item rendering
-  optimizeListItem: (item: unknown, index: number, data: unknown[]): boolean => {
-    // Only render visible items
-    const isVisible = index >= 0 && index < data.length;
-    return isVisible;
+  /**
+   * Track memory usage
+   */
+  trackMemoryUsage: (label: string): void => {
+    if (__DEV__ && (performance as any).memory) {
+      const memory = (performance as any).memory;
+      console.log(`[Memory] ${label}:`, {
+        used: `${Math.round(memory.usedJSHeapSize / 1024 / 1024)}MB`,
+        total: `${Math.round(memory.totalJSHeapSize / 1024 / 1024)}MB`,
+      });
+    }
   },
 };

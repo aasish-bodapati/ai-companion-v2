@@ -8,11 +8,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
-// import { fitnessService } from '../../services/fitnessService'; // Unused for now
+import { routineService, SimpleRoutineWithProgress } from '../../services/RoutineService';
+// import { fitnessService } from '../../services/api'; // Unused for now
 import { COMMON_STYLES } from '../../theme/constants';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import { confirmationDialogConfigs } from '../ui/ConfirmationDialog.utils';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface RoutineProgressTrackerProps {
   routine: SimpleRoutineWithProgress;
@@ -46,19 +48,19 @@ export default function RoutineProgressTracker({
   const loadWorkoutProgress = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Get today's workout from the routine
       const todaysWorkout = await routineService.getTodaysWorkout();
-      
+
       // Handle the case where no workout is scheduled for today
       if (!todaysWorkout) {
-        console.log('ℹ️ No workout scheduled for today');
+        DebugUtils.log('ℹ️ No workout scheduled for today');
         // Continue with progress tracking even if no workout is scheduled
       }
-      
+
       // Get recent workout logs (for future use)
       // const recentLogs = await fitnessService.getRecentWorkouts(30);
-      
+
       // Build progress tracking based on routine structure
       const progress: WorkoutProgress[] = routine.workout_schedule.map(day => ({
         day: day.day,
@@ -72,14 +74,14 @@ export default function RoutineProgressTracker({
         completed: false, // TODO: Check against actual logs
         completedAt: undefined,
       }));
-      
+
       setWorkoutProgress(progress);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     } finally {
       setLoading(false);
     }
-  }, [routine.id]);
+  }, [routine.workout_schedule]);
 
   useEffect(() => {
     loadWorkoutProgress();
@@ -88,17 +90,17 @@ export default function RoutineProgressTracker({
   const handleCompleteWorkout = async (dayIndex: number) => {
     try {
       setActionLoading(`${dayIndex}`);
-      
+
       // Mark workout as completed
       const updatedProgress = [...workoutProgress];
       updatedProgress[dayIndex].completed = true;
       updatedProgress[dayIndex].completedAt = new Date().toISOString();
-      
+
       setWorkoutProgress(updatedProgress);
-      
+
       // TODO: Log the workout completion
       // This would typically involve calling the fitness service to log the workout
-      
+
       setSuccessMessage(`Great job completing your ${updatedProgress[dayIndex].workoutName}!`);
       setShowSuccessDialog(true);
     } catch {
@@ -137,16 +139,16 @@ export default function RoutineProgressTracker({
           <Text style={styles.progressTitle}>Progress Overview</Text>
           <Text style={styles.completionPercentage}>{getCompletionPercentage()}%</Text>
         </View>
-        
+
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
-              styles.progressFill, 
+              styles.progressFill,
               { width: `${getCompletionPercentage()}%` }
-            ]} 
+            ]}
           />
         </View>
-        
+
         <View style={styles.progressStats}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{getStreakDays()}</Text>

@@ -263,5 +263,5 @@ export const createTestData = {
 // Export everything
 export * from '@testing-library/react-native';
 export { customRender as render };
-export { waitForHookUpdate, waitFor, measurePerformance, measureMemoryUsage };
-export { createTestData };
+// export { waitForHookUpdate, waitFor, measurePerformance, measureMemoryUsage }; // Duplicate exports removed
+// export { createTestData }; // Duplicate exports removed

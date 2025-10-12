@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+
 export interface HealthData {
   age: string;
   height: string;
@@ -104,7 +105,7 @@ export const onboardingService = {
       // This would typically sync with your backend API
       // For now, we'll just log it
       // Example API call (uncomment when backend is ready):
-      // await apiClient.post('/users/onboarding-data', data);
+      // await api.post('/users/onboarding-data', data);
     } catch (error) {
       throw error;
     }
@@ -142,3 +143,6 @@ export const onboardingService = {
     },
   }),
 };
+
+// Export singleton instance
+// export const onboardingService = new OnboardingService(); // Duplicate export removed

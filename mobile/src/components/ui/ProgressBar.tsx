@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
-export type ProgressBarVariant = 'default' | 'minimal' | 'filled' | 'outlined' | 'gradient';
+export type ProgressBarVariant = 'default' | 'minimal' | 'filled' | 'outlined' | 'gradient' | 'circular';
 export type ProgressBarSize = 'small' | 'medium' | 'large';
 export type ProgressBarShape = 'rectangular' | 'rounded' | 'pill' | 'circular';
 
@@ -18,41 +18,41 @@ export interface ProgressBarProps {
   // Core props
   progress: number; // 0-100
   max?: number; // Maximum value (default: 100)
-  
+
   // Styling
   variant?: ProgressBarVariant;
   size?: ProgressBarSize;
   shape?: ProgressBarShape;
-  
+
   // Configuration
   animated?: boolean;
   animationDuration?: number;
   showPercentage?: boolean;
   showLabel?: boolean;
   showValue?: boolean;
-  
+
   // Colors
   color?: string;
   backgroundColor?: string;
   textColor?: string;
   borderColor?: string;
-  
+
   // Labels
   label?: string;
   valueLabel?: string;
   unit?: string;
-  
+
   // Callbacks
   onComplete?: () => void;
   onProgressChange?: (progress: number) => void;
-  
+
   // Styling overrides
   containerStyle?: ViewStyle;
   progressStyle?: ViewStyle;
   labelStyle?: TextStyle;
   valueStyle?: TextStyle;
   percentageStyle?: TextStyle;
-  
+
   // Accessibility
   testID?: string;
   accessibilityLabel?: string;
@@ -97,7 +97,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
   const progressPercentage = Math.min(Math.max((progress / max) * 100, 0), 100);
-  
+
   useEffect(() => {
     if (animated) {
       Animated.timing(animatedValue, {
@@ -203,11 +203,11 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
   const renderCircularProgress = () => {
     if (shape !== 'circular') return null;
-    
+
     const radius = sizeStyles.height * 2;
     const circumference = 2 * Math.PI * radius;
     const strokeDashoffset = circumference - (progressPercentage / 100) * circumference;
-    
+
     return (
       <View style={[styles.circularContainer, { width: radius * 2, height: radius * 2 }]}>
         <View style={[styles.circularBackground, { width: radius * 2, height: radius * 2 }]}>
@@ -233,7 +233,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
   const renderLinearProgress = () => {
     if (shape === 'circular') return null;
-    
+
     return (
       <View style={styles.linearContainer}>
         <View
@@ -268,7 +268,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
             ]}
           />
         </View>
-        
+
         {(showLabel || showValue || showPercentage) && (
           <View style={styles.labelsContainer}>
             {showLabel && label && (
@@ -276,7 +276,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
                 {label}
               </Text>
             )}
-            
+
             <View style={styles.valuesContainer}>
               {showValue && (
                 <Text style={[styles.value, { color: textColor, fontSize: sizeStyles.fontSize }, valueStyle]}>
@@ -297,7 +297,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
 
   const getAccessibilityValue = () => {
     if (accessibilityValue) return accessibilityValue;
-    
+
     return {
       min: 0,
       max: max,

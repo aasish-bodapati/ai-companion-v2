@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback, touchUtils } from '../../utils/haptics';
+import { performanceUtils, animationUtils } from '../../utils/performance';
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 interface MobileOptimizedCardProps {
@@ -29,7 +30,7 @@ interface MobileOptimizedCardProps {
   testID?: string;
 }
 
-export default function MobileOptimizedCard({
+const MobileOptimizedCard = React.memo(function MobileOptimizedCard({
   children,
   onPress,
   onLongPress,
@@ -50,65 +51,67 @@ export default function MobileOptimizedCard({
   const [opacityValue] = useState(new Animated.Value(1));
   const [isPressed, setIsPressed] = useState(false);
 
-  const handlePressIn = () => {
+  const handlePressIn = useCallback(() => {
     if (disabled || loading || !onPress) return;
 
     setIsPressed(true);
-    
+
     // Haptic feedback
     if (hapticType !== 'none') {
       hapticFeedback[hapticType]();
     }
 
-    // Scale animation
+    // Scale animation with optimized config
+    const isLowEnd = performanceUtils.isLowEndDevice();
+    const animationConfig = animationUtils.createTimingConfig(100, isLowEnd);
+    
     Animated.parallel([
       Animated.timing(scaleValue, {
         toValue: 0.98,
-        duration: 100,
-        useNativeDriver: true,
+        ...animationConfig,
       }),
       Animated.timing(opacityValue, {
         toValue: 0.9,
-        duration: 100,
-        useNativeDriver: true,
+        ...animationConfig,
       }),
     ]).start();
-  };
+  }, [disabled, loading, onPress, hapticType, scaleValue, opacityValue]);
 
-  const handlePressOut = () => {
+  const handlePressOut = useCallback(() => {
     if (disabled || loading || !onPress) return;
 
     setIsPressed(false);
 
-    // Reset animations
+    // Reset animations with optimized config
+    const isLowEnd = performanceUtils.isLowEndDevice();
+    const animationConfig = animationUtils.createTimingConfig(100, isLowEnd);
+    
     Animated.parallel([
       Animated.timing(scaleValue, {
         toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
+        ...animationConfig,
       }),
       Animated.timing(opacityValue, {
         toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
+        ...animationConfig,
       }),
     ]).start();
-  };
+  }, [disabled, loading, onPress, scaleValue, opacityValue]);
 
-  const handlePress = () => {
+  const handlePress = useCallback(() => {
     if (disabled || loading || !onPress) return;
     onPress();
-  };
+  }, [disabled, loading, onPress]);
 
-  const handleLongPress = () => {
+  const handleLongPress = useCallback(() => {
     if (disabled || loading || !onLongPress) return;
-    
+
     // Heavy haptic feedback for long press
     hapticFeedback.heavy();
     onLongPress();
-  };
+  }, [disabled, loading, onLongPress]);
 
-  const getCardStyle = (): ViewStyle => {
+  const cardStyle = useMemo((): ViewStyle => {
     const baseStyle: ViewStyle = {
       ...styles.card,
       ...styles[`${variant}Card`],
@@ -124,15 +127,15 @@ export default function MobileOptimizedCard({
     }
 
     return baseStyle;
-  };
+  }, [variant, size, disabled, isPressed]);
 
-  const getContentStyle = (): ViewStyle => {
+  const contentStyleMemo = useMemo((): ViewStyle => {
     return {
       ...styles.content,
       ...styles[`${size}Content`],
       ...contentStyle,
     };
-  };
+  }, [size, contentStyle]);
 
   const renderHeader = () => {
     if (!title && !subtitle && !icon) return null;
@@ -151,8 +154,8 @@ export default function MobileOptimizedCard({
           </View>
         </View>
         {onPress && (
-          <Ionicons 
-            name="chevron-forward" 
+          <Ionicons
+            name="chevron-forward"
             size={FONT_SIZE.lg} // 16 -> FONT_SIZE.lg
             color={COLORS.text.tertiary} // '#9ca3af' -> COLORS.text.tertiary
           />
@@ -171,7 +174,7 @@ export default function MobileOptimizedCard({
       onLongPress={onLongPress ? handleLongPress : undefined}
       disabled={disabled || loading}
       style={({ pressed }) => [
-        getCardStyle(),
+        cardStyle,
         style,
         pressed && onPress && !disabled && !loading && styles.pressed,
       ]}
@@ -179,7 +182,7 @@ export default function MobileOptimizedCard({
     >
       <Animated.View
         style={[
-          getContentStyle(),
+          contentStyleMemo,
           {
             transform: [{ scale: scaleValue }],
             opacity: opacityValue,
@@ -191,7 +194,7 @@ export default function MobileOptimizedCard({
       </Animated.View>
     </CardComponent>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
@@ -281,3 +284,5 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
   },
 });
+
+export default MobileOptimizedCard;

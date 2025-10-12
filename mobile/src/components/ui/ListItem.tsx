@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
@@ -167,7 +169,7 @@ export default function ListItem({
     >
       <View style={styles.content}>
         {renderLeftContent()}
-        
+
         <View style={styles.textContent}>
           <Text style={[styles.title, disabled && styles.disabledText]} numberOfLines={1}>
             {title}
@@ -183,7 +185,7 @@ export default function ListItem({
             </Text>
           )}
         </View>
-        
+
         {renderRightContent()}
       </View>
     </TouchableComponent>

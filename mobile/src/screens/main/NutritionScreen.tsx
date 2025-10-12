@@ -10,7 +10,7 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNutritionStore, useNutritionLoading } from '../../stores';
-import { nutritionService } from '../../services/nutritionService';
+import { nutritionService } from '../../services/api';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
@@ -18,12 +18,15 @@ import NutritionOverviewDashboard from '../../components/nutrition/NutritionOver
 import QuickAddMeals from '../../components/nutrition/QuickAddMeals';
 import WeeklyNutritionChart from '../../components/nutrition/WeeklyNutritionChart';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
 export default function NutritionScreen() {
   // Use individual selectors instead of the actions object to prevent infinite loops
   const refreshNutritionData = useNutritionStore((state) => state.refreshNutritionData);
   const addMeal = useNutritionStore((state) => state.addMeal);
   const loading = useNutritionLoading();
-  
+
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
   const nutritionLogsRef = useRef<{ refreshLogs: () => void } | null>(null);
@@ -89,10 +92,10 @@ export default function NutritionScreen() {
           fat_g: item.fat_g,
         }))),
       };
-      
+
       // Log the meal with proper async/await
       await nutritionService.logMeal(mealData);
-      
+
       // Add meal to store and refresh data
       addMeal({
         id: Date.now().toString(),
@@ -108,9 +111,9 @@ export default function NutritionScreen() {
         total_fat: mealData.fat_g,
         logged_at: new Date().toISOString(),
       });
-      
+
       await refreshNutritionData();
-      
+
       if (nutritionLogsRef.current) {
         nutritionLogsRef.current.refreshLogs();
       }
@@ -127,7 +130,6 @@ export default function NutritionScreen() {
       nutritionLogsRef.current.refreshLogs();
     }
   }, [refreshNutritionData, activeTab]);
-
 
   const renderOverview = () => (
     <NutritionOverviewDashboard
@@ -153,7 +155,7 @@ export default function NutritionScreen() {
       {/* Weekly Nutrition Chart */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Weekly Activity</Text>
-        <WeeklyNutritionChart 
+        <WeeklyNutritionChart
           weeklyData={weeklyActivityData}
           color="#10b981"
           unit="meals"
@@ -171,7 +173,7 @@ export default function NutritionScreen() {
             <Text style={styles.toolTitle}>Weekly Planner</Text>
             <Text style={styles.toolDescription}>Plan your week</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
               <Ionicons name="list-outline" size={16} color="#10b981" />
@@ -179,7 +181,7 @@ export default function NutritionScreen() {
             <Text style={styles.toolTitle}>Shopping List</Text>
             <Text style={styles.toolDescription}>Auto-generate list</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
               <Ionicons name="restaurant-outline" size={16} color="#f59e0b" />
@@ -187,7 +189,7 @@ export default function NutritionScreen() {
             <Text style={styles.toolTitle}>Meal Prep</Text>
             <Text style={styles.toolDescription}>Batch cooking</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.toolCard}>
             <View style={styles.toolIcon}>
               <Ionicons name="nutrition-outline" size={16} color="#ef4444" />
@@ -209,7 +211,6 @@ export default function NutritionScreen() {
     );
   }
 
-
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -224,10 +225,10 @@ export default function NutritionScreen() {
           style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
           onPress={() => setActiveTab('overview')}
         >
-          <Ionicons 
-            name="grid-outline" 
-            size={20} 
-            color={activeTab === 'overview' ? '#10b981' : '#6b7280'} 
+          <Ionicons
+            name="grid-outline"
+            size={20}
+            color={activeTab === 'overview' ? '#10b981' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -236,15 +237,15 @@ export default function NutritionScreen() {
             Overview
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, activeTab === 'meals' && styles.activeTab]}
           onPress={() => setActiveTab('meals')}
         >
-          <Ionicons 
-            name="restaurant-outline" 
-            size={20} 
-            color={activeTab === 'meals' ? '#10b981' : '#6b7280'} 
+          <Ionicons
+            name="restaurant-outline"
+            size={20}
+            color={activeTab === 'meals' ? '#10b981' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -258,10 +259,10 @@ export default function NutritionScreen() {
           style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
           onPress={() => setActiveTab('logs')}
         >
-          <Ionicons 
-            name="list-outline" 
-            size={20} 
-            color={activeTab === 'logs' ? '#10b981' : '#6b7280'} 
+          <Ionicons
+            name="list-outline"
+            size={20}
+            color={activeTab === 'logs' ? '#10b981' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -273,8 +274,8 @@ export default function NutritionScreen() {
       </View>
 
       {/* Content */}
-      {activeTab === 'overview' ? renderOverview() : 
-       activeTab === 'meals' ? renderMeals() : 
+      {activeTab === 'overview' ? renderOverview() :
+       activeTab === 'meals' ? renderMeals() :
        <NutritionLogsView ref={nutritionLogsRef} onRefresh={onRefresh} />}
 
       {/* Unified Nutrition Logger Modal */}
@@ -290,40 +291,40 @@ export default function NutritionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     marginTop: 12,
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 20,
     paddingBottom: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZE.xxxxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xxs,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -339,21 +340,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
   },
   activeTab: {
-    backgroundColor: '#10b981',
+    backgroundColor: COLORS.success,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginLeft: 6,
   },
   activeTabText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   content: {
     flex: 1,
@@ -369,12 +370,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#10b981',
     fontWeight: '500',
   },
@@ -386,8 +387,8 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -410,18 +411,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 4,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 2,
   },
   statSubtitle: {
-    fontSize: 12,
-    color: '#ffffff',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.inverse,
     opacity: 0.8,
   },
   snapshotScroll: {
@@ -429,9 +430,9 @@ const styles = StyleSheet.create({
   },
   snapshotCard: {
     width: 100,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     marginRight: 12,
     alignItems: 'center',
     shadowColor: '#000',
@@ -441,24 +442,24 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   snapshotValue: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
   },
   snapshotLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   trendIndicator: {
     marginTop: 4,
   },
   macroCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -472,14 +473,14 @@ const styles = StyleSheet.create({
   },
   macroBar: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     marginBottom: 8,
     overflow: 'hidden',
   },
   macroFill: {
     height: '100%',
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   macroInfo: {
     flexDirection: 'row',
@@ -487,14 +488,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   macroLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   macroValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   // Meal styles
   quickMealsScroll: {
@@ -502,9 +503,9 @@ const styles = StyleSheet.create({
   },
   quickMealCard: {
     width: 160,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginRight: 12,
     alignItems: 'center',
     shadowColor: '#000',
@@ -517,41 +518,41 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   quickMealTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   quickMealCalories: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#10b981',
     fontWeight: '500',
     marginBottom: 4,
   },
   quickMealCount: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   // Today's Meals styles
   addMealButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#f0fdf4',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     borderWidth: 1,
     borderColor: '#10b981',
   },
   addMealText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#10b981',
     marginLeft: 4,
@@ -560,9 +561,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   mealCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     marginHorizontal: 16,
@@ -581,8 +582,8 @@ const styles = StyleSheet.create({
   mealIconContainer: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -591,23 +592,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mealName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   mealTime: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   mealCalories: {
     backgroundColor: '#f0fdf4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
+    borderRadius: BORDER_RADIUS.md,
   },
   mealCaloriesText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#10b981',
   },
@@ -615,14 +616,14 @@ const styles = StyleSheet.create({
     marginLeft: 52,
   },
   mealItemText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#4b5563',
     marginBottom: 4,
   },
   addMealCard: {
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 24,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xl,
     borderWidth: 2,
     borderColor: '#e5e7eb',
     borderStyle: 'dashed',
@@ -630,9 +631,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addMealCardText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#9ca3af',
+    color: COLORS.text.tertiary,
     marginTop: 8,
   },
   // Meal Planning Tools styles
@@ -643,7 +644,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   toolCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderRadius: 10,
     padding: 10,
     width: '22%',
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
@@ -669,19 +670,19 @@ const styles = StyleSheet.create({
   toolTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 2,
   },
   toolDescription: {
     fontSize: 9,
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   templateList: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -692,7 +693,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -700,37 +701,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   templateTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   templateDetails: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   createRoutineButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#10b981',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     marginTop: 8,
     marginBottom: 20,
   },
   createRoutineButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     marginLeft: 8,
   },
   // New week overview styles
   weekOverviewCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -752,20 +753,20 @@ const styles = StyleSheet.create({
   weekMetricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
   },
   weekMetricLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   // Weekly breakdown styles
   breakdownCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -778,18 +779,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
   breakdownLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     flex: 1,
   },
   breakdownValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
 });

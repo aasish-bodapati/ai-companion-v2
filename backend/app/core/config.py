@@ -36,6 +36,8 @@ class Settings(BaseSettings):
         "http://192.168.1.5:8000",  # Mobile access
         "http://192.168.1.8:3000",  # Mobile access (actual IP)
         "http://192.168.1.8:8000",  # Mobile access (actual IP)
+        "http://192.168.1.11:3000", # Mobile access (current IP)
+        "http://192.168.1.11:8000", # Mobile access (current IP)
         "http://192.168.0.0/16",    # Allow all 192.168.x.x for mobile testing
     ]
 

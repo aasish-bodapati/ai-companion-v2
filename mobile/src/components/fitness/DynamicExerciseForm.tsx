@@ -3,6 +3,10 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { useExerciseCategoriesWithAutoLoad } from '../../stores';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+
+import { DebugUtils } from '../../utils/debugUtils';
+
 export interface ExerciseData {
   exercise_name: string;
   sets?: number | string;
@@ -29,8 +33,6 @@ interface DynamicExerciseFormProps {
 
 // Categories will be loaded from database
 
-
-
 export default function DynamicExerciseForm({
   exercise,
   index,
@@ -41,21 +43,20 @@ export default function DynamicExerciseForm({
 }: DynamicExerciseFormProps) {
   // Use exercise categories store with manual loading
   const { loadCategories, loaded, loading } = useExerciseCategoriesWithAutoLoad();
-  
+
   // Load categories on component mount if not already loaded
   useEffect(() => {
     if (!loaded && !loading) {
       loadCategories();
     }
-  }, [loaded, loading]);
-  
-  
+  }, [loaded, loading, loadCategories]);
+
   // Use category from database (backend provides logging_category)
   const getExerciseCategory = (): string => {
     // Use database category first (highest priority)
     if (exercise.logging_category) return exercise.logging_category;
     if (exercise.category) return exercise.category;
-    
+
     // Fallback to activity type detection if no database category
     if (activityType === 'cardio' || activityType === 'running' || activityType === 'cycling' || activityType === 'swimming') {
       return 'distance_based';
@@ -63,24 +64,22 @@ export default function DynamicExerciseForm({
     if (activityType === 'yoga') {
       return 'cardio_duration';
     }
-    
+
     // Default to weighted for weightlifting
     return 'weighted';
   };
 
-
   const category = getExerciseCategory();
   // const categoryConfig = getCategoryConfig(category);
-  
 
   const renderField = (field: string, isHorizontal: boolean = false) => {
     const containerStyle = isHorizontal ? styles.horizontalFieldContainer : styles.fieldContainer;
-    
-    console.log(`🔍 [DYNAMIC FORM] Rendering field: ${field}, isHorizontal: ${isHorizontal}`);
-    console.log(`🔍 [DYNAMIC FORM] Exercise data:`, exercise);
-    console.log(`🔍 [DYNAMIC FORM] Category:`, category);
-    console.log(`🔍 [DYNAMIC FORM] Field name check - is distance?:`, field === 'distance');
-    
+
+    DebugUtils.log(`🔍 [DYNAMIC FORM] Rendering field: ${field}, isHorizontal: ${isHorizontal}`);
+    DebugUtils.log(`🔍 [DYNAMIC FORM] Exercise data:`, exercise);
+    DebugUtils.log(`🔍 [DYNAMIC FORM] Category:`, category);
+    DebugUtils.log(`🔍 [DYNAMIC FORM] Field name check - is distance?:`, field === 'distance');
+
     switch (field) {
       case 'sets':
         return (
@@ -126,8 +125,8 @@ export default function DynamicExerciseForm({
               style={[styles.fieldInput, isHorizontal && styles.inlineFieldInput]}
               value={(() => {
                 const weight = exercise.weight_used || exercise.weight;
-                console.log(`🔍 [DYNAMIC FORM] Weight field - exercise.weight_used: ${exercise.weight_used}, exercise.weight: ${exercise.weight}, final weight: ${weight}`);
-                console.log(`🔍 [DYNAMIC FORM] Weight field - Number(weight): ${Number(weight)}, condition: ${weight && Number(weight) > 0}`);
+                DebugUtils.log(`🔍 [DYNAMIC FORM] Weight field - exercise.weight_used: ${exercise.weight_used}, exercise.weight: ${exercise.weight}, final weight: ${weight}`);
+                DebugUtils.log(`🔍 [DYNAMIC FORM] Weight field - Number(weight): ${Number(weight)}, condition: ${weight && Number(weight) > 0}`);
                 return weight ? weight.toString() : '';
               })()}
               onChangeText={(text) => {
@@ -141,7 +140,6 @@ export default function DynamicExerciseForm({
             />
           </View>
         );
-
 
       case 'duration':
         return (
@@ -163,9 +161,9 @@ export default function DynamicExerciseForm({
 
       case 'distance':
         const distanceLabel = "Distance (km)";
-        console.log('🔍 [DYNAMIC FORM] Distance field - Label text:', distanceLabel);
-        console.log('🔍 [DYNAMIC FORM] Distance field - Exercise data:', exercise);
-        console.log('🔍 [DYNAMIC FORM] Distance field - Category:', category);
+        DebugUtils.log('🔍 [DYNAMIC FORM] Distance field - Label text:', distanceLabel);
+        DebugUtils.log('🔍 [DYNAMIC FORM] Distance field - Exercise data:', exercise);
+        DebugUtils.log('🔍 [DYNAMIC FORM] Distance field - Category:', category);
         return (
           <View style={[containerStyle, isHorizontal && styles.inlineFieldContainer]}>
             <Text style={[styles.fieldLabel, isHorizontal && styles.inlineFieldLabel]}>{distanceLabel}</Text>
@@ -175,7 +173,7 @@ export default function DynamicExerciseForm({
               onChangeText={(text) => {
                 // Only allow integers and decimal point
                 const numericValue = text.replace(/[^0-9.]/g, '');
-                console.log('🔍 [DYNAMIC FORM] Distance field - Input changed:', { text, numericValue });
+                DebugUtils.log('🔍 [DYNAMIC FORM] Distance field - Input changed:', { text, numericValue });
                 onUpdate(index, 'distance', numericValue);
               }}
               keyboardType="numeric"
@@ -184,17 +182,14 @@ export default function DynamicExerciseForm({
           </View>
         );
 
-
-
-
       default:
         return null;
     }
   };
 
-  console.log('🔍 [DYNAMIC FORM] Main render - Exercise:', exercise);
-  console.log('🔍 [DYNAMIC FORM] Main render - Category:', category);
-  console.log('🔍 [DYNAMIC FORM] Main render - Category check for distance_based:', category === 'distance_based');
+  DebugUtils.log('🔍 [DYNAMIC FORM] Main render - Exercise:', exercise);
+  DebugUtils.log('🔍 [DYNAMIC FORM] Main render - Category:', category);
+  DebugUtils.log('🔍 [DYNAMIC FORM] Main render - Category check for distance_based:', category === 'distance_based');
 
   return (
     <View style={styles.container}>
@@ -225,7 +220,7 @@ export default function DynamicExerciseForm({
               renderField('sets', true)
             )}
           </View>
-          
+
           {/* Field 2: Reps (for bodyweight/weighted) or Duration (for distance_based) or empty (for cardio_duration) */}
           <View style={styles.horizontalField}>
             {category === 'bodyweight' || category === 'weighted' ? (
@@ -246,7 +241,7 @@ export default function DynamicExerciseForm({
               renderField('reps', true)
             )}
           </View>
-          
+
           {/* Field 3: Weight (for weighted) or empty (for others) */}
           <View style={styles.horizontalField}>
             {category === 'weighted' ? (
@@ -271,7 +266,7 @@ export default function DynamicExerciseForm({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderRadius: 6,
     padding: 6,
     marginBottom: 6,
@@ -293,7 +288,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   removeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   fieldsContainer: {
     gap: 6,
@@ -324,7 +319,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   fieldLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 3,
@@ -332,11 +327,11 @@ const styles = StyleSheet.create({
   fieldInput: {
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    fontSize: 14,
-    backgroundColor: '#ffffff',
+    borderRadius: BORDER_RADIUS.xs,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
+    fontSize: FONT_SIZE.md,
+    backgroundColor: COLORS.background.primary,
   },
   inlineFieldContainer: {
     flexDirection: 'row',
@@ -347,12 +342,12 @@ const styles = StyleSheet.create({
   inlineFieldLabel: {
     marginBottom: 0,
     width: 35,
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '500',
   },
   inlineFieldInput: {
     width: 60,
-    paddingHorizontal: 4,
+    paddingHorizontal: SPACING.xxs,
     paddingVertical: 3,
     fontSize: 11,
   },
@@ -365,20 +360,20 @@ const styles = StyleSheet.create({
   disabledFieldLabel: {
     marginBottom: 0,
     width: 35,
-    fontSize: 10,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.tertiary,
     fontWeight: '500',
   },
   disabledFieldInput: {
     width: 60,
-    paddingHorizontal: 4,
+    paddingHorizontal: SPACING.xxs,
     paddingVertical: 3,
     fontSize: 11,
     backgroundColor: '#f9fafb',
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 4,
-    color: '#9ca3af',
+    borderRadius: BORDER_RADIUS.xs,
+    color: COLORS.text.tertiary,
     textAlign: 'center',
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface PredictiveInsight {
   id: string;
@@ -98,7 +102,6 @@ export default function PredictiveInsights({
     }
   };
 
-
   return (
     <View style={[styles.container, style]}>
       <View style={styles.header}>
@@ -142,12 +145,12 @@ export default function PredictiveInsights({
                 <View style={[styles.insightIcon, { backgroundColor: insight.color + '20' }]}>
                   <Ionicons name={insight.icon as keyof typeof Ionicons.glyphMap} size={20} color={insight.color} />
                 </View>
-                
+
                 <View style={styles.insightInfo}>
                   <Text style={styles.insightTitle}>{insight.title}</Text>
                   <Text style={styles.insightDescription}>{insight.description}</Text>
                 </View>
-                
+
                 <View style={styles.insightMeta}>
                   <View style={[styles.priorityBadge, { backgroundColor: priorityColor + '20' }]}>
                     <Ionicons name={priorityIcon as keyof typeof Ionicons.glyphMap} size={12} color={priorityColor} />
@@ -155,7 +158,7 @@ export default function PredictiveInsights({
                   <Text style={styles.confidenceText}>{insight.confidence}%</Text>
                 </View>
               </View>
-              
+
               {insight.action && (
                 <View style={styles.actionContainer}>
                   <TouchableOpacity
@@ -177,9 +180,9 @@ export default function PredictiveInsights({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: '#f0f9ff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -215,26 +218,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     fontWeight: '500',
   },
@@ -243,9 +246,9 @@ const styles = StyleSheet.create({
   },
   insightCard: {
     width: 280,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderLeftWidth: 4,
   },
   insightHeader: {
@@ -256,7 +259,7 @@ const styles = StyleSheet.create({
   insightIcon: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -265,14 +268,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   insightTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   insightDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     lineHeight: 20,
   },
   insightMeta: {
@@ -287,8 +290,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confidenceText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   actionContainer: {
@@ -298,9 +301,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 6,
   },
 });

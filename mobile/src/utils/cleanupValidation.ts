@@ -4,6 +4,8 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
+import { DebugUtils } from '../utils/debugUtils';
+
 
 export const CleanupValidation = {
   // Validate that removing a file won't break anything
@@ -16,10 +18,10 @@ export const CleanupValidation = {
 
       // Read file content
       const fileContent = readFileSync(filePath, 'utf8');
-      
+
       // Check for exports
       const hasExports = /export\s+(default\s+)?(function|const|class|interface|type)/.test(fileContent);
-      
+
       if (hasExports) {
         // This file exports something, need to check if it's imported elsewhere
         return { safe: false, reason: 'File exports components/functions that might be used elsewhere' };
@@ -27,7 +29,7 @@ export const CleanupValidation = {
 
       // Check for any imports in the file
       const hasImports = /import\s+.*from\s+['"]/.test(fileContent);
-      
+
       if (hasImports) {
         return { safe: false, reason: 'File imports other modules, might be part of a larger system' };
       }
@@ -40,7 +42,7 @@ export const CleanupValidation = {
 
   // Validate that consolidating components won't break anything
   validateComponentConsolidation: (
-    oldComponent: string, 
+    oldComponent: string,
     newComponent: string
   ): { safe: boolean; reason?: string } => {
     try {
@@ -62,11 +64,11 @@ export const CleanupValidation = {
       const newProps = CleanupValidation.extractProps(newContent);
 
       const missingProps = oldProps.filter(prop => !newProps.includes(prop));
-      
+
       if (missingProps.length > 0) {
-        return { 
-          safe: false, 
-          reason: `New component missing props: ${missingProps.join(', ')}` 
+        return {
+          safe: false,
+          reason: `New component missing props: ${missingProps.join(', ')}`
         };
       }
 
@@ -96,17 +98,17 @@ export const CleanupValidation = {
   validateImportRemoval: (filePath: string, importPath: string): { safe: boolean; reason?: string } => {
     try {
       const fileContent = readFileSync(filePath, 'utf8');
-      
+
       // Check if the import is actually used in the file
       const importName = importPath.split('/').pop()?.replace('.tsx', '').replace('.ts', '');
-      
+
       if (!importName) {
         return { safe: false, reason: 'Could not determine import name' };
       }
 
       // Check if the import is used in the file
       const isUsed = new RegExp(`\\b${importName}\\b`).test(fileContent);
-      
+
       if (isUsed) {
         return { safe: false, reason: 'Import is still being used in the file' };
       }
@@ -119,8 +121,8 @@ export const CleanupValidation = {
 
   // Validate that replacing hardcoded values won't break anything
   validateStyleReplacement: (
-    oldValue: unknown, 
-    newValue: unknown, 
+    oldValue: unknown,
+    newValue: unknown,
     context: string
   ): { safe: boolean; reason?: string } => {
     // Basic validation - in a real implementation, this would be more sophisticated
@@ -150,7 +152,7 @@ export const CleanupValidation = {
 
     try {
       const fileContent = readFileSync(filePath, 'utf8');
-      
+
       // Check for exports
       if (/export\s+(default\s+)?(function|const|class|interface|type)/.test(fileContent)) {
         report.issues.push('File exports components/functions');
@@ -163,10 +165,10 @@ export const CleanupValidation = {
         report.recommendations.push('Ensure imported modules are not broken by removal');
       }
 
-      // Check for console.log statements
+      // Check for DebugUtils.log statements
       const consoleLogCount = (fileContent.match(/console\.log/g) || []).length;
       if (consoleLogCount > 0) {
-        report.issues.push(`File contains ${consoleLogCount} console.log statements`);
+        report.issues.push(`File contains ${consoleLogCount} DebugUtils.log statements`);
         report.recommendations.push('Consider replacing with DebugUtils.log');
       }
 

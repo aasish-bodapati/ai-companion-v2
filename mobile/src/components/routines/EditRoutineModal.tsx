@@ -11,10 +11,12 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { routineService, CreateRoutineData, SimpleRoutineWithProgress } from '../../services/routineService';
-import { apiClient } from '../../services/api';
+import { routineService, CreateRoutineData, SimpleRoutineWithProgress } from '../../services/RoutineService';
+import { ApiServiceClient } from '../../services/ApiService';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface Exercise {
   id: number;
@@ -58,15 +60,14 @@ export default function EditRoutineModal({
   const [durationWeeks, setDurationWeeks] = useState(4);
   const [loading, setLoading] = useState(false);
   const [loadingRoutineData, setLoadingRoutineData] = useState(false);
-  
-  
+
   // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
   // React.useEffect(() => {
   //   if (categories.length === 0) {
   //     loadCategories();
   //   }
   // }, [categories.length]); // Removed loadCategories from dependencies to prevent infinite loop
-  
+
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
   const [dayWorkouts, setDayWorkouts] = useState<DayWorkout[]>(
@@ -76,7 +77,7 @@ export default function EditRoutineModal({
       workouts: [],
     }))
   );
-  
+
   // Exercise selection state
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
@@ -111,25 +112,25 @@ export default function EditRoutineModal({
         setRoutineName(routine.name);
         setDifficulty(routine.difficulty);
         setDurationWeeks(routine.duration_weeks);
-        
+
         // Fetch full routine details with workout data
         try {
           setLoadingRoutineData(true);
-          
+
           // Use appropriate method based on routine type
-          console.log('🔍 [EDIT MODAL] Fetching routine data:', {
+          DebugUtils.log('🔍 [EDIT MODAL] Fetching routine data:', {
             routineId: routine.id,
             routineName: routine.name,
             isTemplate: routine.is_template,
             method: routine.is_template ? 'getTemplateRoutine' : 'getRoutine'
           });
-          
-          const fullRoutine = routine.is_template 
+
+          const fullRoutine = routine.is_template
             ? await routineService.getTemplateRoutine(routine.id)
             : await routineService.getRoutine(routine.id);
-            
-          console.log('🔍 [EDIT MODAL] Full routine data:', fullRoutine);
-          
+
+          DebugUtils.log('🔍 [EDIT MODAL] Full routine data:', fullRoutine);
+
           // Convert routine workout schedule to dayWorkouts format
           const convertedDayWorkouts: DayWorkout[] = DAYS.map(day => ({
             day: day.toLowerCase(),
@@ -138,16 +139,16 @@ export default function EditRoutineModal({
           }));
 
           if (fullRoutine.workout_schedule && fullRoutine.workout_schedule.length > 0) {
-            console.log('🔍 [EDIT MODAL] Workout schedule found:', fullRoutine.workout_schedule);
+            DebugUtils.log('🔍 [EDIT MODAL] Workout schedule found:', fullRoutine.workout_schedule);
             fullRoutine.workout_schedule.forEach((workoutDay, dayIdx) => {
-              console.log(`🔍 [EDIT MODAL] Processing day ${dayIdx}:`, workoutDay);
-              console.log(`🔍 [EDIT MODAL] Day exercises:`, workoutDay.exercises);
-              console.log(`🔍 [EDIT MODAL] Is exercises array?`, Array.isArray(workoutDay.exercises));
-              
+              DebugUtils.log(`🔍 [EDIT MODAL] Processing day ${dayIdx}:`, workoutDay);
+              DebugUtils.log(`🔍 [EDIT MODAL] Day exercises:`, workoutDay.exercises);
+              DebugUtils.log(`🔍 [EDIT MODAL] Is exercises array?`, Array.isArray(workoutDay.exercises));
+
               // Match day name to DAYS array
               const dayIndex = DAYS.findIndex(d => d.toLowerCase() === workoutDay.day.toLowerCase());
-              console.log(`🔍 [EDIT MODAL] Day match for "${workoutDay.day}":`, dayIndex);
-              
+              DebugUtils.log(`🔍 [EDIT MODAL] Day match for "${workoutDay.day}":`, dayIndex);
+
               if (dayIndex !== -1) {
                 if (workoutDay.exercises && Array.isArray(workoutDay.exercises)) {
                   convertedDayWorkouts[dayIndex].workouts = (workoutDay.exercises as unknown[]).map((exercise: unknown, index: number) => ({
@@ -162,17 +163,17 @@ export default function EditRoutineModal({
                     },
                   })) as Workout[];
                 } else {
-                  console.log(`🔍 [EDIT MODAL] No exercises array for day ${workoutDay.day}`);
+                  DebugUtils.log(`🔍 [EDIT MODAL] No exercises array for day ${workoutDay.day}`);
                 }
               } else {
-                console.log(`🔍 [EDIT MODAL] Day ${workoutDay.day} not found in DAYS array`);
+                DebugUtils.log(`🔍 [EDIT MODAL] Day ${workoutDay.day} not found in DAYS array`);
               }
             });
           } else {
-            console.log('🔍 [EDIT MODAL] No workout schedule found');
+            DebugUtils.log('🔍 [EDIT MODAL] No workout schedule found');
           }
 
-          console.log('🔍 [EDIT MODAL] Final converted day workouts:', convertedDayWorkouts);
+          DebugUtils.log('🔍 [EDIT MODAL] Final converted day workouts:', convertedDayWorkouts);
           setDayWorkouts(convertedDayWorkouts);
         } catch {
           // Silent error handling - no console logging to prevent Expo Go notifications
@@ -213,7 +214,7 @@ export default function EditRoutineModal({
     const loadExercises = async () => {
       try {
         setLoadingExercises(true);
-        const response = await apiClient.get('/health/exercises/all?limit=500');
+        const response = await api.get('/health/exercises/all?limit=500');
         setAllExercises(response.data.exercises || []);
         setFilteredExercises(response.data.exercises || []);
       } catch {
@@ -242,20 +243,20 @@ export default function EditRoutineModal({
       filtered = filtered.filter(exercise =>
         exercise.name.toLowerCase().includes(searchTerm)
       );
-      
+
       // Sort by relevance: exact matches first, then partial matches
       filtered.sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        
+
         // Exact match gets highest priority
         if (aName === searchTerm && bName !== searchTerm) return -1;
         if (bName === searchTerm && aName !== searchTerm) return 1;
-        
+
         // Starts with search term gets second priority
         if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
         if (bName.startsWith(searchTerm) && !aName.startsWith(searchTerm)) return 1;
-        
+
         // Then alphabetical order
         return aName.localeCompare(bName);
       });
@@ -350,14 +351,14 @@ export default function EditRoutineModal({
         }));
 
       await routineService.updateRoutineWithWorkoutPlan(routine.id, routineData, workoutDaysForAPI);
-      
+
       showToast.success('Success!', `Routine "${routineName}" updated with ${totalWorkouts} workouts`);
       resetForm();
       onClose();
       onRoutineUpdated();
     } catch (err: unknown) {
       // Silent error handling - no console logging to prevent Expo Go notifications
-      const errorMessage = err && typeof err === 'object' && 'response' in err 
+      const errorMessage = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
         : err && typeof err === 'object' && 'message' in err
         ? (err as { message: string }).message
@@ -565,9 +566,9 @@ export default function EditRoutineModal({
               >
                 <Ionicons name="chevron-back" size={20} color="#6b7280" />
               </TouchableOpacity>
-              
+
               <Text style={styles.currentDay}>{dayWorkouts[currentDay].dayName}</Text>
-              
+
               <TouchableOpacity
                 style={styles.dayNavButton}
                 onPress={() => {

@@ -10,10 +10,12 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { OnboardingData, HealthData } from '../../services/onboardingService';
+import { OnboardingData, HealthData } from '../../services/OnboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface EditPreferencesModalProps {
   visible: boolean;
@@ -62,19 +64,19 @@ export default function EditPreferencesModal({
     gender: 'male',
     activityLevel: 'moderate',
   });
-  
+
   const [goals, setGoals] = useState<string[]>([]);
   const [preferences, setPreferences] = useState({
     notifications: true,
     reminders: true,
     dataSharing: false,
   });
-  
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (visible && initialData) {
-      console.log('📝 EditPreferencesModal: Populating with data:', initialData);
+      DebugUtils.log('📝 EditPreferencesModal: Populating with data:', initialData);
       setHealthData(initialData.healthData || {
         age: '',
         height: '',
@@ -89,7 +91,7 @@ export default function EditPreferencesModal({
         dataSharing: false,
       });
     } else if (visible && !initialData) {
-      console.log('📝 EditPreferencesModal: No initial data available, using defaults');
+      DebugUtils.log('📝 EditPreferencesModal: No initial data available, using defaults');
     }
   }, [visible, initialData]);
 
@@ -129,8 +131,8 @@ export default function EditPreferencesModal({
   };
 
   const toggleGoal = (goal: string) => {
-    setGoals(prev => 
-      prev.includes(goal) 
+    setGoals(prev =>
+      prev.includes(goal)
         ? prev.filter(g => g !== goal)
         : [...prev, goal]
     );
@@ -155,8 +157,8 @@ export default function EditPreferencesModal({
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
           <Text style={styles.title}>Edit Preferences</Text>
-          <TouchableOpacity 
-            onPress={handleSave} 
+          <TouchableOpacity
+            onPress={handleSave}
             style={[styles.saveButton, loading && styles.saveButtonDisabled]}
             disabled={loading}
           >
@@ -168,7 +170,7 @@ export default function EditPreferencesModal({
           {/* Health Data Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Health Information</Text>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Age</Text>
               <TextInput
@@ -268,7 +270,7 @@ export default function EditPreferencesModal({
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Health Goals</Text>
             <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-            
+
             <View style={styles.goalsGrid}>
               {GOAL_OPTIONS.map((goal) => (
                 <TouchableOpacity
@@ -295,7 +297,7 @@ export default function EditPreferencesModal({
           {/* Preferences Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>App Preferences</Text>
-            
+
             <View style={styles.preferenceItem}>
               <View style={styles.preferenceInfo}>
                 <Text style={styles.preferenceTitle}>Push Notifications</Text>

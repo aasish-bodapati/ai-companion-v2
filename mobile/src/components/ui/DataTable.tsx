@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
 export type DataTableSize = 'small' | 'medium' | 'large';
 export type DataTableVariant = 'default' | 'minimal' | 'bordered' | 'striped';
@@ -27,54 +27,54 @@ export interface DataTableColumn<T = any> {
   filterable?: boolean;
   render?: (value: any, record: T, index: number) => React.ReactNode;
   sorter?: (a: T, b: T) => number;
-  filterOptions?: Array<{ label: string; value: any }>;
+  filterOptions?: { label: string; value: any }[];
 }
 
 export interface DataTableProps<T = any> {
   // Core props
   data: T[];
   columns: DataTableColumn<T>[];
-  
+
   // Configuration
   size?: DataTableSize;
   variant?: DataTableVariant;
   loading?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
-  
+
   // Selection
   selectable?: boolean;
   selectedRowKeys?: string[];
   onSelectionChange?: (selectedKeys: string[], selectedRows: T[]) => void;
   rowKey?: string | ((record: T) => string);
-  
+
   // Sorting
   sortable?: boolean;
   defaultSortKey?: string;
   defaultSortDirection?: SortDirection;
   onSortChange?: (key: string, direction: SortDirection) => void;
-  
+
   // Filtering
   filterable?: boolean;
   onFilterChange?: (filters: Record<string, any>) => void;
-  
+
   // Pagination
   pagination?: boolean;
   pageSize?: number;
   currentPage?: number;
   onPageChange?: (page: number) => void;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   headerStyle?: ViewStyle;
   rowStyle?: ViewStyle;
   cellStyle?: ViewStyle;
   headerCellStyle?: ViewStyle;
-  
+
   // Behavior
   onRowPress?: (record: T, index: number) => void;
   onRowLongPress?: (record: T, index: number) => void;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   testID?: string;
@@ -134,21 +134,21 @@ export default function DataTable<T = any>({
     const sorted = [...data].sort((a, b) => {
       const aValue = (a as any)[column.dataIndex];
       const bValue = (b as any)[column.dataIndex];
-      
+
       if (column.sorter) {
         return column.sorter(a, b);
       }
-      
+
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortDirection === 'asc' 
+        return sortDirection === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
+
       if (typeof aValue === 'number' && typeof bValue === 'number') {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
-      
+
       return 0;
     });
 
@@ -163,7 +163,7 @@ export default function DataTable<T = any>({
       return Object.entries(filters).every(([key, value]) => {
         if (value === null || value === undefined || value === '') return true;
         const recordValue = (record as any)[key];
-        return recordValue === value || 
+        return recordValue === value ||
                (typeof recordValue === 'string' && recordValue.toLowerCase().includes(value.toLowerCase()));
       });
     });
@@ -172,7 +172,7 @@ export default function DataTable<T = any>({
   // Paginate data
   const paginatedData = useMemo(() => {
     if (!pagination) return filteredData;
-    
+
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     return filteredData.slice(startIndex, endIndex);
@@ -184,7 +184,7 @@ export default function DataTable<T = any>({
     if (!column || !column.sortable) return;
 
     let newDirection: SortDirection = 'asc';
-    
+
     if (sortKey === key) {
       if (sortDirection === 'asc') newDirection = 'desc';
       else if (sortDirection === 'desc') newDirection = 'none';
@@ -201,7 +201,7 @@ export default function DataTable<T = any>({
 
     const key = getRowKey(record, index);
     const isSelected = selectedRowKeys.includes(key);
-    
+
     let newSelectedKeys: string[];
     if (isSelected) {
       newSelectedKeys = selectedRowKeys.filter(k => k !== key);
@@ -224,11 +224,11 @@ export default function DataTable<T = any>({
   // Render cell content
   const renderCellContent = useCallback((column: DataTableColumn<T>, record: T, index: number) => {
     const value = (record as any)[column.dataIndex];
-    
+
     if (column.render) {
       return column.render(value, record, index);
     }
-    
+
     return (
       <Text style={[styles.cellText, getCellTextStyle()]}>
         {value?.toString() || ''}
@@ -239,7 +239,7 @@ export default function DataTable<T = any>({
   // Get styles based on size and variant
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     switch (size) {
       case 'small':
         baseStyles.push(styles.containerSmall);
@@ -251,7 +251,7 @@ export default function DataTable<T = any>({
         baseStyles.push(styles.containerLarge);
         break;
     }
-    
+
     switch (variant) {
       case 'minimal':
         baseStyles.push(styles.containerMinimal);
@@ -266,7 +266,7 @@ export default function DataTable<T = any>({
         baseStyles.push(styles.containerDefault);
         break;
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
     return baseStyles;
   };
@@ -279,45 +279,45 @@ export default function DataTable<T = any>({
 
   const getRowStyles = (index: number, isSelected: boolean): ViewStyle[] => {
     const baseStyles = [styles.row];
-    
+
     if (variant === 'striped' && index % 2 === 1) {
       baseStyles.push(styles.rowStriped);
     }
-    
+
     if (isSelected) {
       baseStyles.push(styles.rowSelected);
     }
-    
+
     if (rowStyle) baseStyles.push(rowStyle);
     return baseStyles;
   };
 
   const getCellStyles = (column: DataTableColumn<T>): ViewStyle[] => {
     const baseStyles = [styles.cell];
-    
+
     if (column.width) {
       baseStyles.push({ width: column.width });
     }
-    
+
     if (column.align) {
       baseStyles.push(styles[`cellAlign_${column.align}`]);
     }
-    
+
     if (cellStyle) baseStyles.push(cellStyle);
     return baseStyles;
   };
 
   const getHeaderCellStyles = (column: DataTableColumn<T>): ViewStyle[] => {
     const baseStyles = [styles.headerCell];
-    
+
     if (column.width) {
       baseStyles.push({ width: column.width });
     }
-    
+
     if (column.align) {
       baseStyles.push(styles[`cellAlign_${column.align}`]);
     }
-    
+
     if (headerCellStyle) baseStyles.push(headerCellStyle);
     return baseStyles;
   };
@@ -337,19 +337,19 @@ export default function DataTable<T = any>({
 
   const getSortIcon = (column: DataTableColumn<T>) => {
     if (!column.sortable) return null;
-    
+
     if (sortKey !== column.key) {
       return <Ionicons name="swap-vertical" size={16} color={COLORS.text.disabled} />;
     }
-    
+
     if (sortDirection === 'asc') {
       return <Ionicons name="chevron-up" size={16} color={COLORS.primary.main} />;
     }
-    
+
     if (sortDirection === 'desc') {
       return <Ionicons name="chevron-down" size={16} color={COLORS.primary.main} />;
     }
-    
+
     return <Ionicons name="swap-vertical" size={16} color={COLORS.text.disabled} />;
   };
 
@@ -397,7 +397,7 @@ export default function DataTable<T = any>({
       >
         {paginatedData.map((record, index) => {
           const isSelected = isRowSelected(record, index);
-          
+
           return (
             <TouchableOpacity
               key={getRowKey(record, index)}
@@ -416,7 +416,7 @@ export default function DataTable<T = any>({
                   {renderCellContent(column, record, index)}
                 </View>
               ))}
-              
+
               {selectable && (
                 <View style={styles.selectionIndicator}>
                   <Ionicons

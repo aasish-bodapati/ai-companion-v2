@@ -17,7 +17,7 @@ interface FormModalProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  
+
   // Action buttons
   primaryAction?: {
     label: string;
@@ -30,23 +30,23 @@ interface FormModalProps {
     onPress: () => void;
     variant?: 'outline' | 'ghost';
   };
-  
+
   // Modal configuration
   variant?: 'default' | 'bottomSheet' | 'fullScreen' | 'centered';
   size?: 'small' | 'medium' | 'large' | 'full';
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
-  
+
   // Form state
   loading?: boolean;
   isFormValid?: boolean;
   scrollEnabled?: boolean;
-  
+
   // Custom styling
   contentStyle?: Record<string, unknown>;
   headerStyle?: Record<string, unknown>;
   footerStyle?: Record<string, unknown>;
-  
+
   testID?: string;
 }
 
@@ -74,11 +74,11 @@ export default function FormModal({
 
   const handlePrimaryAction = async () => {
     if (!primaryAction || actionLoading || loading) return;
-    
+
     try {
       setActionLoading(true);
       hapticFeedback.light();
-      
+
       const result = primaryAction.onPress();
       if (result instanceof Promise) {
         await result;
@@ -93,7 +93,7 @@ export default function FormModal({
 
   const handleSecondaryAction = () => {
     if (!secondaryAction || actionLoading || loading) return;
-    
+
     hapticFeedback.light();
     secondaryAction.onPress();
   };
@@ -111,10 +111,10 @@ export default function FormModal({
   const getPrimaryButtonStyle = () => {
     const variant = primaryAction?.variant || 'primary';
     const disabled = isPrimaryDisabled();
-    
+
     let backgroundColor = COLORS.primary.main;
     let textColor = COLORS.text.inverse;
-    
+
     switch (variant) {
       case 'success':
         backgroundColor = COLORS.success;
@@ -128,7 +128,7 @@ export default function FormModal({
       default:
         backgroundColor = COLORS.primary.main;
     }
-    
+
     return {
       button: [
         styles.primaryButton,
@@ -145,14 +145,14 @@ export default function FormModal({
 
   const getSecondaryButtonStyle = () => {
     const variant = secondaryAction?.variant || 'outline';
-    
+
     if (variant === 'ghost') {
       return {
         button: styles.ghostButton,
         text: styles.ghostButtonText,
       };
     }
-    
+
     return {
       button: styles.secondaryButton,
       text: styles.secondaryButtonText,
@@ -161,7 +161,7 @@ export default function FormModal({
 
   const renderFooter = () => {
     if (!primaryAction && !secondaryAction) return null;
-    
+
     return (
       <View style={[styles.footer, footerStyle]}>
         <View style={styles.actionButtons}>
@@ -176,7 +176,7 @@ export default function FormModal({
               </Text>
             </TouchableOpacity>
           )}
-          
+
           {primaryAction && (
             <TouchableOpacity
               style={[styles.actionButton, getPrimaryButtonStyle().button]}
@@ -184,8 +184,8 @@ export default function FormModal({
               disabled={isPrimaryDisabled()}
             >
               {actionLoading ? (
-                <ActivityIndicator 
-                  size="small" 
+                <ActivityIndicator
+                  size="small"
                   color={COLORS.text.inverse}
                   style={styles.buttonLoader}
                 />
@@ -214,7 +214,7 @@ export default function FormModal({
       testID={testID}
     >
       <View style={styles.container}>
-        <ScrollView 
+        <ScrollView
           style={[styles.scrollView, contentStyle]}
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
     ...MIXINS.buttonBase,
     minHeight: 48,
   },
-  
+
   // Primary button styles
   primaryButton: {
     backgroundColor: COLORS.primary.main,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: FONT_SIZE.lg,
   },
-  
+
   // Secondary button styles
   secondaryButton: {
     backgroundColor: COLORS.background.primary,
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: FONT_SIZE.lg,
   },
-  
+
   // Ghost button styles
   ghostButton: {
     backgroundColor: 'transparent',
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: FONT_SIZE.lg,
   },
-  
+
   // Disabled states
   disabledButton: {
     opacity: 0.5,
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
   disabledButtonText: {
     color: COLORS.text.tertiary,
   },
-  
+
   buttonLoader: {
     marginRight: SPACING.sm,
   },

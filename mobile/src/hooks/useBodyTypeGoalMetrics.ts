@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import { useAuth } from '../contexts/AuthContext';
-import { nutritionService } from '../services/nutritionService';
-import { fitnessService } from '../services/fitnessService';
-import { simpleWaterService } from '../services/simpleWaterService';
-import stepTrackingService from '../services/stepTrackingService';
+import { nutritionService } from '../services/api';
+import { fitnessService } from '../services/api';
+import { simpleWaterService } from '../services/api';
+import { stepTrackingService } from '../services/StepTrackingService';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface BodyTypeGoalMetrics {
   goalName: string;
@@ -72,17 +75,16 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     try {
       isLoadingRef.current = true;
       setMetrics(prev => ({ ...prev, loading: true }));
-      
+
       // Get today's date in user's timezone
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
-      
+
       // Get this week's date range
       const weekStart = new Date(today);
       weekStart.setDate(today.getDate() - 6);
       const weekStartStr = weekStart.toISOString().split('T')[0];
-      
-      
+
       // Fetch data in parallel
       const [todayNutrition, weekNutrition, todayFitness, weekFitness, waterStats] = await Promise.all([
         nutritionService.getNutritionLogs({ start_date: todayStr, end_date: todayStr }),
@@ -92,22 +94,21 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         simpleWaterService.getTodayStats().catch(() => null),
       ]);
 
-
       // Calculate daily score (0-100) - now async for step tracking
       const dailyScore = await calculateDailyScore(todayNutrition, todayFitness, waterStats);
-      
+
       // Calculate weekly alignment (0-100) - now async for step tracking
       const weeklyAlignment = await calculateWeeklyAlignment(weekNutrition, weekFitness, waterStats);
-      
+
       // Calculate weekly trend
       const weeklyTrend = calculateWeeklyTrend(weekNutrition, weekFitness);
-      
+
       // Calculate alignment direction
       const alignment = calculateAlignment(weeklyAlignment, 75); // 75% is target
-      
+
       // Generate smart suggestions - now async for step tracking
       const suggestions = await generateSuggestions(todayNutrition, todayFitness, waterStats, dailyScore);
-      
+
       // Determine goal name based on user's body type goal
       const goalName = getUserGoalName();
 
@@ -121,9 +122,8 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         loading: false,
       });
 
-
     } catch (error) {
-      console.error('🎯 [BODY TYPE METRICS] Error loading metrics:', error);
+      DebugUtils.error('🎯 [BODY TYPE METRICS] Error loading metrics:', error);
       setMetrics(prev => ({ ...prev, loading: false }));
     } finally {
       isLoadingRef.current = false;
@@ -132,20 +132,20 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
 
   useEffect(() => {
     if (!user?.id) return;
-    
+
     // Prevent multiple calls if already loading or already initialized
     if (isLoadingRef.current || hasInitializedRef.current) {
       return;
     }
-    
+
     // Mark as initialized
     hasInitializedRef.current = true;
-    
+
     // Add a longer delay to prevent frequent calls
     const timer = setTimeout(() => {
       loadBodyTypeMetrics();
     }, 2000); // Load after 2 second delay
-    
+
     return () => {
       clearTimeout(timer);
     };
@@ -159,11 +159,11 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     if (nutrition && nutrition.length > 0) {
       const totalCalories = nutrition.reduce((sum, meal) => sum + (meal.total_calories || 0), 0);
       const totalProtein = nutrition.reduce((sum, meal) => sum + (meal.protein_g || 0), 0);
-      
+
       // Score based on calorie and protein intake (simplified)
       const calorieScore = Math.min(100, (totalCalories / 2000) * 100); // 2000 cal target
       const proteinScore = Math.min(100, (totalProtein / 150) * 100); // 150g protein target
-      
+
       score += (calorieScore + proteinScore) / 2 * 0.35;
       factors += 0.35;
     }
@@ -206,7 +206,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         return stepsScore;
       }
     } catch (error) {
-      console.error('🚶 Error calculating activity score from steps:', error);
+      DebugUtils.error('🚶 Error calculating activity score from steps:', error);
     }
 
     // If no activity at all, return 0
@@ -225,17 +225,17 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
       if (!stepTrackingService.isCurrentlyTracking()) {
         const started = await stepTrackingService.startTracking();
         if (!started) {
-          console.log('🚶 Failed to start step tracking');
+          DebugUtils.log('🚶 Failed to start step tracking');
           return 0;
         }
       }
 
       // Get today's steps
       const steps = await stepTrackingService.getTodaySteps();
-      console.log('🚶 Today steps from service:', steps);
+      DebugUtils.log('🚶 Today steps from service:', steps);
       return steps;
     } catch (error) {
-      console.error('🚶 Error getting today steps:', error);
+      DebugUtils.error('🚶 Error getting today steps:', error);
       // Return 0 on error to prevent breaking the scoring system
       return 0;
     }
@@ -249,10 +249,10 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     if (nutrition && nutrition.length > 0) {
       const avgCalories = nutrition.reduce((sum, meal) => sum + (meal.total_calories || 0), 0) / nutrition.length;
       const avgProtein = nutrition.reduce((sum, meal) => sum + (meal.protein_g || 0), 0) / nutrition.length;
-      
+
       const calorieAlignment = Math.min(100, (avgCalories / 2000) * 100);
       const proteinAlignment = Math.min(100, (avgProtein / 150) * 100);
-      
+
       alignment += (calorieAlignment + proteinAlignment) / 2 * 0.35;
       factors += 0.35;
     }
@@ -285,7 +285,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     // Simple trend calculation based on recent activity
     const recentDays = 3;
     const olderDays = 4;
-    
+
     if (nutrition.length < 2 || fitness.length < 2) {
       return 'stable';
     }
@@ -293,7 +293,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     // Compare recent vs older activity
     const recentNutrition = nutrition.slice(-recentDays);
     const olderNutrition = nutrition.slice(0, olderDays);
-    
+
     const recentFitness = fitness.slice(-recentDays);
     const olderFitness = fitness.slice(0, olderDays);
 
@@ -308,7 +308,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
   const calculateAlignment = (currentAlignment: number, targetAlignment: number): 'closer' | 'further' | 'same' => {
     const threshold = 5; // 5% threshold for change
     const difference = currentAlignment - targetAlignment;
-    
+
     if (Math.abs(difference) < threshold) return 'same';
     return difference > 0 ? 'closer' : 'further';
   };
@@ -324,7 +324,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     const waterData = analyzeWaterData(waterStats);
 
     // HIGH PRIORITY SUGGESTIONS (Critical gaps)
-    
+
     // 1. Nutrition Critical Gaps
     if (nutritionData.calorieGap > 500) {
       suggestions.push({
@@ -333,7 +333,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
         category: 'nutrition'
       });
     }
-    
+
     if (nutritionData.proteinGap > 30) {
       suggestions.push({
         text: `Add ${Math.round(nutritionData.proteinGap)}g more protein - try ${getProteinSuggestions(nutritionData.proteinGap)}`,
@@ -362,7 +362,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }
 
     // MEDIUM PRIORITY SUGGESTIONS (Improvements)
-    
+
     // 4. Goal-Specific Nutrition
     if (nutritionData.calorieGap <= 500 && nutritionData.calorieGap > 200) {
       const goalSpecificSuggestion = getGoalSpecificNutritionSuggestion(goalName, nutritionData);
@@ -395,7 +395,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     }
 
     // LOW PRIORITY SUGGESTIONS (Optimizations)
-    
+
     // 7. Performance Boosts
     if (dailyScore >= 70 && dailyScore < 90) {
       suggestions.push({
@@ -445,7 +445,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
 
     const totalCalories = nutrition.reduce((sum, meal) => sum + (meal.total_calories || 0), 0);
     const totalProtein = nutrition.reduce((sum, meal) => sum + (meal.protein_g || 0), 0);
-    
+
     return {
       totalCalories,
       totalProtein,
@@ -457,7 +457,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
 
   const analyzeFitnessData = async (fitness: FitnessLog[]): Promise<FitnessData> => {
     const stepsToday = await getStepsToday(); // Real step data
-    
+
     return {
       workoutCount: fitness?.length || 0,
       hasStrengthWorkout: fitness?.some(w => w.activity_type === 'strength') || false,
@@ -471,12 +471,12 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
     if (!waterStats) {
       return { currentIntake: 0, deficit: 3000, percentage: 0 };
     }
-    
+
     const currentIntake = waterStats.total_ml_today || 0;
     const target = 3000; // 3L target
     const deficit = Math.max(0, target - currentIntake);
     const percentage = (currentIntake / target) * 100;
-    
+
     return { currentIntake, deficit, percentage };
   };
 
@@ -495,7 +495,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
 
   const getWorkoutSuggestion = (goalName: string, currentHour: number): string => {
     const timeContext = currentHour < 12 ? "morning" : currentHour < 18 ? "afternoon" : "evening";
-    
+
     switch (goalName) {
       case 'Strong & Steady':
         return `Start your ${timeContext} with a strength workout - try squats, push-ups, or planks`;
@@ -510,7 +510,7 @@ export function useBodyTypeGoalMetrics(): BodyTypeGoalMetrics {
 
   const getActivitySuggestion = (goalName: string, currentHour: number, stepsToday: number): string => {
     const timeContext = currentHour < 12 ? "morning" : currentHour < 18 ? "afternoon" : "evening";
-    
+
     if (stepsToday > 0 && stepsToday < 5000) {
       return `You're at ${stepsToday.toLocaleString()} steps - aim for 10,000 today! Try a ${timeContext} walk`;
     } else if (stepsToday === 0) {

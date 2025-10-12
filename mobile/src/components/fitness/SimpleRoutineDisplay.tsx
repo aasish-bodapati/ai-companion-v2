@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SimpleRoutineWithProgress } from '../../services/routineService';
+import { SimpleRoutineWithProgress } from '../../services/RoutineService';
 import RoutineDetailsModal from './RoutineDetailsModal';
 import { DifficultyBadge } from '../ui/Badge';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface SimpleRoutineDisplayProps {
   routines: SimpleRoutineWithProgress[];
@@ -14,9 +19,9 @@ interface SimpleRoutineDisplayProps {
   settingActiveRoutine?: number | null;
 }
 
-export default function SimpleRoutineDisplay({ 
-  routines, 
-  onRoutineSelect, 
+export default function SimpleRoutineDisplay({
+  routines,
+  onRoutineSelect,
   onCreateRoutine,
   onSetActive,
   activeRoutineId,
@@ -26,13 +31,13 @@ export default function SimpleRoutineDisplay({
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Debug: Log routines to see what we're getting
-  console.log('🔍 SimpleRoutineDisplay - routines:', routines, 'type:', typeof routines, 'isArray:', Array.isArray(routines));
+  DebugUtils.log('🔍 SimpleRoutineDisplay - routines:', routines, 'type:', typeof routines, 'isArray:', Array.isArray(routines));
 
   // Handle both array and paginated response formats
-  const safeRoutines = Array.isArray(routines) 
-    ? routines 
-    : (routines && routines.routines) 
-      ? routines.routines 
+  const safeRoutines = Array.isArray(routines)
+    ? routines
+    : (routines && routines.routines)
+      ? routines.routines
       : [];
 
   const handleRoutinePress = (routine: SimpleRoutineWithProgress) => {
@@ -46,14 +51,12 @@ export default function SimpleRoutineDisplay({
     setSelectedRoutine(null);
   };
 
-
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Workout Routines</Text>
-        <TouchableOpacity 
-          style={styles.createButton} 
+        <TouchableOpacity
+          style={styles.createButton}
           onPress={onCreateRoutine}
         >
           <Ionicons name="add-circle-outline" size={20} color="#fff" />
@@ -99,7 +102,7 @@ export default function SimpleRoutineDisplay({
                     <Text style={styles.detailText}>{routine.total_workouts_per_week}/week</Text>
                   </View>
                 </View>
-                
+
                 {/* Action Buttons - Now inline with details */}
                 <View style={styles.actionButtons}>
                   {activeRoutineId === routine.id ? (
@@ -113,7 +116,7 @@ export default function SimpleRoutineDisplay({
                       <Text style={styles.loadingText}>Setting...</Text>
                     </View>
                   ) : (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.setActiveButton}
                       onPress={() => {
                         onSetActive?.(routine);
@@ -149,7 +152,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: SPACING.md,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -157,15 +160,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.primary.main,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
   },
   createButtonText: {
     color: '#fff',
@@ -179,24 +182,24 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '600',
     color: '#374151',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyDescription: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
   },
   routineList: {
-    padding: 16,
+    padding: SPACING.md,
   },
   routineCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: 14,
     marginBottom: 12,
     borderWidth: 1,
@@ -218,15 +221,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   routineName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
     lineHeight: 22,
   },
   routineDescription: {
     fontSize: 13,
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     lineHeight: 18,
   },
   routineMeta: {
@@ -246,12 +249,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f4ff',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
     borderColor: '#e0e7ff',
   },
   setActiveText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '500',
     color: '#3b82f6',
     marginLeft: 2,
@@ -262,12 +265,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0fdf4',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
     borderColor: '#bbf7d0',
   },
   activeText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '500',
     color: '#10b981',
     marginLeft: 2,
@@ -278,14 +281,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
     paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   loadingText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginLeft: 2,
   },
   routineDetails: {
@@ -299,8 +302,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginLeft: 4,
     fontWeight: '500',
   },
@@ -310,7 +313,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   exercisePreviewTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
@@ -320,25 +323,25 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   exerciseItem: {
-    fontSize: 12,
-    color: '#6b7280',
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
+    backgroundColor: COLORS.background.tertiary,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
     borderRadius: 6,
     marginRight: 6,
     marginBottom: 4,
   },
   moreExercises: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     fontStyle: 'italic',
   },
   dayWorkouts: {
     marginBottom: 8,
   },
   dayName: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 4,

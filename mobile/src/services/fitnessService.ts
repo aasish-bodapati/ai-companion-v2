@@ -1,6 +1,9 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 import { getTodayLocal } from '../utils/dateUtils';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface FitnessLog {
   id: number;
@@ -108,16 +111,16 @@ class FitnessService extends BaseService {
   }): Promise<FitnessLog[]> {
     // Convert string dates to datetime objects for the API
     const apiParams = this.getPaginationParams(params);
-    
+
     return this.makeRequest(
-      () => apiClient.get('/health/logging/fitness', { params: apiParams }),
+      () => api.get('/api/v1/health/logging/fitness', { params: apiParams }),
       'FITNESS SERVICE - getFitnessLogs'
     );
   }
 
   async getRecentWorkouts(limit: number = 5): Promise<FitnessLog[]> {
     return this.makeRequest(
-      () => apiClient.get('/health/logging/fitness', {
+      () => api.get('/api/v1/health/logging/fitness', {
         params: { size: limit, page: 1 }
       }),
       'FITNESS SERVICE - getRecentWorkouts'
@@ -128,18 +131,18 @@ class FitnessService extends BaseService {
     try {
       // Use user's timezone for today's date calculation
       const today = new Date().toLocaleDateString("en-CA", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone });
-      const logs = await this.getFitnessLogs({ 
-        start_date: today, 
-        end_date: today 
+      const logs = await this.getFitnessLogs({
+        start_date: today,
+        end_date: today
       });
-      
+
       const summary: WorkoutSummary = {
         workouts: logs.length,
         total_duration: logs.reduce((sum: number, log: FitnessLog) => sum + (log.duration_minutes || 0), 0),
         calories_burned: logs.reduce((sum: number, log: FitnessLog) => sum + (log.calories_burned || 0), 0),
         avg_intensity: logs.length > 0 ? logs[0].intensity || 'medium' : 'medium'
       };
-      
+
       return summary;
     } catch (error) {
       this.handleError(error, 'FITNESS SERVICE - getTodayWorkoutSummary');
@@ -171,16 +174,16 @@ class FitnessService extends BaseService {
   }): Promise<FitnessLog> {
     // Create a unique key for this workout to prevent duplicates
     const workoutKey = `${workoutData.activity_type}_${workoutData.activity_name}_${workoutData.duration_minutes}_${workoutData.exercises}`;
-    
+
     // Check if this exact workout is already being processed
     if (this.pendingRequests.has(workoutKey)) {
-      console.log('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
+      DebugUtils.log('🚫 [FITNESS SERVICE] Duplicate workout request blocked:', workoutKey);
       throw new Error('Workout is already being processed. Please wait.');
     }
 
     // Add to pending requests
     this.pendingRequests.add(workoutKey);
-    
+
     try {
       // Add timezone information to the request
       const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
@@ -188,10 +191,10 @@ class FitnessService extends BaseService {
         ...workoutData,
         timezone_offset: timezoneOffset
       };
-      
-      console.log('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
+
+      DebugUtils.log('🔍 [FITNESS SERVICE] Logging workout with data:', JSON.stringify(workoutDataWithTimezone, null, 2));
       const result = await this.makeRequest(
-        () => apiClient.post('/health/logging/fitness', workoutDataWithTimezone),
+        () => api.post('/api/v1/health/logging/fitness', workoutDataWithTimezone),
         'FITNESS SERVICE - logWorkout'
       );
       return result;
@@ -203,21 +206,21 @@ class FitnessService extends BaseService {
 
   async updateWorkout(id: number, workoutData: Partial<FitnessLog>): Promise<FitnessLog> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/fitness/${id}`, workoutData),
+      () => api.put(`/health/logging/fitness/${id}`, workoutData),
       'FITNESS SERVICE - updateWorkout'
     );
   }
 
   async deleteWorkout(id: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.delete(`/health/logging/fitness/${id}`),
+      () => api.delete(`/health/logging/fitness/${id}`),
       'FITNESS SERVICE - deleteWorkout'
     );
   }
 
   async getExerciseTypes(): Promise<ExerciseType[]> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/exercises/all?limit=1000'),
+      () => api.get('/api/v1/health/exercises/all?limit=1000'),
       'FITNESS SERVICE - getExerciseTypes'
     );
     return data.exercises || data;
@@ -231,7 +234,7 @@ class FitnessService extends BaseService {
   async getWorkoutStats(period: string): Promise<WorkoutStats> {
     // Get workout statistics for a given period using the correct endpoint
     const data = await this.makeRequest(
-      () => apiClient.get('/health/logging/fitness', {
+      () => api.get('/api/v1/health/logging/fitness', {
         params: { period: period, size: 50 }
       }),
       'FITNESS SERVICE - getWorkoutStats'
@@ -242,7 +245,7 @@ class FitnessService extends BaseService {
   async getRoutines(): Promise<unknown[]> {
     // Get user's fitness routines
     const data = await this.makeRequest(
-      () => apiClient.get('/health/simple-routines'),
+      () => api.get('/api/v1/health/simple-routines'),
       'FITNESS SERVICE - getRoutines'
     );
     return data.routines || data || [];
@@ -251,7 +254,7 @@ class FitnessService extends BaseService {
   async getFitnessStats(period: string = 'week'): Promise<WorkoutStats> {
     // Get fitness statistics using the correct endpoint
     const data = await this.makeRequest(
-      () => apiClient.get('/health/logging/fitness', {
+      () => api.get('/api/v1/health/logging/fitness', {
         params: { period: period, size: 50 }
       }),
       'FITNESS SERVICE - getFitnessStats'
@@ -261,19 +264,19 @@ class FitnessService extends BaseService {
 
   async getWorkoutCategories(): Promise<WorkoutCategory[]> {
     return this.makeRequest(
-      () => apiClient.get('/health/exercises/categories'),
+      () => api.get('/api/v1/health/exercises/categories'),
       'FITNESS SERVICE - getWorkoutCategories'
     );
   }
 
   async searchExercises(query: string): Promise<ExerciseType[]> {
     const response = await this.makeRequest(
-      () => apiClient.get('/health/exercises/search', {
+      () => api.get('/api/v1/health/exercises/search', {
         params: { q: query }
       }),
       'FITNESS SERVICE - searchExercises'
     );
-    
+
     // The API returns { exercises: [...] }, extract the exercises array
     return response.exercises || [];
   }
@@ -281,22 +284,22 @@ class FitnessService extends BaseService {
   async getLatestExerciseData(exerciseName: string): Promise<LatestExerciseData | null> {
     try {
       const response = await this.makeRequest(
-        () => apiClient.get('/health/fitness-logs/latest-exercise', {
+        () => api.get('/api/v1/health/fitness-logs/latest-exercise', {
           params: { exercise_name: exerciseName }
         }),
         'FITNESS SERVICE - getLatestExerciseData'
       );
-      
+
       // Check if response contains exercise data or just a message
       if (response.message) {
-        console.log(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
+        DebugUtils.log(`🔍 [FITNESS SERVICE] No previous data for exercise: ${exerciseName}`);
         return null;
       }
-      
-      console.log(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
+
+      DebugUtils.log(`✅ [FITNESS SERVICE] Found previous data for exercise: ${exerciseName}`, response);
       return response;
     } catch (error) {
-      console.error(`FITNESS SERVICE - getLatestExerciseData for ${exerciseName}:`, error);
+      DebugUtils.error(`FITNESS SERVICE - getLatestExerciseData for ${exerciseName}:`, error);
       return null;
     }
   }
@@ -304,16 +307,16 @@ class FitnessService extends BaseService {
   async isExerciseLoggedToday(exerciseName: string): Promise<boolean> {
     try {
       const response = await this.makeRequest(
-        () => apiClient.get('/health/fitness-logs/exercise-logged-today', {
+        () => api.get('/api/v1/health/fitness-logs/exercise-logged-today', {
           params: { exercise_name: exerciseName }
         }),
         'FITNESS SERVICE - isExerciseLoggedToday'
       );
-      
-      console.log(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
+
+      DebugUtils.log(`🔍 [FITNESS SERVICE] Exercise ${exerciseName} logged today:`, response.logged_today);
       return response.logged_today || false;
     } catch (error) {
-      console.error(`FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}:`, error);
+      DebugUtils.error(`FITNESS SERVICE - isExerciseLoggedToday for ${exerciseName}:`, error);
       return false;
     }
   }
@@ -326,7 +329,7 @@ class FitnessService extends BaseService {
     notes?: string;
   }): Promise<unknown> {
     return this.makeRequest(
-      () => apiClient.post('/health/logging/mood', {
+      () => api.post('/health/logging/mood', {
         ...moodData,
         log_date: getTodayLocal()
       }),

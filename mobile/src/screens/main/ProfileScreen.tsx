@@ -11,6 +11,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import ConfirmationDialog from '../../components/ui/ConfirmationDialog';
 import { confirmationDialogConfigs } from '../../components/ui/ConfirmationDialog.utils';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
@@ -153,8 +155,8 @@ const styles = StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.background.primary,
     marginBottom: 20,
   },
   avatar: {
@@ -170,48 +172,48 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   section: {
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
     marginHorizontal: 20,
   },
   profileItem: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
   profileItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
   },
   profileItemIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
+    borderRadius: BORDER_RADIUS.xxl,
+    backgroundColor: COLORS.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
   },
   profileItemTitle: {
     flex: 1,
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
 });

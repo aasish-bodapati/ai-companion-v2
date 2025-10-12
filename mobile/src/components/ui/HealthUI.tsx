@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
@@ -100,10 +102,10 @@ export function HealthIconButton({
       disabled={disabled}
       activeOpacity={0.7}
     >
-      <Ionicons 
-        name={icon as keyof typeof Ionicons.glyphMap} 
-        size={size} 
-        color={disabled ? COLORS.text.tertiary : color} // '#9ca3af' -> COLORS.text.tertiary 
+      <Ionicons
+        name={icon as keyof typeof Ionicons.glyphMap}
+        size={size}
+        color={disabled ? COLORS.text.tertiary : color} // '#9ca3af' -> COLORS.text.tertiary
       />
     </TouchableOpacity>
   );

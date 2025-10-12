@@ -1,6 +1,8 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
-import BaseModal, { modalConfigs } from '../BaseModal';
+import BaseModal from '../BaseModal';
+import { modalConfigs } from '../../../test-utils/testConfigs';
 
 describe('BaseModal', () => {
   it('renders correctly when visible', () => {

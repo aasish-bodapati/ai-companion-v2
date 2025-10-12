@@ -3,7 +3,6 @@
  * Can be used alongside existing loading components without breaking changes
  */
 
-import React from 'react';
 import {
   View,
   Text,
@@ -12,6 +11,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
@@ -92,17 +93,17 @@ export const SafeLoadingState = ({
           style={styles.spinner}
         />
       )}
-      
+
       <Text style={[styles.message, { fontSize: sizeStyles.fontSize }]}>
         {message}
       </Text>
-      
+
       {subMessage && (
         <Text style={styles.subMessage}>
           {subMessage}
         </Text>
       )}
-      
+
       {showRetry && onRetry && (
         <TouchableOpacity
           style={styles.retryButton}

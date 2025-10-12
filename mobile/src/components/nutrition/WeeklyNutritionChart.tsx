@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { COMMON_STYLES } from '../../theme/constants';
 
+import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+
+import { COMMON_STYLES } from '../../theme/constants';
 
 interface WeeklyNutritionChartProps {
   weeklyData: {
@@ -74,7 +75,7 @@ const WeeklyNutritionChart: React.FC<WeeklyNutritionChartProps> = ({
           </View>
         ))}
       </View>
-      
+
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>

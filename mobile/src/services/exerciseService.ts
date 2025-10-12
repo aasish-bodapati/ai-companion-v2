@@ -2,7 +2,10 @@
  * Exercise service for fetching exercise data from the backend
  */
 
-import { apiClient } from './api';
+import { api } from './api';
+
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface Exercise {
   id: number;
@@ -16,14 +19,14 @@ class ExerciseService {
    */
   async getExerciseById(id: string | number): Promise<Exercise | null> {
     try {
-      const response = await apiClient.get(`/health/exercises/${id}`);
+      const response = await api.get(`/api/v1/health/exercises/${id}`);
       return {
-        id: response.data.id,
-        name: response.data.name,
-        logging_category: response.data.logging_category
+        id: response.id,
+        name: response.name,
+        logging_category: response.logging_category
       };
     } catch {
-      console.warn(`Exercise with ID ${id} not found`);
+      DebugUtils.warn(`Exercise with ID ${id} not found`);
       return null;
     }
   }
@@ -36,11 +39,11 @@ class ExerciseService {
       // Fetch all exercises in parallel
       const promises = ids.map(id => this.getExerciseById(id));
       const results = await Promise.all(promises);
-      
+
       // Filter out null results
       return results.filter((exercise): exercise is Exercise => exercise !== null);
     } catch {
-      console.error('Error fetching exercises:', error);
+      DebugUtils.error('Error fetching exercises:', error);
       return [];
     }
   }
@@ -50,10 +53,10 @@ class ExerciseService {
    */
   async getAllExercises(): Promise<Exercise[]> {
     try {
-      const response = await apiClient.get('/health/exercises');
-      return response.data;
+      const response = await api.get('/api/v1/health/exercises');
+      return response;
     } catch {
-      console.error('Error fetching all exercises:', error);
+      DebugUtils.error('Error fetching all exercises:', error);
       return [];
     }
   }

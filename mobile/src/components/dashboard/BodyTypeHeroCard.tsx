@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface BodyTypeHeroCardProps {
   goalName: string;
@@ -74,15 +78,15 @@ export default function BodyTypeHeroCard({
             +{dailyScore}
           </Text>
         </View>
-        
+
         <View style={styles.weeklyAlignment}>
           <View style={styles.alignmentHeader}>
             <Text style={styles.alignmentLabel}>Weekly Alignment</Text>
             <View style={styles.trendIndicator}>
-              <Ionicons 
-                name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap} 
-                size={16} 
-                color={trendColor} 
+              <Ionicons
+                name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap}
+                size={16}
+                color={trendColor}
               />
               <Text style={[styles.trendText, { color: trendColor }]}>
                 {weeklyTrend === 'up' ? '↑' : weeklyTrend === 'down' ? '↓' : '→'}
@@ -98,10 +102,10 @@ export default function BodyTypeHeroCard({
       {/* Interactive Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
               styles.progressFill,
-              { 
+              {
                 width: `${Math.max(10, weeklyAlignment)}%`,
                 backgroundColor: alignmentColor
               }
@@ -116,15 +120,15 @@ export default function BodyTypeHeroCard({
 
       {/* Smart Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.actionButton, styles.primaryButton]}
           onPress={onLogWorkout}
         >
           <Ionicons name="fitness-outline" size={18} color="#ffffff" />
           <Text style={styles.actionButtonText}>Log Workout</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[styles.actionButton, styles.secondaryButton]}
           onPress={onLogMeal}
         >
@@ -157,9 +161,9 @@ export default function BodyTypeHeroCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.xxl,
+    padding: SPACING.lg,
     margin: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -184,14 +188,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   goalName: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   goalSubtext: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   progressSection: {
     flexDirection: 'row',
@@ -203,8 +207,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scoreLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   scoreValue: {
@@ -221,8 +225,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   alignmentLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginRight: 8,
   },
   trendIndicator: {
@@ -230,7 +234,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trendText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: 'bold',
     marginLeft: 2,
   },
@@ -244,21 +248,21 @@ const styles = StyleSheet.create({
   progressBar: {
     height: 8,
     backgroundColor: '#f1f5f9',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     marginBottom: 8,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   progressLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   progressLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   actionButtons: {
@@ -271,12 +275,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
   },
   secondaryButton: {
     backgroundColor: '#f1f5f9',
@@ -284,23 +288,23 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginLeft: 6,
   },
   secondaryButtonText: {
     color: '#3b82f6',
   },
   suggestionsContainer: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
   },
   suggestionsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   suggestionsList: {
@@ -311,15 +315,15 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   suggestionText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     color: '#4b5563',
     marginLeft: 4,
     flex: 1,

@@ -10,11 +10,11 @@ import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
-import { 
-  getAvailableBodyTypes, 
+import {
+  getAvailableBodyTypes,
   UserAttributes,
   BodyTypeGoal
-} from '../../services/bodyTypeGoals';
+} from '../../services/BodyTypeGoalsService';
 
 interface BodyTypeGoalsStepProps {
   onBodyTypeChange: (bodyTypeId: string) => void;
@@ -36,8 +36,8 @@ interface BodyTypeWithTargets {
   waistToHeightRatio?: { male: { min: number; max: number }; female: { min: number; max: number } };
 }
 
-export default function BodyTypeGoalsStep({ 
-  onBodyTypeChange, 
+export default function BodyTypeGoalsStep({
+  onBodyTypeChange,
   initialBodyType = '',
   userData,
   onValidationChange,
@@ -84,20 +84,13 @@ export default function BodyTypeGoalsStep({
     setSelectedBodyType(bodyTypeId);
   };
 
-
-
-
-
-
-
-
   const getFilteredBodyTypes = () => {
     return availableBodyTypes.slice(0, 6);
   };
 
   const getTargetBodyFatForGender = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
-    
+
     if (gender === 'male' && bodyType.targetAttributes.bodyFatRangeMen) {
       const range = bodyType.targetAttributes.bodyFatRangeMen;
       return `${range.min}-${range.max}%`;
@@ -110,10 +103,10 @@ export default function BodyTypeGoalsStep({
       const womenRange = bodyType.targetAttributes.bodyFatRangeWomen;
       return `${menRange.min}-${womenRange.max}%`;
     }
-    
+
     // Fallback to old structure
     if (!bodyType.targetBodyFat) return 'N/A';
-    
+
     if (gender === 'male') {
       return `${bodyType.targetBodyFat}%`;
     } else if (gender === 'female') {
@@ -125,32 +118,31 @@ export default function BodyTypeGoalsStep({
     }
   };
 
-
   const getTargetBMIForGender = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
-    
+
     if (bodyType.targetAttributes.targetBMIRange) {
       const range = bodyType.targetAttributes.targetBMIRange;
       return `BMI ${range.min}-${range.max}`;
     }
-    
+
     // Fallback to old structure
     if (!bodyType.targetBMI) return 'N/A';
-    
+
     const target = Math.round(bodyType.targetBMI * 10) / 10;
     return `BMI ${target}`;
   };
 
   const getWaistToHeightRatio = (bodyType: BodyTypeWithTargets) => {
     if (!bodyType.waistToHeightRatio) return 'N/A';
-    
+
     const ratio = Math.round(bodyType.waistToHeightRatio * 100) / 100;
     return `WHR ${ratio}`;
   };
 
   const getFatFreeMassIndex = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
-    
+
     if (gender === 'male' && bodyType.targetAttributes.ffmiRangeMen) {
       const range = bodyType.targetAttributes.ffmiRangeMen;
       return `FFMI ${range.min}-${range.max}`;
@@ -163,16 +155,16 @@ export default function BodyTypeGoalsStep({
       const womenRange = bodyType.targetAttributes.ffmiRangeWomen;
       return `FFMI ${menRange.min}-${womenRange.max}`;
     }
-    
+
     // Fallback to old structure
     if (!bodyType.fatFreeMassIndex) return 'N/A';
-    
+
     return `FFMI ${bodyType.fatFreeMassIndex}`;
   };
 
   const getSMMRange = (bodyType: BodyTypeWithTargets, gender: string) => {
     if (!bodyType.targetAttributes) return 'N/A';
-    
+
     if (gender === 'male' && bodyType.targetAttributes.smmRangeMen) {
       const range = bodyType.targetAttributes.smmRangeMen;
       return `SMM ${range.min}-${range.max}kg`;
@@ -185,14 +177,13 @@ export default function BodyTypeGoalsStep({
       const womenRange = bodyType.targetAttributes.smmRangeWomen;
       return `SMM ${menRange.min}-${womenRange.max}kg`;
     }
-    
+
     return 'N/A';
   };
 
-
   const renderBodyTypeCard = (bodyType: BodyTypeWithTargets) => {
     const isSelected = selectedBodyType === bodyType.id;
-    
+
     return (
       <MobileOptimizedCard
         key={bodyType.id}
@@ -228,11 +219,11 @@ export default function BodyTypeGoalsStep({
               )}
             </View>
           </View>
-          
+
           <Text style={styles.bodyTypeDescription}>
             {bodyType.description}
           </Text>
-          
+
           <View style={styles.calculationPreview}>
             <View style={styles.calculationRow}>
               <Text style={styles.calculationLabel}>Target BMI:</Text>
@@ -276,7 +267,7 @@ export default function BodyTypeGoalsStep({
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Sleep:</Text>
                 <Text style={styles.calculationValue}>
-                  {typeof bodyType.targetAttributes.sleepDuration === 'object' 
+                  {typeof bodyType.targetAttributes.sleepDuration === 'object'
                     ? `${bodyType.targetAttributes.sleepDuration.recommended} hours/night`
                     : `${bodyType.targetAttributes.sleepDuration} hours/night`
                   }
@@ -317,7 +308,7 @@ export default function BodyTypeGoalsStep({
               <View style={styles.calculationRow}>
                 <Text style={styles.calculationLabel}>Protein:</Text>
                 <Text style={styles.calculationValue}>
-                  {userData.gender === 'male' 
+                  {userData.gender === 'male'
                     ? `${bodyType.targetAttributes.proteinPerKgMen.min}-${bodyType.targetAttributes.proteinPerKgMen.max}g/kg`
                     : `${bodyType.targetAttributes.proteinPerKgWomen.min}-${bodyType.targetAttributes.proteinPerKgWomen.max}g/kg`
                   }
@@ -346,17 +337,15 @@ export default function BodyTypeGoalsStep({
     );
   };
 
-
   const renderBodyTypesGrid = () => {
     const bodyTypes = getFilteredBodyTypes();
-    
+
     return (
       <View style={styles.bodyTypesGrid}>
         {bodyTypes.map(bodyType => renderBodyTypeCard(bodyType))}
       </View>
     );
   };
-
 
   // Loading state - only show if we don't have any data yet
   if (loading && availableBodyTypes.length === 0) {
@@ -377,7 +366,7 @@ export default function BodyTypeGoalsStep({
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               setError(null);
@@ -395,7 +384,7 @@ export default function BodyTypeGoalsStep({
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -408,8 +397,6 @@ export default function BodyTypeGoalsStep({
             Choose the body type you want to achieve. We'll calculate personalized targets for you.
           </Text>
         </View>
-
-
 
         {/* Body Types Grid */}
         {renderBodyTypesGrid()}

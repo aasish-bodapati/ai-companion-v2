@@ -2,6 +2,7 @@
 
 import { ModalSize, ModalPosition } from './BaseModal';
 
+
 export const modalPresets = {
   // Small confirmation dialogs
   confirmation: {

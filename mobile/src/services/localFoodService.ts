@@ -1,3 +1,6 @@
+import { DebugUtils } from '../utils/debugUtils';
+
+
 // Local food service using Indian Food Nutrition dataset
 // We'll load the data dynamically to avoid import issues
 
@@ -46,7 +49,7 @@ class LocalFoodService {
   }
 
   private loadFoodData() {
-    console.log('Loading food data with sample items');
+    DebugUtils.log('Loading food data with sample items');
     // Sample data for testing - we'll expand this later
     this.foodData = [
       {
@@ -116,25 +119,25 @@ class LocalFoodService {
   // Search foods by name
   async searchFoods(query: string, limit: number = 10): Promise<LocalFoodSearchResult[]> {
     const searchTerm = query.toLowerCase().trim();
-    
+
     // Wait for data to be loaded
     while (!this.dataLoaded) {
       await new Promise(resolve => setTimeout(resolve, 10));
     }
-    
-    console.log('Searching for:', query, 'in', this.foodData.length, 'items');
-    
+
+    DebugUtils.log('Searching for:', query, 'in', this.foodData.length, 'items');
+
     if (!searchTerm) {
       return [];
     }
 
     const results = this.foodData
-      .filter(food => 
+      .filter(food =>
         food.name.toLowerCase().includes(searchTerm)
       )
       .slice(0, limit)
       .map(food => {
-        console.log('Found food:', food.name, 'calories:', food.calories);
+        DebugUtils.log('Found food:', food.name, 'calories:', food.calories);
         return {
           id: food.id,
           name: food.name,
@@ -156,7 +159,7 @@ class LocalFoodService {
 
   // Get detailed nutrition for a specific food
   async getFoodNutrition(foodName: string, type: string = 'common'): Promise<LocalFoodItem | null> {
-    const food = this.foodData.find(item => 
+    const food = this.foodData.find(item =>
       item.name.toLowerCase() === foodName.toLowerCase()
     );
 
@@ -180,7 +183,7 @@ class LocalFoodService {
   // Calculate serving nutrition (for compatibility)
   async calculateServingNutrition(foodName: string, quantity: number): Promise<LocalFoodItem | null> {
     const food = await this.getFoodNutrition(foodName);
-    
+
     if (!food) {
       return null;
     }

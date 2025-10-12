@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { COLORS, FONT_SIZE } from '../../theme/constants';
 import useResponsive from '../../hooks/useResponsive';
 
@@ -124,7 +126,7 @@ export default function DashboardHeaderCard({
               <Text style={dynamicStyles.subtitle}>{subtitle}</Text>
             )}
           </View>
-          
+
           {headerActions.length > 0 && (
             <View style={dynamicStyles.headerActions}>
               {headerActions.map((action, index) => (
@@ -134,10 +136,10 @@ export default function DashboardHeaderCard({
                   onPress={action.onPress}
                   activeOpacity={0.7}
                 >
-                  <Ionicons 
-                    name={action.icon as keyof typeof Ionicons.glyphMap} 
-                    size={responsive.breakpoints.isTablet ? 24 : 20} 
-                    color={action.color || COLORS.text.secondary} 
+                  <Ionicons
+                    name={action.icon as keyof typeof Ionicons.glyphMap}
+                    size={responsive.breakpoints.isTablet ? 24 : 20}
+                    color={action.color || COLORS.text.secondary}
                   />
                 </TouchableOpacity>
               ))}
@@ -149,18 +151,18 @@ export default function DashboardHeaderCard({
       {/* Quick Stats Section */}
       {quickStats.length > 0 && (
         <View style={dynamicStyles.quickStatsSection}>
-          <ScrollView 
-            horizontal 
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={dynamicStyles.quickStats}
           >
             {quickStats.map((stat, index) => (
               <View key={index} style={dynamicStyles.quickStat}>
                 <View style={[dynamicStyles.quickStatIcon, { backgroundColor: stat.color + '20' }]}>
-                  <Ionicons 
-                    name={stat.icon as keyof typeof Ionicons.glyphMap} 
-                    size={responsive.breakpoints.isTablet ? 22 : 18} 
-                    color={stat.color} 
+                  <Ionicons
+                    name={stat.icon as keyof typeof Ionicons.glyphMap}
+                    size={responsive.breakpoints.isTablet ? 22 : 18}
+                    color={stat.color}
                   />
                 </View>
                 <Text style={dynamicStyles.quickStatValue}>{stat.value}</Text>

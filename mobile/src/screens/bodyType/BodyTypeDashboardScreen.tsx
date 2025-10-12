@@ -8,9 +8,11 @@ import {
   Alert,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
-import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
-import { DailyLog, WorkoutLog, BodyTypeNutritionLog } from '../../services/bodyTypeScoringService';
+import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
+import { DailyLog, WorkoutLog, BodyTypeNutritionLog } from '../../services/BodyTypeScoringService';
 import BodyTypeProgressDashboard from '../../components/bodyType/BodyTypeProgressDashboard';
+
+import { COLORS, FONT_SIZE } from '../../theme/constants';
 
 export default function BodyTypeDashboardScreen() {
   const { user } = useAuth();
@@ -26,11 +28,11 @@ export default function BodyTypeDashboardScreen() {
   const loadUserData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Load user's body type goal
-      const { getBodyTypeGoalById } = await import('../../services/bodyTypeGoals');
-      const { profileService } = await import('../../services/profileService');
-      
+      const { getBodyTypeGoalById } = await import('../../services/BodyTypeGoalsService');
+      const { profileService } = await import('../../services/ProfileService');
+
       const profile = await profileService.getUserProfile();
       if (profile?.bodyTypeGoal) {
         const goal = await getBodyTypeGoalById(profile.bodyTypeGoal);
@@ -50,7 +52,7 @@ export default function BodyTypeDashboardScreen() {
 
       // Load today's logs (mock data for demo)
       setDailyLog(generateMockDailyLog());
-      
+
     } catch (error) {
       Alert.alert('Error', 'Failed to load dashboard data');
     } finally {
@@ -116,7 +118,7 @@ export default function BodyTypeDashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
 });

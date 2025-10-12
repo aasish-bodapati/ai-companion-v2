@@ -4,11 +4,14 @@
  */
 
 import { create } from 'zustand';
+
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ExerciseCategoriesStore } from './types';
-import { exerciseCategoryService } from '../services/exerciseCategoryService';
+import { exerciseCategoryService } from '../services/api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 // Initial state
 const initialState = {
@@ -35,7 +38,7 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       // Load categories
       loadCategories: async () => {
         const state = get();
-        
+
         // If already loaded, return cached data
         if (state.loaded) {
           return state.categories;
@@ -43,13 +46,13 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
 
         // If already loading, return current categories
         if (state.loading) {
-          console.log('🔄 [EXERCISE CATEGORIES STORE] Already loading, returning current categories');
+          DebugUtils.log('🔄 [EXERCISE CATEGORIES STORE] Already loading, returning current categories');
           return state.categories;
         }
 
         try {
-          console.log('🔄 [EXERCISE CATEGORIES STORE] Loading categories from API...');
-          
+          DebugUtils.log('🔄 [EXERCISE CATEGORIES STORE] Loading categories from API...');
+
           // Batch all state updates into a single set() call
           set({
             loading: true,
@@ -57,7 +60,7 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
           }, false, 'loadCategories_start');
 
           const categories = await exerciseCategoryService.getCategories();
-          
+
           // Batch the success state updates
           set({
             categories,
@@ -69,14 +72,14 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
           return categories;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load exercise categories';
-          console.error('Exercise categories store load error:', error);
-          
+          DebugUtils.error('Exercise categories store load error:', error);
+
           // Batch the error state updates
           set({
             error: errorMessage,
             loading: false,
           }, false, 'loadCategories_error');
-          
+
           throw error;
         }
       },
@@ -91,7 +94,7 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       getCategoryConfig: (categoryId: string) => {
         const { categories } = get();
         const category = categories.find(cat => cat.id === categoryId);
-        
+
         if (category) {
           return category;
         }
@@ -122,8 +125,8 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       searchCategories: (query: string) => {
         const { categories } = get();
         const lowercaseQuery = query.toLowerCase();
-        
-        return categories.filter(cat => 
+
+        return categories.filter(cat =>
           cat.name.toLowerCase().includes(lowercaseQuery) ||
           cat.display_name.toLowerCase().includes(lowercaseQuery)
         );
@@ -138,7 +141,7 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       // Get categories grouped by type (if needed for UI)
       getCategoriesGrouped: () => {
         const { categories } = get();
-        
+
         // Group by common patterns or return as-is
         return {
           all: categories,
@@ -154,10 +157,10 @@ export const useExerciseCategoriesStore = create<ExerciseCategoriesStore>()(
       // Refresh categories (force reload)
       refreshCategories: async () => {
         const { setLoaded } = get();
-        
+
         // Reset loaded state to force reload
         setLoaded(false);
-        
+
         // Load categories
         return get().loadCategories();
       },

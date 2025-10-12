@@ -13,6 +13,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useToast } from '../../contexts/ToastContext';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
+
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,42 +29,42 @@ export default function RegisterScreen() {
   const navigation = useNavigation();
 
   const handleRegister = async () => {
-    console.log('🔍 [REGISTER] handleRegister called');
-    console.log('🔍 [REGISTER] Form data:', { email, password: password ? '***' : '', confirmPassword: confirmPassword ? '***' : '', fullName });
-    
+    DebugUtils.log('🔍 [REGISTER] handleRegister called');
+    DebugUtils.log('🔍 [REGISTER] Form data:', { email, password: password ? '***' : '', confirmPassword: confirmPassword ? '***' : '', fullName });
+
     if (!email || !password || !confirmPassword || !fullName) {
-      console.log('🔍 [REGISTER] Validation failed: missing fields');
+      DebugUtils.log('🔍 [REGISTER] Validation failed: missing fields');
       showToast('Error: Please fill in all fields', 'error', 5000);
       return;
     }
 
     if (password !== confirmPassword) {
-      console.log('🔍 [REGISTER] Validation failed: passwords do not match');
+      DebugUtils.log('🔍 [REGISTER] Validation failed: passwords do not match');
       showToast('Error: Passwords do not match', 'error', 5000);
       return;
     }
 
     if (password.length < 8) {
-      console.log('🔍 [REGISTER] Validation failed: password too short');
+      DebugUtils.log('🔍 [REGISTER] Validation failed: password too short');
       showToast('Error: Password must be at least 8 characters', 'error', 5000);
       return;
     }
 
-    console.log('🔍 [REGISTER] All validations passed, calling register function');
+    DebugUtils.log('🔍 [REGISTER] All validations passed, calling register function');
     setIsLoading(true);
     try {
       const result = await register(email, password, fullName);
-      console.log('🔍 [REGISTER] Register result:', result);
+      DebugUtils.log('🔍 [REGISTER] Register result:', result);
       if (result.success) {
-        console.log('🔍 [REGISTER] Registration successful, navigating to login');
+        DebugUtils.log('🔍 [REGISTER] Registration successful, navigating to login');
         showToast('Success! Account created successfully! Please sign in.', 'success', 4000);
         navigation.navigate('Login' as never);
       } else {
-        console.log('🔍 [REGISTER] Registration failed:', result.error);
+        DebugUtils.log('🔍 [REGISTER] Registration failed:', result.error);
         showToast(`Registration Failed: ${result.error || 'Registration failed. Please try again.'}`, 'error', 5000);
       }
     } catch (error) {
-      console.log('🔍 [REGISTER] Registration error:', error);
+      DebugUtils.log('🔍 [REGISTER] Registration error:', error);
       showToast('Error: Registration failed. Please try again.', 'error', 5000);
     } finally {
       setIsLoading(false);
@@ -71,8 +76,8 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -137,7 +142,7 @@ export default function RegisterScreen() {
             <TouchableOpacity
               style={[styles.registerButton, isLoading && styles.registerButtonDisabled]}
               onPress={() => {
-                console.log('🔍 [REGISTER] Button pressed!');
+                DebugUtils.log('🔍 [REGISTER] Button pressed!');
                 handleRegister();
               }}
               disabled={isLoading}
@@ -164,14 +169,14 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   scrollContainer: {
     flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xl,
     paddingTop: 60,
     paddingBottom: 40,
   },
@@ -182,12 +187,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   form: {
@@ -198,25 +203,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 14,
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
   registerButton: {
     backgroundColor: '#6366f1',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
     marginTop: 20,
   },
@@ -224,8 +229,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   registerButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   footer: {
@@ -235,11 +240,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   linkText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     color: '#6366f1',
     fontWeight: '600',
   },

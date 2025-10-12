@@ -38,16 +38,16 @@ export function ErrorProvider({ children }: ErrorProviderProps) {
     setErrors(prev => {
       // Avoid duplicate errors with same message and context
       const isDuplicate = prev.some(
-        existingError => 
-          existingError.message === error.message && 
+        existingError =>
+          existingError.message === error.message &&
           existingError.context === error.context &&
           existingError.type === error.type
       );
-      
+
       if (isDuplicate) {
         return prev;
       }
-      
+
       return [...prev, error];
     });
   }, []);
@@ -72,9 +72,9 @@ export function ErrorProvider({ children }: ErrorProviderProps) {
         removeError(id);
       } catch (retryError) {
         // Update error message with retry failure
-        setErrors(prev => 
-          prev.map(e => 
-            e.id === id 
+        setErrors(prev =>
+          prev.map(e =>
+            e.id === id
               ? { ...e, message: `${e.message} (Retry failed: ${retryError instanceof Error ? retryError.message : 'Unknown error'})` }
               : e
           )
@@ -110,7 +110,7 @@ export function useErrorContext() {
 // Convenience hooks for specific error types
 export function useNetworkError() {
   const { addError, errors, removeError } = useErrorContext();
-  
+
   const addNetworkError = useCallback((message: string, context?: string, retryAction?: () => Promise<void>) => {
     addError({
       message,
@@ -122,7 +122,7 @@ export function useNetworkError() {
   }, [addError]);
 
   const networkErrors = errors.filter(error => error.type === 'network');
-  
+
   return {
     addNetworkError,
     networkErrors,
@@ -132,7 +132,7 @@ export function useNetworkError() {
 
 export function useValidationError() {
   const { addError, errors, removeError } = useErrorContext();
-  
+
   const addValidationError = useCallback((message: string, context?: string) => {
     addError({
       message,
@@ -143,7 +143,7 @@ export function useValidationError() {
   }, [addError]);
 
   const validationErrors = errors.filter(error => error.type === 'validation');
-  
+
   return {
     addValidationError,
     validationErrors,
@@ -153,7 +153,7 @@ export function useValidationError() {
 
 export function usePermissionError() {
   const { addError, errors, removeError } = useErrorContext();
-  
+
   const addPermissionError = useCallback((message: string, context?: string) => {
     addError({
       message,
@@ -164,7 +164,7 @@ export function usePermissionError() {
   }, [addError]);
 
   const permissionErrors = errors.filter(error => error.type === 'permission');
-  
+
   return {
     addPermissionError,
     permissionErrors,

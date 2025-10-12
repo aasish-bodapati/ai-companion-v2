@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface QuickLogButton {
   id: string;
@@ -34,23 +38,23 @@ export default function QuickLoggingButtons({
       id: 'workout',
       title: 'Log Workout',
       icon: 'fitness',
-      color: '#ffffff',
-      backgroundColor: '#3b82f6',
+      color: COLORS.text.inverse,
+      backgroundColor: COLORS.primary.main,
       onPress: onLogWorkout,
     },
     {
       id: 'meal',
       title: 'Log Meal',
       icon: 'restaurant',
-      color: '#ffffff',
-      backgroundColor: '#10b981',
+      color: COLORS.text.inverse,
+      backgroundColor: COLORS.success,
       onPress: onLogMeal,
     },
     {
       id: 'water',
       title: 'Log Water',
       icon: 'water',
-      color: '#ffffff',
+      color: COLORS.text.inverse,
       backgroundColor: '#06b6d4',
       onPress: onLogWater,
     },
@@ -58,8 +62,8 @@ export default function QuickLoggingButtons({
       id: 'mood',
       title: 'Log Mood',
       icon: 'happy',
-      color: '#ffffff',
-      backgroundColor: '#f59e0b',
+      color: COLORS.text.inverse,
+      backgroundColor: COLORS.warning,
       onPress: onLogMood,
     },
   ];
@@ -88,9 +92,9 @@ export default function QuickLoggingButtons({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -100,9 +104,9 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 16,
   },
   buttonsGrid: {
@@ -116,13 +120,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.md,
     gap: 8,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
   },
 });

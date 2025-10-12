@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, TouchableOpacity, ViewStyle } from 'react-native';
+import React from 'react';
+
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 interface FormAction {
@@ -113,8 +115,8 @@ export const FormContainer: React.FC<FormContainerProps> = ({
 
   const containerStyle = [
     styles.container,
-    variant === 'modal' ? styles.containerModal : 
-    variant === 'fullscreen' ? styles.containerFullscreen : 
+    variant === 'modal' ? styles.containerModal :
+    variant === 'fullscreen' ? styles.containerFullscreen :
     styles.container,
     style,
   ];

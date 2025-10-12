@@ -1,6 +1,8 @@
 // Utility functions and presets for DataTable component
 
 import { DataTableSize, DataTableVariant, DataTableColumn, SortDirection } from './DataTable';
+import React from 'react';
+
 
 export const dataTablePresets = {
   // Small data tables
@@ -185,7 +187,7 @@ export const dataTableUtils = {
 
     const sample = data[0];
     const keys = Object.keys(sample as object);
-    
+
     return keys
       .filter(key => !excludeKeys.includes(key))
       .map(key => ({
@@ -199,7 +201,7 @@ export const dataTableUtils = {
 
   // Create columns with custom configuration
   createColumns: <T>(
-    config: Array<{
+    config: {
       key: string;
       title: string;
       dataIndex: string;
@@ -208,7 +210,7 @@ export const dataTableUtils = {
       sortable?: boolean;
       filterable?: boolean;
       render?: (value: any, record: T, index: number) => React.ReactNode;
-    }>
+    }[]
   ): DataTableColumn<T>[] => {
     return config.map(col => ({
       key: col.key,
@@ -239,7 +241,7 @@ export const dataTableUtils = {
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return direction === 'asc' 
+        return direction === 'asc'
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
@@ -249,7 +251,7 @@ export const dataTableUtils = {
       }
 
       if (aValue instanceof Date && bValue instanceof Date) {
-        return direction === 'asc' 
+        return direction === 'asc'
           ? aValue.getTime() - bValue.getTime()
           : bValue.getTime() - aValue.getTime();
       }
@@ -268,13 +270,13 @@ export const dataTableUtils = {
     return data.filter(record => {
       return Object.entries(filters).every(([key, value]) => {
         if (value === null || value === undefined || value === '') return true;
-        
+
         const recordValue = (record as any)[key];
-        
+
         if (typeof recordValue === 'string' && typeof value === 'string') {
           return recordValue.toLowerCase().includes(value.toLowerCase());
         }
-        
+
         return recordValue === value;
       });
     });
@@ -333,7 +335,7 @@ export const dataTableUtils = {
     filename: string = 'data.csv'
   ): string => {
     const headers = columns.map(col => col.title).join(',');
-    const rows = data.map(record => 
+    const rows = data.map(record =>
       columns.map(col => {
         const value = (record as any)[col.dataIndex];
         return `"${value?.toString().replace(/"/g, '""') || ''}"`;
@@ -341,7 +343,7 @@ export const dataTableUtils = {
     );
 
     const csvContent = [headers, ...rows].join('\n');
-    
+
     // In a real implementation, you would trigger a download here
     return csvContent;
   },
@@ -352,7 +354,7 @@ export const dataTableUtils = {
     column: DataTableColumn<T>
   ) => {
     const values = data.map(record => (record as any)[column.dataIndex]);
-    
+
     if (values.length === 0) {
       return { count: 0, unique: 0, null: 0 };
     }

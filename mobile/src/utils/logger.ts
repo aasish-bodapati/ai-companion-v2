@@ -1,3 +1,5 @@
+import { DebugUtils } from '../utils/debugUtils';
+
 /**
  * Simple logging utility to control log verbosity
  */
@@ -25,62 +27,62 @@ class Logger {
 
   error(message: string, ...args: unknown[]) {
     if (this.shouldLog('ERROR')) {
-      console.error(`❌ ${message}`, ...args);
+      DebugUtils.error(`❌ ${message}`, ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]) {
     if (this.shouldLog('WARN')) {
-      console.warn(`⚠️ ${message}`, ...args);
+      DebugUtils.warn(`⚠️ ${message}`, ...args);
     }
   }
 
   info(message: string, ...args: unknown[]) {
     if (this.shouldLog('INFO')) {
-      console.log(`ℹ️ ${message}`, ...args);
+      DebugUtils.log(`ℹ️ ${message}`, ...args);
     }
   }
 
   debug(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🔍 ${message}`, ...args);
+      DebugUtils.log(`🔍 ${message}`, ...args);
     }
   }
 
   // Special loggers for specific features
   api(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🌐 [API] ${message}`, ...args);
+      DebugUtils.log(`🌐 [API] ${message}`, ...args);
     }
   }
 
   steps(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🚶 ${message}`, ...args);
+      DebugUtils.log(`🚶 ${message}`, ...args);
     }
   }
 
   nutrition(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🍽️ ${message}`, ...args);
+      DebugUtils.log(`🍽️ ${message}`, ...args);
     }
   }
 
   fitness(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`💪 ${message}`, ...args);
+      DebugUtils.log(`💪 ${message}`, ...args);
     }
   }
 
   auth(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🔐 ${message}`, ...args);
+      DebugUtils.log(`🔐 ${message}`, ...args);
     }
   }
 
   navigation(message: string, ...args: unknown[]) {
     if (this.shouldLog('DEBUG')) {
-      console.log(`🧭 ${message}`, ...args);
+      DebugUtils.log(`🧭 ${message}`, ...args);
     }
   }
 }

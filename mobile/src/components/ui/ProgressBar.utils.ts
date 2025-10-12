@@ -1,4 +1,5 @@
 import { ProgressBarProps, ProgressBarVariant, ProgressBarSize, ProgressBarShape } from './ProgressBar';
+
 import { COLORS } from '../../theme/constants';
 
 type ProgressBarPreset = Partial<ProgressBarProps> & {
@@ -420,7 +421,7 @@ export const calculateProgress = (current: number, target: number): number => {
 export const getProgressColor = (progress: number, thresholds?: { warning: number; danger: number }): string => {
   const defaultThresholds = { warning: 70, danger: 90 };
   const { warning, danger } = thresholds || defaultThresholds;
-  
+
   if (progress >= danger) return COLORS.danger;
   if (progress >= warning) return COLORS.warning;
   return COLORS.success;
@@ -454,7 +455,7 @@ export const createFitnessProgressBar = (
 ): ProgressBarProps => {
   const progress = calculateProgress(current, target);
   const color = getProgressColor(progress);
-  
+
   return {
     ...progressBarConfigs.fitnessGoal,
     progress,
@@ -472,7 +473,7 @@ export const createNutritionProgressBar = (
 ): ProgressBarProps => {
   const progress = calculateProgress(current, target);
   const color = getProgressColor(progress);
-  
+
   return {
     ...progressBarConfigs.nutritionGoal,
     progress,
@@ -489,7 +490,7 @@ export const createWaterIntakeProgressBar = (
 ): ProgressBarProps => {
   const progress = calculateProgress(current, target);
   const color = getProgressColor(progress);
-  
+
   return {
     ...progressBarConfigs.waterIntake,
     progress,

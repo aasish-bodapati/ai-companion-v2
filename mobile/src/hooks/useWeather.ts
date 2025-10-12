@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+
 import * as Location from 'expo-location';
-import weatherService, { WeatherData, WeatherError } from '../services/weatherService';
+import weatherService, { WeatherData, WeatherError } from '../services/WeatherService';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 interface UseWeatherReturn {
   weather: WeatherData | null;
@@ -33,7 +36,7 @@ export function useWeather(): UseWeatherReturn {
       const weatherData = await weatherService.getCurrentWeather(latitude, longitude);
       setWeather(weatherData);
     } catch (err) {
-      console.error('Weather fetch error:', err);
+      DebugUtils.error('Weather fetch error:', err);
       setError({
         message: err instanceof Error ? err.message : 'Failed to fetch weather data',
         code: 'WEATHER_FETCH_ERROR',

@@ -15,13 +15,13 @@ export const getCardStyle = (variant: 'default' | 'elevated' | 'flat' = 'default
     borderRadius: COMMON_STYLES.standardRadius,
     padding: SPACING.lg,
   };
-  
+
   const variants = {
     default: { ...base, ...COMMON_STYLES.standardShadow },
     elevated: { ...base, ...COMMON_STYLES.elevatedShadow },
     flat: { ...base, shadowOpacity: 0, elevation: 0 },
   };
-  
+
   return variants[variant];
 };
 
@@ -30,13 +30,13 @@ export const getCardStyle = (variant: 'default' | 'elevated' | 'flat' = 'default
  */
 export const getModalStyle = (size: 'small' | 'medium' | 'large' = 'medium'): ViewStyle => {
   const base: ViewStyle = COMMON_STYLES.modalContentCenter;
-  
+
   const sizes = {
     small: { ...base, width: '80%', height: '40%' },
     medium: { ...base, width: '90%', height: '60%' },
     large: { ...base, width: '95%', height: '80%' },
   };
-  
+
   return sizes[size] as ViewStyle;
 };
 
@@ -56,7 +56,7 @@ export const getBackgroundStyle = (type: 'primary' | 'secondary' | 'tertiary' = 
     secondary: { backgroundColor: COLORS.background.secondary },
     tertiary: { backgroundColor: COLORS.background.tertiary },
   };
-  
+
   return backgrounds[type];
 };
 
@@ -70,7 +70,7 @@ export const getBorderRadiusStyle = (size: 'small' | 'medium' | 'large' | 'stand
     large: { borderRadius: BORDER_RADIUS.lg },
     standard: { borderRadius: COMMON_STYLES.standardRadius },
   };
-  
+
   return radiuses[size];
 };
 
@@ -84,7 +84,7 @@ export const getShadowStyle = (level: 'none' | 'small' | 'medium' | 'large' = 's
     medium: SHADOWS.medium,
     large: SHADOWS.large,
   };
-  
+
   return shadows[level];
 };
 
@@ -116,7 +116,7 @@ export const getTextStyle = (type: 'primary' | 'secondary' | 'tertiary' | 'headi
       fontWeight: 'bold',
     },
   };
-  
+
   return textStyles[type] as TextStyle;
 };
 
@@ -135,13 +135,13 @@ export const createStyle = (options: {
     shadow = 'small',
     padding = 'medium',
   } = options;
-  
+
   const paddingValues = {
     small: SPACING.sm,
     medium: SPACING.lg,
     large: SPACING.xl,
   };
-  
+
   return {
     ...getBackgroundStyle(backgroundColor),
     ...getBorderRadiusStyle(borderRadius),

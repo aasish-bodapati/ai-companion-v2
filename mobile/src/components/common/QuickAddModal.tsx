@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 
+import { COLORS, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+
 interface QuickAddModalProps {
   visible: boolean;
   onClose: () => void;
@@ -87,7 +89,7 @@ export default function QuickAddModal({
         <View style={styles.overlay}>
           <BlurView intensity={20} tint="dark" style={styles.blurContainer}>
             <TouchableWithoutFeedback>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.modalContainer,
                   {
@@ -102,7 +104,7 @@ export default function QuickAddModal({
                   <View style={styles.topQuarters}>
                     {/* Top Left Quarter - Log Workout */}
                     <TouchableOpacity
-                      style={[styles.quarterButton, styles.topLeftQuarter, { backgroundColor: '#10b981' }]}
+                      style={[styles.quarterButton, styles.topLeftQuarter, { backgroundColor: COLORS.success }]}
                       onPress={() => handleActionPress(quickActions[0])}
                       activeOpacity={0.8}
                     >
@@ -112,7 +114,7 @@ export default function QuickAddModal({
 
                     {/* Top Right Quarter - Log Meal */}
                     <TouchableOpacity
-                      style={[styles.quarterButton, styles.topRightQuarter, { backgroundColor: '#f59e0b' }]}
+                      style={[styles.quarterButton, styles.topRightQuarter, { backgroundColor: COLORS.warning }]}
                       onPress={() => handleActionPress(quickActions[1])}
                       activeOpacity={0.8}
                     >
@@ -165,7 +167,7 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -188,9 +190,9 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 20,
   },
   quarterText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginTop: 6,
     textAlign: 'center',
   },

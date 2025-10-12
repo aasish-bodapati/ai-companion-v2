@@ -4,11 +4,14 @@
  */
 
 import { create } from 'zustand';
+
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FitnessStore } from './types';
-import { fitnessService } from '../services/fitnessService';
+import { fitnessService } from '../services/api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 // Initial state
 const initialState = {
@@ -35,7 +38,7 @@ export const useFitnessStore = create<FitnessStore>()(
       setError: (error) => set({ error, loading: false }, false, 'setError'),
 
       // Workout management
-      addWorkout: (workout) => 
+      addWorkout: (workout) =>
         set((state) => ({
           recentWorkouts: [workout, ...state.recentWorkouts],
           lastUpdated: new Date().toISOString(),
@@ -58,26 +61,26 @@ export const useFitnessStore = create<FitnessStore>()(
       // Data refresh
       refreshFitnessData: async () => {
         const { setLoading, setError, setTodayStats, setWeekStats, setRecentWorkouts } = get();
-        
+
         try {
           setLoading(true);
           setError(null);
-          
+
           // Load today's stats
           const todayStats = await fitnessService.getFitnessStats('day');
           setTodayStats(todayStats);
-          
+
           // Load week's stats
           const weekStats = await fitnessService.getFitnessStats('week');
           setWeekStats(weekStats);
-          
+
           // Load recent workouts
           const recentWorkouts = await fitnessService.getFitnessLogs({ limit: 10 });
           setRecentWorkouts(recentWorkouts);
-          
+
           set({ lastUpdated: new Date().toISOString() }, false, 'refreshFitnessData');
         } catch (error) {
-          console.error('Error refreshing fitness data:', error);
+          DebugUtils.error('Error refreshing fitness data:', error);
           setError('Failed to refresh fitness data');
         } finally {
           setLoading(false);

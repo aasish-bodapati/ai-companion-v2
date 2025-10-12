@@ -1,6 +1,9 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 import { getTodayLocal } from '../utils/dateUtils';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 interface FoodItem {
   food_code: string;
@@ -125,24 +128,24 @@ class NutritionService extends BaseService {
   }): Promise<NutritionLog[]> {
     // Get timezone offset in minutes
     const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
-    
+
     // Add timezone offset to params
     const paramsWithTimezone = {
       ...this.getPaginationParams(params),
       timezone_offset: timezoneOffset
     };
     // Params with timezone added
-    
+
     // Use test endpoint for period-based queries, main endpoint for date-based queries
     const endpoint = params?.period ? '/health/logging/nutrition/test' : '/health/logging/nutrition';
-    
+
     const data = await this.makeRequest(
-      () => apiClient.get(endpoint, { params: paramsWithTimezone }),
+      () => api.get(endpoint, { params: paramsWithTimezone }),
       'NUTRITION SERVICE - getNutritionLogs'
     );
-    
+
     // Removed excessive logging of raw API response
-    
+
     // Handle different response structures
     let meals: NutritionLog[] = [];
     if (Array.isArray(data)) {
@@ -152,21 +155,21 @@ class NutritionService extends BaseService {
     } else if (data && Array.isArray(data.logs)) {
       meals = data.logs;
     } else {
-      console.warn('🍽️ [NUTRITION SERVICE] Unexpected response structure:', data);
+      DebugUtils.warn('🍽️ [NUTRITION SERVICE] Unexpected response structure:', data);
       meals = [];
     }
-    
+
     return meals;
   }
 
   async getRecentMeals(limit: number = 5): Promise<NutritionLog[]> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/logging/nutrition', {
+      () => api.get('/api/v1/health/logging/nutrition', {
         params: { size: limit, page: 1 }
       }),
       'NUTRITION SERVICE - getRecentMeals'
     );
-    
+
     const meals = data?.meals || data || [];
     if (!Array.isArray(meals)) {
       // Silent warning handling - no console logging to prevent Expo Go notifications
@@ -179,12 +182,12 @@ class NutritionService extends BaseService {
     try {
       const today = getTodayLocal();
       // Using today's date for period-based queries
-      
-      const logs = await this.getNutritionLogs({ 
-        start_date: today, 
-        end_date: today 
+
+      const logs = await this.getNutritionLogs({
+        start_date: today,
+        end_date: today
       });
-      
+
       const summary: NutritionStats = {
         total_calories: logs.reduce((sum: number, log: NutritionLog) => sum + (log.total_calories || 0), 0),
         protein_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.protein_g || 0), 0),
@@ -194,10 +197,10 @@ class NutritionService extends BaseService {
         sugar_g: logs.reduce((sum: number, log: NutritionLog) => sum + (log.sugar_g || 0), 0),
         sodium_mg: logs.reduce((sum: number, log: NutritionLog) => sum + (log.sodium_mg || 0), 0),
         meals_count: logs.length,
-        avg_calories_per_meal: logs.length > 0 ? 
+        avg_calories_per_meal: logs.length > 0 ?
           logs.reduce((sum: number, log: NutritionLog) => sum + (log.total_calories || 0), 0) / logs.length : 0
       };
-      
+
       return summary;
     } catch (error) {
       this.handleError(error, 'NUTRITION SERVICE - getTodayNutritionSummary');
@@ -232,37 +235,36 @@ class NutritionService extends BaseService {
     meal_date?: string;
   }): Promise<{status: string, id: number}> {
     return this.makeRequest(
-      () => apiClient.post('/health/logging/nutrition/test', mealData),
+      () => api.post('/api/v1/health/logging/nutrition/test', mealData),
       'NUTRITION SERVICE - logMeal'
     );
   }
 
   async updateMeal(id: string, mealData: Partial<NutritionLog>): Promise<NutritionLog> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/nutrition/${id}`, mealData),
+      () => api.put(`/health/logging/nutrition/${id}`, mealData),
       'NUTRITION SERVICE - updateMeal'
     );
   }
 
   async deleteMeal(id: string): Promise<void> {
     return this.makeRequest(
-      () => apiClient.delete(`/health/logging/nutrition/${id}`),
+      () => api.delete(`/health/logging/nutrition/${id}`),
       'NUTRITION SERVICE - deleteMeal'
     );
   }
 
   async getFoodItems(): Promise<FoodItem[]> {
-    
+
     // Temporary workaround: use search endpoint with empty query to get all foods
     // This works around the 405 error on the root endpoint until backend is restarted
     const response = await this.makeRequest(
-      () => apiClient.get('/health/indian-foods/search', {
+      () => api.get('/api/v1/health/indian-foods/search', {
         params: { q: '', limit: 100 }
       }),
       'NUTRITION SERVICE - getFoodItems'
     );
-    
-    
+
     // Transform API response to match FoodItem interface
     // The API returns data directly as an array
     const foods = response || [];
@@ -293,21 +295,21 @@ class NutritionService extends BaseService {
       }));
       return transformed;
     }
-    
+
     return [];
   }
 
   async searchFoods(query: string): Promise<FoodItem[]> {
-    
+
     const response = await this.makeRequest(
-      () => apiClient.get('/health/indian-foods/search', {
+      () => api.get('/api/v1/health/indian-foods/search', {
         params: { q: query }
       }),
       'NUTRITION SERVICE - searchFoods'
     );
-    
+
     // Removed excessive logging of raw response data
-    
+
     // Transform API response to match FoodItem interface
     // The API returns data directly as an array
     const foods = response || [];
@@ -338,20 +340,20 @@ class NutritionService extends BaseService {
       }));
       return transformed;
     }
-    
+
     return [];
   }
 
   async getFoodById(id: number): Promise<FoodItem> {
     return this.makeRequest(
-      () => apiClient.get(`/health/foods/${id}`),
+      () => api.get(`/api/v1/health/foods/${id}`),
       'NUTRITION SERVICE - getFoodById'
     );
   }
 
   async getFoodByBarcode(barcode: string): Promise<FoodItem> {
     return this.makeRequest(
-      () => apiClient.get('/health/foods/barcode', {
+      () => api.get('/api/v1/health/foods/barcode', {
         params: { barcode }
       }),
       'NUTRITION SERVICE - getFoodByBarcode'
@@ -360,7 +362,7 @@ class NutritionService extends BaseService {
 
   async getNutritionStats(period: string = 'week'): Promise<NutritionStats> {
     return this.makeRequest(
-      () => apiClient.get('/health/nutrition-logs/stats', {
+      () => api.get('/api/v1/health/nutrition-logs/stats', {
         params: { period }
       }),
       'NUTRITION SERVICE - getNutritionStats'
@@ -369,7 +371,7 @@ class NutritionService extends BaseService {
 
   async getMealPlans(): Promise<MealPlan[]> {
     return this.makeRequest(
-      () => apiClient.get('/health/nutrition-routines'),
+      () => api.get('/api/v1/health/nutrition-routines'),
       'NUTRITION SERVICE - getMealPlans'
     );
   }
@@ -378,7 +380,7 @@ class NutritionService extends BaseService {
 
   async updateFoodItemQuantity(foodItemId: number, quantityGrams: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/food-items/${foodItemId}`, {
+      () => api.put(`/health/logging/food-items/${foodItemId}`, {
         quantity_grams: quantityGrams
       }),
       'NUTRITION SERVICE - updateFoodItemQuantity'
@@ -388,7 +390,7 @@ class NutritionService extends BaseService {
   // Water logging method
   async logWater(amount_ml: number): Promise<any> {
     return this.makeRequest(
-      () => apiClient.post('/health/logging/water', {
+      () => api.post('/api/v1/health/logging/water', {
         amount_ml,
         log_date: getTodayLocal()
       }),
@@ -399,7 +401,7 @@ class NutritionService extends BaseService {
   // Get nutrition goals
   async getNutritionGoals(): Promise<any> {
     return this.makeRequest(
-      () => apiClient.get('/health/goals/nutrition'),
+      () => api.get('/api/v1/health/goals/nutrition'),
       'NUTRITION SERVICE - getNutritionGoals'
     );
   }

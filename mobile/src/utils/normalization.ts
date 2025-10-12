@@ -1,3 +1,4 @@
+
 /**
  * Data normalization utilities for complex data structures
  * Provides entity management and relationship handling
@@ -25,7 +26,7 @@ export class EntityManager<T extends Entity> {
   // Add or update entities
   addEntities(entities: T[]): NormalizedState<T> {
     const newState = { ...this.state };
-    
+
     entities.forEach(entity => {
       newState.byId[entity.id] = entity;
       if (!newState.allIds.includes(entity.id)) {
@@ -45,7 +46,7 @@ export class EntityManager<T extends Entity> {
   // Remove entities
   removeEntities(ids: (string | number)[]): NormalizedState<T> {
     const newState = { ...this.state };
-    
+
     ids.forEach(id => {
       delete newState.byId[id];
       newState.allIds = newState.allIds.filter(existingId => existingId !== id);
@@ -63,7 +64,7 @@ export class EntityManager<T extends Entity> {
   // Update entity
   updateEntity(id: string | number, updates: Partial<T>): NormalizedState<T> {
     const newState = { ...this.state };
-    
+
     if (newState.byId[id]) {
       newState.byId[id] = { ...newState.byId[id], ...updates };
     }

@@ -1,4 +1,5 @@
-import { fitnessService } from './fitnessService';
+import { fitnessService } from './api';
+
 
 export interface ExerciseCategory {
   id: string;
@@ -48,7 +49,7 @@ class ExerciseCategoryService {
     try {
       // Get all exercises to extract unique categories
       const response = await fitnessService.getExerciseTypes();
-      
+
       // Extract unique categories from exercises using logging_category_info
       const categoryMap = new Map();
       response.forEach(exercise => {
@@ -78,7 +79,7 @@ class ExerciseCategoryService {
           }
         }
       });
-      
+
       this.categories = Array.from(categoryMap.values());
       this.loaded = true;
     } catch {

@@ -4,11 +4,14 @@
  */
 
 import { create } from 'zustand';
+
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NutritionStore } from './types';
-import { nutritionService } from '../services/nutritionService';
+import { nutritionService } from '../services/api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 // Initial state
 const initialState = {
@@ -35,7 +38,7 @@ export const useNutritionStore = create<NutritionStore>()(
       setError: (error) => set({ error, loading: false }, false, 'setError'),
 
       // Meal management
-      addMeal: (meal) => 
+      addMeal: (meal) =>
         set((state) => ({
           recentMeals: [meal, ...state.recentMeals],
           lastUpdated: new Date().toISOString(),
@@ -58,27 +61,27 @@ export const useNutritionStore = create<NutritionStore>()(
       // Data refresh
       refreshNutritionData: async () => {
         const { setLoading, setError, setTodayStats, setWeekStats, setRecentMeals } = get();
-        
+
         try {
           setLoading(true);
           setError(null);
-          
+
           // Load today's stats
           const todayStats = await nutritionService.getNutritionStats('day');
           setTodayStats(todayStats);
-          
+
           // Load week's stats
           const weekStats = await nutritionService.getNutritionStats('week');
           setWeekStats(weekStats);
-          
+
           // Load recent meals
           const recentMeals = await nutritionService.getNutritionLogs({ limit: 10 });
           setRecentMeals(recentMeals);
-          
+
           set({ lastUpdated: new Date().toISOString() }, false, 'refreshNutritionData');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to refresh nutrition data';
-          console.error('❌ [NUTRITION STORE] Error refreshing nutrition data:', error);
+          DebugUtils.error('❌ [NUTRITION STORE] Error refreshing nutrition data:', error);
           setError(`Nutrition data refresh failed: ${errorMessage}`);
         } finally {
           setLoading(false);

@@ -10,8 +10,12 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fitnessService } from '../../services/fitnessService';
+import { fitnessService } from '../../services/api';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface Exercise {
   id: number;
@@ -105,22 +109,22 @@ export default function UnifiedWorkoutLogger({
   const loadExercises = async () => {
     // Prevent multiple simultaneous calls
     if (isLoadingRef.current) {
-      console.log('Exercise loading already in progress, skipping');
+      DebugUtils.log('Exercise loading already in progress, skipping');
       return;
     }
-    
+
     try {
       isLoadingRef.current = true;
       setLoading(true);
-      
+
       // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Exercise loading timeout')), 10000)
       );
-      
+
       const dataPromise = fitnessService.getExercises();
       const data = await Promise.race([dataPromise, timeoutPromise]) as unknown;
-      
+
       // Map ExerciseType to Exercise format
       const mappedExercises: Exercise[] = (data as ExerciseApiResponse[]).map(exercise => ({
         id: exercise.id,
@@ -134,7 +138,7 @@ export default function UnifiedWorkoutLogger({
       }));
       setExercises(mappedExercises);
     } catch (error) {
-      console.error('Error loading exercises:', error);
+      DebugUtils.error('Error loading exercises:', error);
       // Set empty array as fallback to prevent UI issues
       setExercises([]);
     } finally {
@@ -193,7 +197,7 @@ export default function UnifiedWorkoutLogger({
       rest_time: 60,
       notes: '',
     };
-    
+
     setWorkout(prev => ({
       ...prev,
       sets: [...prev.sets, newSet],
@@ -205,7 +209,7 @@ export default function UnifiedWorkoutLogger({
   const updateSet = (setId: string, updates: Partial<WorkoutSet>) => {
     setWorkout(prev => ({
       ...prev,
-      sets: prev.sets.map(set => 
+      sets: prev.sets.map(set =>
         set.id === setId ? { ...set, ...updates } : set
       ),
     }));
@@ -221,7 +225,7 @@ export default function UnifiedWorkoutLogger({
   const filteredExercises = exercises.filter(exercise =>
     exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     exercise.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    exercise.muscle_groups.some(muscle => 
+    exercise.muscle_groups.some(muscle =>
       muscle.toLowerCase().includes(searchQuery.toLowerCase())
     )
   );
@@ -232,7 +236,7 @@ export default function UnifiedWorkoutLogger({
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Workout Details</Text>
-            
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Workout Name</Text>
               <TextInput
@@ -261,9 +265,9 @@ export default function UnifiedWorkoutLogger({
                 <TextInput
                   style={styles.input}
                   value={workout.duration.toString()}
-                  onChangeText={(text) => setWorkout(prev => ({ 
-                    ...prev, 
-                    duration: parseInt(text) || 0 
+                  onChangeText={(text) => setWorkout(prev => ({
+                    ...prev,
+                    duration: parseInt(text) || 0
                   }))}
                   keyboardType="numeric"
                   placeholder="0"
@@ -275,9 +279,9 @@ export default function UnifiedWorkoutLogger({
                 <TextInput
                   style={styles.input}
                   value={workout.calories_burned.toString()}
-                  onChangeText={(text) => setWorkout(prev => ({ 
-                    ...prev, 
-                    calories_burned: parseInt(text) || 0 
+                  onChangeText={(text) => setWorkout(prev => ({
+                    ...prev,
+                    calories_burned: parseInt(text) || 0
                   }))}
                   keyboardType="numeric"
                   placeholder="0"
@@ -305,7 +309,7 @@ export default function UnifiedWorkoutLogger({
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Add Exercises</Text>
-            
+
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={20} color="#6b7280" style={styles.searchIcon} />
               <TextInput
@@ -342,7 +346,7 @@ export default function UnifiedWorkoutLogger({
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Log Sets</Text>
-            
+
             <ScrollView style={styles.setsList} showsVerticalScrollIndicator={false}>
               {workout.sets.map((set, index) => {
                 const exercise = exercises.find(e => e.id.toString() === set.exercise_id);
@@ -359,57 +363,57 @@ export default function UnifiedWorkoutLogger({
                         <Ionicons name="close-circle" size={20} color="#ef4444" />
                       </TouchableOpacity>
                     </View>
-                    
+
                     <View style={styles.setInputs}>
                       <View style={styles.setInputGroup}>
                         <Text style={styles.setLabel}>Reps</Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.reps.toString()}
-                          onChangeText={(text) => updateSet(set.id, { 
-                            reps: parseInt(text) || 0 
+                          onChangeText={(text) => updateSet(set.id, {
+                            reps: parseInt(text) || 0
                           })}
                           keyboardType="numeric"
                           placeholder="0"
                           placeholderTextColor="#9ca3af"
                         />
                       </View>
-                      
+
                       <View style={styles.setInputGroup}>
                         <Text style={styles.setLabel}>Weight (kg)</Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.weight.toString()}
-                          onChangeText={(text) => updateSet(set.id, { 
-                            weight: parseFloat(text) || 0 
+                          onChangeText={(text) => updateSet(set.id, {
+                            weight: parseFloat(text) || 0
                           })}
                           keyboardType="numeric"
                           placeholder="0"
                           placeholderTextColor="#9ca3af"
                         />
                       </View>
-                      
+
                       <View style={styles.setInputGroup}>
                         <Text style={styles.setLabel}>Duration (s)</Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.duration.toString()}
-                          onChangeText={(text) => updateSet(set.id, { 
-                            duration: parseInt(text) || 0 
+                          onChangeText={(text) => updateSet(set.id, {
+                            duration: parseInt(text) || 0
                           })}
                           keyboardType="numeric"
                           placeholder="0"
                           placeholderTextColor="#9ca3af"
                         />
                       </View>
-                      
+
                       <View style={styles.setInputGroup}>
                         <Text style={styles.setLabel}>Rest (s)</Text>
                         <TextInput
                           style={styles.setInput}
                           value={set.rest_time.toString()}
-                          onChangeText={(text) => updateSet(set.id, { 
-                            rest_time: parseInt(text) || 0 
+                          onChangeText={(text) => updateSet(set.id, {
+                            rest_time: parseInt(text) || 0
                           })}
                           keyboardType="numeric"
                           placeholder="60"
@@ -417,7 +421,7 @@ export default function UnifiedWorkoutLogger({
                         />
                       </View>
                     </View>
-                    
+
                     <TextInput
                       style={[styles.setInput, styles.setNotes]}
                       value={set.notes}
@@ -436,11 +440,11 @@ export default function UnifiedWorkoutLogger({
         return (
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>Review & Save</Text>
-            
+
             <View style={styles.reviewCard}>
               <Text style={styles.reviewTitle}>{workout.name}</Text>
               <Text style={styles.reviewDate}>{workout.date}</Text>
-              
+
               <View style={styles.reviewStats}>
                 <View style={styles.reviewStat}>
                   <Text style={styles.reviewStatValue}>{workout.duration}</Text>
@@ -455,7 +459,7 @@ export default function UnifiedWorkoutLogger({
                   <Text style={styles.reviewStatLabel}>Sets</Text>
                 </View>
               </View>
-              
+
               {workout.notes && (
                 <View style={styles.reviewNotes}>
                   <Text style={styles.reviewNotesLabel}>Notes:</Text>
@@ -496,10 +500,10 @@ export default function UnifiedWorkoutLogger({
                 styles.stepCircle,
                 { backgroundColor: index <= currentStep ? '#3b82f6' : '#e5e7eb' }
               ]}>
-                <Ionicons 
-                  name={step.icon as keyof typeof Ionicons.glyphMap} 
-                  size={16} 
-                  color={index <= currentStep ? '#ffffff' : '#6b7280'} 
+                <Ionicons
+                  name={step.icon as keyof typeof Ionicons.glyphMap}
+                  size={16}
+                  color={index <= currentStep ? '#ffffff' : '#6b7280'}
                 />
               </View>
               <Text style={[
@@ -527,7 +531,7 @@ export default function UnifiedWorkoutLogger({
               <Text style={styles.secondaryButtonText}>Previous</Text>
             </TouchableOpacity>
           )}
-          
+
           <TouchableOpacity
             style={[
               styles.button,
@@ -550,34 +554,34 @@ export default function UnifiedWorkoutLogger({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   placeholder: {
     width: 32,
   },
   progressContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -588,47 +592,47 @@ const styles = StyleSheet.create({
   stepCircle: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   stepText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     textAlign: 'center',
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: SPACING.lg,
   },
   stepContent: {
     flex: 1,
   },
   stepTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 20,
   },
   inputGroup: {
     marginBottom: 16,
   },
   label: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1f2937',
+    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
   textArea: {
     height: 80,
@@ -640,11 +644,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: BORDER_RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
     marginBottom: 16,
   },
   searchIcon: {
@@ -652,9 +656,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1f2937',
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
   exercisesList: {
     maxHeight: 300,
@@ -663,9 +667,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -674,27 +678,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   exerciseCategory: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 2,
   },
   exerciseMuscles: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
   },
   setsList: {
     maxHeight: 400,
   },
   setCard: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -706,13 +710,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   setTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     flex: 1,
   },
   removeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   setInputs: {
     flexDirection: 'row',
@@ -724,41 +728,41 @@ const styles = StyleSheet.create({
     minWidth: '45%',
   },
   setLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   setInput: {
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    fontSize: 14,
-    color: '#1f2937',
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xs,
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.primary,
   },
   setNotes: {
     marginTop: 8,
     width: '100%',
   },
   reviewCard: {
-    backgroundColor: '#ffffff',
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   reviewTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   reviewDate: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 16,
   },
   reviewStats: {
@@ -776,52 +780,52 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   reviewStatLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   reviewNotes: {
     marginTop: 8,
   },
   reviewNotesLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: '#374151',
     marginBottom: 4,
   },
   reviewNotesText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   footer: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background.primary,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
     gap: 12,
   },
   button: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
   },
   primaryButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary,
   },
   secondaryButtonText: {
     color: '#374151',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
   },
 });

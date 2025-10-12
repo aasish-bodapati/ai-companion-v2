@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface DayData {
   day: string;
@@ -49,11 +53,11 @@ export default function WeeklySummaryCard({
   };
 
   const getDayStatus = (day: DayData) => {
-    const totalScore = (day.workouts > 0 ? 25 : 0) + 
-                     (day.meals > 0 ? 25 : 0) + 
-                     (day.proteinAdherence * 0.25) + 
+    const totalScore = (day.workouts > 0 ? 25 : 0) +
+                     (day.meals > 0 ? 25 : 0) +
+                     (day.proteinAdherence * 0.25) +
                      (day.caloriesHit ? 25 : 0);
-    
+
     if (totalScore >= 80) return 'excellent';
     if (totalScore >= 60) return 'good';
     if (totalScore >= 40) return 'okay';
@@ -78,10 +82,10 @@ export default function WeeklySummaryCard({
           <Text style={styles.title}>This Week</Text>
         </View>
         <View style={styles.trendIndicator}>
-          <Ionicons 
-            name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap} 
-            size={16} 
-            color={getTrendColor(weeklyTrend)} 
+          <Ionicons
+            name={getTrendIcon(weeklyTrend) as keyof typeof Ionicons.glyphMap}
+            size={16}
+            color={getTrendColor(weeklyTrend)}
           />
           <Text style={[styles.trendText, { color: getTrendColor(weeklyTrend) }]}>
             {improvementPercentage > 0 ? '+' : ''}{improvementPercentage}%
@@ -91,15 +95,15 @@ export default function WeeklySummaryCard({
 
       <Text style={styles.motivationalMessage}>{motivationalMessage}</Text>
 
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.daysContainer}
       >
         {weekData.map((day, index) => {
           const status = getDayStatus(day);
           const statusColor = getDayStatusColor(status);
-          
+
           return (
             <TouchableOpacity
               key={index}
@@ -108,23 +112,23 @@ export default function WeeklySummaryCard({
               activeOpacity={0.7}
             >
               <Text style={styles.dayName}>{day.day}</Text>
-              
+
               <View style={styles.dayStats}>
                 <View style={styles.statItem}>
                   <Ionicons name="fitness-outline" size={12} color="#10b981" />
                   <Text style={styles.statValue}>{day.workouts}</Text>
                 </View>
-                
+
                 <View style={styles.statItem}>
                   <Ionicons name="restaurant-outline" size={12} color="#3b82f6" />
                   <Text style={styles.statValue}>{day.meals}</Text>
                 </View>
-                
+
                 <View style={styles.statItem}>
                   <Ionicons name="leaf-outline" size={12} color="#10b981" />
                   <Text style={styles.statValue}>{day.proteinAdherence}%</Text>
                 </View>
-                
+
                 <View style={styles.statItem}>
                   <Ionicons name="flame-outline" size={12} color="#f97316" />
                   <Text style={styles.statValue}>{day.caloriesHit ? '✓' : '✗'}</Text>
@@ -133,10 +137,10 @@ export default function WeeklySummaryCard({
 
               <View style={styles.alignmentIndicator}>
                 <View style={styles.alignmentBar}>
-                  <View 
+                  <View
                     style={[
                       styles.alignmentFill,
-                      { 
+                      {
                         width: `${day.alignmentScore}%`,
                         backgroundColor: getAlignmentColor(day.alignmentScore)
                       }
@@ -159,21 +163,21 @@ export default function WeeklySummaryCard({
           </Text>
           <Text style={styles.overviewLabel}>Workouts</Text>
         </View>
-        
+
         <View style={styles.overviewItem}>
           <Text style={styles.overviewValue}>
             {weekData.reduce((sum, day) => sum + day.meals, 0)}
           </Text>
           <Text style={styles.overviewLabel}>Meals</Text>
         </View>
-        
+
         <View style={styles.overviewItem}>
           <Text style={styles.overviewValue}>
             {Math.round(weekData.reduce((sum, day) => sum + day.proteinAdherence, 0) / weekData.length)}%
           </Text>
           <Text style={styles.overviewLabel}>Avg Protein</Text>
         </View>
-        
+
         <View style={styles.overviewItem}>
           <Text style={styles.overviewValue}>
             {weekData.filter(day => day.caloriesHit).length}
@@ -187,9 +191,9 @@ export default function WeeklySummaryCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     margin: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -209,9 +213,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
   },
   trendIndicator: {
@@ -219,13 +223,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trendText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
     marginLeft: 4,
   },
   motivationalMessage: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 16,
     fontStyle: 'italic',
   },
@@ -234,17 +238,17 @@ const styles = StyleSheet.create({
   },
   dayCard: {
     width: 80,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
     marginRight: 8,
     borderWidth: 2,
     alignItems: 'center',
   },
   dayName: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   dayStats: {
@@ -256,9 +260,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 4,
   },
   alignmentIndicator: {
@@ -268,7 +272,7 @@ const styles = StyleSheet.create({
   alignmentBar: {
     width: '100%',
     height: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 2,
     marginBottom: 4,
     overflow: 'hidden',
@@ -278,7 +282,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   alignmentScore: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: 'bold',
   },
   weeklyOverview: {
@@ -293,13 +297,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   overviewValue: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   overviewLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
 });

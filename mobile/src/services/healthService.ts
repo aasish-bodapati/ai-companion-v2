@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 
 export interface HealthData {
@@ -44,7 +45,7 @@ export interface HealthInsights {
 class HealthService extends BaseService {
   async getHealthData(): Promise<HealthData> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health'),
+      () => api.get('/api/v1/health'),
       'HEALTH SERVICE - getHealthData'
     );
     return data;
@@ -53,7 +54,7 @@ class HealthService extends BaseService {
   async getHealthProfile(): Promise<HealthProfile | null> {
     try {
       const data = await this.makeRequest(
-        () => apiClient.get('/health/profile/'),
+        () => api.get('/api/v1/health/profile/'),
         'HEALTH SERVICE - getHealthProfile'
       );
       return data;
@@ -65,7 +66,7 @@ class HealthService extends BaseService {
 
   async updateHealthProfile(profileData: Partial<HealthProfile>): Promise<HealthProfile> {
     const data = await this.makeRequest(
-      () => apiClient.put('/health/profile/', profileData),
+      () => api.put('/api/v1/health/profile/', profileData),
       'HEALTH SERVICE - updateHealthProfile'
     );
     return data;
@@ -73,7 +74,7 @@ class HealthService extends BaseService {
 
   async getHealthInsights(): Promise<HealthInsights> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/insights/suggestions'),
+      () => api.get('/api/v1/health/insights/suggestions'),
       'HEALTH SERVICE - getHealthInsights'
     );
     return data;
@@ -81,7 +82,7 @@ class HealthService extends BaseService {
 
   async getHealthScore(): Promise<{ score: number; breakdown: Record<string, unknown> }> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/insights/health-score'),
+      () => api.get('/api/v1/health/insights/health-score'),
       'HEALTH SERVICE - getHealthScore'
     );
     return data;
@@ -89,30 +90,29 @@ class HealthService extends BaseService {
 
   async getWeeklyReport(): Promise<any> {
     const data = await this.makeRequest(
-      () => apiClient.get('/health/insights/weekly-report'),
+      () => api.get('/api/v1/health/insights/weekly-report'),
       'HEALTH SERVICE - getWeeklyReport'
     );
     return data;
   }
 
-
   // Water logging (delegated to simpleWaterService for consistency)
   async getWaterLogs(days: number = 7): Promise<any[]> {
-    const { simpleWaterService } = await import('./simpleWaterService');
+    const { simpleWaterService } = await import('./SimpleWaterService');
     // Simple water service doesn't have getWaterLogs, so we'll return empty array for now
     // This is a legacy method that might not be needed
     return [];
   }
 
   async logWater(amount_ml: number): Promise<any> {
-    const { simpleWaterService } = await import('./simpleWaterService');
+    const { simpleWaterService } = await import('./SimpleWaterService');
     return simpleWaterService.logWater(amount_ml);
   }
 
   // Mood logging (delegated to moodService for consistency)
   async getMoodLogs(days: number = 7): Promise<any[]> {
-    const { moodService } = await import('./moodService');
-    return moodService.getMoodLogs({ 
+    const { moodService } = await import('./MoodService');
+    return moodService.getMoodLogs({
       start_date: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       end_date: new Date().toISOString().split('T')[0]
     });
@@ -130,7 +130,7 @@ class HealthService extends BaseService {
     notes?: string;
     activities?: string;
   }): Promise<any> {
-    const { moodService } = await import('./moodService');
+    const { moodService } = await import('./MoodService');
     return moodService.createMoodLog({
       mood_rating: moodData.mood_rating,
       mood_label: moodData.notes,

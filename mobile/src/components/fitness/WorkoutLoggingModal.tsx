@@ -5,11 +5,13 @@ import BaseModal from '../ui/BaseModal.simple';
 import { modalConfigs } from '../ui/BaseModal.utils';
 import ExerciseSelector, { exerciseSelectorConfigs } from '../ui/ExerciseSelector';
 import SimpleLoggingItem from '../ui/SimpleLoggingItem';
-import { fitnessService, ExerciseType } from '../../services/fitnessService';
+import { fitnessService, ExerciseType } from '../../services/FitnessService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 import { useToast } from '../../contexts/ToastContext';
 import { CategoryBadge } from '../ui/Badge';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface WorkoutExercise {
   exercise_name?: string;
@@ -78,7 +80,6 @@ export default function WorkoutLoggingModal({
     exercisesRef.current = exercises;
   }, [exercises]);
 
-
   // Load available exercises for selector
   const loadAvailableExercises = useCallback(async () => {
     try {
@@ -86,7 +87,7 @@ export default function WorkoutLoggingModal({
       const exercises = await fitnessService.getExercises();
       setAvailableExercises(exercises);
     } catch (error) {
-      console.error('Error loading exercises:', error);
+      DebugUtils.error('Error loading exercises:', error);
       setAvailableExercises([]);
     } finally {
       setLoadingExercises(false);
@@ -97,11 +98,11 @@ export default function WorkoutLoggingModal({
   const handleExerciseSelectorSelect = useCallback((exercise: ExerciseType) => {
     // Check if exercise already exists
     const existingItem = exercisesRef.current.find(item => item.name === exercise.name);
-    
+
     if (existingItem) {
       // Update sets if exercise already exists
-      const updatedExercises = exercisesRef.current.map(item => 
-        item.name === exercise.name 
+      const updatedExercises = exercisesRef.current.map(item =>
+        item.name === exercise.name
           ? { ...item, sets: (item.sets || 0) + 1 }
           : item
       );
@@ -119,16 +120,15 @@ export default function WorkoutLoggingModal({
         category: exercise.category || exercise.logging_category || '',
         notes: '',
       };
-      
+
       const updatedExercises = [...exercisesRef.current, newExercise];
       setExercises(updatedExercises);
       setNewlyAddedIds(prev => new Set([...prev, newExercise.id]));
     }
-    
+
     setShowExerciseSelector(false);
     hapticFeedback.impact('light');
   }, []);
-
 
   const handleRemoveItem = useCallback((id: number | string) => {
     setExercises(prevExercises => prevExercises.filter(item => item.id !== id));
@@ -152,11 +152,11 @@ export default function WorkoutLoggingModal({
 
   const isFormValid = () => {
     if (exercises.length === 0) return false;
-    
+
     // Validate each exercise based on its category
     return exercises.every(exercise => {
       const category = exercise.category;
-      
+
       switch (category) {
         case 'weighted':
         case 'bodyweight':
@@ -164,20 +164,20 @@ export default function WorkoutLoggingModal({
           const sets = parseInt(exercise.sets?.toString() || '0') || 0;
           const reps = exercise.reps?.toString() || '';
           return sets > 0 && reps && reps.trim() !== '' && reps !== '0';
-          
+
         case 'distance_based':
           // Need distance
           const distance = parseFloat(exercise.distance?.toString() || '0') || 0;
           return distance > 0;
-          
+
         case 'cardio_duration':
           // Need duration
           const duration = parseFloat(exercise.duration_minutes?.toString() || '0') || 0;
           return duration > 0;
-          
+
         default:
           // For unknown types, check if any field has a value
-          const hasAnyValue = Object.values(exercise).some(value => 
+          const hasAnyValue = Object.values(exercise).some(value =>
             value && value.toString().trim() !== '' && value !== '0'
           );
           return hasAnyValue;
@@ -213,7 +213,7 @@ export default function WorkoutLoggingModal({
     if (saving) {
       return;
     }
-    
+
     setSaving(true);
     try {
       // Parse exercises from the data
@@ -232,7 +232,7 @@ export default function WorkoutLoggingModal({
       }
 
       // Create separate log entries for each exercise
-      
+
       const logPromises = exercises.map((exercise: LoggingItemData, index: number) => {
         const exerciseData = {
           activity_type: 'strength_training',
@@ -242,13 +242,13 @@ export default function WorkoutLoggingModal({
           notes: exercise.notes || '',
           activity_date: (data as { activity_date?: string }).activity_date || new Date().toISOString(),
         };
-        
+
         return fitnessService.logWorkout(exerciseData);
       });
 
       // Wait for all exercises to be logged
       await Promise.all(logPromises);
-      
+
       onWorkoutLogged();
       onClose();
     } catch {
@@ -259,10 +259,7 @@ export default function WorkoutLoggingModal({
     }
   };
 
-
-
   const { showToast } = useToast();
-
 
   const getTotalExercises = () => exercises.length;
   const getTotalLogged = () => exercises.filter(ex => isFormValid()).length;
@@ -271,7 +268,7 @@ export default function WorkoutLoggingModal({
     if (saving) {
       return;
     }
-    
+
     setSaving(true);
     try {
       const data = getFormData();
@@ -302,11 +299,11 @@ export default function WorkoutLoggingModal({
           {exercises.length > 0 && (
             <View style={styles.workoutCategories}>
               {Array.from(new Set(exercises.map(ex => ex.category).filter(Boolean))).map((category, index) => (
-                <CategoryBadge 
-                  key={index} 
-                  category={String(category || '')} 
-                  size="small" 
-                  outline 
+                <CategoryBadge
+                  key={index}
+                  category={String(category || '')}
+                  size="small"
+                  outline
                 />
               ))}
             </View>
@@ -330,7 +327,7 @@ export default function WorkoutLoggingModal({
           {/* Exercises List */}
           <ScrollView style={styles.exercisesContainer} showsVerticalScrollIndicator={false}>
             <Text style={styles.sectionTitle}>Exercises ({getTotalExercises()})</Text>
-            
+
             {exercises.map((exercise, index) => (
               <View key={exercise.id} style={styles.exerciseCard}>
                 <View style={styles.exerciseHeader}>
@@ -338,9 +335,9 @@ export default function WorkoutLoggingModal({
                     <Text style={styles.exerciseNumber}>#{index + 1}</Text>
                     <Text style={styles.exerciseName}>{String(exercise.name || 'Exercise')}</Text>
                     {exercise.category && (
-                      <CategoryBadge 
-                        category={String(exercise.category)} 
-                        size="small" 
+                      <CategoryBadge
+                        category={String(exercise.category)}
+                        size="small"
                         outline
                       />
                     )}
@@ -369,15 +366,15 @@ export default function WorkoutLoggingModal({
             <Text style={styles.completionText}>
               {getTotalLogged()} / {getTotalExercises()} exercises logged - workout will be completed
             </Text>
-            
+
             <View style={styles.actionButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
-                  styles.saveButton, 
+                  styles.saveButton,
                   (saving || !isFormValid()) && styles.saveButtonDisabled
                 ]}
                 onPress={handleSaveWorkout}

@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { Modal, View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 

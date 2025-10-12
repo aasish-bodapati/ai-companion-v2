@@ -25,35 +25,35 @@ export interface ChartProps {
   // Core props
   data: ChartDataPoint[];
   type: ChartType;
-  
+
   // Styling
   variant?: ChartVariant;
   size?: ChartSize;
   width?: number;
   height?: number;
-  
+
   // Configuration
   showGrid?: boolean;
   showLabels?: boolean;
   showLegend?: boolean;
   showTooltip?: boolean;
   animated?: boolean;
-  
+
   // Colors
   primaryColor?: string;
   secondaryColor?: string;
   gridColor?: string;
   textColor?: string;
-  
+
   // Labels
   title?: string;
   xAxisLabel?: string;
   yAxisLabel?: string;
-  
+
   // Callbacks
   onDataPointPress?: (dataPoint: ChartDataPoint, index: number) => void;
   onLegendPress?: (dataPoint: ChartDataPoint, index: number) => void;
-  
+
   // Styling overrides
   containerStyle?: ViewStyle;
   chartStyle?: ViewStyle;
@@ -61,7 +61,7 @@ export interface ChartProps {
   labelStyle?: TextStyle;
   legendStyle?: ViewStyle;
   gridStyle?: ViewStyle;
-  
+
   // Accessibility
   testID?: string;
   accessibilityLabel?: string;
@@ -101,7 +101,7 @@ const Chart: React.FC<ChartProps> = ({
     const screenWidth = Dimensions.get('window').width;
     const defaultWidth = width || (screenWidth - SPACING.xl * 2);
     const defaultHeight = height || getDefaultHeight(size);
-    
+
     return {
       width: defaultWidth,
       height: defaultHeight,
@@ -110,7 +110,7 @@ const Chart: React.FC<ChartProps> = ({
 
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    
+
     // Sort data by x value for proper rendering
     return [...data].sort((a, b) => {
       const aVal = typeof a.x === 'string' ? parseFloat(a.x) : a.x;
@@ -133,7 +133,7 @@ const Chart: React.FC<ChartProps> = ({
 
   const getDataPointPosition = (point: ChartDataPoint, index: number) => {
     const x = (index / (chartData.length - 1)) * (chartDimensions.width - 40);
-    const y = chartDimensions.height - 40 - 
+    const y = chartDimensions.height - 40 -
       ((point.y - minValue) / valueRange) * (chartDimensions.height - 80);
     return { x, y };
   };
@@ -141,7 +141,7 @@ const Chart: React.FC<ChartProps> = ({
   const renderDataPoint = (point: ChartDataPoint, index: number) => {
     const position = getDataPointPosition(point, index);
     const pointColor = point.color || primaryColor;
-    
+
     return (
       <View
         key={`point-${index}`}
@@ -163,7 +163,7 @@ const Chart: React.FC<ChartProps> = ({
 
   const renderLine = () => {
     if (chartData.length < 2) return null;
-    
+
     const pathData = chartData.map((point, index) => {
       const position = getDataPointPosition(point, index);
       return `${index === 0 ? 'M' : 'L'} ${position.x} ${position.y}`;
@@ -180,7 +180,7 @@ const Chart: React.FC<ChartProps> = ({
     const position = getDataPointPosition(point, index);
     const barHeight = chartDimensions.height - 40 - position.y;
     const barWidth = Math.max(8, (chartDimensions.width - 40) / chartData.length - 4);
-    
+
     return (
       <View
         key={`bar-${index}`}
@@ -204,18 +204,18 @@ const Chart: React.FC<ChartProps> = ({
 
   const renderPie = () => {
     if (chartData.length === 0) return null;
-    
+
     const total = chartData.reduce((sum, point) => sum + point.y, 0);
     let currentAngle = 0;
-    
+
     return chartData.map((point, index) => {
       const percentage = point.y / total;
       const angle = percentage * 360;
       const startAngle = currentAngle;
       const endAngle = currentAngle + angle;
-      
+
       currentAngle += angle;
-      
+
       return (
         <View
           key={`pie-${index}`}
@@ -237,10 +237,10 @@ const Chart: React.FC<ChartProps> = ({
 
   const renderGrid = () => {
     if (!showGrid) return null;
-    
+
     const gridLines = 5;
     const stepY = (chartDimensions.height - 80) / gridLines;
-    
+
     return (
       <View style={[styles.grid, gridStyle]}>
         {Array.from({ length: gridLines + 1 }, (_, i) => (
@@ -261,7 +261,7 @@ const Chart: React.FC<ChartProps> = ({
 
   const renderLabels = () => {
     if (!showLabels) return null;
-    
+
     return (
       <View style={styles.labelsContainer}>
         {chartData.map((point, index) => {
@@ -290,7 +290,7 @@ const Chart: React.FC<ChartProps> = ({
 
   const renderLegend = () => {
     if (!showLegend) return null;
-    
+
     return (
       <View style={[styles.legend, legendStyle]}>
         {chartData.map((point, index) => (
@@ -380,13 +380,13 @@ const Chart: React.FC<ChartProps> = ({
           {title}
         </Text>
       )}
-      
+
       <View style={[styles.chartWrapper, { ...chartDimensions }]}>
         {renderChart()}
       </View>
-      
+
       {showLegend && renderLegend()}
-      
+
       {(xAxisLabel || yAxisLabel) && (
         <View style={styles.axisLabels}>
           {xAxisLabel && (

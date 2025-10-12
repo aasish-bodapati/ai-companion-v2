@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+
 // Removed MigrationHelpers import
 
 interface Achievement {
@@ -101,7 +105,6 @@ export default function AchievementBadges({
     }
   };
 
-
   return (
     <View style={[styles.container, style]}>
       <View style={styles.header}>
@@ -133,8 +136,8 @@ export default function AchievementBadges({
         {achievements.map((achievement) => {
           const rarityColor = getRarityColor(achievement.rarity);
           const rarityGlow = getRarityGlow(achievement.rarity);
-          const progress = achievement.progress && achievement.target 
-            ? (achievement.progress / achievement.target) * 100 
+          const progress = achievement.progress && achievement.target
+            ? (achievement.progress / achievement.target) * 100
             : 0;
 
           return (
@@ -155,8 +158,8 @@ export default function AchievementBadges({
                   style={[
                     styles.achievementIconContainer,
                     {
-                      backgroundColor: achievement.unlocked 
-                        ? achievement.color + '20' 
+                      backgroundColor: achievement.unlocked
+                        ? achievement.color + '20'
                         : '#e5e7eb',
                     },
                   ]}
@@ -167,14 +170,14 @@ export default function AchievementBadges({
                     color={achievement.unlocked ? achievement.color : '#9ca3af'}
                   />
                 </View>
-                
+
                 {achievement.unlocked && (
                   <View style={[styles.unlockedBadge, { backgroundColor: rarityColor }]}>
                     <Ionicons name="checkmark" size={12} color="#ffffff" />
                   </View>
                 )}
               </View>
-              
+
               <View style={styles.achievementInfo}>
                 <Text
                   style={[
@@ -196,7 +199,7 @@ export default function AchievementBadges({
                 >
                   {achievement.description}
                 </Text>
-                
+
                 {!achievement.unlocked && achievement.progress && achievement.target && (
                   <View style={styles.progressContainer}>
                     <View style={styles.progressBar}>
@@ -226,9 +229,9 @@ export default function AchievementBadges({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -254,7 +257,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     backgroundColor: '#f0f9ff',
     alignItems: 'center',
     justifyContent: 'center',
@@ -264,26 +267,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   actionText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     fontWeight: '500',
   },
@@ -292,9 +295,9 @@ const styles = StyleSheet.create({
   },
   achievementCard: {
     width: 140,
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     borderWidth: 2,
     alignItems: 'center',
   },
@@ -324,13 +327,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   achievementTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 4,
   },
   achievementDescription: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -341,7 +344,7 @@ const styles = StyleSheet.create({
   progressBar: {
     width: '100%',
     height: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 2,
     marginBottom: 4,
   },
@@ -350,8 +353,8 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
 });

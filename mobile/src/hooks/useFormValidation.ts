@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { FormValidator, ValidationRule, ValidationErrors } from '../utils/formValidation';
 import { FormState } from '../types/CommonTypes';
 
@@ -45,7 +46,7 @@ export function useFormValidation<T extends Record<string, any>>(
   // Validate all fields
   const validateForm = useCallback((): ValidationErrors => {
     const errors: ValidationErrors = {};
-    
+
     Object.keys(validationRules).forEach(field => {
       const fieldRules = validationRules[field as keyof T];
       if (!fieldRules) return;
@@ -68,7 +69,7 @@ export function useFormValidation<T extends Record<string, any>>(
       const newData = { ...prev.data, [field]: value };
       const fieldError = validateField(field, value);
       const newErrors = { ...prev.errors };
-      
+
       if (fieldError) {
         newErrors[field as string] = fieldError;
       } else {
@@ -94,7 +95,7 @@ export function useFormValidation<T extends Record<string, any>>(
     setFormState(prev => {
       const newData = { ...prev.data, ...updates };
       const newErrors = { ...prev.errors };
-      
+
       // Validate each updated field
       Object.keys(updates).forEach(field => {
         const fieldError = validateField(field as keyof T, updates[field as keyof T]);
@@ -199,14 +200,14 @@ export function useFormValidation<T extends Record<string, any>>(
     isSubmitting: formState.isSubmitting,
     isValid: formState.isValid,
     isDirty: formState.isDirty,
-    
+
     // Actions
     updateField,
     updateFields,
     resetForm,
     setSubmitting,
     setFormData,
-    
+
     // Validation
     validateField,
     validateForm,

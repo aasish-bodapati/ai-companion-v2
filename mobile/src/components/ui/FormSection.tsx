@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
 interface FormSectionProps {

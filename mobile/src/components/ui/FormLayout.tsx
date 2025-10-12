@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import TouchOptimizedButton from './TouchOptimizedButton';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
@@ -79,7 +81,7 @@ export default function FormLayout({
             <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
           </TouchableOpacity>
         )}
-        
+
         <View style={styles.titleContainer}>
           {title && <Text style={styles.title}>{title}</Text>}
           {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}

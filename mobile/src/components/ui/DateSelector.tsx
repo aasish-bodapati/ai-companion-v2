@@ -95,17 +95,17 @@ export default function DateSelector({
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
+
       <View style={styles.selectorContainer}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('prev')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="chevron-back" size={16} color={COLORS.text.secondary} />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.dateButton}
           onPress={openCalendar}
         >
@@ -115,17 +115,17 @@ export default function DateSelector({
           </Text>
           <Ionicons name="chevron-down" size={14} color={COLORS.text.secondary} />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.navButton}
           onPress={() => navigateDate('next')}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="chevron-forward" size={16} color={COLORS.text.secondary} />
         </TouchableOpacity>
-        
+
         {showTodayButton && (
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[
               styles.todayButton,
               isToday(selectedDate) && styles.todayButtonActive
@@ -161,13 +161,13 @@ export default function DateSelector({
                 <Ionicons name="close" size={24} color={COLORS.text.secondary} />
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.calendarModalBody}
               activeOpacity={1}
               onPress={closeCalendar}
             >
-              <TouchableOpacity 
+              <TouchableOpacity
                 activeOpacity={1}
                 onPress={(e) => e.stopPropagation()}
               >

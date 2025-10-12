@@ -1,3 +1,6 @@
+import { DebugUtils } from '../utils/debugUtils';
+
+
 
 // This is a fallback implementation that will be replaced by the actual toast context
 // when used within a component that has access to the ToastProvider
@@ -9,7 +12,7 @@ export const showToast = {
     if (toastContext) {
       toastContext.showToast(fullMessage, 'success', 4000);
     } else {
-      console.log('🔍 [TOAST] Success:', fullMessage);
+      DebugUtils.log('🔍 [TOAST] Success:', fullMessage);
     }
   },
 
@@ -18,7 +21,7 @@ export const showToast = {
     if (toastContext) {
       toastContext.showToast(fullMessage, 'error', 5000);
     } else {
-      console.log('🔍 [TOAST] Error:', fullMessage);
+      DebugUtils.log('🔍 [TOAST] Error:', fullMessage);
     }
   },
 
@@ -27,7 +30,7 @@ export const showToast = {
     if (toastContext) {
       toastContext.showToast(fullMessage, 'info', 3000);
     } else {
-      console.log('🔍 [TOAST] Info:', fullMessage);
+      DebugUtils.log('🔍 [TOAST] Info:', fullMessage);
     }
   },
 
@@ -36,7 +39,7 @@ export const showToast = {
     if (toastContext) {
       toastContext.showToast(fullMessage, 'warning', 4000);
     } else {
-      console.log('🔍 [TOAST] Warning:', fullMessage);
+      DebugUtils.log('🔍 [TOAST] Warning:', fullMessage);
     }
   },
 };

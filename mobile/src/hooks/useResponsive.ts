@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+
 import { Dimensions } from 'react-native';
 import { BREAKPOINTS } from '../theme/constants';
 
@@ -46,7 +47,7 @@ export function useResponsive() {
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
       const { width, height, scale, fontScale } = window;
       setDimensions({ width, height, scale, fontScale });
-      
+
       setBreakpoints({
         isSmall: width < BREAKPOINTS.medium,
         isMedium: width >= BREAKPOINTS.medium && width < BREAKPOINTS.large,
@@ -68,7 +69,7 @@ export function useResponsive() {
 
   const getResponsiveFontSize = (baseSize: number): number => {
     let scaleFactor = 1;
-    
+
     if (breakpoints.isTablet) {
       scaleFactor = 1.2;
     } else if (dimensions.width > 400) {
@@ -78,13 +79,13 @@ export function useResponsive() {
       // Smaller phones
       scaleFactor = 0.9;
     }
-    
+
     return Math.round(baseSize * scaleFactor);
   };
 
   const getResponsiveSpacing = (baseSpacing: number): number => {
     let scaleFactor = 1;
-    
+
     if (breakpoints.isTablet) {
       scaleFactor = 1.3;
     } else if (dimensions.width > 400) {
@@ -94,13 +95,13 @@ export function useResponsive() {
       // Smaller phones
       scaleFactor = 0.9;
     }
-    
+
     return Math.round(baseSpacing * scaleFactor);
   };
 
   const getResponsivePadding = (basePadding: number): number => {
     let scaleFactor = 1;
-    
+
     if (breakpoints.isTablet) {
       scaleFactor = 1.5;
     } else if (dimensions.width > 400) {
@@ -110,13 +111,13 @@ export function useResponsive() {
       // Smaller phones
       scaleFactor = 0.9;
     }
-    
+
     return Math.round(basePadding * scaleFactor);
   };
 
   const getResponsiveMargin = (baseMargin: number): number => {
     let scaleFactor = 1;
-    
+
     if (breakpoints.isTablet) {
       scaleFactor = 1.4;
     } else if (dimensions.width > 400) {
@@ -126,7 +127,7 @@ export function useResponsive() {
       // Smaller phones
       scaleFactor = 0.9;
     }
-    
+
     return Math.round(baseMargin * scaleFactor);
   };
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import LoadingState from '../LoadingState';
 
@@ -75,10 +76,11 @@ describe('LoadingState', () => {
         loading={true} 
         message="Loading..." 
         containerStyle={customStyle}
+        testID="loading-state"
       />
     );
     
-    expect(getByTestId('loading-container')).toHaveStyle(customStyle);
+    expect(getByTestId('loading-state')).toHaveStyle(customStyle);
   });
 
   it('renders custom spinner', () => {

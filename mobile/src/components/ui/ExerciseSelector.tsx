@@ -32,12 +32,12 @@ export interface ExerciseSelectorProps {
   visible: boolean;
   onClose: () => void;
   onSelect: (exercise: Exercise) => void;
-  
+
   // Selection configuration
   allowMultiple?: boolean;
   selectedExercises?: Exercise[];
   onMultipleSelect?: (exercises: Exercise[]) => void;
-  
+
   // Filtering and search
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
@@ -45,28 +45,28 @@ export interface ExerciseSelectorProps {
   onCategoryFilterChange?: (category: string) => void;
   selectedCategories?: string[];
   onCategoriesChange?: (categories: string[]) => void;
-  
+
   // Data source
   exercises: Exercise[];
   loading?: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
-  
+
   // Display options
   showCategories?: boolean;
   showDifficulty?: boolean;
   showCalories?: boolean;
   showDescription?: boolean;
-  
+
   // Styling
   containerStyle?: any;
   itemStyle?: any;
   searchStyle?: any;
-  
+
   // Callbacks
   onExercisePress?: (exercise: Exercise) => void;
   onExerciseLongPress?: (exercise: Exercise) => void;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -125,7 +125,7 @@ export default function ExerciseSelector({
     // Filter by search query
     if (localSearchQuery.trim()) {
       const query = localSearchQuery.toLowerCase();
-      filtered = filtered.filter(exercise => 
+      filtered = filtered.filter(exercise =>
         exercise.name.toLowerCase().includes(query) ||
         exercise.exercise_name?.toLowerCase().includes(query) ||
         exercise.description?.toLowerCase().includes(query)
@@ -134,7 +134,7 @@ export default function ExerciseSelector({
 
     // Filter by category (legacy single category)
     if (localCategoryFilter) {
-      filtered = filtered.filter(exercise => 
+      filtered = filtered.filter(exercise =>
         exercise.category === localCategoryFilter ||
         exercise.logging_category === localCategoryFilter
       );
@@ -142,8 +142,8 @@ export default function ExerciseSelector({
 
     // Filter by multiple categories
     if (localSelectedCategories.length > 0) {
-      filtered = filtered.filter(exercise => 
-        localSelectedCategories.some(cat => 
+      filtered = filtered.filter(exercise =>
+        localSelectedCategories.some(cat =>
           exercise.category === cat || exercise.logging_category === cat
         )
       );
@@ -196,18 +196,18 @@ export default function ExerciseSelector({
     if (allowMultiple) {
       const isSelected = selectedExercises.some(selected => selected.id === exercise.id);
       let newSelection;
-      
+
       if (isSelected) {
         newSelection = selectedExercises.filter(selected => selected.id !== exercise.id);
       } else {
         newSelection = [...selectedExercises, exercise];
       }
-      
+
       onMultipleSelect?.(newSelection);
     } else {
       onSelect(exercise);
     }
-    
+
     onExercisePress?.(exercise);
   }, [allowMultiple, selectedExercises, onSelect, onMultipleSelect, onExercisePress]);
 
@@ -263,7 +263,7 @@ export default function ExerciseSelector({
                 <Text style={styles.detailText}>{exercise.difficulty}</Text>
               </View>
             )}
-            
+
             {showCalories && exercise.calories_per_minute && (
               <View style={styles.detailItem}>
                 <Ionicons name="flame" size={14} color={COLORS.text.secondary} />
@@ -298,7 +298,6 @@ export default function ExerciseSelector({
     handleExerciseLongPress,
     itemStyle,
   ]);
-
 
   // Render empty state
   const renderEmptyState = () => {

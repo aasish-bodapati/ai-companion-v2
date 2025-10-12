@@ -2,6 +2,7 @@
 
 import { SearchInputSize, SearchInputVariant, SearchInputState } from './SearchInput';
 
+
 export const searchInputPresets = {
   // Small search inputs
   small: {
@@ -242,11 +243,11 @@ export const searchInputUtils = {
     if (value.length < minLength) {
       return { isValid: false, error: `Minimum ${minLength} characters required` };
     }
-    
+
     if (maxLength && value.length > maxLength) {
       return { isValid: false, error: `Maximum ${maxLength} characters allowed` };
     }
-    
+
     return { isValid: true, error: null };
   },
 
@@ -258,7 +259,7 @@ export const searchInputUtils = {
   // Highlight search terms
   highlightSearchTerms: (text: string, searchTerm: string) => {
     if (!searchTerm) return text;
-    
+
     const regex = new RegExp(`(${searchTerm})`, 'gi');
     return text.replace(regex, '**$1**');
   },

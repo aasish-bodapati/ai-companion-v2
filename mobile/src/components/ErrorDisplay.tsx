@@ -1,7 +1,11 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useErrorContext, AppError } from '../contexts/ErrorContext';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface ErrorDisplayProps {
   maxErrors?: number;
@@ -49,28 +53,28 @@ export function ErrorDisplay({ maxErrors = 5, showRetryButtons = true }: ErrorDi
         {displayErrors.map((error) => (
           <View key={error.id} style={styles.errorCard}>
             <View style={styles.errorHeader}>
-              <Ionicons 
-                name={getErrorIcon(error.type)} 
-                size={20} 
-                color={getErrorColor(error.type)} 
+              <Ionicons
+                name={getErrorIcon(error.type)}
+                size={20}
+                color={getErrorColor(error.type)}
               />
               <Text style={styles.errorType}>{error.type.toUpperCase()}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.dismissButton}
                 onPress={() => removeError(error.id)}
               >
                 <Ionicons name="close" size={16} color="#6b7280" />
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.errorMessage}>{error.message}</Text>
-            
+
             {error.context && (
               <Text style={styles.errorContext}>{error.context}</Text>
             )}
-            
+
             {showRetryButtons && error.retryable && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.retryButton}
                 onPress={() => retryError(error.id)}
               >
@@ -91,12 +95,12 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
   errorCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
     marginRight: 8,
     minWidth: 200,
     maxWidth: 300,
@@ -115,35 +119,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   errorType: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginLeft: 6,
     flex: 1,
   },
   dismissButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
   errorMessage: {
-    fontSize: 14,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   errorContext: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 8,
   },
   retryButton: {
-    backgroundColor: '#3b82f6',
-    paddingHorizontal: 12,
+    backgroundColor: COLORS.primary.main,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     alignSelf: 'flex-start',
   },
   retryButtonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },
 });

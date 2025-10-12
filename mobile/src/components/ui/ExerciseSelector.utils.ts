@@ -2,6 +2,7 @@
 
 import { Exercise } from './ExerciseSelector';
 
+
 export const exerciseSelectorPresets = {
   // Basic exercise selection (single)
   basic: {
@@ -104,7 +105,7 @@ export const createExerciseSelectorConfig = (
 export const exerciseFilters = {
   // Filter by category
   byCategory: (exercises: Exercise[], category: string) => {
-    return exercises.filter(exercise => 
+    return exercises.filter(exercise =>
       exercise.category === category || exercise.logging_category === category
     );
   },
@@ -117,9 +118,9 @@ export const exerciseFilters = {
   // Filter by search query
   bySearchQuery: (exercises: Exercise[], query: string) => {
     if (!query.trim()) return exercises;
-    
+
     const searchQuery = query.toLowerCase();
-    return exercises.filter(exercise => 
+    return exercises.filter(exercise =>
       exercise.name.toLowerCase().includes(searchQuery) ||
       exercise.exercise_name?.toLowerCase().includes(searchQuery) ||
       exercise.description?.toLowerCase().includes(searchQuery) ||
@@ -202,7 +203,7 @@ export const exerciseSearch = {
   // Get search suggestions
   getSuggestions: (exercises: Exercise[], query: string, maxSuggestions: number = 5) => {
     if (!query.trim()) return [];
-    
+
     const searchQuery = query.toLowerCase();
     const suggestions = exercises
       .filter(exercise => {
@@ -210,14 +211,14 @@ export const exerciseSearch = {
         return name.toLowerCase().includes(searchQuery);
       })
       .slice(0, maxSuggestions);
-    
+
     return suggestions;
   },
 
   // Highlight search terms in text
   highlightSearchTerms: (text: string, searchQuery: string) => {
     if (!searchQuery.trim()) return text;
-    
+
     const regex = new RegExp(`(${searchQuery})`, 'gi');
     return text.replace(regex, '**$1**');
   },
@@ -263,24 +264,24 @@ export const exerciseStats = {
   // Get category distribution
   getCategoryDistribution: (exercises: Exercise[]) => {
     const distribution: Record<string, number> = {};
-    
+
     exercises.forEach(exercise => {
       const category = exercise.category || exercise.logging_category || 'Unknown';
       distribution[category] = (distribution[category] || 0) + 1;
     });
-    
+
     return distribution;
   },
 
   // Get difficulty distribution
   getDifficultyDistribution: (exercises: Exercise[]) => {
     const distribution: Record<string, number> = {};
-    
+
     exercises.forEach(exercise => {
       const difficulty = exercise.difficulty || 'Unknown';
       distribution[difficulty] = (distribution[difficulty] || 0) + 1;
     });
-    
+
     return distribution;
   },
 
@@ -288,12 +289,12 @@ export const exerciseStats = {
   getAverageCalories: (exercises: Exercise[]) => {
     const exercisesWithCalories = exercises.filter(exercise => exercise.calories_per_minute);
     if (exercisesWithCalories.length === 0) return 0;
-    
+
     const totalCalories = exercisesWithCalories.reduce(
       (sum, exercise) => sum + (exercise.calories_per_minute || 0),
       0
     );
-    
+
     return totalCalories / exercisesWithCalories.length;
   },
 };

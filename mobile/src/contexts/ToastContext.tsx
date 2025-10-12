@@ -49,17 +49,17 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     const now = Date.now();
     const operationKey = `${baseMessage}-${type}`;
     const existing = rapidOperationsRef.current.get(operationKey);
-    
+
     if (existing && now - existing.lastTime < 2000) {
       // Within 2 seconds, increment count
       existing.count += 1;
       existing.lastTime = now;
-      
+
       // Clear any existing individual toasts for this operation
-      setToastQueue(prev => prev.filter(toast => 
+      setToastQueue(prev => prev.filter(toast =>
         !toast.message.includes(baseMessage) || toast.type !== type
       ));
-      
+
       // Show bulk notification
       const bulkMessage = `${baseMessage} (${existing.count} items)`;
       showToast(bulkMessage, type, duration);
@@ -76,7 +76,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    
+
     // Process next toast in queue after a short delay
     setTimeout(() => {
       setToastQueue(prev => {

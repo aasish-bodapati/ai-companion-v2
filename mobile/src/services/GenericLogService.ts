@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 import { BaseLog, LogParams, PaginatedResponse, BaseLogCreate, BaseLogUpdate } from '../types/BaseLog';
 
@@ -14,7 +15,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async getLogs(params?: LogParams): Promise<T[]> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.skip) queryParams.append('skip', params.skip.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.page) queryParams.append('page', params.page.toString());
@@ -23,9 +24,9 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
     if (params?.end_date) queryParams.append('end_date', params.end_date);
 
     const url = queryParams.toString() ? `${this.endpoint}?${queryParams.toString()}` : this.endpoint;
-    
+
     return this.makeRequest(
-      () => apiClient.get(url),
+      () => api.get(url),
       `${this.constructor.name} - getLogs`
     );
   }
@@ -35,16 +36,16 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async getLogsPaginated(params?: LogParams): Promise<PaginatedResponse<T>> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.size) queryParams.append('size', params.size.toString());
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
 
     const url = queryParams.toString() ? `${this.endpoint}/paginated?${queryParams.toString()}` : `${this.endpoint}/paginated`;
-    
+
     return this.makeRequest(
-      () => apiClient.get(url),
+      () => api.get(url),
       `${this.constructor.name} - getLogsPaginated`
     );
   }
@@ -54,7 +55,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async getLog(id: number): Promise<T> {
     return this.makeRequest(
-      () => apiClient.get(`${this.endpoint}/${id}`),
+      () => api.get(`${this.endpoint}/${id}`),
       `${this.constructor.name} - getLog`
     );
   }
@@ -64,7 +65,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async createLog(data: BaseLogCreate): Promise<T> {
     return this.makeRequest(
-      () => apiClient.post(this.endpoint, data),
+      () => api.post(this.endpoint, data),
       `${this.constructor.name} - createLog`
     );
   }
@@ -74,7 +75,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async updateLog(id: number, data: BaseLogUpdate): Promise<T> {
     return this.makeRequest(
-      () => apiClient.put(`${this.endpoint}/${id}`, data),
+      () => api.put(`${this.endpoint}/${id}`, data),
       `${this.constructor.name} - updateLog`
     );
   }
@@ -84,7 +85,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async deleteLog(id: number): Promise<{ message: string }> {
     return this.makeRequest(
-      () => apiClient.delete(`${this.endpoint}/${id}`),
+      () => api.delete(`${this.endpoint}/${id}`),
       `${this.constructor.name} - deleteLog`
     );
   }
@@ -124,14 +125,14 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
   async searchLogs(query: string, params?: LogParams): Promise<T[]> {
     const searchParams = new URLSearchParams();
     searchParams.append('q', query);
-    
+
     if (params?.skip) searchParams.append('skip', params.skip.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     if (params?.start_date) searchParams.append('start_date', params.start_date);
     if (params?.end_date) searchParams.append('end_date', params.end_date);
 
     return this.makeRequest(
-      () => apiClient.get(`${this.endpoint}/search?${searchParams.toString()}`),
+      () => api.get(`${this.endpoint}/search?${searchParams.toString()}`),
       `${this.constructor.name} - searchLogs`
     );
   }
@@ -146,14 +147,14 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
     last_updated: string;
   }> {
     const queryParams = new URLSearchParams();
-    
+
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.end_date) queryParams.append('end_date', params.end_date);
 
     const url = queryParams.toString() ? `${this.endpoint}/stats?${queryParams.toString()}` : `${this.endpoint}/stats`;
-    
+
     return this.makeRequest(
-      () => apiClient.get(url),
+      () => api.get(url),
       `${this.constructor.name} - getLogsStats`
     );
   }
@@ -163,7 +164,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async bulkCreateLogs(logs: BaseLogCreate[]): Promise<T[]> {
     return this.makeRequest(
-      () => apiClient.post(`${this.endpoint}/bulk`, { logs }),
+      () => api.post(`${this.endpoint}/bulk`, { logs }),
       `${this.constructor.name} - bulkCreateLogs`
     );
   }
@@ -173,7 +174,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async bulkUpdateLogs(updates: { id: number; data: BaseLogUpdate }[]): Promise<T[]> {
     return this.makeRequest(
-      () => apiClient.put(`${this.endpoint}/bulk`, { updates }),
+      () => api.put(`${this.endpoint}/bulk`, { updates }),
       `${this.constructor.name} - bulkUpdateLogs`
     );
   }
@@ -183,7 +184,7 @@ export abstract class GenericLogService<T extends BaseLog> extends BaseService {
    */
   async bulkDeleteLogs(ids: number[]): Promise<{ message: string; deleted_count: number }> {
     return this.makeRequest(
-      () => apiClient.delete(`${this.endpoint}/bulk`, { data: { ids } }),
+      () => api.delete(`${this.endpoint}/bulk`, { data: { ids } }),
       `${this.constructor.name} - bulkDeleteLogs`
     );
   }

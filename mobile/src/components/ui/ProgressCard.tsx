@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { UnifiedProgressRing } from './UnifiedProgressRing';
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
@@ -72,23 +74,23 @@ export default function ProgressCard({
     <View style={[styles.container, { padding: sizeStyles.padding }]}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons 
-            name={icon as keyof typeof Ionicons.glyphMap} 
-            size={sizeStyles.iconSize} 
-            color={color} 
+          <Ionicons
+            name={icon as keyof typeof Ionicons.glyphMap}
+            size={sizeStyles.iconSize}
+            color={color}
             style={styles.icon}
           />
           <Text style={[styles.title, { fontSize: sizeStyles.titleSize }]}>
             {title}
           </Text>
         </View>
-        
+
         {trend && trendValue && (
           <View style={styles.trendContainer}>
-            <Ionicons 
-              name={trendIcon as keyof typeof Ionicons.glyphMap} 
+            <Ionicons
+              name={trendIcon as keyof typeof Ionicons.glyphMap}
               size={FONT_SIZE.sm} // 14 -> FONT_SIZE.sm (12, but keeping 14 for now)
-              color={trendColor} 
+              color={trendColor}
             />
             <Text style={[styles.trendText, { color: trendColor }]}>
               {trendValue}%
@@ -108,7 +110,7 @@ export default function ProgressCard({
           showIcon={false}
           variant="ui"
         />
-        
+
         <View style={styles.stats}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { fontSize: sizeStyles.valueSize }]}>
@@ -116,14 +118,14 @@ export default function ProgressCard({
             </Text>
             <Text style={styles.statLabel}>Current</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { fontSize: sizeStyles.valueSize }]}>
               {goal}
             </Text>
             <Text style={styles.statLabel}>Goal</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { fontSize: sizeStyles.valueSize }]}>
               {percentage}%

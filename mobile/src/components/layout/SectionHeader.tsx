@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { DUPLICATE_STYLES } from '../../theme/duplicateStyles';
 import { isFeatureEnabled } from '../../config/featureFlags';
 // Removed MigrationHelpers import
@@ -42,13 +44,13 @@ export default function SectionHeader({
         <View style={styles.titleContainer}>
           {icon && (
             <View style={styles.iconContainer}>
-              <Ionicons 
-                name={icon as keyof typeof Ionicons.glyphMap} 
-                size={20} 
-                color={isFeatureEnabled('USE_NEW_STYLE_CONSTANTS') 
-                  ? DUPLICATE_STYLES.COLORS.PRIMARY 
+              <Ionicons
+                name={icon as keyof typeof Ionicons.glyphMap}
+                size={20}
+                color={isFeatureEnabled('USE_NEW_STYLE_CONSTANTS')
+                  ? DUPLICATE_STYLES.COLORS.PRIMARY
                   : '#3b82f6'
-                } 
+                }
               />
             </View>
           )}
@@ -59,13 +61,13 @@ export default function SectionHeader({
             )}
           </View>
         </View>
-        
+
         {badge && (
           <View style={[
             styles.badge,
             {
-              backgroundColor: badge.backgroundColor || (isFeatureEnabled('USE_NEW_STYLE_CONSTANTS') 
-                ? DUPLICATE_STYLES.COLORS.PRIMARY 
+              backgroundColor: badge.backgroundColor || (isFeatureEnabled('USE_NEW_STYLE_CONSTANTS')
+                ? DUPLICATE_STYLES.COLORS.PRIMARY
                 : '#3b82f6'
               ),
             }
@@ -79,7 +81,7 @@ export default function SectionHeader({
           </View>
         )}
       </View>
-      
+
       {action && (
         <TouchableOpacity
           style={styles.actionButton}
@@ -88,13 +90,13 @@ export default function SectionHeader({
         >
           <Text style={styles.actionText}>{action.text}</Text>
           {action.icon && (
-            <Ionicons 
-              name={action.icon as keyof typeof Ionicons.glyphMap} 
-              size={16} 
-              color={isFeatureEnabled('USE_NEW_STYLE_CONSTANTS') 
-                ? DUPLICATE_STYLES.COLORS.PRIMARY 
+            <Ionicons
+              name={action.icon as keyof typeof Ionicons.glyphMap}
+              size={16}
+              color={isFeatureEnabled('USE_NEW_STYLE_CONSTANTS')
+                ? DUPLICATE_STYLES.COLORS.PRIMARY
                 : '#3b82f6'
-              } 
+              }
             />
           )}
         </TouchableOpacity>

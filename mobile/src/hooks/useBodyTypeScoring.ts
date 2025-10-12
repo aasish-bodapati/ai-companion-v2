@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { BodyTypeScoringService, ScoringResult, DailyLog, WeeklyLog } from '../services/bodyTypeScoringService';
-import { BodyTypeGoal, UserAttributes } from '../services/bodyTypeGoals';
+
+import { BodyTypeScoringService, ScoringResult, DailyLog, WeeklyLog } from '../services/BodyTypeScoringService';
+import { BodyTypeGoal, UserAttributes } from '../services/BodyTypeGoalsService';
 
 interface UseBodyTypeScoringProps {
   bodyTypeGoal: BodyTypeGoal | null;

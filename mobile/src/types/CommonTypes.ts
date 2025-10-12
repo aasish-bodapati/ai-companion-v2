@@ -1,3 +1,4 @@
+
 /**
  * Common types and interfaces used across the mobile app
  * This provides shared type definitions to reduce duplication

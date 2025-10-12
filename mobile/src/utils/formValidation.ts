@@ -1,3 +1,4 @@
+
 export interface ValidationRule {
   required?: boolean;
   minLength?: number;

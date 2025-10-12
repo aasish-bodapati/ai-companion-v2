@@ -1,4 +1,5 @@
 import { ChartProps, ChartDataPoint, ChartType, ChartSize, ChartVariant } from './Chart';
+
 import { COLORS } from '../../theme/constants';
 
 type ChartPreset = Partial<ChartProps> & {
@@ -296,7 +297,7 @@ export const chartConfigs: { [key: string]: ChartPreset } = {
 
 // Utility functions for chart data manipulation
 export const createChartData = (
-  data: Array<{ x: number | string; y: number; label?: string; color?: string }>
+  data: { x: number | string; y: number; label?: string; color?: string }[]
 ): ChartDataPoint[] => {
   return data.map((item, index) => ({
     x: item.x,
@@ -314,11 +315,11 @@ export const generateTimeSeriesData = (
   labelGenerator?: (date: Date, index: number) => string
 ): ChartDataPoint[] => {
   const data: ChartDataPoint[] = [];
-  
+
   for (let i = 0; i < days; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
-    
+
     data.push({
       x: date.toISOString().split('T')[0], // YYYY-MM-DD format
       y: generator(date, i),
@@ -326,7 +327,7 @@ export const generateTimeSeriesData = (
       metadata: { date: date.toISOString() },
     });
   }
-  
+
   return data;
 };
 
@@ -337,7 +338,7 @@ export const generateWeeklyData = (
 ): ChartDataPoint[] => {
   const defaultLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const labels = dayLabels || defaultLabels;
-  
+
   return Array.from({ length: 7 }, (_, i) => ({
     x: labels[i],
     y: generator(i),
@@ -351,7 +352,7 @@ export const generateMonthlyData = (
   generator: (day: number) => number
 ): ChartDataPoint[] => {
   const daysInMonth = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0).getDate();
-  
+
   return Array.from({ length: daysInMonth }, (_, i) => ({
     x: i + 1,
     y: generator(i),

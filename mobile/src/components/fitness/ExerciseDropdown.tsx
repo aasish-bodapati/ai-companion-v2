@@ -8,7 +8,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { fitnessService } from '../../services/fitnessService';
+import { fitnessService } from '../../services/api';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface Exercise {
   id: number;
@@ -22,7 +25,6 @@ interface ExerciseDropdownProps {
   onExerciseSelected: (exercise: Exercise) => void;
   searchQuery: string;
 }
-
 
 export default function ExerciseDropdown({
   visible,
@@ -73,32 +75,32 @@ export default function ExerciseDropdown({
       filtered.sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        
+
         // Calculate relevance score for each exercise
         const getRelevanceScore = (name: string) => {
           let score = 0;
-          
+
           // Exact match gets highest score
           if (name === searchTerm) score += 1000;
-          
+
           // Starts with search term gets high score
           else if (name.startsWith(searchTerm)) score += 500;
-          
+
           // Contains search term at word boundary gets medium score
           else if (name.includes(` ${searchTerm}`) || name.includes(`-${searchTerm}`)) score += 300;
-          
+
           // Contains search term gets low score
           else if (name.includes(searchTerm)) score += 100;
-          
+
           // Shorter names with same relevance get slight boost
           score += (100 - name.length) / 10;
-          
+
           return score;
         };
-        
+
         const aScore = getRelevanceScore(aName);
         const bScore = getRelevanceScore(bName);
-        
+
         // Sort by relevance score (higher first), then alphabetically
         if (aScore !== bScore) {
           return bScore - aScore;
@@ -127,14 +129,12 @@ export default function ExerciseDropdown({
   return (
     <View style={styles.dropdownContainer}>
       {/* Close Button */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.closeButton}
         onPress={onClose}
       >
         <Ionicons name="close" size={20} color="#6b7280" />
       </TouchableOpacity>
-      
-
 
       {/* Exercise List */}
       {loading ? (
@@ -143,7 +143,7 @@ export default function ExerciseDropdown({
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
         ) : (
-          <ScrollView 
+          <ScrollView
             style={styles.exerciseList}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
@@ -184,8 +184,8 @@ const styles = StyleSheet.create({
     top: '100%',
     left: 0,
     right: 0,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     shadowColor: '#000',
@@ -202,20 +202,20 @@ const styles = StyleSheet.create({
     top: 8,
     right: 8,
     zIndex: 10000,
-    padding: 4,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 12,
+    padding: SPACING.xxs,
+    backgroundColor: COLORS.background.tertiary,
+    borderRadius: BORDER_RADIUS.md,
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: SPACING.lg,
   },
   loadingText: {
     marginLeft: 8,
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   exerciseList: {
     maxHeight: 250,
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   exerciseItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
@@ -233,32 +233,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   exerciseName: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 2,
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   emptyStateText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginTop: 8,
     marginBottom: 12,
   },
   resetButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#3b82f6',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    backgroundColor: COLORS.primary.main,
     borderRadius: 6,
   },
   resetButtonText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
 });

@@ -48,5 +48,5 @@ declare module 'json-schema';
 declare module 'json5';
 
 // Global variables
-declare var __DEV__: boolean;
-declare var __TEST__: boolean;
+declare let __DEV__: boolean;
+declare let __TEST__: boolean;

@@ -1,4 +1,7 @@
-import { apiClient } from './api';
+import { api } from './api';
+
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export interface SimpleWaterLog {
   id: number;
@@ -22,20 +25,20 @@ class SimpleWaterService {
    * Log water intake - simple and fast
    */
   async logWater(amount_ml: number): Promise<SimpleWaterStats> {
-    console.log('🚰 [SIMPLE WATER] Logging water:', amount_ml, 'ml');
-    
-    const response = await apiClient.post('/health/simple-water/log', null, {
+    DebugUtils.log('🚰 [SIMPLE WATER] Logging water:', amount_ml, 'ml');
+
+    const response = await api.post('/api/v1/health/simple-water/log', null, {
       params: { amount_ml }
     });
-    
-    console.log('🚰 [SIMPLE WATER] Water logged successfully');
+
+    DebugUtils.log('🚰 [SIMPLE WATER] Water logged successfully');
     return {
-      total_ml_today: response.data.total_ml_today,
-      total_oz_today: response.data.total_ml_today * 0.033814,
-      goal_ml: response.data.goal_ml,
-      goal_oz: response.data.goal_ml * 0.033814,
-      progress_percentage: response.data.progress_percentage,
-      logs_today: response.data.logs_today,
+      total_ml_today: response.total_ml_today,
+      total_oz_today: response.total_ml_today * 0.033814,
+      goal_ml: response.goal_ml,
+      goal_oz: response.goal_ml * 0.033814,
+      progress_percentage: response.progress_percentage,
+      logs_today: response.logs_today,
     };
   }
 
@@ -43,12 +46,12 @@ class SimpleWaterService {
    * Get today's water stats - simple and fast
    */
   async getTodayStats(): Promise<SimpleWaterStats> {
-    const response = await apiClient.get('/health/simple-water/stats');
-    
+    const response = await api.get('/api/v1/health/simple-water/stats');
+
     if (__DEV__) {
-      console.log('🚰 Water loaded - progress:', response.data.progress_percentage + '%');
+      DebugUtils.log('🚰 Water loaded - progress:', response.progress_percentage + '%');
     }
-    return response.data;
+    return response;
   }
 
   /**
@@ -56,8 +59,8 @@ class SimpleWaterService {
    * For now, we'll just return current stats since removing logs is not essential
    */
   async removeLastLog(): Promise<SimpleWaterStats> {
-    console.log('🚰 [SIMPLE WATER] Remove last log requested - returning current stats');
-    
+    DebugUtils.log('🚰 [SIMPLE WATER] Remove last log requested - returning current stats');
+
     // For simplicity, just return current stats
     // In a real implementation, you'd need to track the last log ID
     // or implement a proper remove endpoint

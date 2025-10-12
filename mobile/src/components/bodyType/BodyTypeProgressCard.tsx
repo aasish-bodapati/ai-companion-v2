@@ -8,8 +8,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
+import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 export default function BodyTypeProgressCard() {
   const navigation = useNavigation();
@@ -24,11 +27,11 @@ export default function BodyTypeProgressCard() {
   const loadUserData = async () => {
     try {
       setLoading(true);
-      
+
       // Load user's body type goal
-      const { getBodyTypeGoalById } = await import('../../services/bodyTypeGoals');
-      const { profileService } = await import('../../services/profileService');
-      
+      const { getBodyTypeGoalById } = await import('../../services/BodyTypeGoalsService');
+      const { profileService } = await import('../../services/ProfileService');
+
       const profile = await profileService.getUserProfile();
       if (profile?.bodyTypeGoal) {
         const goal = await getBodyTypeGoalById(profile.bodyTypeGoal);
@@ -45,7 +48,7 @@ export default function BodyTypeProgressCard() {
           activityLevel: (profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') || 'moderate',
         });
       }
-      
+
     } catch {
       // Handle error silently for dashboard card
     } finally {
@@ -72,7 +75,7 @@ export default function BodyTypeProgressCard() {
       case 'farther':
         return { name: 'trending-down', color: '#ef4444' };
       default:
-        return { name: 'help', color: '#6b7280' };
+        return { name: 'help', color: COLORS.text.secondary };
     }
   };
 
@@ -104,7 +107,7 @@ export default function BodyTypeProgressCard() {
     );
   }
 
-  const alignmentIcon = dailyResult ? getAlignmentIcon(dailyResult.alignment) : { name: 'help', color: '#6b7280' };
+  const alignmentIcon = dailyResult ? getAlignmentIcon(dailyResult.alignment) : { name: 'help', color: COLORS.text.secondary };
   const alignmentColor = dailyResult ? getAlignmentColor(dailyResult.alignment) : '#6b7280';
 
   return (
@@ -112,7 +115,7 @@ export default function BodyTypeProgressCard() {
       <View style={styles.header}>
         <Ionicons name="trending-up-outline" size={24} color="#3b82f6" />
         <Text style={styles.title}>Body Type Progress</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.viewAllButton}
           onPress={() => navigation.navigate('Analytics' as never)}
         >
@@ -139,19 +142,19 @@ export default function BodyTypeProgressCard() {
               {dailyResult ? `+${dailyResult.score}` : '--'}
             </Text>
           </View>
-          
+
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.max(10, dailyResult?.percentage || 0)}%`,
                   backgroundColor: alignmentColor,
                 }
               ]}
             />
           </View>
-          
+
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>Weekly Alignment</Text>
             <Text style={styles.progressValue}>
@@ -174,10 +177,10 @@ export default function BodyTypeProgressCard() {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
     margin: 16,
-    padding: 20,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -190,9 +193,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 12,
     flex: 1,
   },
@@ -201,7 +204,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     marginRight: 4,
   },
@@ -209,11 +212,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: SPACING.lg,
   },
   loadingText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
   },
   content: {
@@ -225,16 +228,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   goalName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   alignmentIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   alignmentText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     marginLeft: 4,
   },
@@ -247,28 +250,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   progressLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   progressValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   progressBar: {
     height: 8,
     backgroundColor: '#f1f5f9',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   suggestionContainer: {
-    backgroundColor: '#f8fafc',
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.sm,
+    padding: SPACING.sm,
   },
   suggestionText: {
     fontSize: 13,

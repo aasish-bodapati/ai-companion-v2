@@ -9,7 +9,7 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
+import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
 export type FilterBarSize = 'small' | 'medium' | 'large';
 export type FilterBarVariant = 'default' | 'minimal' | 'pills' | 'chips';
@@ -30,7 +30,7 @@ interface FilterBarProps {
   options: FilterOption[];
   selectedValues: string[];
   onSelectionChange: (selectedValues: string[]) => void;
-  
+
   // Configuration
   size?: FilterBarSize;
   variant?: FilterBarVariant;
@@ -38,22 +38,22 @@ interface FilterBarProps {
   multiple?: boolean;
   clearable?: boolean;
   searchable?: boolean;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   optionStyle?: ViewStyle;
   selectedOptionStyle?: ViewStyle;
   labelStyle?: TextStyle;
   selectedLabelStyle?: TextStyle;
-  
+
   // Customization
   customOption?: (option: FilterOption, isSelected: boolean, onPress: () => void) => React.ReactNode;
   customClearButton?: React.ReactNode;
-  
+
   // Behavior
   maxSelections?: number;
   allowDeselect?: boolean;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   testID?: string;
@@ -85,7 +85,7 @@ export default function FilterBar({
 
   const handleOptionPress = useCallback((optionId: string) => {
     const isSelected = selectedValues.includes(optionId);
-    
+
     if (isSelected) {
       if (allowDeselect) {
         onSelectionChange(selectedValues.filter(id => id !== optionId));
@@ -108,7 +108,7 @@ export default function FilterBar({
 
   const getContainerStyles = (): ViewStyle[] => {
     const baseStyles = [styles.container];
-    
+
     // Size-based styles
     switch (size) {
       case 'small':
@@ -121,7 +121,7 @@ export default function FilterBar({
         baseStyles.push(styles.containerLarge);
         break;
     }
-    
+
     // Variant-based styles
     switch (variant) {
       case 'minimal':
@@ -137,7 +137,7 @@ export default function FilterBar({
         baseStyles.push(styles.containerDefault);
         break;
     }
-    
+
     // Layout-based styles
     switch (layout) {
       case 'vertical':
@@ -150,15 +150,15 @@ export default function FilterBar({
         baseStyles.push(styles.containerHorizontal);
         break;
     }
-    
+
     if (containerStyle) baseStyles.push(containerStyle);
-    
+
     return baseStyles;
   };
 
   const getOptionStyles = (option: FilterOption, isSelected: boolean): ViewStyle[] => {
     const baseStyles = [styles.option];
-    
+
     // Size-based option styles
     switch (size) {
       case 'small':
@@ -171,7 +171,7 @@ export default function FilterBar({
         baseStyles.push(styles.optionLarge);
         break;
     }
-    
+
     // Variant-based option styles
     switch (variant) {
       case 'minimal':
@@ -187,26 +187,26 @@ export default function FilterBar({
         baseStyles.push(styles.optionDefault);
         break;
     }
-    
+
     // Selection state
     if (isSelected) {
       baseStyles.push(styles.optionSelected);
       if (selectedOptionStyle) baseStyles.push(selectedOptionStyle);
     }
-    
+
     // Disabled state
     if (option.disabled) {
       baseStyles.push(styles.optionDisabled);
     }
-    
+
     if (optionStyle) baseStyles.push(optionStyle);
-    
+
     return baseStyles;
   };
 
   const getLabelStyles = (option: FilterOption, isSelected: boolean): TextStyle[] => {
     const baseStyles = [styles.label];
-    
+
     // Size-based label styles
     switch (size) {
       case 'small':
@@ -219,20 +219,20 @@ export default function FilterBar({
         baseStyles.push(styles.labelLarge);
         break;
     }
-    
+
     // Selection state
     if (isSelected) {
       baseStyles.push(styles.labelSelected);
       if (selectedLabelStyle) baseStyles.push(selectedLabelStyle);
     }
-    
+
     // Disabled state
     if (option.disabled) {
       baseStyles.push(styles.labelDisabled);
     }
-    
+
     if (labelStyle) baseStyles.push(labelStyle);
-    
+
     return baseStyles;
   };
 

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryBadge } from './Badge';
-import SmartInput, { inputPresets } from './SmartInput';
+import SmartInput from './SmartInput';
+import { inputPresets } from '../../test-utils/testConfigs';
 import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZE, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
 
 export interface SimpleLoggingItemData {
@@ -24,14 +25,14 @@ interface SimpleLoggingItemProps {
 }
 
 export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable = true }: SimpleLoggingItemProps) {
-  
+
   // Helper function to update parent
   const updateParent = (field: string, value: string | number) => {
     if (onUpdate) {
       onUpdate(item.id, { [field]: value });
     }
   };
-  
+
   // Handle input changes with SmartInput
   const handleSetsChange = (text: string) => {
     const numValue = parseFloat(text);
@@ -39,90 +40,90 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
       updateParent('sets', numValue);
     }
   };
-  
+
   const handleRepsChange = (text: string) => {
     updateParent('reps', text);
   };
-  
+
   const handleWeightChange = (text: string) => {
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('weight_kg', numValue);
     }
   };
-  
+
   const handleDurationChange = (text: string) => {
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('duration_minutes', numValue);
     }
   };
-  
+
   const handleDistanceChange = (text: string) => {
     const numValue = parseFloat(text);
     if (!isNaN(numValue) && numValue > 0) {
       updateParent('distance', numValue);
     }
   };
-  
+
   // Get category configuration
   const getCategoryConfig = (category: string) => {
     const safeCategory = category || '';
     switch (safeCategory) {
       case 'bodyweight':
-        return { 
+        return {
           color: COLORS.success, // '#10b981' -> COLORS.success
-          icon: 'person', 
+          icon: 'person',
           name: 'BODYWEIGHT',
           fields: ['sets', 'reps'] // Standard bodyweight exercises use sets and reps
         };
       case 'weighted':
-        return { 
+        return {
           color: COLORS.warning, // '#f59e0b' -> COLORS.warning
-          icon: 'barbell', 
+          icon: 'barbell',
           name: 'WEIGHTED',
           fields: ['sets', 'reps', 'weight_kg', 'rest_time']
         };
       case 'cardio_duration':
-        return { 
+        return {
           color: COLORS.danger, // '#ef4444' -> COLORS.danger
-          icon: 'heart', 
+          icon: 'heart',
           name: 'CARDIO',
           fields: ['duration_minutes']
         };
       case 'distance_based':
-        return { 
+        return {
           color: COLORS.primary.main, // '#3b82f6' -> COLORS.primary.main
-          icon: 'walk', 
+          icon: 'walk',
           name: 'DISTANCE',
           fields: ['distance', 'duration_minutes']
         };
       case 'flexibility':
-        return { 
+        return {
           color: '#8b5cf6', // Keep as is - not in theme constants
-          icon: 'leaf', 
+          icon: 'leaf',
           name: 'FLEXIBILITY',
           fields: ['duration_minutes', 'reps'] // Reps for hold counts
         };
       case 'sports':
-        return { 
+        return {
           color: '#06b6d4', // Keep as is - not in theme constants
-          icon: 'football', 
+          icon: 'football',
           name: 'SPORTS',
           fields: ['duration_minutes', 'distance']
         };
       default:
-        return { 
+        return {
           color: COLORS.text.secondary, // '#6b7280' -> COLORS.text.secondary
-          icon: 'fitness', 
+          icon: 'fitness',
           name: 'EXERCISE',
           fields: ['sets', 'reps', 'weight_kg', 'duration_minutes', 'distance'] // Show all for unknown types
         };
     }
   };
-  
+
   const categoryConfig = getCategoryConfig(String(item.category || ''));
-  
+
   // Field configurations using SmartInput presets
   const fieldConfigs = {
     sets: {
@@ -169,8 +170,8 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
               </Text>
             </View>
             <View style={styles.exerciseTitleRight}>
-              <CategoryBadge 
-                category={String(item.category || '')} 
+              <CategoryBadge
+                category={String(item.category || '')}
                 size="small"
               />
               {editable && onRemove && (
@@ -185,13 +186,13 @@ export default function SimpleLoggingItem({ item, onUpdate, onRemove, editable =
             </View>
           </View>
         </View>
-        
+
         <View style={styles.workoutFields}>
           <View style={styles.fieldRow}>
             {categoryConfig.fields.map((fieldKey) => {
               const fieldConfig = fieldConfigs[fieldKey as keyof typeof fieldConfigs];
               if (!fieldConfig) return null;
-              
+
               return (
                 <View key={fieldKey} style={styles.fieldContainer}>
                   {editable ? (

@@ -1,8 +1,5 @@
-// Shared hooks for common stateful logic
-export { useModalState } from './useModalState';
-export { useFormState } from './useFormState';
-export { useLoadingState } from './useLoadingState';
-export { useWeeklyActivity } from './useWeeklyActivity';
+// Unified hooks for common patterns
+export * from './unified';
 
-// Re-export existing hooks if any
-export { useFormValidation } from './useFormValidation';
+// Legacy hooks (deprecated - use unified versions)
+export { useLoadingState } from './useLoadingState';

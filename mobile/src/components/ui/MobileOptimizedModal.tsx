@@ -258,7 +258,7 @@ export default function MobileOptimizedModal({
         backgroundColor={variant === 'fullScreen' ? '#ffffff' : 'rgba(0, 0, 0, 0.5)'}
         barStyle="dark-content"
       />
-      
+
       {variant === 'fullScreen' ? (
         <SafeAreaView style={styles.fullScreenContainer}>
           {renderContent()}
@@ -271,7 +271,7 @@ export default function MobileOptimizedModal({
             onPress={handleBackdropPress}
             testID={`${testID}-backdrop`}
           />
-          
+
           {closeOnSwipe && variant === 'bottomSheet' ? (
             <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
               {renderContent()}
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
-  
+
   // Variants
   defaultModal: {
     margin: 20,

@@ -1,7 +1,10 @@
-import { dashboardService } from './dashboardService';
-import { fitnessService } from './fitnessService';
-import { nutritionService } from './nutritionService';
-import { smartNotificationsService } from './smartNotificationsService';
+import { dashboardService } from './api';
+
+import { fitnessService } from './api';
+import { nutritionService } from './api';
+import { smartNotificationsService } from './api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 interface HealthDataSummary {
   user: Record<string, unknown>;
@@ -28,7 +31,7 @@ class HealthDataService {
     } = options;
 
     const cacheKey = `health_data_${JSON.stringify(options)}`;
-    
+
     if (!refreshCache && this.isCacheValid(cacheKey)) {
       return this.cache.get(cacheKey)!.data;
     }
@@ -60,7 +63,7 @@ class HealthDataService {
 
       return healthData;
     } catch (error) {
-      console.error('Error fetching health data:', error);
+      DebugUtils.error('Error fetching health data:', error);
       throw new Error('Failed to fetch health data');
     }
   }
@@ -79,7 +82,7 @@ class HealthDataService {
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      DebugUtils.error('Error fetching dashboard data:', error);
       return {
         summary: null,
         quickStats: null,
@@ -104,7 +107,7 @@ class HealthDataService {
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error fetching fitness data:', error);
+      DebugUtils.error('Error fetching fitness data:', error);
       return {
         logs: [],
         stats: null,
@@ -130,7 +133,7 @@ class HealthDataService {
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error fetching nutrition data:', error);
+      DebugUtils.error('Error fetching nutrition data:', error);
       return {
         logs: [],
         stats: null,
@@ -139,7 +142,6 @@ class HealthDataService {
       };
     }
   }
-
 
   // Get notifications data
   private async getNotificationsData() {
@@ -155,7 +157,7 @@ class HealthDataService {
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('Error fetching notifications data:', error);
+      DebugUtils.error('Error fetching notifications data:', error);
       return {
         notifications: [],
         preferences: null,
@@ -168,7 +170,7 @@ class HealthDataService {
   private isCacheValid(key: string): boolean {
     const cached = this.cache.get(key);
     if (!cached) return false;
-    
+
     return Date.now() - cached.timestamp < this.CACHE_DURATION;
   }
 
@@ -213,11 +215,11 @@ class HealthDataService {
       });
 
       await Promise.all(promises);
-      
+
       // Clear cache to force refresh
       this.clearCache();
     } catch (error) {
-      console.error('Error in batch update:', error);
+      DebugUtils.error('Error in batch update:', error);
       throw new Error('Failed to process batch update');
     }
   }
@@ -242,7 +244,7 @@ class HealthDataService {
   async exportHealthData(format: 'json' | 'csv' = 'json'): Promise<string> {
     try {
       const data = await this.getHealthData({ refreshCache: true });
-      
+
       if (format === 'json') {
         return JSON.stringify(data, null, 2);
       } else {
@@ -250,7 +252,7 @@ class HealthDataService {
         return this.convertToCSV(data);
       }
     } catch (error) {
-      console.error('Error exporting health data:', error);
+      DebugUtils.error('Error exporting health data:', error);
       throw new Error('Failed to export health data');
     }
   }
@@ -259,12 +261,12 @@ class HealthDataService {
     // Basic CSV conversion - can be enhanced
     const headers = ['Date', 'Type', 'Value', 'Unit'];
     const rows = [headers.join(',')];
-    
+
     // Add data rows based on the health data structure
     // This is a simplified example
     rows.push('2024-01-01,Workout,30,minutes');
     rows.push('2024-01-01,Calories,2000,cal');
-    
+
     return rows.join('\n');
   }
 }

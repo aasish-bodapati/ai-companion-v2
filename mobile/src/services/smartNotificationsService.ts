@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 
 interface NotificationRule {
   id: string;
@@ -81,8 +82,8 @@ class SmartNotificationsService {
   // Initialize notification rules
   async initializeRules(): Promise<void> {
     try {
-      const response = await apiClient.get('/notifications/rules');
-      this.notificationRules = response.data;
+      const response = await api.get('/notifications/rules');
+      this.notificationRules = response;
     } catch {
         // Silently fall back to default rules - this is expected behavior
       this.notificationRules = this.getDefaultRules();
@@ -92,8 +93,8 @@ class SmartNotificationsService {
   // Get smart notifications based on current context
   async getSmartNotifications(): Promise<SmartNotification[]> {
     try {
-      const response = await apiClient.get('/notifications/smart');
-      return response.data;
+      const response = await api.get('/notifications/smart');
+      return response;
     } catch {
       // Silently fall back to mock data - this is expected behavior
       return this.generateMockNotifications();
@@ -103,7 +104,7 @@ class SmartNotificationsService {
   // Schedule a notification
   async scheduleNotification(notification: SmartNotification): Promise<boolean> {
     try {
-      await apiClient.post('/notifications/schedule', notification);
+      await api.post('/notifications/schedule', notification);
       return true;
     } catch {
       // Silently handle scheduling failure - this is expected behavior
@@ -115,7 +116,7 @@ class SmartNotificationsService {
   async updatePreferences(preferences: Partial<NotificationPreferences>): Promise<boolean> {
     try {
       this.preferences = { ...this.preferences, ...preferences };
-      await apiClient.put('/notifications/preferences', this.preferences);
+      await api.put('/notifications/preferences', this.preferences);
       return true;
     } catch {
       // Silently fall back to local storage - this is expected behavior
@@ -148,7 +149,7 @@ class SmartNotificationsService {
       const currentTime = now.getHours() * 60 + now.getMinutes();
       const startTime = this.parseTime(this.preferences.quiet_hours.start);
       const endTime = this.parseTime(this.preferences.quiet_hours.end);
-      
+
       if (startTime > endTime) {
         // Overnight quiet hours
         if (currentTime >= startTime || currentTime <= endTime) {
@@ -168,10 +169,10 @@ class SmartNotificationsService {
       const hour = now.getHours();
       const minute = now.getMinutes();
       const day = now.getDay();
-      
+
       const timeCondition = rule.trigger_conditions.time_based;
-      if (hour !== timeCondition.hour || 
-          minute !== timeCondition.minute || 
+      if (hour !== timeCondition.hour ||
+          minute !== timeCondition.minute ||
           !timeCondition.days.includes(day)) {
         return false;
       }
@@ -180,7 +181,7 @@ class SmartNotificationsService {
     if (rule.trigger_conditions.behavior_based) {
       const behaviorCondition = rule.trigger_conditions.behavior_based;
       const metricValue = context[behaviorCondition.metric];
-      
+
       if (metricValue !== undefined) {
         switch (behaviorCondition.condition) {
           case 'below':
@@ -207,9 +208,9 @@ class SmartNotificationsService {
     // Workout reminders
     if (this.preferences.workout_reminders) {
       const lastWorkout = userData.last_workout;
-      const daysSinceWorkout = lastWorkout ? 
+      const daysSinceWorkout = lastWorkout ?
         Math.floor((now.getTime() - new Date(lastWorkout as string).getTime()) / (1000 * 60 * 60 * 24)) : 7;
-      
+
       if (daysSinceWorkout >= 2) {
         notifications.push({
           id: 'workout_reminder_1',
@@ -230,9 +231,9 @@ class SmartNotificationsService {
     // Meal reminders
     if (this.preferences.meal_reminders) {
       const lastMeal = userData.last_meal;
-      const hoursSinceMeal = lastMeal ? 
+      const hoursSinceMeal = lastMeal ?
         Math.floor((now.getTime() - new Date(lastMeal as string).getTime()) / (1000 * 60 * 60)) : 8;
-      
+
       if (hoursSinceMeal >= 4) {
         const mealType = this.getMealType(now);
         notifications.push({
@@ -255,7 +256,7 @@ class SmartNotificationsService {
     if (this.preferences.water_reminders) {
       const waterIntake = userData.today_water || 0;
       const targetWater = userData.water_target || 3.0;
-      
+
       if ((waterIntake as number) < (targetWater as number) * 0.5) {
         notifications.push({
           id: 'water_reminder_1',
@@ -276,9 +277,9 @@ class SmartNotificationsService {
     // Mood check reminders
     if (this.preferences.mood_checks) {
       const lastMood = userData.last_mood;
-      const hoursSinceMood = lastMood ? 
+      const hoursSinceMood = lastMood ?
         Math.floor((now.getTime() - new Date(lastMood as string).getTime()) / (1000 * 60 * 60)) : 24;
-      
+
       if (hoursSinceMood >= 12) {
         notifications.push({
           id: 'mood_check_1',
@@ -300,11 +301,11 @@ class SmartNotificationsService {
     if (this.preferences.goal_reminders) {
       const goalProgress = userData.goal_progress || {};
       const weeklyGoal = userData.weekly_goal || {};
-      
+
       Object.entries(weeklyGoal).forEach(([goal, target]) => {
         const current = (goalProgress as Record<string, unknown>)[goal] as number || 0;
         const progress = (current / target) * 100;
-        
+
         if (progress < 50 && now.getDay() >= 3) { // Mid-week check
           notifications.push({
             id: `goal_reminder_${goal}`,
@@ -344,11 +345,11 @@ class SmartNotificationsService {
     // Simple inconsistency check - can be enhanced with more sophisticated logic
     const recentData = (context[`${metric}_history`] as Record<string, unknown>[]) || [];
     if (recentData.length < 3) return false;
-    
+
     const values = recentData.slice(-3).map((d: Record<string, unknown>) => d.value as number);
     const avg = values.reduce((a: number, b: number) => a + b, 0) / values.length;
     const variance = values.reduce((a: number, b: number) => a + Math.pow(b - avg, 2), 0) / values.length;
-    
+
     return variance > avg * 0.5; // High variance indicates inconsistency
   }
 

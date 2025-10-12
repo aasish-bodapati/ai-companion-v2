@@ -5,8 +5,8 @@
  * Usage: Import and call the test functions in your app for manual testing
  */
 
-import { nutritionService } from '../services/nutritionService';
-import { fitnessService } from '../services/fitnessService';
+import { nutritionService } from '../services/api';
+import { fitnessService } from '../services/api';
 
 export const manualTestGlobalStateRefresh = {
   /**

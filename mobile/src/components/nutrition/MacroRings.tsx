@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface MacroData {
   type: 'calories' | 'protein' | 'carbs' | 'fat';
@@ -20,7 +24,6 @@ interface MacroRingsProps {
   macros: MacroData[];
   onMacroPress?: (macro: MacroData) => void;
 }
-
 
 export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
   const getProgressPercentage = (current: number, target: number) => {
@@ -57,7 +60,7 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
     const percentage = getProgressPercentage(macro.current, macro.target);
     const statusColor = getStatusColor(percentage, macro.type);
     const statusText = getStatusText(percentage, macro.type);
-    
+
     // Calculate ring dimensions
     const radius = 40;
 
@@ -70,14 +73,14 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
         <View style={styles.ringWrapper}>
           {/* Background Ring */}
           <View style={[styles.ringBackground, { width: radius * 2, height: radius * 2 }]}>
-            <View style={[styles.ringProgress, { 
-              width: radius * 2, 
+            <View style={[styles.ringProgress, {
+              width: radius * 2,
               height: radius * 2,
               borderColor: statusColor,
               transform: [{ rotate: `${(percentage / 100) * 360}deg` }]
             }]} />
           </View>
-          
+
           {/* Content */}
           <View style={styles.ringContent}>
             <Ionicons name={macro.icon as keyof typeof Ionicons.glyphMap} size={16} color={statusColor} />
@@ -87,7 +90,7 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
             <Text style={styles.ringUnit}>{macro.unit}</Text>
           </View>
         </View>
-        
+
         <Text style={styles.ringLabel}>{macro.type.charAt(0).toUpperCase() + macro.type.slice(1)}</Text>
         <Text style={[styles.ringStatus, { color: statusColor }]}>{statusText}</Text>
         <Text style={styles.ringTarget}>Target: {macro.target}{macro.unit}</Text>
@@ -103,13 +106,13 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
           <Text style={styles.viewDetailsText}>View Details</Text>
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.ringsGrid}>
         {macros.map((macro) => (
           <MacroRing key={macro.type} macro={macro} />
         ))}
       </View>
-      
+
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <TouchableOpacity style={styles.quickActionButton}>
@@ -131,9 +134,9 @@ export default function MacroRings({ macros, onMacroPress }: MacroRingsProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -149,12 +152,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   viewDetailsText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#3b82f6',
     fontWeight: '500',
   },
@@ -196,30 +199,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   ringValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: 'bold',
     marginTop: 2,
   },
   ringUnit: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
   },
   ringLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 2,
   },
   ringStatus: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 2,
   },
   ringTarget: {
     fontSize: 9,
-    color: '#9ca3af',
+    color: COLORS.text.tertiary,
     textAlign: 'center',
   },
   quickActions: {
@@ -232,15 +235,15 @@ const styles = StyleSheet.create({
   quickActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.secondary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   quickActionText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
 });

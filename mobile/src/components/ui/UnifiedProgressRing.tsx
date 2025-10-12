@@ -14,8 +14,9 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getStatusColor, getStatusText, getMotivationalText } from '../../utils/componentUtils';
-// Removed deprecationUtils import
+import { COLORS, BORDER_RADIUS } from '../../theme/constants';
 
+// Removed deprecationUtils import
 
 // Combined interface supporting both old and new props
 interface UnifiedProgressRingProps {
@@ -31,7 +32,7 @@ interface UnifiedProgressRingProps {
   unit?: string;
   showPercentage?: boolean;
   onPress?: () => void;
-  
+
   // Props from ui/ProgressRing
   progress?: number; // 0-1
   goal?: number;
@@ -39,7 +40,7 @@ interface UnifiedProgressRingProps {
   animated?: boolean;
   showIcon?: boolean;
   iconName?: string;
-  
+
   // Additional unified props
   variant?: 'shared' | 'ui' | 'auto';
   testID?: string;
@@ -58,7 +59,7 @@ export const UnifiedProgressRing = ({
   unit = '',
   showPercentage = true,
   onPress,
-  
+
   // UI props
   progress,
   goal,
@@ -66,7 +67,7 @@ export const UnifiedProgressRing = ({
   animated = true,
   showIcon = true,
   iconName = 'checkmark',
-  
+
   // Unified props
   variant = 'auto',
   testID,
@@ -84,10 +85,10 @@ export const UnifiedProgressRing = ({
   }, [useSharedVariant, useUIVariant]);
 
   // Calculate values based on variant
-  const calculatedProgress = useSharedVariant 
+  const calculatedProgress = useSharedVariant
     ? Math.min((value! / target!) * 100, 100) / 100
     : progress!;
-  
+
   const calculatedCurrent = useSharedVariant ? value! : current!;
   const calculatedGoal = useSharedVariant ? target! : goal!;
   const calculatedLabel = useSharedVariant ? label! : label!;
@@ -185,31 +186,31 @@ export const UnifiedProgressRing = ({
             />
           </View>
         )}
-        
+
         <Text style={[styles.currentValue, { fontSize: calculatedSize * 0.2 }]}>
           {calculatedCurrent}
         </Text>
-        
+
         <Text style={[styles.goalValue, { fontSize: calculatedSize * 0.12 }]}>
           / {calculatedGoal}
         </Text>
-        
+
         <Text style={[styles.label, { fontSize: calculatedSize * 0.1 }]}>
           {calculatedLabel}
         </Text>
-        
+
         {showPercentage && (
           <Text style={[styles.percentage, { fontSize: calculatedSize * 0.08 }]}>
             {Math.round(calculatedProgress * 100)}%
           </Text>
         )}
-        
+
         {useUIVariant && (
           <Text style={[styles.motivation, { fontSize: calculatedSize * 0.08 }]}>
             {motivationalText}
           </Text>
         )}
-        
+
         {useSharedVariant && (
           <Text style={[styles.status, { fontSize: calculatedSize * 0.08 }]}>
             {statusText}
@@ -257,22 +258,22 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
   },
   currentValue: {
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     lineHeight: 1.2,
   },
   goalValue: {
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     lineHeight: 1.2,
   },
   label: {
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 1.2,
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.2,
   },
   status: {
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     textAlign: 'center',
     marginTop: 2,
     fontWeight: '600',

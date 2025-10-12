@@ -1,4 +1,5 @@
 import { ViewStyle, TextStyle } from 'react-native';
+
 import { useResponsive } from '../hooks/useResponsive';
 import { COLORS, FONT_SIZE, SPACING, BORDER_RADIUS } from '../theme/constants';
 

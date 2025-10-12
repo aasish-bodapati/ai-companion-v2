@@ -11,14 +11,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { COLORS, FONT_SIZE } from '../../theme/constants';
-import weatherService, { HourlyForecast, WeatherData } from '../../services/weatherService';
+import weatherService, { HourlyForecast, WeatherData } from '../../services/WeatherService';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface WeatherDetailsModalProps {
   visible: boolean;
   onClose: () => void;
   currentWeather: WeatherData | null;
 }
-
 
 export default function WeatherDetailsModal({
   visible,
@@ -46,7 +47,7 @@ export default function WeatherDetailsModal({
       const currentHourIndex = 6; // Current hour is at index 6
       const centerOffset = (screenWidth - cardWidth) / 2;
       const scrollPosition = (currentHourIndex * cardWidth) - centerOffset;
-      
+
       scrollViewRef?.scrollTo({ x: Math.max(0, scrollPosition), animated: false });
     }
   }, [forecast, scrollViewRef]);
@@ -67,7 +68,7 @@ export default function WeatherDetailsModal({
       const forecastData = await weatherService.getTodayHourlyForecast(latitude, longitude);
       setForecast(forecastData);
     } catch (err) {
-      console.error('Forecast fetch error:', err);
+      DebugUtils.error('Forecast fetch error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch forecast');
     } finally {
       setLoading(false);
@@ -95,7 +96,7 @@ export default function WeatherDetailsModal({
           <Ionicons name={weatherIcon as keyof typeof Ionicons.glyphMap} size={20} color={weatherColor} />
         </View>
         <Text style={[
-          styles.hourTemp, 
+          styles.hourTemp,
           { color: weatherColor },
           isCurrentHour && styles.currentHourTemp
         ]}>
@@ -110,7 +111,6 @@ export default function WeatherDetailsModal({
       </View>
     );
   };
-
 
   return (
     <Modal
@@ -135,19 +135,19 @@ export default function WeatherDetailsModal({
                  <Text style={styles.loadingText}>Loading...</Text>
                </View>
              )}
-             
+
              {error && (
                <View style={styles.errorContainer}>
                  <Ionicons name="cloud-offline" size={24} color={COLORS.text.tertiary} />
                  <Text style={styles.errorText}>Weather unavailable</Text>
                </View>
              )}
-             
+
              {forecast.length > 0 && !loading && (
                <View style={styles.forecastContainer}>
-                 <ScrollView 
+                 <ScrollView
                    ref={setScrollViewRef}
-                   horizontal 
+                   horizontal
                    showsHorizontalScrollIndicator={false}
                    contentContainerStyle={styles.hourlyContainer}
                  >

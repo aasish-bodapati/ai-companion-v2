@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SimpleRoutineWithProgress } from '../../services/routineService';
+import React from 'react';
+
+import { SimpleRoutineWithProgress } from '../../services/RoutineService';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 import { CategoryBadge, DifficultyBadge } from '../ui/Badge';
 
@@ -24,7 +26,6 @@ export default function RoutineDetailsModal({
   routine,
 }: RoutineDetailsModalProps) {
   if (!routine) return null;
-
 
   const totalWorkouts = routine.workout_schedule.reduce((total, day) => total + (day.exercises?.length || 0), 0);
 
@@ -93,12 +94,12 @@ export default function RoutineDetailsModal({
                     {(day.exercises?.length || 0)} workout{(day.exercises?.length || 0) !== 1 ? 's' : ''}
                   </Text>
                 </View>
-                
+
                 {day.exercises && day.exercises.length > 0 ? (
                   <View style={styles.workoutsList}>
                     {day.exercises.map((exercise, exerciseIndex) => {
                       // Debug: Log exercise data to identify the issue
-                      
+
                       return (
                         <View key={exerciseIndex} style={styles.workoutItem}>
                           <View style={styles.workoutInfo}>

@@ -8,20 +8,20 @@ export const COLORS = {
     light: '#60a5fa',
     dark: '#1e40af',
   },
-  
+
   // Semantic colors
   success: '#10b981',
   successLight: '#34d399',
   successDark: '#059669',
-  
+
   warning: '#f59e0b',
   warningLight: '#fbbf24',
   warningDark: '#d97706',
-  
+
   danger: '#ef4444',
   dangerLight: '#f87171',
   dangerDark: '#dc2626',
-  
+
   // Gray scale
   gray: {
     50: '#f9fafb',
@@ -35,7 +35,7 @@ export const COLORS = {
     800: '#1f2937',
     900: '#111827',
   },
-  
+
   // Background colors
   background: {
     primary: '#ffffff',
@@ -43,7 +43,7 @@ export const COLORS = {
     tertiary: '#f3f4f6',
     disabled: '#f3f4f6',
   },
-  
+
   // Text colors
   text: {
     primary: '#1f2937',
@@ -52,7 +52,7 @@ export const COLORS = {
     inverse: '#ffffff',
     disabled: '#9ca3af',
   },
-  
+
   // Border colors
   border: {
     light: '#e5e7eb',
@@ -61,20 +61,25 @@ export const COLORS = {
     primary: '#d1d5db',
     disabled: '#d1d5db',
   },
-  
+
   // Overlay colors
   overlay: 'rgba(0, 0, 0, 0.5)',
   backdropLight: 'rgba(0, 0, 0, 0.3)',
-  
+
   // Additional colors
   error: {
     main: '#ef4444',
   },
   info: '#3b82f6',
   disabled: '#9ca3af',
+  
+  // Missing properties
+  accent: '#8b5cf6', // Purple accent color
+  placeholder: '#9ca3af', // Placeholder text color
 };
 
 export const SPACING = {
+  xxs: 2,  // Extra extra small
   xs: 4,
   sm: 8,
   md: 12,
@@ -88,6 +93,7 @@ export const SPACING = {
   small: 8,
   medium: 16,
   large: 24,
+  full: 100, // Full width/height
 };
 
 export const BORDER_RADIUS = {
@@ -97,6 +103,7 @@ export const BORDER_RADIUS = {
   xl: 16,
   xxl: 20,
   round: 50,
+  pill: 999, // Pill shape for buttons
   // Additional border radius
   small: 4,
   medium: 8,
@@ -134,7 +141,7 @@ export const SHADOWS = {
     shadowRadius: 0,
     elevation: 0,
   },
-  
+
   small: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -142,7 +149,7 @@ export const SHADOWS = {
     shadowRadius: 2,
     elevation: 2,
   },
-  
+
   medium: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -150,7 +157,7 @@ export const SHADOWS = {
     shadowRadius: 4,
     elevation: 3,
   },
-  
+
   large: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -158,7 +165,7 @@ export const SHADOWS = {
     shadowRadius: 8,
     elevation: 5,
   },
-  
+
   xlarge: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
@@ -174,16 +181,16 @@ export const COMMON_STYLES = {
   secondaryBackground: COLORS.background.secondary, // '#f8fafc'
   cardBackground: COLORS.background.primary, // '#ffffff'
   modalBackground: COLORS.background.primary, // '#ffffff'
-  
+
   // Border patterns (using existing radius constants)
   standardRadius: BORDER_RADIUS.lg, // 12
   smallRadius: BORDER_RADIUS.md, // 8
   largeRadius: BORDER_RADIUS.xl, // 16
-  
+
   // Shadow patterns (using existing shadow constants)
   standardShadow: SHADOWS.small,
   elevatedShadow: SHADOWS.medium,
-  
+
   // Loading states
   loadingContainer: {
     flex: 1,
@@ -191,7 +198,7 @@ export const COMMON_STYLES = {
     alignItems: 'center',
     backgroundColor: COLORS.background.secondary,
   } as ViewStyle,
-  
+
   // Modal patterns (extending existing modal styles)
   modalOverlayCenter: {
     flex: 1,
@@ -199,7 +206,7 @@ export const COMMON_STYLES = {
     justifyContent: 'center',
     alignItems: 'center',
   } as ViewStyle,
-  
+
   modalContentCenter: {
     backgroundColor: COLORS.background.primary,
     borderRadius: BORDER_RADIUS.lg,
@@ -217,14 +224,14 @@ export const MIXINS = {
     padding: SPACING.lg,
     ...SHADOWS.medium,
   } as ViewStyle,
-  
+
   cardSmall: {
     backgroundColor: COLORS.background.primary,
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     ...SHADOWS.small,
   } as ViewStyle,
-  
+
   // Button styles
   buttonBase: {
     borderRadius: BORDER_RADIUS.md,
@@ -235,7 +242,7 @@ export const MIXINS = {
     justifyContent: 'center',
     minHeight: 44, // Touch target size
   } as ViewStyle,
-  
+
   // Input styles
   inputBase: {
     borderWidth: 1,
@@ -248,56 +255,56 @@ export const MIXINS = {
     backgroundColor: COLORS.background.primary,
     minHeight: 44, // Touch target size
   } as ViewStyle,
-  
+
   // Text styles
   textPrimary: {
     color: COLORS.text.primary,
     fontSize: FONT_SIZE.lg,
     fontWeight: FONT_WEIGHT.normal,
   } as TextStyle,
-  
+
   textSecondary: {
     color: COLORS.text.secondary,
     fontSize: FONT_SIZE.md,
     fontWeight: FONT_WEIGHT.normal,
   } as TextStyle,
-  
+
   textHeading: {
     color: COLORS.text.primary,
     fontSize: FONT_SIZE.xl,
     fontWeight: FONT_WEIGHT.semibold,
   } as TextStyle,
-  
+
   textTitle: {
     color: COLORS.text.primary,
     fontSize: FONT_SIZE.xxl,
     fontWeight: FONT_WEIGHT.bold,
   } as TextStyle,
-  
+
   // Layout styles
   centerContent: {
     alignItems: 'center',
     justifyContent: 'center',
   } as ViewStyle,
-  
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
   } as ViewStyle,
-  
+
   rowSpaceBetween: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   } as ViewStyle,
-  
+
   // Modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: COLORS.overlay,
     justifyContent: 'flex-end',
   } as ViewStyle,
-  
+
   modalBackdrop: {
     position: 'absolute',
     top: 0,
@@ -305,7 +312,7 @@ export const MIXINS = {
     right: 0,
     bottom: 0,
   } as ViewStyle,
-  
+
   modalContent: {
     backgroundColor: COLORS.background.primary,
     borderTopLeftRadius: BORDER_RADIUS.xxl,

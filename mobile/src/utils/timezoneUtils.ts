@@ -1,39 +1,42 @@
 import * as Location from 'expo-location';
 
+
+import { DebugUtils } from '../utils/debugUtils';
+
 /**
  * Get timezone from coordinates using reverse geocoding
  */
 export async function getTimezoneFromLocation(): Promise<string> {
   try {
-    console.log('🌍 Requesting location permission...');
+    DebugUtils.log('🌍 Requesting location permission...');
     // Request location permission
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
-      console.log('🌍 Location permission denied');
+      DebugUtils.log('🌍 Location permission denied');
       throw new Error('Location permission not granted');
     }
 
-    console.log('🌍 Getting current location...');
+    DebugUtils.log('🌍 Getting current location...');
     // Get current location
     const location = await Location.getCurrentPositionAsync({});
     const { latitude, longitude } = location.coords;
-    console.log('🌍 Location coordinates:', { latitude, longitude });
+    DebugUtils.log('🌍 Location coordinates:', { latitude, longitude });
 
-    console.log('🌍 Reverse geocoding...');
+    DebugUtils.log('🌍 Reverse geocoding...');
     // Use reverse geocoding to get timezone
     const reverseGeocode = await Location.reverseGeocodeAsync({
       latitude,
       longitude,
     });
-    console.log('🌍 Reverse geocode result:', reverseGeocode);
+    DebugUtils.log('🌍 Reverse geocode result:', reverseGeocode);
 
     if (reverseGeocode.length > 0) {
       const locationData = reverseGeocode[0];
-      console.log('🌍 Location data:', locationData);
-      
+      DebugUtils.log('🌍 Location data:', locationData);
+
       // Try to get timezone from region/city
       if (locationData.region) {
-        console.log('🌍 Region found:', locationData.region);
+        DebugUtils.log('🌍 Region found:', locationData.region);
         // Map common regions to timezones
         const timezoneMap: { [key: string]: string } = {
           'California': 'America/Los_Angeles',
@@ -86,7 +89,7 @@ export async function getTimezoneFromLocation(): Promise<string> {
           'North Dakota': 'America/Chicago',
           'Vermont': 'America/New_York',
           'Wyoming': 'America/Denver',
-          
+
           // Indian States and Regions
           'Telangana': 'Asia/Kolkata',
           'Andhra Pradesh': 'Asia/Kolkata',
@@ -123,25 +126,25 @@ export async function getTimezoneFromLocation(): Promise<string> {
 
         const timezone = timezoneMap[locationData.region];
         if (timezone) {
-          console.log('🌍 Found timezone from region:', timezone);
+          DebugUtils.log('🌍 Found timezone from region:', timezone);
           return timezone;
         } else {
-          console.log('🌍 Region not found in timezone map:', locationData.region);
+          DebugUtils.log('🌍 Region not found in timezone map:', locationData.region);
         }
       }
 
       // Fallback: try to determine timezone from coordinates
-      console.log('🌍 Using coordinate-based timezone detection...');
+      DebugUtils.log('🌍 Using coordinate-based timezone detection...');
       const timezone = getTimezoneFromCoordinates(latitude, longitude);
-      console.log('🌍 Coordinate-based timezone:', timezone);
+      DebugUtils.log('🌍 Coordinate-based timezone:', timezone);
       return timezone;
     }
 
     // Ultimate fallback
-    console.log('🌍 No location data found, using UTC');
+    DebugUtils.log('🌍 No location data found, using UTC');
     return 'UTC';
   } catch (error) {
-    console.error('🌍 Error getting timezone from location:', error);
+    DebugUtils.error('🌍 Error getting timezone from location:', error);
     return 'UTC';
   }
 }
@@ -152,9 +155,9 @@ export async function getTimezoneFromLocation(): Promise<string> {
 function getTimezoneFromCoordinates(latitude: number, longitude: number): string {
   // Simple timezone approximation based on longitude
   // This is not 100% accurate but works for most cases
-  
+
   const timezoneOffset = Math.round(longitude / 15);
-  
+
   // Map offset to common timezones
   const timezoneMap: { [key: number]: string } = {
     [-12]: 'Pacific/Midway',
@@ -195,7 +198,7 @@ export function getCurrentTimezone(): string {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return timezone;
   } catch (error) {
-    console.error('🌍 Error getting current timezone:', error);
+    DebugUtils.error('🌍 Error getting current timezone:', error);
     return 'UTC';
   }
 }
@@ -211,26 +214,26 @@ export function getUserTimezone(): string {
  * Format a date string in the user's timezone
  */
 export function formatDateInUserTimezone(
-  dateString: string, 
+  dateString: string,
   options?: Intl.DateTimeFormatOptions
 ): string {
   try {
     const date = new Date(dateString);
     const timezone = getCurrentTimezone();
-    
+
     const defaultOptions: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'short',
       day: '2-digit',
       ...options
     };
-    
+
     return date.toLocaleDateString('en-US', {
       ...defaultOptions,
       timeZone: timezone
     });
   } catch (error) {
-    console.error('🌍 Error formatting date:', error);
+    DebugUtils.error('🌍 Error formatting date:', error);
     return dateString;
   }
 }
@@ -239,25 +242,25 @@ export function formatDateInUserTimezone(
  * Format a time string in the user's timezone
  */
 export function formatTimeInUserTimezone(
-  dateString: string, 
+  dateString: string,
   options?: Intl.DateTimeFormatOptions
 ): string {
   try {
     const date = new Date(dateString);
     const timezone = getCurrentTimezone();
-    
+
     const defaultOptions: Intl.DateTimeFormatOptions = {
       hour: '2-digit',
       minute: '2-digit',
       ...options
     };
-    
+
     return date.toLocaleTimeString('en-US', {
       ...defaultOptions,
       timeZone: timezone
     });
   } catch (error) {
-    console.error('🌍 Error formatting time:', error);
+    DebugUtils.error('🌍 Error formatting time:', error);
     return dateString;
   }
 }
@@ -270,7 +273,7 @@ export function getDateInUserTimezone(date: Date): string {
     const timezone = getCurrentTimezone();
     return date.toLocaleDateString("en-CA", { timeZone: timezone });
   } catch (error) {
-    console.error('🌍 Error getting date in user timezone:', error);
+    DebugUtils.error('🌍 Error getting date in user timezone:', error);
     return date.toISOString().split('T')[0];
   }
 }

@@ -1,10 +1,14 @@
-import React from 'react';
+
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface MacroProgressTrackerProps {
   current: {
@@ -23,14 +27,12 @@ interface MacroProgressTrackerProps {
   onMacroPress?: (macro: string) => void;
 }
 
-
 export default function MacroProgressTracker({
   current,
   targets,
   bodyTypeGoal = 'steady',
   onMacroPress,
 }: MacroProgressTrackerProps) {
-
 
   const getMacroColor = (macro: string) => {
     switch (macro) {
@@ -107,7 +109,7 @@ export default function MacroProgressTracker({
 
   const getProgressStatus = (current: number, target: number, macro: string) => {
     const percentage = getProgressPercentage(current, target);
-    
+
     if (macro === 'calories') {
       if (percentage >= 90 && percentage <= 110) return 'excellent';
       if (percentage >= 80 && percentage <= 120) return 'good';
@@ -167,15 +169,15 @@ export default function MacroProgressTracker({
           const status = getProgressStatus(macro.current, macro.target, macro.key);
           const statusColor = getStatusColor(status);
           const statusText = getStatusText(status, macro.key);
-          
+
           return (
             <View key={macro.key} style={styles.macroItem}>
               <View style={styles.macroHeader}>
                 <View style={styles.macroInfo}>
-                  <Ionicons 
-                    name={getMacroIcon(macro.key) as keyof typeof Ionicons.glyphMap} 
-                    size={16} 
-                    color={getMacroColor(macro.key)} 
+                  <Ionicons
+                    name={getMacroIcon(macro.key) as keyof typeof Ionicons.glyphMap}
+                    size={16}
+                    color={getMacroColor(macro.key)}
                   />
                   <Text style={styles.macroLabel}>{getMacroLabel(macro.key)}</Text>
                 </View>
@@ -184,17 +186,17 @@ export default function MacroProgressTracker({
                   <Text style={styles.macroTarget}>/ {Math.round(macro.target)}{getMacroUnit(macro.key)}</Text>
                 </View>
               </View>
-              
+
               <View style={styles.progressContainer}>
                 <View style={styles.progressBar}>
-                  <View 
+                  <View
                     style={[
-                      styles.progressFill, 
-                      { 
+                      styles.progressFill,
+                      {
                         width: `${percentage}%`,
-                        backgroundColor: statusColor 
+                        backgroundColor: statusColor
                       }
-                    ]} 
+                    ]}
                   />
                 </View>
                 <View style={styles.progressInfo}>
@@ -214,21 +216,21 @@ export default function MacroProgressTracker({
       {/* Body Type Recommendations */}
       <View style={styles.recommendationsContainer}>
         <Text style={styles.recommendationsTitle}>Recommendations for {bodyTypeGoal?.charAt(0).toUpperCase() + bodyTypeGoal?.slice(1)} & {bodyTypeGoal === 'sleek' ? 'Graceful' : bodyTypeGoal === 'steady' ? 'Steady' : 'Bold'}</Text>
-        
+
         <View style={styles.recommendationItem}>
           <Ionicons name="fitness" size={16} color="#3b82f6" />
           <Text style={styles.recommendationText}>
             Protein: {recommendations.protein.min}-{recommendations.protein.max} {recommendations.protein.unit}
           </Text>
         </View>
-        
+
         <View style={styles.recommendationItem}>
           <Ionicons name="flame" size={16} color="#ef4444" />
           <Text style={styles.recommendationText}>
             Calories: {recommendations.calories.deficit ? 'Deficit' : recommendations.calories.surplus ? 'Surplus' : 'Maintenance'}
           </Text>
         </View>
-        
+
         <View style={styles.recommendationItem}>
           <Ionicons name="trending-up" size={16} color="#10b981" />
           <Text style={styles.recommendationText}>
@@ -246,10 +248,10 @@ export default function MacroProgressTracker({
             if (status === 'low') {
               return (
                 <View key={`action-${macro.key}`} style={styles.quickAction}>
-                  <Ionicons 
-                    name="add-circle" 
-                    size={16} 
-                    color={getMacroColor(macro.key)} 
+                  <Ionicons
+                    name="add-circle"
+                    size={16}
+                    color={getMacroColor(macro.key)}
                   />
                   <Text style={styles.quickActionText}>
                     Add {getMacroLabel(macro.key)}
@@ -267,9 +269,9 @@ export default function MacroProgressTracker({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginHorizontal: 16,
     marginBottom: 16,
     shadowColor: '#000',
@@ -285,20 +287,20 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   bodyTypeBadge: {
     backgroundColor: '#f0fdf4',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: '#10b981',
   },
   bodyTypeText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
     color: '#10b981',
   },
@@ -320,22 +322,22 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   macroLabel: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   macroValues: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
   macroCurrent: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   macroTarget: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   progressContainer: {
     flexDirection: 'row',
@@ -345,13 +347,13 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 8,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 4,
+    backgroundColor: COLORS.background.tertiary,
+    borderRadius: BORDER_RADIUS.xs,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   progressInfo: {
     flexDirection: 'row',
@@ -360,11 +362,11 @@ const styles = StyleSheet.create({
     minWidth: 80,
   },
   progressPercentage: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
   },
   progressStatus: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '500',
   },
   recommendationsContainer: {
@@ -374,9 +376,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
   recommendationsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   recommendationItem: {
@@ -386,8 +388,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   recommendationText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   quickActionsContainer: {
     marginTop: 16,
@@ -396,9 +398,9 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
   quickActionsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   quickActions: {
@@ -409,16 +411,16 @@ const styles = StyleSheet.create({
   quickAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    backgroundColor: COLORS.background.secondary,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: SPACING.xxs,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     gap: 4,
   },
   quickActionText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
 });

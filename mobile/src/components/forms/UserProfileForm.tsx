@@ -62,7 +62,7 @@ export default function UserProfileForm({
 
   const updateData = (field: keyof UserProfile, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
@@ -144,7 +144,7 @@ export default function UserProfileForm({
           required
           testID="fullname-input"
         />
-        
+
         <FormField
           name="email"
           label="Email Address"
@@ -157,7 +157,7 @@ export default function UserProfileForm({
           required
           testID="email-input"
         />
-        
+
         <FormField
           name="phone"
           label="Phone Number"
@@ -188,7 +188,7 @@ export default function UserProfileForm({
           numberOfLines={4}
           testID="bio-input"
         />
-        
+
         <FormField
           name="location"
           label="Location"
@@ -199,7 +199,7 @@ export default function UserProfileForm({
           placeholder="City, Country"
           testID="location-input"
         />
-        
+
         <FormField
           name="website"
           label="Website"

@@ -4,7 +4,8 @@
  * Based on the detailed scoring tables provided
  */
 
-import { BodyTypeGoal, UserAttributes } from './bodyTypeGoals';
+import { BodyTypeGoal, UserAttributes } from './BodyTypeGoalsService';
+
 
 export interface ScoringResult {
   score: number; // Total points earned
@@ -61,7 +62,7 @@ export class BodyTypeScoringService {
    */
   scoreWorkout(workout: WorkoutLog): number {
     const goalType = this.getGoalType();
-    
+
     switch (goalType) {
       case 'sleek_graceful':
         return this.scoreWorkoutSleekGraceful(workout);
@@ -79,7 +80,7 @@ export class BodyTypeScoringService {
    */
   scoreNutrition(nutrition: BodyTypeNutritionLog): number {
     const goalType = this.getGoalType();
-    
+
     switch (goalType) {
       case 'sleek_graceful':
         return this.scoreNutritionSleekGraceful(nutrition);
@@ -459,16 +460,16 @@ export class BodyTypeScoringService {
 
   private getDailySuggestions(dailyLog: DailyLog, alignment: string): string[] {
     // const suggestions: string[] = []; // Unused for now
-    
+
     if (alignment === 'farther') {
       suggestions.push('Focus on your body type goal requirements');
       suggestions.push('Log your workouts and meals consistently');
     }
-    
+
     if (dailyLog.workouts.length === 0) {
       suggestions.push('Add a workout that aligns with your body type goal');
     }
-    
+
     if (dailyLog.nutrition.length === 0) {
       suggestions.push('Log your meals to track nutrition alignment');
     }
@@ -478,16 +479,16 @@ export class BodyTypeScoringService {
 
   private getWeeklySuggestions(weeklyLog: WeeklyLog, alignment: string): string[] {
     // const suggestions: string[] = []; // Unused for now
-    
+
     if (alignment === 'farther') {
       suggestions.push('Focus on consistency with your body type goal');
       suggestions.push('Review your workout and nutrition patterns');
     }
-    
+
     if (weeklyLog.missedSessions > 2) {
       suggestions.push('Reduce missed workout sessions');
     }
-    
+
     if (weeklyLog.consistencyStreak < 3) {
       suggestions.push('Build a consistent daily routine');
     }

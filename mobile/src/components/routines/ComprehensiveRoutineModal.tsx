@@ -16,8 +16,8 @@ import FilterBar from '../ui/FilterBar';
 import { searchInputConfigs } from '../ui/SearchInput.utils';
 import { filterBarConfigs } from '../ui/FilterBar.utils';
 import { showToast } from '../../utils/toast';
-import { routineService } from '../../services/routineService';
-import { apiClient } from '../../services/api';
+import { routineService } from '../../services/api';
+import { ApiServiceClient } from '../../services/ApiService';
 import { COMMON_STYLES } from '../../theme/constants';
 
 interface ComprehensiveRoutineModalProps {
@@ -55,7 +55,7 @@ export default function ComprehensiveRoutineModal({
 }: ComprehensiveRoutineModalProps) {
   const [routineName, setRoutineName] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   // Workout planning state
   const [currentDay, setCurrentDay] = useState(0);
   const [dayWorkouts, setDayWorkouts] = useState<DayWorkout[]>(
@@ -65,7 +65,7 @@ export default function ComprehensiveRoutineModal({
       workouts: [],
     }))
   );
-  
+
   // Exercise selection state
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
@@ -101,7 +101,7 @@ export default function ComprehensiveRoutineModal({
     const loadExercises = async () => {
       try {
         setLoadingExercises(true);
-        const response = await apiClient.get('/health/exercises/all?limit=500');
+        const response = await api.get('/health/exercises/all?limit=500');
         setAllExercises(response.data.exercises || []);
         setFilteredExercises(response.data.exercises || []);
       } catch {
@@ -127,7 +127,7 @@ export default function ComprehensiveRoutineModal({
 
     // Filter by multiple categories
     if (selectedCategories.length > 0) {
-      filtered = filtered.filter(exercise => 
+      filtered = filtered.filter(exercise =>
         selectedCategories.includes(exercise.logging_category)
       );
     }
@@ -137,20 +137,20 @@ export default function ComprehensiveRoutineModal({
       filtered = filtered.filter(exercise =>
         exercise.name.toLowerCase().includes(searchTerm)
       );
-      
+
       // Sort by relevance: exact matches first, then partial matches
       filtered.sort((a, b) => {
         const aName = a.name.toLowerCase();
         const bName = b.name.toLowerCase();
-        
+
         // Exact match gets highest priority
         if (aName === searchTerm && bName !== searchTerm) return -1;
         if (bName === searchTerm && aName !== searchTerm) return 1;
-        
+
         // Starts with search term gets second priority
         if (aName.startsWith(searchTerm) && !bName.startsWith(searchTerm)) return -1;
         if (bName.startsWith(searchTerm) && !aName.startsWith(searchTerm)) return 1;
-        
+
         // Then alphabetical order
         return aName.localeCompare(bName);
       });
@@ -240,7 +240,7 @@ export default function ComprehensiveRoutineModal({
 
     try {
       setLoading(true);
-      
+
       const routineData = {
         name: routineName.trim(),
         description: `Custom ${routineName.trim()} routine`,
@@ -273,7 +273,7 @@ export default function ComprehensiveRoutineModal({
       };
 
       const createdRoutine = await routineService.createRoutineWithWorkoutPlan(requestData);
-      
+
       showToast.success('Success!', `Routine "${routineName}" created with ${totalWorkouts} workouts`);
       resetForm();
       onClose();
@@ -328,7 +328,6 @@ export default function ComprehensiveRoutineModal({
             />
           </View>
 
-
           {/* Workout Plan */}
           <View style={styles.section}>
             <View style={styles.workoutPlanHeader}>
@@ -354,9 +353,9 @@ export default function ComprehensiveRoutineModal({
               >
                 <Ionicons name="chevron-back" size={20} color="#6b7280" />
               </TouchableOpacity>
-              
+
               <Text style={styles.currentDay}>{dayWorkouts[currentDay].dayName}</Text>
-              
+
               <TouchableOpacity
                 style={styles.dayNavButton}
                 onPress={() => {
@@ -394,7 +393,7 @@ export default function ComprehensiveRoutineModal({
                       <Ionicons name="close" size={20} color="#6b7280" />
                     </TouchableOpacity>
                   </View>
-                  
+
                   {/* Category Filter */}
                   <View style={styles.categoryFilter}>
                     <FilterBar
@@ -723,63 +722,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#1f2937',
-  },
-  categoryFilter: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: COMMON_STYLES.cardBackground,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    backgroundColor: COMMON_STYLES.cardBackground,
-    marginRight: 8,
-  },
-  categoryChipSelected: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
-  },
-  categoryChipText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  categoryChipTextSelected: {
-    color: '#fff',
-  },
-  exerciseItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: COMMON_STYLES.cardBackground,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  exerciseInfo: {
-    flex: 1,
-  },
-  exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  exerciseDetails: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  exerciseCategory: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textTransform: 'uppercase',
   },
   emptyState: {
     alignItems: 'center',

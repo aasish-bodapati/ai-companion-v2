@@ -4,13 +4,16 @@
  */
 
 import { create } from 'zustand';
+
 import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import { shallow } from 'zustand/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppStore, ProgressMetrics, Achievement, Streak } from './types';
-import { dashboardService } from '../services/dashboardService';
-// import { predictiveAnalyticsService } from '../services/predictiveAnalyticsService'; // REMOVED
-import stepTrackingService from '../services/stepTrackingService';
+import { dashboardService } from '../services/api';
+// import { predictiveAnalyticsService } from '../services/PredictiveAnalyticsService'; // REMOVED
+import { stepTrackingService } from '../services/StepTrackingService';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 // Initial state
 const initialState = {
@@ -41,16 +44,16 @@ export const useAppStore = create<AppStore>()(
         setUser: (user) => set({ user }, false, 'setUser'),
         setLoading: (loading) => set({ loading }, false, 'setLoading'),
         setError: (error) => set({ error, loading: false }, false, 'setError'),
-        
+
         // Progress metrics
-        setProgressMetrics: (progressMetrics) => 
+        setProgressMetrics: (progressMetrics) =>
           set({ progressMetrics }, false, 'setProgressMetrics'),
-        
+
         // Achievements
-        setAchievements: (achievements) => 
+        setAchievements: (achievements) =>
           set({ achievements }, false, 'setAchievements'),
-        
-        updateAchievement: (id, unlocked, progress) => 
+
+        updateAchievement: (id, unlocked, progress) =>
           set((state) => ({
             achievements: state.achievements.map(achievement =>
               achievement.id === id
@@ -58,12 +61,12 @@ export const useAppStore = create<AppStore>()(
                 : achievement
             )
           }), false, 'updateAchievement'),
-        
+
         // Streaks
-        setStreaks: (streaks) => 
+        setStreaks: (streaks) =>
           set({ streaks }, false, 'setStreaks'),
-        
-        updateStreak: (type, current) => 
+
+        updateStreak: (type, current) =>
           set((state) => ({
             streaks: state.streaks.map(streak =>
               streak.type === type
@@ -71,55 +74,55 @@ export const useAppStore = create<AppStore>()(
                 : streak
             )
           }), false, 'updateStreak'),
-        
+
         // AI insights
-        
+
         // Data refresh
         refreshData: async () => {
           const { setLoading, setError, setProgressMetrics, setAchievements, setStreaks, loading } = get();
-          
+
           // Prevent multiple simultaneous calls
           if (loading) {
             return;
           }
-          
+
           try {
             setLoading(true);
             setError(null);
-            
+
             // Initialize step tracking
             const stepTrackingAvailable = await stepTrackingService.isAvailable();
             if (stepTrackingAvailable) {
               await stepTrackingService.startTracking();
             }
-            
+
             // Load progress metrics
             const newProgressMetrics = await loadProgressMetrics();
             setProgressMetrics(newProgressMetrics);
-            
+
             // Load non-essential data in parallel
             const [achievements, streaks] = await Promise.allSettled([
               loadAchievements(),
               loadStreaks()
             ]);
-            
+
             if (achievements.status === 'fulfilled') {
               setAchievements(achievements.value);
             }
-            
+
             if (streaks.status === 'fulfilled') {
               setStreaks(streaks.value);
             }
-            
+
             set({ lastUpdated: new Date().toISOString() }, false, 'refreshData');
           } catch (error) {
-            console.error('Error refreshing app data:', error);
+            DebugUtils.error('Error refreshing app data:', error);
             setError('Failed to refresh data');
           } finally {
             setLoading(false);
           }
         },
-        
+
         // Reset state
         resetState: () => set(initialState, false, 'resetState'),
       }),
@@ -148,12 +151,12 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
     // Load from dashboard service
     const dashboardData = await dashboardService.getDashboardSummary();
     if (__DEV__) {
-      console.log('🔍 Dashboard loaded - workouts:', dashboardData.today_stats.workouts, 'meals:', dashboardData.today_stats.meals);
+      DebugUtils.log('🔍 Dashboard loaded - workouts:', dashboardData.today_stats.workouts, 'meals:', dashboardData.today_stats.meals);
     }
-    
+
     // Analytics data loading removed - using default values
     const stepsData = { current: 0, progress: 0 };
-    
+
     return {
       workouts: {
         current: dashboardData?.today_stats?.workouts || 0,
@@ -186,9 +189,17 @@ const loadProgressMetrics = async (): Promise<ProgressMetrics> => {
         progress: 0,
       },
     };
-  } catch (error) {
-    console.error('Error loading progress metrics:', error);
-    return initialState.progressMetrics;
+  } catch (error: any) {
+    // Handle 404 as expected behavior (no dashboard data yet)
+    if (error?.response?.status === 404 || 
+        error?.status === 404 || 
+        (error?.data && error.data.status === 404)) {
+      DebugUtils.log('ℹ️ [APP STORE] No dashboard data available yet (404)');
+      return initialState.progressMetrics;
+    } else {
+      DebugUtils.error('❌ [APP STORE] Error loading progress metrics:', error);
+      return initialState.progressMetrics;
+    }
   }
 };
 

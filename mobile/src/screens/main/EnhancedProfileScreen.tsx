@@ -10,28 +10,32 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { OnboardingData } from '../../services/onboardingService';
-import { profileService } from '../../services/profileService';
-import { onboardingService } from '../../services/onboardingService';
+import { OnboardingData } from '../../services/OnboardingService';
+import { profileService } from '../../services/api';
+import { onboardingService } from '../../services/api';
 // import { MobileOptimizedCard } from '../../components/common/MobileOptimizedCard';
 import EditPreferencesModal from '../../components/profile/EditPreferencesModal';
-import { numericalGoalsService, GoalProgress } from '../../services/numericalGoalsService';
+import { numericalGoalsService, GoalProgress } from '../../services/NumericalGoalsService';
 import { hapticFeedback } from '../../utils/haptics';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmationDialog from '../../components/ui/ConfirmationDialog';
 import { confirmationDialogConfigs } from '../../components/ui/ConfirmationDialog.utils';
 import NumericalGoalsModal from '../../components/profile/NumericalGoalsModal';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+
+import { DebugUtils } from '../../utils/debugUtils';
+
 // Body Type Goals Display Component
-const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: { 
-  bodyTypeGoal: string; 
+const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
+  bodyTypeGoal: string;
   userData: {
     height?: string;
     gender?: string;
     weight?: string;
     age?: string;
     activityLevel?: string;
-  }; 
+  };
   onGoalNameChange?: (name: string) => void;
 }) => {
   const [goalData, setGoalData] = useState<{
@@ -50,22 +54,22 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
   const loadGoalData = useCallback(async () => {
     try {
       // Import the body type goals service
-      const { getBodyTypeGoalById } = await import('../../services/bodyTypeGoals');
+      const { getBodyTypeGoalById } = await import('../../services/BodyTypeGoalsService');
       const goal = await getBodyTypeGoalById(bodyTypeGoal);
-        
+
         if (goal) {
           // Calculate target weight based on user's height and goal BMI
           const targetWeight = Math.round((userData?.height ? parseFloat(userData.height) / 100 : 1.75) ** 2 * goal.targetBMI);
-          
+
           // Calculate water goal based on user's gender
           const waterGoal = userData?.gender === 'male' ? 3700 : userData?.gender === 'female' ? 2700 : 3200;
-          
+
           setGoalData({
             ...goal,
             calculatedTargetWeight: targetWeight,
             calculatedWaterGoal: waterGoal
           });
-          
+
           // Notify parent component of the goal name
           if (onGoalNameChange) {
             onGoalNameChange(goal.name);
@@ -104,16 +108,16 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
         </View>
         <View style={styles.goalMetric}>
           <Text style={styles.goalMetricValue}>
-            {goalData.targetBMI && typeof goalData.targetBMI === 'object' 
-              ? goalData.targetBMI.recommended 
+            {goalData.targetBMI && typeof goalData.targetBMI === 'object'
+              ? goalData.targetBMI.recommended
               : goalData.targetBMI || '--'}
           </Text>
           <Text style={styles.goalMetricLabel}>BMI Goal</Text>
         </View>
         <View style={styles.goalMetric}>
           <Text style={styles.goalMetricValue}>
-            {goalData.targetBodyFat && typeof goalData.targetBodyFat === 'object' 
-              ? goalData.targetBodyFat.recommended 
+            {goalData.targetBodyFat && typeof goalData.targetBodyFat === 'object'
+              ? goalData.targetBodyFat.recommended
               : goalData.targetBodyFat || '--'}%
           </Text>
           <Text style={styles.goalMetricLabel}>Body Fat</Text>
@@ -126,18 +130,18 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
               const age = userData?.age ? parseFloat(userData.age) : 30;
               const gender = userData?.gender || 'male';
               const activityLevel = userData?.activityLevel || 'moderate';
-              
+
               let bmr;
               if (gender === 'male') {
                 bmr = 10 * weight + 6.25 * height - 5 * age + 5;
               } else {
                 bmr = 10 * weight + 6.25 * height - 5 * age - 161;
               }
-              
+
               const activityMultipliers = {
                 'sedentary': 1.2, 'light': 1.375, 'moderate': 1.55, 'active': 1.725, 'very_active': 1.9
               };
-              
+
               const tdee = bmr * (activityMultipliers[activityLevel as keyof typeof activityMultipliers] || 1.55);
               return Math.round(tdee);
             })()}
@@ -163,7 +167,7 @@ const BodyTypeGoalsDisplay = ({ bodyTypeGoal, userData, onGoalNameChange }: {
           <View style={styles.goalLifestyleItem}>
             <Ionicons name="moon-outline" size={16} color="#8b5cf6" />
             <Text style={styles.goalLifestyleText}>
-              {typeof goalData.targetAttributes.sleepDuration === 'object' 
+              {typeof goalData.targetAttributes.sleepDuration === 'object'
                 ? `${goalData.targetAttributes.sleepDuration.recommended}h sleep`
                 : `${goalData.targetAttributes.sleepDuration}h sleep`
               }
@@ -200,7 +204,7 @@ export default function EnhancedProfileScreen() {
   const loadNumericalGoals = useCallback(async () => {
     try {
       await numericalGoalsService.calculateProgress();
-      console.log('🎯 Loaded numerical goals');
+      DebugUtils.log('🎯 Loaded numerical goals');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
@@ -210,17 +214,17 @@ export default function EnhancedProfileScreen() {
     try {
       // First try to get data from backend
       const profileData = await profileService.getUserProfile();
-      
+
       if (profileData) {
         const onboardingData = profileService.convertToOnboardingData(profileData);
         setOnboardingData(onboardingData);
-        
+
         // Also save to local storage for offline access
         await onboardingService.saveOnboardingData(onboardingData);
       } else {
         // Fallback to local data
         let data = await onboardingService.loadOnboardingData();
-        
+
         if (!data) {
           data = {
             healthData: {
@@ -241,12 +245,12 @@ export default function EnhancedProfileScreen() {
           };
           await onboardingService.saveOnboardingData(data);
         }
-        
+
         setOnboardingData(data);
       }
-      
+
       // Timezone detection is now handled globally in GlobalStateContext
-      
+
       // Load numerical goals after onboarding data is loaded
       await loadNumericalGoals();
     } catch {
@@ -309,10 +313,10 @@ export default function EnhancedProfileScreen() {
     try {
       // Update local state
       setOnboardingData(prev => prev ? { ...prev, preferences: data } : null);
-      
+
       // Update backend
       await profileService.updateUserProfile({ preferences: data });
-      
+
       showToast('Preferences updated successfully', 'success');
     } catch {
       showToast('Failed to update preferences', 'error');
@@ -338,7 +342,7 @@ export default function EnhancedProfileScreen() {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -405,7 +409,7 @@ export default function EnhancedProfileScreen() {
                 <Text style={styles.goalName}>{bodyTypeGoalName || 'Loading...'}</Text>
                 <Text style={styles.goalDescription}>Your personalized body type goal</Text>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.changeGoalButton}
                 onPress={handleRerunOnboarding}
               >
@@ -413,7 +417,7 @@ export default function EnhancedProfileScreen() {
                 <Text style={styles.changeGoalText}>Change</Text>
               </TouchableOpacity>
             </View>
-            <BodyTypeGoalsDisplay 
+            <BodyTypeGoalsDisplay
               bodyTypeGoal={onboardingData.bodyTypeGoal}
               userData={onboardingData.healthData}
               onGoalNameChange={setBodyTypeGoalName}
@@ -446,8 +450,8 @@ export default function EnhancedProfileScreen() {
           <View style={styles.metricCard}>
             <Ionicons name="fitness-outline" size={16} color="#10b981" />
             <Text style={styles.metricValue} numberOfLines={1}>
-              {onboardingData?.healthData?.activityLevel ? 
-               onboardingData.healthData.activityLevel.charAt(0).toUpperCase() + 
+              {onboardingData?.healthData?.activityLevel ?
+               onboardingData.healthData.activityLevel.charAt(0).toUpperCase() +
                onboardingData.healthData.activityLevel.slice(1) : '--'}
             </Text>
             <Text style={styles.metricLabel}>Activity</Text>
@@ -455,8 +459,8 @@ export default function EnhancedProfileScreen() {
           <View style={styles.metricCard}>
             <Ionicons name="people-outline" size={16} color="#8b5cf6" />
             <Text style={styles.metricValue} numberOfLines={1}>
-              {onboardingData?.healthData?.gender ? 
-               onboardingData.healthData.gender.charAt(0).toUpperCase() + 
+              {onboardingData?.healthData?.gender ?
+               onboardingData.healthData.gender.charAt(0).toUpperCase() +
                onboardingData.healthData.gender.slice(1) : '--'}
             </Text>
             <Text style={styles.metricLabel}>Gender</Text>
@@ -471,7 +475,7 @@ export default function EnhancedProfileScreen() {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
         </View>
         <View style={styles.actionsGrid}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={() => setShowPreferencesModal(true)}
           >
@@ -479,7 +483,7 @@ export default function EnhancedProfileScreen() {
             <Text style={styles.actionTitle}>Preferences</Text>
             <Text style={styles.actionSubtitle}>Notifications & settings</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={() => setShowNumericalGoalsModal(true)}
           >
@@ -487,7 +491,7 @@ export default function EnhancedProfileScreen() {
             <Text style={styles.actionTitle}>Goals</Text>
             <Text style={styles.actionSubtitle}>Set fitness targets</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={() => {
               hapticFeedback.medium();
@@ -498,7 +502,7 @@ export default function EnhancedProfileScreen() {
             <Text style={styles.actionTitle}>Export</Text>
             <Text style={styles.actionSubtitle}>Download data</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.actionCard}
             onPress={handleLogout}
           >
@@ -506,7 +510,7 @@ export default function EnhancedProfileScreen() {
             <Text style={styles.actionTitle}>Sign Out</Text>
             <Text style={styles.actionSubtitle}>Log out of account</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionCard, styles.dangerActionCard]}
             onPress={handleDeleteAccount}
           >
@@ -564,19 +568,19 @@ export default function EnhancedProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
-  
+
   // Hero Section
   heroSection: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
     paddingTop: 16,
     paddingBottom: 16,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 12,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -611,7 +615,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#10b981',
+    backgroundColor: COLORS.success,
     borderWidth: 3,
     borderColor: '#ffffff',
   },
@@ -619,13 +623,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 2,
   },
   userEmail: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#e2e8f0',
     marginBottom: 8,
   },
@@ -639,9 +643,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 1,
   },
   statLabel: {
@@ -656,14 +660,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#94a3b8',
     marginHorizontal: 6,
   },
-  
+
   // Goal Section
   goalSection: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -676,9 +680,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 8,
   },
   goalCard: {
@@ -702,37 +706,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   goalName: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   goalDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   changeGoalButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#eff6ff',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
   },
   changeGoalText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     color: '#3b82f6',
     marginLeft: 4,
     fontWeight: '600',
   },
-  
+
   // Metrics Section
   metricsSection: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -745,9 +749,9 @@ const styles = StyleSheet.create({
   },
   metricCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     alignItems: 'center',
     marginHorizontal: 4,
     minWidth: 0,
@@ -758,28 +762,28 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   metricValue: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
     textAlign: 'center',
     flexShrink: 1,
   },
   metricLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  
+
   // Actions Section
   actionsSection: {
     marginHorizontal: 16,
     marginBottom: 12,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -793,24 +797,24 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48%',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     alignItems: 'center',
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   actionTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 6,
     marginBottom: 2,
   },
   actionSubtitle: {
     fontSize: 11,
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   dangerActionCard: {
@@ -821,37 +825,37 @@ const styles = StyleSheet.create({
   dangerActionTitle: {
     color: '#dc2626',
   },
-  
+
   // Footer Section
   footerSection: {
     alignItems: 'center',
     paddingVertical: 30,
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
   },
   footerText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   footerSubtext: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     marginTop: 4,
   },
-  
+
   // Loading
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     marginTop: 16,
   },
-  
+
   // Body Type Goals Display - Compact
   goalsDisplay: {
     marginTop: 12,
@@ -864,21 +868,21 @@ const styles = StyleSheet.create({
   },
   goalMetric: {
     width: '48%',
-    backgroundColor: '#f8fafc',
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: COLORS.background.secondary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.sm,
     alignItems: 'center',
     marginBottom: 8,
   },
   goalMetricValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   goalMetricLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -894,7 +898,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     flex: 1,
     minWidth: '30%',
   },
@@ -905,11 +909,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   goalsLoading: {
-    padding: 20,
+    padding: SPACING.lg,
     alignItems: 'center',
   },
   goalsLoadingText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
 });

@@ -8,11 +8,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING } from '../../theme/constants';
-import { simpleWaterService, SimpleWaterStats } from '../../services/simpleWaterService';
+import { simpleWaterService, SimpleWaterStats } from '../../services/SimpleWaterService';
 import LoadingState from '../ui/LoadingState';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import { loadingStateConfigs } from '../ui/LoadingState.utils';
 import { confirmationDialogConfigs } from '../ui/ConfirmationDialog.utils';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface WaterLoggerProps {
   onWaterLogged?: () => void;
@@ -41,30 +43,30 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
       const newStats = await simpleWaterService.getTodayStats();
       setStats(newStats);
     } catch (error) {
-      console.error('🚰 [WATER LOGGER] Failed to load stats:', error);
+      DebugUtils.error('🚰 [WATER LOGGER] Failed to load stats:', error);
     }
   };
 
   const logWater = async (amount_ml: number) => {
     if (loading) return;
-    
+
     try {
       setLoading(true);
       hapticFeedback.light();
-      
-      console.log('🚰 [WATER LOGGER] Logging water:', amount_ml, 'ml');
+
+      DebugUtils.log('🚰 [WATER LOGGER] Logging water:', amount_ml, 'ml');
       const newStats = await simpleWaterService.logWater(amount_ml);
-      
+
       setStats(newStats);
       hapticFeedback.success();
       onWaterLogged?.();
-      
-      console.log('🚰 [WATER LOGGER] Water logged successfully');
-      
+
+      DebugUtils.log('🚰 [WATER LOGGER] Water logged successfully');
+
       // Add a small delay to prevent rapid state changes
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
-      console.error('🚰 [WATER LOGGER] Failed to log water:', error);
+      DebugUtils.error('🚰 [WATER LOGGER] Failed to log water:', error);
       hapticFeedback.error();
       setErrorMessage('Failed to log water. Please try again.');
       setShowErrorDialog(true);
@@ -75,24 +77,24 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
 
   const removeLastLog = async () => {
     if (loading || stats.logs_today === 0) return;
-    
+
     try {
       setLoading(true);
       hapticFeedback.light();
-      
-      console.log('🚰 [WATER LOGGER] Removing last water log');
+
+      DebugUtils.log('🚰 [WATER LOGGER] Removing last water log');
       const newStats = await simpleWaterService.removeLastLog();
-      
+
       setStats(newStats);
       hapticFeedback.success();
       onWaterLogged?.();
-      
-      console.log('🚰 [WATER LOGGER] Last water log removed');
-      
+
+      DebugUtils.log('🚰 [WATER LOGGER] Last water log removed');
+
       // Add a small delay to prevent rapid state changes
       await new Promise(resolve => setTimeout(resolve, 300));
     } catch (error) {
-      console.error('🚰 [WATER LOGGER] Failed to remove water log:', error);
+      DebugUtils.error('🚰 [WATER LOGGER] Failed to remove water log:', error);
       hapticFeedback.error();
       setErrorMessage('Failed to remove water log. Please try again.');
       setShowErrorDialog(true);
@@ -121,11 +123,11 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
 
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
-              styles.progressFill, 
+              styles.progressFill,
               { width: `${progressWidth}%` }
-            ]} 
+            ]}
           />
         </View>
       </View>
@@ -142,7 +144,7 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
         >
           <Ionicons name="remove" size={20} color="#ffffff" />
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[
             styles.button,
@@ -158,8 +160,8 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          {loading 
-            ? 'Logging water...' 
+          {loading
+            ? 'Logging water...'
             : `Tap + to add 250ml, - to remove last log`
           }
         </Text>

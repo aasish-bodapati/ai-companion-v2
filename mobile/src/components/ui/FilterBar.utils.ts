@@ -2,6 +2,7 @@
 
 import { FilterBarSize, FilterBarVariant, FilterBarLayout, FilterOption } from './FilterBar';
 
+
 export const filterBarPresets = {
   // Small filter bars
   small: {
@@ -213,9 +214,9 @@ export const filterBarUtils = {
   // Filter options by search term
   filterOptions: (options: FilterOption[], searchTerm: string): FilterOption[] => {
     if (!searchTerm) return options;
-    
+
     const term = searchTerm.toLowerCase();
-    return options.filter(option => 
+    return options.filter(option =>
       option.label.toLowerCase().includes(term)
     );
   },
@@ -249,11 +250,11 @@ export const filterBarUtils = {
     if (selectedValues.length < minSelections) {
       return { isValid: false, error: `Minimum ${minSelections} selections required` };
     }
-    
+
     if (maxSelections && selectedValues.length > maxSelections) {
       return { isValid: false, error: `Maximum ${maxSelections} selections allowed` };
     }
-    
+
     return { isValid: true, error: null };
   },
 
@@ -263,7 +264,7 @@ export const filterBarUtils = {
     if (selectedOptions.length <= maxDisplay) {
       return selectedOptions.map(option => option.label).join(', ');
     }
-    
+
     const displayed = selectedOptions.slice(0, maxDisplay);
     const remaining = selectedOptions.length - maxDisplay;
     return `${displayed.map(option => option.label).join(', ')} +${remaining} more`;

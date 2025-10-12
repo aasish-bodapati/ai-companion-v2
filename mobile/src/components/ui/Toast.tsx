@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../theme/constants';
+import { COLORS, SPACING, BORDER_RADIUS, FONT_WEIGHT, SHADOWS } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -97,7 +98,7 @@ const Toast: React.FC<ToastProps> = ({
         };
       case 'info':
         return {
-          backgroundColor: '#06b6d4',
+          backgroundColor: COLORS.info,
           icon: 'information-circle' as const,
           iconColor: COLORS.text.inverse,
         };
@@ -149,47 +150,41 @@ const styles = StyleSheet.create({
   container: {
     position: 'absolute',
     top: 120,
-    left: 16,
-    right: 16,
+    left: SPACING.md,
+    right: SPACING.md,
     zIndex: 1000,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    borderRadius: BORDER_RADIUS.sm,
+    ...SHADOWS.medium,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    ...STYLE_PRESETS.row,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
   },
   message: {
     flex: 1,
+    ...STYLE_PRESETS.textSecondary,
     color: COLORS.text.inverse,
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
+    fontWeight: FONT_WEIGHT.medium,
+    marginLeft: SPACING.xs,
   },
   rightSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    ...STYLE_PRESETS.row,
   },
   queueBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    borderRadius: BORDER_RADIUS.round,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    marginRight: 8,
+    marginRight: SPACING.xs,
   },
   queueText: {
     color: COLORS.text.inverse,
-    fontSize: 12,
-    fontWeight: '600',
+    ...STYLE_PRESETS.textCaption,
+    fontWeight: FONT_WEIGHT.semibold,
   },
   closeButton: {
-    padding: 4,
+    padding: SPACING.xxs,
   },
 });
 

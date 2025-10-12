@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 
 export interface HealthPattern {
   type: 'correlation' | 'trend' | 'anomaly' | 'achievement';
@@ -82,8 +83,8 @@ export const aiInsightsService = {
   // Get AI-generated health insights
   async getHealthInsights(limit: number = 10): Promise<AIInsight[]> {
     try {
-      const response = await apiClient.get(`/health/insights/suggestions?limit=${limit}`);
-      return Array.isArray(response.data) ? response.data : this.getMockInsights();
+      const response = await api.get(`/api/v1/health/insights/suggestions?limit=${limit}`);
+      return Array.isArray(response) ? response : this.getMockInsights();
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       // Return mock data for development
@@ -94,8 +95,8 @@ export const aiInsightsService = {
   // Get health patterns and correlations
   async getHealthPatterns(): Promise<HealthPattern[]> {
     try {
-      const response = await apiClient.get('/health/insights/patterns');
-      return Array.isArray(response.data) ? response.data : this.getMockPatterns();
+      const response = await api.get('/api/v1/health/insights/patterns');
+      return Array.isArray(response) ? response : this.getMockPatterns();
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockPatterns();
@@ -106,8 +107,8 @@ export const aiInsightsService = {
   async getRecommendations(category?: string): Promise<HealthRecommendation[]> {
     try {
       const params = category ? `?category=${category}` : '';
-      const response = await apiClient.get(`/health/insights/suggestions${params}`);
-      return Array.isArray(response.data) ? response.data : this.getMockRecommendations();
+      const response = await api.get(`/api/v1/health/insights/suggestions${params}`);
+      return Array.isArray(response) ? response : this.getMockRecommendations();
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockRecommendations();
@@ -117,13 +118,13 @@ export const aiInsightsService = {
   // Get progress analysis
   async getProgressAnalysis(period: 'week' | 'month' | 'quarter' | 'year' = 'month'): Promise<ProgressAnalysis> {
     try {
-      const response = await apiClient.get(`/health/insights/trends?period=${period}`);
+      const response = await api.get(`/api/v1/health/insights/trends?period=${period}`);
       // The API returns an array of trends, but we need a single analysis object
-      if (Array.isArray(response.data)) {
+      if (Array.isArray(response)) {
         // Transform the API response to our expected format
-        return this.transformTrendsToAnalysis(response.data, period);
+        return this.transformTrendsToAnalysis(response, period);
       }
-      return response.data;
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockProgressAnalysis(period);
@@ -133,7 +134,7 @@ export const aiInsightsService = {
   // Transform API trends response to analysis format
   transformTrendsToAnalysis(trends: Record<string, unknown>[], period: string): ProgressAnalysis {
     const workoutTrend = trends.find(t => t.metric_name === 'workouts') || trends[0];
-    
+
     return {
       period: period as 'week' | 'month' | 'year',
       fitness_trends: {
@@ -164,8 +165,8 @@ export const aiInsightsService = {
   async getGoalAnalysis(goalId?: string): Promise<GoalAnalysis[]> {
     try {
       const params = goalId ? `?goal_id=${goalId}` : '';
-      const response = await apiClient.get(`/health/insights/goals/progress${params}`);
-      return response.data;
+      const response = await api.get(`/api/v1/health/insights/goals/progress${params}`);
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockGoalAnalysis();
@@ -176,8 +177,8 @@ export const aiInsightsService = {
   async getCoachingMessage(context?: string): Promise<string> {
     try {
       const params = context ? `?context=${context}` : '';
-      const response = await apiClient.get(`/health/insights/motivation${params}`);
-      return response.data.message;
+      const response = await api.get(`/api/v1/health/insights/motivation${params}`);
+      return response.message;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockCoachingMessage();
@@ -191,7 +192,7 @@ export const aiInsightsService = {
     comments?: string;
   }) {
     try {
-      await apiClient.post(`/health/insights/${insightId}/feedback`, feedback);
+      await api.post(`/health/insights/${insightId}/feedback`, feedback);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
@@ -205,8 +206,8 @@ export const aiInsightsService = {
     equipment?: string[];
   }) {
     try {
-      const response = await apiClient.post('/health/insights/workout-suggestions', preferences || {});
-      return response.data;
+      const response = await api.post('/health/insights/workout-suggestions', preferences || {});
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockWorkoutSuggestions();
@@ -221,8 +222,8 @@ export const aiInsightsService = {
   }) {
     try {
       const data = { meal_type: mealType, ...preferences };
-      const response = await apiClient.post('/health/insights/nutrition-suggestions', data);
-      return response.data;
+      const response = await api.post('/health/insights/nutrition-suggestions', data);
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return this.getMockNutritionSuggestions();

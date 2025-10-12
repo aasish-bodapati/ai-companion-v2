@@ -18,7 +18,7 @@ export default {
       },
     },
     extra: {
-      apiUrl: 'http://192.168.1.5:8000',
+      apiUrl: 'http://192.168.1.11:8000',
       OPENWEATHER_API_KEY: process.env.OPENWEATHER_API_KEY,
     },
   },

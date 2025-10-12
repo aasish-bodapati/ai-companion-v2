@@ -1,12 +1,16 @@
-import React from 'react';
+
 import {
   View,
   Text,
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import React from 'react';
+
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import { hapticFeedback } from '../../utils/haptics';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface OnboardingNavigationProps {
   currentStep: number;
@@ -25,7 +29,6 @@ interface OnboardingNavigationProps {
   showPrevious?: boolean;
   loading?: boolean;
 }
-
 
 export default function OnboardingNavigation({
   currentStep,
@@ -110,7 +113,7 @@ export default function OnboardingNavigation({
               style={styles.skipButton}
             />
           )}
-          
+
           {showPrevious && !isFirstStep && !showSkip && (
             <TouchOptimizedButton
               title={previousText}
@@ -162,9 +165,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    backgroundColor: COLORS.background.primary,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     shadowColor: '#000',
@@ -181,22 +184,22 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: COLORS.gray[200],
     borderRadius: 2,
     overflow: 'hidden',
     marginBottom: 8,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
     borderRadius: 2,
   },
   stepText: {
     // Container style
   },
   stepTextContent: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     fontWeight: '500',
   },
@@ -215,13 +218,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   skipButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
   previousButton: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
   },
   nextButton: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xl,
     minWidth: 120,
   },
   dotsContainer: {
@@ -232,15 +235,15 @@ const styles = StyleSheet.create({
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    backgroundColor: '#d1d5db',
+    borderRadius: BORDER_RADIUS.xs,
+    backgroundColor: COLORS.gray[300],
     marginHorizontal: 4,
   },
   dotActive: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: COLORS.primary.main,
     width: 24,
   },
   dotCompleted: {
-    backgroundColor: '#10b981',
+    backgroundColor: COLORS.success,
   },
 });

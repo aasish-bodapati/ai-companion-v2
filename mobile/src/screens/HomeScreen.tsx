@@ -7,7 +7,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { healthService, HealthData } from '../services/healthService';
+import { healthService, HealthData } from '../services/HealthService';
+import { DebugUtils } from '../utils/debugUtils';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 export default function HomeScreen() {
   const [healthData, setHealthData] = useState<HealthData | null>(null);
@@ -22,25 +26,25 @@ export default function HomeScreen() {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('📱 HomeScreen: Starting fetchHealthData...');
-      
+
+      DebugUtils.log('📱 HomeScreen: Starting fetchHealthData...');
+
       // Test basic connectivity first with fetch
-      console.log('📱 HomeScreen: Testing basic connectivity with fetch...');
-      const testUrl = 'http://192.168.1.5:8000/health';
-      console.log('📱 HomeScreen: Test URL:', testUrl);
-      
+      DebugUtils.log('📱 HomeScreen: Testing basic connectivity with fetch...');
+      const testUrl = 'http://192.168.1.11:8000/health';
+      DebugUtils.log('📱 HomeScreen: Test URL:', testUrl);
+
       try {
         const fetchResponse = await fetch(testUrl);
-        console.log('📱 HomeScreen: Fetch response status:', fetchResponse.status);
+        DebugUtils.log('📱 HomeScreen: Fetch response status:', fetchResponse.status);
         const fetchData = await fetchResponse.json();
-        console.log('📱 HomeScreen: Fetch response data:', fetchData);
+        DebugUtils.log('📱 HomeScreen: Fetch response data:', fetchData);
       } catch {
         // Silent error handling - no console logging to prevent Expo Go notifications
       }
-      
+
       const data = await healthService.getHealthData();
-      console.log('📱 HomeScreen: Successfully received data:', data);
+      DebugUtils.log('📱 HomeScreen: Successfully received data:', data);
       setHealthData(data);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -106,21 +110,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   content: {
-    padding: 20,
+    padding: SPACING.lg,
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZE.xxxxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xl,
+    color: COLORS.text.secondary,
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -130,43 +134,43 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   errorContainer: {
     backgroundColor: '#fef2f2',
-    padding: 16,
-    borderRadius: 8,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
     borderColor: '#fecaca',
     marginVertical: 16,
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     marginBottom: 8,
   },
   retryText: {
     color: '#6366f1',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   dataContainer: {
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
     borderColor: '#e5e7eb',
     marginVertical: 16,
   },
   dataTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 12,
   },
   dataText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#374151',
     fontFamily: 'monospace',
   },
@@ -176,11 +180,11 @@ const styles = StyleSheet.create({
   },
   refreshButton: {
     backgroundColor: '#6366f1',
-    color: '#ffffff',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     overflow: 'hidden',
   },

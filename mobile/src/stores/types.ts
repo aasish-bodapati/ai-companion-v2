@@ -5,6 +5,7 @@
 
 import { User } from '../contexts/AuthContext';
 
+
 // Base achievement interface
 export interface Achievement {
   id: string;
@@ -96,24 +97,23 @@ export interface WorkoutLog {
   routine_id?: string;
 }
 
-
 // Store state interfaces
 export interface AppState {
   // User data
   user: User | null;
-  
+
   // Global state
   loading: boolean;
   error: string | null;
   lastUpdated: string | null;
-  
+
   // Progress metrics
   progressMetrics: ProgressMetrics;
-  
+
   // Achievements and streaks
   achievements: Achievement[];
   streaks: Streak[];
-  
+
   // AI insights
 }
 
@@ -122,7 +122,7 @@ export interface NutritionState {
   todayStats: NutritionStats | null;
   weekStats: NutritionStats | null;
   recentMeals: MealLog[];
-  
+
   // UI state
   loading: boolean;
   error: string | null;
@@ -134,13 +134,12 @@ export interface FitnessState {
   todayStats: WorkoutStats | null;
   weekStats: WorkoutStats | null;
   recentWorkouts: WorkoutLog[];
-  
+
   // UI state
   loading: boolean;
   error: string | null;
   lastUpdated: string | null;
 }
-
 
 // Store actions interfaces
 export interface AppActions {
@@ -181,7 +180,6 @@ export interface FitnessActions {
   refreshFitnessData: () => Promise<void>;
   resetFitnessState: () => void;
 }
-
 
 // Water-specific types
 export interface WaterLog {

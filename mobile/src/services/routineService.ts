@@ -1,4 +1,5 @@
-import { apiClient } from './api';
+import { api } from './api';
+
 import { BaseService } from './BaseService';
 
 interface ApiError {
@@ -109,7 +110,7 @@ class RoutineService extends BaseService {
     }
 
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/templates?${queryParams.toString()}`),
+      () => api.get(`/api/v1/health/simple-routines/templates?${queryParams.toString()}`),
       'ROUTINE SERVICE - getTemplates'
     );
   }
@@ -128,7 +129,7 @@ class RoutineService extends BaseService {
     }
 
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/?${queryParams.toString()}`),
+      () => api.get(`/api/v1/health/simple-routines/?${queryParams.toString()}`),
       'ROUTINE SERVICE - getRoutines'
     );
   }
@@ -136,7 +137,7 @@ class RoutineService extends BaseService {
   // Get a specific routine by ID (user-created only)
   async getRoutine(routineId: number): Promise<SimpleRoutineWithProgress> {
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/${routineId}`),
+      () => api.get(`/api/v1/health/simple-routines/${routineId}`),
       'ROUTINE SERVICE - getRoutine'
     );
   }
@@ -155,7 +156,7 @@ class RoutineService extends BaseService {
     }
 
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/templates?${queryParams.toString()}`),
+      () => api.get(`/api/v1/health/simple-routines/templates?${queryParams.toString()}`),
       'ROUTINE SERVICE - getRoutineTemplates'
     );
   }
@@ -163,7 +164,7 @@ class RoutineService extends BaseService {
   // Get a specific template routine by ID (public access)
   async getTemplateRoutine(routineId: number): Promise<SimpleRoutineWithProgress> {
     const data = await this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/templates/${routineId}`),
+      () => api.get(`/api/v1/health/simple-routines/templates/${routineId}`),
       'ROUTINE SERVICE - getTemplateRoutine'
     );
     return data;
@@ -173,7 +174,7 @@ class RoutineService extends BaseService {
   async getActiveRoutine(): Promise<SimpleRoutineWithProgress | null> {
     try {
       const data = await this.makeRequest(
-        () => apiClient.get('/health/simple-routines/active'),
+        () => api.get('/api/v1/health/simple-routines/active'),
         'ROUTINE SERVICE - getActiveRoutine'
       );
       return data;
@@ -190,10 +191,10 @@ class RoutineService extends BaseService {
   // Create a user copy of a template routine
   async createFromTemplate(templateId: number, customName?: string): Promise<SimpleRoutineWithProgress> {
     try {
-      
+
       // First get the template routine
       const template = await this.getTemplateRoutine(templateId);
-      
+
       // Create a new routine based on the template
       const routineData: CreateRoutineData = {
         name: customName || `${template.name} (Copy)`,
@@ -201,7 +202,6 @@ class RoutineService extends BaseService {
         difficulty: template.difficulty,
         duration_weeks: template.duration_weeks,
       };
-
 
       // Create the routine with workout plan
       const workoutDaysData = template.workout_schedule.map(day => ({
@@ -219,13 +219,13 @@ class RoutineService extends BaseService {
       }));
 
       const data = await this.makeRequest(
-        () => apiClient.post('/health/simple-routines/with-workout-plan', {
+        () => api.post('/api/v1/health/simple-routines/with-workout-plan', {
           routine_data: routineData,
           workout_days: workoutDaysData
         }),
         'ROUTINE SERVICE - createFromTemplate'
       );
-      
+
       return data;
     } catch (error) {
       this.handleError(error, 'ROUTINE SERVICE - createFromTemplate');
@@ -236,7 +236,7 @@ class RoutineService extends BaseService {
   // Create a new routine
   async createRoutine(routineData: CreateRoutineData): Promise<SimpleRoutineWithProgress> {
     return this.makeRequest(
-      () => apiClient.post('/health/simple-routines/', routineData),
+      () => api.post('/api/v1/health/simple-routines/', routineData),
       'ROUTINE SERVICE - createRoutine'
     );
   }
@@ -247,7 +247,7 @@ class RoutineService extends BaseService {
     workoutDays: WorkoutDay[]
   ): Promise<SimpleRoutineWithProgress> {
     return this.makeRequest(
-      () => apiClient.post('/health/simple-routines/with-workout-plan', {
+      () => api.post('/api/v1/health/simple-routines/with-workout-plan', {
         routine_data: routineData,
         workout_days: workoutDays,
       }),
@@ -261,7 +261,7 @@ class RoutineService extends BaseService {
     routineData: Partial<CreateRoutineData>
   ): Promise<SimpleRoutineWithProgress> {
     return this.makeRequest(
-      () => apiClient.put(`/health/simple-routines/${routineId}/`, routineData),
+      () => api.put(`/health/simple-routines/${routineId}/`, routineData),
       'ROUTINE SERVICE - updateRoutine'
     );
   }
@@ -273,7 +273,7 @@ class RoutineService extends BaseService {
     workoutDays: WorkoutDay[]
   ): Promise<SimpleRoutineWithProgress> {
     return this.makeRequest(
-      () => apiClient.put(`/health/simple-routines/${routineId}/with-workout-plan`, {
+      () => api.put(`/health/simple-routines/${routineId}/with-workout-plan`, {
         routine_data: routineData,
         workout_days: workoutDays,
       }),
@@ -284,7 +284,7 @@ class RoutineService extends BaseService {
   // Delete a routine
   async deleteRoutine(routineId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.delete(`/health/simple-routines/${routineId}`),
+      () => api.delete(`/health/simple-routines/${routineId}`),
       'ROUTINE SERVICE - deleteRoutine'
     );
   }
@@ -292,7 +292,7 @@ class RoutineService extends BaseService {
   // Start a routine (set as active)
   async startRoutine(routineId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.post(`/health/simple-routines/${routineId}/start`),
+      () => api.post(`/health/simple-routines/${routineId}/start`),
       'ROUTINE SERVICE - startRoutine'
     );
   }
@@ -300,7 +300,7 @@ class RoutineService extends BaseService {
   // Stop a routine (set as inactive)
   async stopRoutine(routineId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.post(`/health/simple-routines/${routineId}/stop`),
+      () => api.post(`/health/simple-routines/${routineId}/stop`),
       'ROUTINE SERVICE - stopRoutine'
     );
   }
@@ -308,7 +308,7 @@ class RoutineService extends BaseService {
   // Get routine progress
   async getRoutineProgress(routineId: number): Promise<any> {
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/${routineId}/progress`),
+      () => api.get(`/api/v1/health/simple-routines/${routineId}/progress`),
       'ROUTINE SERVICE - getRoutineProgress'
     );
   }
@@ -317,16 +317,17 @@ class RoutineService extends BaseService {
   async getTodaysWorkout(): Promise<any> {
     try {
       // Use the correct simple routines endpoint that actually fetches from database
-      const response = await apiClient.get('/health/simple-routines/active/today-workout');
-      const data = this.extractData(response);
-      return data;
+      const response = await api.get('/api/v1/health/simple-routines/active/today-workout');
+      return response;
     } catch (error: unknown) {
       // Handle 404 error gracefully (no workout scheduled for today)
-      const apiError = error as ApiError;
-      if (apiError.response?.status === 404) {
+      const apiError = error as any;
+      if (apiError?.response?.status === 404 || 
+          apiError?.status === 404 || 
+          (apiError?.data && apiError.data.status === 404)) {
         return null; // Return null instead of throwing
       }
-      
+
       // For other errors, log and re-throw
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw error;
@@ -336,7 +337,7 @@ class RoutineService extends BaseService {
   // Log today's workout
   async logTodaysWorkout(routineId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.post(`/health/simple-routines/${routineId}/log-workout`),
+      () => api.post(`/health/simple-routines/${routineId}/log-workout`),
       'ROUTINE SERVICE - logTodaysWorkout'
     );
   }
@@ -344,7 +345,7 @@ class RoutineService extends BaseService {
   // Skip today's workout
   async skipTodaysWorkout(routineId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.post(`/health/simple-routines/${routineId}/skip-workout`),
+      () => api.post(`/health/simple-routines/${routineId}/skip-workout`),
       'ROUTINE SERVICE - skipTodaysWorkout'
     );
   }
@@ -388,7 +389,7 @@ class RoutineService extends BaseService {
     }
 
     return this.makeRequest(
-      () => apiClient.get(`/health/simple-routines/workout-logs?${queryParams.toString()}`),
+      () => api.get(`/api/v1/health/simple-routines/workout-logs?${queryParams.toString()}`),
       'ROUTINE SERVICE - getWorkoutLogs'
     );
   }
@@ -405,7 +406,7 @@ class RoutineService extends BaseService {
   }): Promise<any> {
     // Create a unique key for this workout to prevent duplicates
     const workoutKey = `${logData.activity_type}_${logData.activity_name}_${logData.duration_minutes}_${logData.exercises}`;
-    
+
     // Check if this exact workout is already being processed
     if (this.pendingRequests.has(workoutKey)) {
       throw new Error('Workout is already being processed. Please wait.');
@@ -413,7 +414,7 @@ class RoutineService extends BaseService {
 
     // Add to pending requests
     this.pendingRequests.add(workoutKey);
-    
+
     try {
       // Add timezone information to the request
       const timezoneOffset = new Date().getTimezoneOffset() * -1; // Convert to positive offset
@@ -421,10 +422,10 @@ class RoutineService extends BaseService {
         ...logData,
         timezone_offset: timezoneOffset
       };
-      
+
       // Use the same endpoint as fitnessService to avoid duplicates
       const result = await this.makeRequest(
-        () => apiClient.post('/health/logging/fitness', logDataWithTimezone),
+        () => api.post('/api/v1/health/logging/fitness', logDataWithTimezone),
         'ROUTINE SERVICE - createWorkoutLog'
       );
       return result;
@@ -439,7 +440,7 @@ class RoutineService extends BaseService {
     notes?: string;
   }): Promise<any> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/fitness/${logId}`, updateData),
+      () => api.put(`/health/logging/fitness/${logId}`, updateData),
       'ROUTINE SERVICE - updateWorkoutLog'
     );
   }
@@ -458,7 +459,7 @@ class RoutineService extends BaseService {
     message: string;
   }> {
     return this.makeRequest(
-      () => apiClient.put(`/health/logging/fitness/${logId}`, {
+      () => api.put(`/health/logging/fitness/${logId}`, {
         exercises: JSON.stringify(exercises)
       }),
       'ROUTINE SERVICE - updateWorkoutLogExercises'
@@ -468,7 +469,7 @@ class RoutineService extends BaseService {
   // Delete workout log - now uses fitnessService endpoint
   async deleteWorkoutLog(logId: number): Promise<void> {
     return this.makeRequest(
-      () => apiClient.delete(`/health/logging/fitness/${logId}`),
+      () => api.delete(`/health/logging/fitness/${logId}`),
       'ROUTINE SERVICE - deleteWorkoutLog'
     );
   }
@@ -476,7 +477,7 @@ class RoutineService extends BaseService {
   // Set active routine
   async setActiveRoutine(routineId: string): Promise<any> {
     return this.makeRequest(
-      () => apiClient.post('/health/active-routine', {
+      () => api.post('/api/v1/health/active-routine', {
         routine_id: routineId
       }),
       'ROUTINE SERVICE - setActiveRoutine'
@@ -486,7 +487,7 @@ class RoutineService extends BaseService {
   // Clear active routine
   async clearActiveRoutine(): Promise<any> {
     return this.makeRequest(
-      () => apiClient.delete('/health/active-routine'),
+      () => api.delete('/api/v1/health/active-routine'),
       'ROUTINE SERVICE - clearActiveRoutine'
     );
   }

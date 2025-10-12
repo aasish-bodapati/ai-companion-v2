@@ -27,36 +27,36 @@ interface SearchableListProps {
   items: SearchableItem[];
   onItemSelect: (item: SearchableItem) => void;
   onItemPress?: (item: SearchableItem) => void;
-  
+
   // Search configuration
   searchPlaceholder?: string;
   searchDebounceMs?: number;
   minSearchLength?: number;
   showSearchIcon?: boolean;
-  
+
   // Display configuration
   title?: string;
   subtitle?: string;
   emptyMessage?: string;
   emptyIcon?: string;
-  
+
   // Item rendering
   renderItem?: (item: SearchableItem, index: number) => React.ReactElement | null;
   itemHeight?: number;
-  
+
   // Styling
   containerStyle?: object;
   searchContainerStyle?: object;
   listStyle?: object;
   itemStyle?: object;
-  
+
   // Loading state
   loading?: boolean;
   loadingText?: string;
-  
+
   // Filtering
   filterItems?: (items: SearchableItem[], query: string) => SearchableItem[];
-  
+
   // Selection
   selectedItemId?: number;
   multiSelect?: boolean;
@@ -103,17 +103,17 @@ export default function SearchableList({
     }
 
     setIsSearching(true);
-    
+
     // Debounce search
     const timeoutId = setTimeout(() => {
-      const filtered = filterItems 
+      const filtered = filterItems
         ? filterItems(items, searchQuery)
-        : items.filter(item => 
+        : items.filter(item =>
             item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
             (item.subtitle && item.subtitle.toLowerCase().includes(searchQuery.toLowerCase())) ||
             (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase()))
           );
-      
+
       setFilteredItems(filtered);
       setIsSearching(false);
     }, searchDebounceMs);
@@ -127,14 +127,13 @@ export default function SearchableList({
 
   const handleItemPress = (item: SearchableItem) => {
     hapticFeedback.light();
-    
+
     if (onItemPress) {
       onItemPress(item);
     } else {
       onItemSelect(item);
     }
   };
-
 
   const isItemSelected = (itemId: number) => {
     if (multiSelect) {
@@ -145,19 +144,19 @@ export default function SearchableList({
 
   const handleSelectionToggle = (itemId: number) => {
     if (!multiSelect || !onSelectionChange) return;
-    
+
     hapticFeedback.selection();
-    
+
     const newSelection = selectedItemIds.includes(itemId)
       ? selectedItemIds.filter(id => id !== itemId)
       : [...selectedItemIds, itemId];
-    
+
     onSelectionChange(newSelection);
   };
 
   const renderDefaultItem = (item: SearchableItem, index: number) => {
     const isSelected = isItemSelected(item.id);
-    
+
     return (
       <TouchableOpacity
         key={item.id}
@@ -172,14 +171,14 @@ export default function SearchableList({
         <View style={styles.itemContent}>
           {item.icon && (
             <View style={styles.itemIconContainer}>
-              <Ionicons 
-                name={item.icon as keyof typeof Ionicons.glyphMap} 
-                size={20} 
+              <Ionicons
+                name={item.icon as keyof typeof Ionicons.glyphMap}
+                size={20}
                 color={item.iconColor || COLORS.primary.main}
               />
             </View>
           )}
-          
+
           <View style={styles.itemTextContainer}>
             <Text style={[styles.itemTitle, isSelected && styles.selectedItemText]}>
               {item.title}
@@ -195,24 +194,24 @@ export default function SearchableList({
               </Text>
             )}
           </View>
-          
+
           {multiSelect && (
             <TouchableOpacity
               style={styles.selectionButton}
               onPress={() => handleSelectionToggle(item.id)}
             >
-              <Ionicons 
-                name={isSelected ? 'checkmark-circle' : 'ellipse-outline'} 
-                size={24} 
+              <Ionicons
+                name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
+                size={24}
                 color={isSelected ? COLORS.primary.main : COLORS.text.tertiary}
               />
             </TouchableOpacity>
           )}
-          
+
           {!multiSelect && (
-            <Ionicons 
-              name="chevron-forward" 
-              size={16} 
+            <Ionicons
+              name="chevron-forward"
+              size={16}
               color={COLORS.text.tertiary}
             />
           )}
@@ -233,9 +232,9 @@ export default function SearchableList({
 
     return (
       <View style={styles.emptyState}>
-        <Ionicons 
-          name={emptyIcon as keyof typeof Ionicons.glyphMap} 
-          size={48} 
+        <Ionicons
+          name={emptyIcon as keyof typeof Ionicons.glyphMap}
+          size={48}
           color={COLORS.text.tertiary}
         />
         <Text style={styles.emptyText}>{emptyMessage}</Text>
@@ -250,7 +249,7 @@ export default function SearchableList({
 
   const renderHeader = () => {
     if (!title && !subtitle) return null;
-    
+
     return (
       <View style={styles.header}>
         {title && <Text style={styles.title}>{title}</Text>}
@@ -278,10 +277,10 @@ export default function SearchableList({
     <View style={[styles.container, containerStyle]}>
       {renderHeader()}
       {renderSearchBar()}
-      
+
       <FlatList
         data={filteredItems}
-        renderItem={({ item, index }) => 
+        renderItem={({ item, index }) =>
           renderItem ? renderItem(item, index) : renderDefaultItem(item, index)
         }
         keyExtractor={(item) => item.id.toString()}
@@ -302,51 +301,50 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  
+
   header: {
     marginBottom: SPACING.lg,
   },
-  
+
   title: {
     fontSize: FONT_SIZE.xl,
     fontWeight: '600',
     color: COLORS.text.primary,
     marginBottom: SPACING.xs,
   },
-  
+
   subtitle: {
     fontSize: FONT_SIZE.md,
     color: COLORS.text.secondary,
   },
-  
+
   searchContainer: {
     marginBottom: SPACING.lg,
   },
-  
-  
+
   list: {
     flex: 1,
   },
-  
+
   item: {
     backgroundColor: COLORS.background.primary,
     borderRadius: BORDER_RADIUS.md,
     marginBottom: SPACING.sm,
     ...SHADOWS.small,
   },
-  
+
   selectedItem: {
     backgroundColor: COLORS.primary.main + '10',
     borderWidth: 1,
     borderColor: COLORS.primary.main,
   },
-  
+
   itemContent: {
     ...MIXINS.row,
     padding: SPACING.md,
     alignItems: 'center',
   },
-  
+
   itemIconContainer: {
     width: 40,
     height: 40,
@@ -356,57 +354,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: SPACING.md,
   },
-  
+
   itemTextContainer: {
     flex: 1,
   },
-  
+
   itemTitle: {
     fontSize: FONT_SIZE.md,
     fontWeight: '600',
     color: COLORS.text.primary,
     marginBottom: 2,
   },
-  
+
   itemSubtitle: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text.secondary,
     marginBottom: 2,
   },
-  
+
   itemDescription: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text.tertiary,
     lineHeight: 16,
   },
-  
+
   selectedItemText: {
     color: COLORS.primary.main,
   },
-  
+
   selectedItemSubtext: {
     color: COLORS.primary + '80',
   },
-  
+
   selectionButton: {
     padding: SPACING.xs,
     marginLeft: SPACING.sm,
   },
-  
+
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: SPACING.xxxl,
   },
-  
+
   emptyText: {
     fontSize: FONT_SIZE.lg,
     color: COLORS.text.secondary,
     marginTop: SPACING.md,
     textAlign: 'center',
   },
-  
+
   emptySubtext: {
     fontSize: FONT_SIZE.sm,
     color: COLORS.text.tertiary,

@@ -1,3 +1,5 @@
+
+
 // Note: @testing-library/jest-native is deprecated, using built-in matchers
 import 'react-native-gesture-handler/jestSetup';
 
@@ -37,7 +39,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 
 // Mock react-native-reanimated
 jest.mock('react-native-reanimated', () => {
-  const Reanimated = import('react-native-reanimated/mock');
+  const Reanimated = require('react-native-reanimated/mock');
   Reanimated.default.call = () => {};
   return Reanimated;
 });

@@ -1,112 +1,101 @@
 const fs = require('fs');
 const path = require('path');
 
-// Get all TypeScript/JavaScript files
-const getFiles = (dir, extensions = ['.ts', '.tsx', '.js', '.jsx']) => {
-  let files = [];
-  const items = fs.readdirSync(dir);
-  
-  for (const item of items) {
-    const fullPath = path.join(dir, item);
-    const stat = fs.statSync(fullPath);
-    
-    if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
-      files = files.concat(getFiles(fullPath, extensions));
-    } else if (stat.isFile() && extensions.some(ext => item.endsWith(ext))) {
-      files.push(fullPath);
+const mobileSrcPath = path.join(__dirname, '..', 'src');
+
+const findFiles = (startPath, filter) => {
+  let results = [];
+  const files = fs.readdirSync(startPath);
+  for (const file of files) {
+    const filename = path.join(startPath, file);
+    const stat = fs.statSync(filename);
+    if (stat.isDirectory()) {
+      results = results.concat(findFiles(filename, filter));
+    } else if (filter.test(filename)) {
+      results.push(filename);
     }
   }
-  
-  return files;
+  return results;
 };
 
-// Remove unused imports and variables
 const fixUnusedImports = (filePath) => {
-  try {
-    let content = fs.readFileSync(filePath, 'utf8');
-    let modified = false;
+  let content = fs.readFileSync(filePath, 'utf8');
+  const originalContent = content;
+
+  // Remove unused React imports in non-React files
+  if (filePath.endsWith('.ts') && !filePath.endsWith('.tsx')) {
+    // Check if React is imported but not used
+    if (content.includes("import React from 'react';") && !content.includes('React.')) {
+      content = content.replace(/import React from 'react';\n?/, '');
+    }
+  }
+
+  // Remove unused theme imports that are commonly unused
+  const unusedThemeImports = [
+    'FONT_WEIGHT',
+    'SHADOWS', 
+    'STYLE_PRESETS',
+    'BORDER_RADIUS',
+    'FONT_SIZE',
+    'SPACING',
+    'COLORS'
+  ];
+
+  // Check if these imports are used in the file
+  for (const importName of unusedThemeImports) {
+    const importRegex = new RegExp(`import\\s*{[^}]*\\b${importName}\\b[^}]*}\\s*from\\s*['"][^'"]*['"];?`, 'g');
+    const matches = content.match(importRegex);
     
-    // Remove unused imports (more conservative approach)
-    const lines = content.split('\n');
-    const newLines = [];
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      // Skip if it's a comment or empty line
-      if (line.trim().startsWith('//') || line.trim().startsWith('/*') || line.trim() === '') {
-        newLines.push(line);
-        continue;
-      }
-      
-      // Check for import statements
-      if (line.trim().startsWith('import ')) {
-        // Extract imported names
-        const importMatch = line.match(/import\s+.*?\s+from\s+['"](.*?)['"]/);
-        if (importMatch) {
-          // For now, keep all imports - we'll let ESLint handle this more carefully
-          newLines.push(line);
-          continue;
-        }
-      }
-      
-      // Check for unused variable declarations
-      if (line.includes('const ') || line.includes('let ') || line.includes('var ')) {
-        // Look for variables that are declared but never used
-        const varMatch = line.match(/(const|let|var)\s+(\w+)\s*=/);
-        if (varMatch) {
-          const varName = varMatch[2];
-          // Check if this variable is used anywhere else in the file
-          const restOfFile = content.substring(content.indexOf(line) + line.length);
-          if (!restOfFile.includes(varName) && !line.includes('// eslint-disable')) {
-            // This variable is unused, but we'll be conservative and not remove it automatically
-            newLines.push(line);
-            continue;
+    if (matches) {
+      for (const match of matches) {
+        // Check if the import is actually used in the file
+        const importNameRegex = new RegExp(`\\b${importName}\\b`, 'g');
+        const usageMatches = content.match(importNameRegex);
+        
+        // If it appears only in the import statement, remove it
+        if (usageMatches && usageMatches.length === 1) {
+          // Remove the entire import line if it only contains unused imports
+          if (match.includes('{') && match.includes('}')) {
+            const importContent = match.match(/\{([^}]+)\}/)[1];
+            const imports = importContent.split(',').map(imp => imp.trim());
+            const usedImports = imports.filter(imp => {
+              const name = imp.split(' as ')[0].trim();
+              return name !== importName && content.includes(name);
+            });
+            
+            if (usedImports.length === 0) {
+              // Remove entire import line
+              content = content.replace(match + '\n', '');
+            } else {
+              // Remove just the unused import from the destructuring
+              const newImportContent = `{ ${usedImports.join(', ')} }`;
+              const newMatch = match.replace(/\{[^}]+\}/, newImportContent);
+              content = content.replace(match, newMatch);
+            }
           }
         }
       }
-      
-      newLines.push(line);
     }
-    
-    const newContent = newLines.join('\n');
-    if (newContent !== content) {
-      fs.writeFileSync(filePath, newContent, 'utf8');
-      modified = true;
-    }
-    
-    return modified;
-  } catch (error) {
-    console.error(`Error processing ${filePath}:`, error.message);
-    return false;
   }
+
+  if (content !== originalContent) {
+    fs.writeFileSync(filePath, content, 'utf8');
+    console.log(`Fixed unused imports in: ${path.relative(mobileSrcPath, filePath)}`);
+    return true;
+  }
+  return false;
 };
 
 // Main execution
-const srcDir = path.join(process.cwd(), 'src');
-const files = getFiles(srcDir);
+console.log('Fixing unused imports...');
 
-console.log(`Found ${files.length} files to process...`);
-
+const files = findFiles(mobileSrcPath, /\.(ts|tsx)$/);
 let fixedCount = 0;
-let errorCount = 0;
 
-for (const file of files) {
-  try {
-    const fixed = fixUnusedImports(file);
-    if (fixed) {
-      console.log(`Fixed: ${path.relative(srcDir, file)}`);
-      fixedCount++;
-    }
-  } catch (error) {
-    console.error(`Error processing ${file}:`, error.message);
-    errorCount++;
+files.forEach(file => {
+  if (fixUnusedImports(file)) {
+    fixedCount++;
   }
-}
+});
 
-console.log(`\nSummary:`);
-console.log(`- Files processed: ${files.length}`);
-console.log(`- Files fixed: ${fixedCount}`);
-console.log(`- Errors: ${errorCount}`);
-
-
+console.log(`Fixed ${fixedCount} files`);

@@ -9,11 +9,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService, NutritionStats } from '../../services/nutritionService';
-import { nutritionGoalsService, NutritionGoals } from '../../services/nutritionGoalsService';
+import { nutritionService, NutritionStats } from '../../services/NutritionService';
+import { NutritionGoalsService, NutritionGoals } from '../../services/NutritionGoalsService';
 import MacroProgressTracker from './MacroProgressTracker';
 import MacroRings from './MacroRings';
 import { useAuth } from '../../contexts/AuthContext';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface NutritionOverviewDashboardProps {
   onLogMeal: () => void;
@@ -88,14 +93,14 @@ export default function NutritionOverviewDashboard({
         setBodyTypeGoal(goals.bodyTypeGoal);
       }
     } catch (error) {
-      console.log('Error loading nutrition goals:', error);
+      DebugUtils.log('Error loading nutrition goals:', error);
     }
   }, [user]);
 
   const loadNutritionData = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Load today's nutrition
       const today = new Date().toISOString().split('T')[0];
       const todayLogs = await nutritionService.getNutritionLogs({
@@ -141,7 +146,7 @@ export default function NutritionOverviewDashboard({
       });
 
     } catch (error) {
-      console.log('Error loading nutrition data:', error);
+      DebugUtils.log('Error loading nutrition data:', error);
     } finally {
       setLoading(false);
     }
@@ -191,7 +196,6 @@ export default function NutritionOverviewDashboard({
     }
   };
 
-
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case 'up': return 'trending-up';
@@ -236,19 +240,19 @@ export default function NutritionOverviewDashboard({
             <Text style={styles.quickStatValue}>{todayNutrition?.meals_count || 0}</Text>
             <Text style={styles.quickStatLabel}>Meals</Text>
           </View>
-          
+
           <View style={styles.quickStatCard}>
             <Ionicons name="flame" size={24} color="#ef4444" />
             <Text style={styles.quickStatValue}>{Math.round(todayNutrition?.calories || 0)}</Text>
             <Text style={styles.quickStatLabel}>Calories</Text>
           </View>
-          
+
           <View style={styles.quickStatCard}>
             <Ionicons name="fitness" size={24} color="#3b82f6" />
             <Text style={styles.quickStatValue}>{Math.round(todayNutrition?.protein_g || 0)}g</Text>
             <Text style={styles.quickStatLabel}>Protein</Text>
           </View>
-          
+
           <View style={styles.quickStatCard}>
             <Ionicons name="water" size={24} color="#06b6d4" />
             <Text style={styles.quickStatValue}>2.5L</Text>
@@ -293,7 +297,7 @@ export default function NutritionOverviewDashboard({
             unit: 'g',
           },
         ]}
-        onMacroPress={(macro) => console.log('Macro pressed:', macro.type)}
+        onMacroPress={(macro) => DebugUtils.log('Macro pressed:', macro.type)}
       />
 
       {/* Macro Progress Tracker */}
@@ -320,13 +324,13 @@ export default function NutritionOverviewDashboard({
                   {Math.round(weeklyStats?.total_calories || 0) / 7} avg/day
                 </Text>
               </View>
-              <Ionicons 
-                name={getTrendIcon(weeklyTrends.calories_trend)} 
-                size={20} 
-                color={getTrendColor(weeklyTrends.calories_trend)} 
+              <Ionicons
+                name={getTrendIcon(weeklyTrends.calories_trend)}
+                size={20}
+                color={getTrendColor(weeklyTrends.calories_trend)}
               />
             </View>
-            
+
             <View style={styles.trendItem}>
               <View style={styles.trendInfo}>
                 <Text style={styles.trendLabel}>Protein</Text>
@@ -334,13 +338,13 @@ export default function NutritionOverviewDashboard({
                   {Math.round(weeklyStats?.protein_g || 0) / 7} avg/day
                 </Text>
               </View>
-              <Ionicons 
-                name={getTrendIcon(weeklyTrends.protein_trend)} 
-                size={20} 
-                color={getTrendColor(weeklyTrends.protein_trend)} 
+              <Ionicons
+                name={getTrendIcon(weeklyTrends.protein_trend)}
+                size={20}
+                color={getTrendColor(weeklyTrends.protein_trend)}
               />
             </View>
-            
+
             <View style={styles.trendItem}>
               <View style={styles.trendInfo}>
                 <Text style={styles.trendLabel}>Consistency</Text>
@@ -360,7 +364,7 @@ export default function NutritionOverviewDashboard({
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-        
+
         {todayNutrition?.meals_count === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="restaurant-outline" size={48} color="#9ca3af" />
@@ -384,27 +388,27 @@ export default function NutritionOverviewDashboard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     marginTop: 12,
   },
   quickStatsSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 12,
   },
   quickStatsGrid: {
@@ -413,9 +417,9 @@ const styles = StyleSheet.create({
   },
   quickStatCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.background.primary,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -424,25 +428,25 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   quickStatValue: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
   },
   quickStatLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   trendsSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     marginBottom: 16,
   },
   trendsContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -453,7 +457,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: SPACING.xs,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
@@ -461,17 +465,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   trendLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginBottom: 2,
   },
   trendValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   recentMealsSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     marginBottom: 16,
   },
   sectionHeader: {
@@ -481,14 +485,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     color: '#10b981',
     fontWeight: '500',
   },
   emptyState: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     padding: 32,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -497,32 +501,32 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginTop: 12,
     marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.tertiary,
     marginBottom: 16,
   },
   emptyActionButton: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 20,
+    backgroundColor: COLORS.success,
+    paddingHorizontal: SPACING.lg,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
   },
   emptyActionText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     fontWeight: '500',
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
   },
   recentMealsList: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -530,8 +534,8 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   comingSoonText: {
-    fontSize: 14,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.tertiary,
     textAlign: 'center',
     fontStyle: 'italic',
   },

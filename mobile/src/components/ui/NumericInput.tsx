@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   TextInputProps,
 } from 'react-native';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
+import React from 'react';
+
 
 interface NumericInputProps extends Omit<TextInputProps, 'value' | 'onChangeText'> {
   label?: string;
@@ -43,11 +45,11 @@ export default function NumericInput({
   placeholder = '0',
   ...textInputProps
 }: NumericInputProps) {
-  
+
   const handleTextChange = (text: string) => {
     // Remove all non-numeric characters except decimal point if allowed
     let numericValue = text;
-    
+
     if (allowDecimals) {
       // Allow numbers and one decimal point
       numericValue = text.replace(/[^0-9.]/g, '');
@@ -60,10 +62,10 @@ export default function NumericInput({
       // Only allow integers
       numericValue = text.replace(/[^0-9]/g, '');
     }
-    
+
     // Convert to number
     const numberValue = numericValue === '' ? 0 : (allowDecimals ? parseFloat(numericValue) : parseInt(numericValue, 10));
-    
+
     // Apply min/max constraints
     let constrainedValue = numberValue;
     if (min !== undefined && constrainedValue < min) {
@@ -72,7 +74,7 @@ export default function NumericInput({
     if (max !== undefined && constrainedValue > max) {
       constrainedValue = max;
     }
-    
+
     onChangeText(constrainedValue);
   };
 
@@ -107,7 +109,7 @@ export default function NumericInput({
           {required && <Text style={styles.required}> *</Text>}
         </Text>
       )}
-      
+
       <View style={styles.inputContainer}>
         {renderPrefix()}
         <TextInput

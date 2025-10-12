@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { routineService } from '../services/routineService';
+import { routineService } from '../services/api';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 const ACTIVE_ROUTINE_STORAGE_KEY = 'active_routine_id';
 
@@ -25,7 +28,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
         await AsyncStorage.removeItem(ACTIVE_ROUTINE_STORAGE_KEY);
       }
     } catch (err) {
-      console.error('❌ [USE ACTIVE ROUTINE] Error saving to storage:', err);
+      DebugUtils.error('❌ [USE ACTIVE ROUTINE] Error saving to storage:', err);
     }
   }, []);
 
@@ -35,7 +38,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
       const stored = await AsyncStorage.getItem(ACTIVE_ROUTINE_STORAGE_KEY);
       return stored ? parseInt(stored, 10) : null;
     } catch (err) {
-      console.error('❌ [USE ACTIVE ROUTINE] Error loading from storage:', err);
+      DebugUtils.error('❌ [USE ACTIVE ROUTINE] Error loading from storage:', err);
       return null;
     }
   }, []);
@@ -44,52 +47,71 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
     try {
       setLoading(true);
       setError(null);
-      
-      console.log('🔄 [USE ACTIVE ROUTINE] Loading active routine...');
-      
+
+      DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Loading active routine...');
+
       // First, try to load from storage for immediate UI update
       const storedRoutineId = await loadFromStorage();
       if (storedRoutineId !== null) {
         setActiveRoutineId(storedRoutineId);
-        console.log('📋 [USE ACTIVE ROUTINE] Loaded from storage:', storedRoutineId);
+        DebugUtils.log('📋 [USE ACTIVE ROUTINE] Loaded from storage:', storedRoutineId);
       }
-      
+
       // Then, fetch from API to ensure we have the latest data
-      const activeRoutine = await routineService.getActiveRoutine();
-      console.log('📋 [USE ACTIVE ROUTINE] Active routine response:', activeRoutine);
-      
-      if (activeRoutine) {
-        console.log('🔄 [USE ACTIVE ROUTINE] Setting activeRoutineId from', activeRoutineId, 'to', activeRoutine.id);
-        setActiveRoutineId(activeRoutine.id);
-        await saveActiveRoutine(activeRoutine.id);
-        console.log('✅ [USE ACTIVE ROUTINE] Set active routine ID:', activeRoutine.id);
-      } else {
-        console.log('🔄 [USE ACTIVE ROUTINE] Setting activeRoutineId from', activeRoutineId, 'to null');
-        setActiveRoutineId(null);
-        await saveActiveRoutine(null);
-        console.log('❌ [USE ACTIVE ROUTINE] No active routine found');
+      try {
+        const activeRoutine = await routineService.getActiveRoutine();
+        DebugUtils.log('📋 [USE ACTIVE ROUTINE] Active routine response:', activeRoutine);
+
+        if (activeRoutine) {
+          DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Setting activeRoutineId to', activeRoutine.id);
+          setActiveRoutineId(activeRoutine.id);
+          await saveActiveRoutine(activeRoutine.id);
+          DebugUtils.log('✅ [USE ACTIVE ROUTINE] Set active routine ID:', activeRoutine.id);
+        } else {
+          DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Setting activeRoutineId to null');
+          setActiveRoutineId(null);
+          await saveActiveRoutine(null);
+          DebugUtils.log('ℹ️ [USE ACTIVE ROUTINE] No active routine found');
+        }
+      } catch (apiError: any) {
+        // Handle 404 as expected behavior (no active routine)
+        if (apiError?.response?.status === 404 || 
+            apiError?.status === 404 || 
+            (apiError?.data && apiError.data.status === 404)) {
+          DebugUtils.log('ℹ️ [USE ACTIVE ROUTINE] No active routine set (404)');
+          setActiveRoutineId(null);
+          await saveActiveRoutine(null);
+          setError(null); // Clear error for expected 404
+        } else {
+          throw apiError; // Re-throw unexpected errors
+        }
       }
-    } catch (err) {
-      console.error('❌ [USE ACTIVE ROUTINE] Error loading active routine:', err);
+    } catch (err: any) {
+      DebugUtils.error('❌ [USE ACTIVE ROUTINE] Error loading active routine:', err);
       setError('Failed to load active routine');
       setActiveRoutineId(null);
     } finally {
       setLoading(false);
     }
-  }, [loadFromStorage, saveActiveRoutine, activeRoutineId]);
+  }, [loadFromStorage, saveActiveRoutine]);
 
   const refreshActiveRoutine = useCallback(async () => {
-    console.log('🔄 [USE ACTIVE ROUTINE] Refreshing active routine...');
+    DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Refreshing active routine...');
+    // Add a small delay to allow backend to process the change
+    await new Promise(resolve => setTimeout(resolve, 500));
     await loadActiveRoutine();
-    console.log('✅ [USE ACTIVE ROUTINE] Active routine refreshed');
+    DebugUtils.log('✅ [USE ACTIVE ROUTINE] Active routine refreshed');
   }, [loadActiveRoutine]);
 
   useEffect(() => {
     loadActiveRoutine();
   }, [loadActiveRoutine]);
 
-  console.log('🔄 [USE ACTIVE ROUTINE] Returning activeRoutineId:', activeRoutineId, 'loading:', loading);
-  
+  // Only log when state actually changes
+  if (__DEV__ && activeRoutineId !== null) {
+    DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Active routine:', activeRoutineId);
+  }
+
   return {
     activeRoutineId,
     loading,

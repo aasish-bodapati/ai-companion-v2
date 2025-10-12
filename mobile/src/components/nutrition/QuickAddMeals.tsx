@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -7,6 +7,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface FoodItem {
   name: string;
@@ -151,7 +155,7 @@ export default function QuickAddMeals({
   onQuickAdd,
   onCustomAdd,
 }: QuickAddMealsProps) {
-  
+
   const handleQuickAdd = (meal: QuickMeal) => {
     onQuickAdd(meal.meal_type, meal.food_items);
   };
@@ -183,8 +187,8 @@ export default function QuickAddMeals({
         <Text style={styles.subtitle}>One-tap logging for common meals</Text>
       </View>
 
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -201,10 +205,10 @@ export default function QuickAddMeals({
                 <Ionicons name={meal.icon as keyof typeof Ionicons.glyphMap} size={24} color="#ffffff" />
               </View>
               <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(meal.meal_type) }]}>
-                <Ionicons 
-                  name={getMealTypeIcon(meal.meal_type) as keyof typeof Ionicons.glyphMap} 
-                  size={12} 
-                  color="#ffffff" 
+                <Ionicons
+                  name={getMealTypeIcon(meal.meal_type) as keyof typeof Ionicons.glyphMap}
+                  size={12}
+                  color="#ffffff"
                 />
                 <Text style={styles.mealTypeText}>
                   {meal.meal_type.toUpperCase()}
@@ -215,7 +219,7 @@ export default function QuickAddMeals({
             <View style={styles.mealContent}>
               <Text style={styles.mealName}>{meal.name}</Text>
               <Text style={styles.mealDescription}>{meal.description}</Text>
-              
+
               <View style={styles.mealNutrition}>
                 <View style={styles.nutritionItem}>
                   <Text style={styles.nutritionValue}>{meal.calories}</Text>
@@ -263,18 +267,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   header: {
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     marginBottom: 12,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   scrollView: {
     paddingLeft: 16,
@@ -284,9 +288,9 @@ const styles = StyleSheet.create({
   },
   mealCard: {
     width: 200,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginRight: 12,
     borderWidth: 2,
     shadowColor: '#000',
@@ -304,7 +308,7 @@ const styles = StyleSheet.create({
   mealIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xxl,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -313,27 +317,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 2,
   },
   mealTypeText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   mealContent: {
     flex: 1,
     marginBottom: 12,
   },
   mealName: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   mealDescription: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 12,
   },
   mealNutrition: {
@@ -344,13 +348,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   nutritionValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   nutritionLabel: {
-    fontSize: 10,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.xs,
+    color: COLORS.text.secondary,
     marginTop: 2,
   },
   mealFooter: {
@@ -362,14 +366,14 @@ const styles = StyleSheet.create({
     borderTopColor: '#f3f4f6',
   },
   foodItemsText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   customCard: {
     width: 200,
     backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginRight: 12,
     borderWidth: 2,
     borderColor: '#e5e7eb',
@@ -382,20 +386,20 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: COLORS.background.tertiary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   customText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginBottom: 4,
   },
   customSubtext: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     textAlign: 'center',
   },
 });

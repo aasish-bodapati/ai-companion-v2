@@ -1,6 +1,10 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface NutritionStats {
   calories: { current: number; target: number };
@@ -62,7 +66,7 @@ export default function IntegratedStatsCard({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Today's Stats</Text>
-      
+
       {/* Nutrition Row */}
       <View style={styles.nutritionRow}>
         <View style={styles.nutritionItem}>
@@ -73,10 +77,10 @@ export default function IntegratedStatsCard({
           </View>
           <Text style={styles.nutritionLabel}>Calories</Text>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.min(100, (nutrition.calories.current / nutrition.calories.target) * 100)}%`,
                   backgroundColor: getProgressColor(nutrition.calories.current, nutrition.calories.target)
                 }
@@ -93,10 +97,10 @@ export default function IntegratedStatsCard({
           </View>
           <Text style={styles.nutritionLabel}>Protein</Text>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.min(100, (nutrition.protein.current / nutrition.protein.target) * 100)}%`,
                   backgroundColor: getProgressColor(nutrition.protein.current, nutrition.protein.target)
                 }
@@ -113,10 +117,10 @@ export default function IntegratedStatsCard({
           </View>
           <Text style={styles.nutritionLabel}>Carbs</Text>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.min(100, (nutrition.carbs.current / nutrition.carbs.target) * 100)}%`,
                   backgroundColor: getProgressColor(nutrition.carbs.current, nutrition.carbs.target)
                 }
@@ -133,10 +137,10 @@ export default function IntegratedStatsCard({
           </View>
           <Text style={styles.nutritionLabel}>Fat</Text>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
                 styles.progressFill,
-                { 
+                {
                   width: `${Math.min(100, (nutrition.fat.current / nutrition.fat.target) * 100)}%`,
                   backgroundColor: getProgressColor(nutrition.fat.current, nutrition.fat.target)
                 }
@@ -148,7 +152,7 @@ export default function IntegratedStatsCard({
 
       {/* Wellness Row */}
       <View style={styles.wellnessRow}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.wellnessItem}
           onPress={onLogWater}
         >
@@ -165,8 +169,8 @@ export default function IntegratedStatsCard({
                 style={[
                   styles.progressDot,
                   {
-                    backgroundColor: i < (wellness.water.current / wellness.water.target) * 5 
-                      ? '#3b82f6' 
+                    backgroundColor: i < (wellness.water.current / wellness.water.target) * 5
+                      ? '#3b82f6'
                       : '#e5e7eb'
                   }
                 ]}
@@ -175,15 +179,15 @@ export default function IntegratedStatsCard({
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.wellnessItem}
           onPress={onLogMood}
         >
           <View style={styles.wellnessHeader}>
-            <Ionicons 
-              name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap} 
-              size={16} 
-              color={getMoodColor(wellness.mood)} 
+            <Ionicons
+              name={getMoodIcon(wellness.mood) as keyof typeof Ionicons.glyphMap}
+              size={16}
+              color={getMoodColor(wellness.mood)}
             />
             <Text style={[styles.wellnessValue, { color: getMoodColor(wellness.mood) }]}>
               {wellness.mood}
@@ -206,8 +210,8 @@ export default function IntegratedStatsCard({
                 style={[
                   styles.progressDot,
                   {
-                    backgroundColor: i < (wellness.sleep.current / wellness.sleep.target) * 5 
-                      ? '#8b5cf6' 
+                    backgroundColor: i < (wellness.sleep.current / wellness.sleep.target) * 5
+                      ? '#8b5cf6'
                       : '#e5e7eb'
                   }
                 ]}
@@ -219,23 +223,23 @@ export default function IntegratedStatsCard({
 
       {/* Quick Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={onLogMeal}
         >
           <Ionicons name="restaurant-outline" size={18} color="#3b82f6" />
           <Text style={styles.actionButtonText}>Log Meal</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={onLogWater}
         >
           <Ionicons name="water-outline" size={18} color="#3b82f6" />
           <Text style={styles.actionButtonText}>Log Water</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.actionButton}
           onPress={onLogMood}
         >
@@ -249,9 +253,9 @@ export default function IntegratedStatsCard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     margin: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -261,9 +265,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 16,
   },
   nutritionRow: {
@@ -281,18 +285,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   nutritionValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 4,
   },
   nutritionTarget: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
   },
   nutritionLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 8,
   },
   progressBar: {
@@ -321,18 +325,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   wellnessValue: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginLeft: 4,
   },
   wellnessTarget: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   wellnessLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     marginBottom: 8,
   },
   progressDots: {
@@ -354,14 +358,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#f8fafc',
+    paddingHorizontal: SPACING.sm,
+    backgroundColor: COLORS.background.secondary,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
     color: '#3b82f6',
     marginLeft: 6,

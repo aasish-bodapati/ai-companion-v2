@@ -5,8 +5,8 @@
  */
 
 // Import mocked services
-import * as mockNutritionService from '../services/nutritionService';
-import * as mockFitnessService from '../services/fitnessService';
+import * as mockNutritionService from '../services/NutritionService';
+import * as mockFitnessService from '../services/FitnessService';
 
 // Mock the services
 jest.mock('../services/nutritionService');

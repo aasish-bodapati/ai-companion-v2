@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   TextStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import BaseModal from './BaseModal';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 
@@ -20,20 +22,20 @@ interface ConfirmationDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   onCancel?: () => void;
-  
+
   // Content
   title: string;
   message: string;
   confirmText?: string;
   cancelText?: string;
-  
+
   // Configuration
   variant?: ConfirmationVariant;
   size?: ConfirmationSize;
   showCancel?: boolean;
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
-  
+
   // Styling
   containerStyle?: ViewStyle;
   titleStyle?: TextStyle;
@@ -42,12 +44,12 @@ interface ConfirmationDialogProps {
   cancelButtonStyle?: ViewStyle;
   confirmTextStyle?: TextStyle;
   cancelTextStyle?: TextStyle;
-  
+
   // Customization
   confirmIcon?: keyof typeof Ionicons.glyphMap;
   cancelIcon?: keyof typeof Ionicons.glyphMap;
   customIcon?: React.ReactNode;
-  
+
   // Accessibility
   accessibilityLabel?: string;
   accessibilityHint?: string;

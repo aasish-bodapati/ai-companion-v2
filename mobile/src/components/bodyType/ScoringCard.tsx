@@ -1,7 +1,12 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
-import { ScoringResult } from '../../services/bodyTypeScoringService';
+import { ScoringResult } from '../../services/BodyTypeScoringService';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface ScoringCardProps {
   title: string;
@@ -20,7 +25,7 @@ export default function ScoringCard({ title, result, onPress, compact = false }:
       case 'farther':
         return { name: 'trending-down', color: '#ef4444' };
       default:
-        return { name: 'help', color: '#6b7280' };
+        return { name: 'help', color: COLORS.text.secondary };
     }
   };
 
@@ -57,7 +62,7 @@ export default function ScoringCard({ title, result, onPress, compact = false }:
           <Text style={[styles.scoreValue, compact && styles.compactScoreValue]}>{result.percentage}%</Text>
           <Text style={[styles.scoreLabel, compact && styles.compactScoreLabel]}>Alignment</Text>
         </View>
-        
+
         {!compact && (
           <View style={styles.scoreDetails}>
             <View style={styles.scoreDetail}>
@@ -73,14 +78,14 @@ export default function ScoringCard({ title, result, onPress, compact = false }:
       </View>
 
       <View style={styles.progressBar}>
-        <View 
+        <View
           style={[
-            styles.progressFill, 
-            { 
+            styles.progressFill,
+            {
               width: `${result.percentage}%`,
               backgroundColor: alignmentColor
             }
-          ]} 
+          ]}
         />
       </View>
 
@@ -117,9 +122,9 @@ export default function ScoringCard({ title, result, onPress, compact = false }:
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -127,7 +132,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   compactContainer: {
-    padding: 16,
+    padding: SPACING.md,
     marginHorizontal: 4,
   },
   header: {
@@ -137,27 +142,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   compactTitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
   },
   alignmentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
   },
   alignmentText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
     marginLeft: 4,
   },
   compactAlignmentText: {
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
   },
   content: {
     flexDirection: 'row',
@@ -171,18 +176,18 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   compactScoreValue: {
     fontSize: 24,
   },
   scoreLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 4,
   },
   compactScoreLabel: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
   },
   scoreDetails: {
     alignItems: 'flex-end',
@@ -192,27 +197,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   scoreDetailValue: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   scoreDetailLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 4,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: BORDER_RADIUS.xs,
     marginBottom: 16,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   feedbackText: {
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -220,9 +225,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   suggestionsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   suggestionItem: {
@@ -231,8 +236,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   suggestionText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
     flex: 1,
   },

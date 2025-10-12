@@ -5,6 +5,7 @@
 
 import { COLORS } from '../theme/constants';
 
+
 // ============================================================================
 // PROGRESS & STATUS UTILITIES
 // ============================================================================
@@ -83,7 +84,7 @@ export const getTrendColor = (trend: 'up' | 'down' | 'neutral'): string => {
  */
 export const getTimeBasedGreeting = (): string => {
   const hour = new Date().getHours();
-  
+
   if (hour >= 5 && hour < 12) {
     return 'Good morning';
   } else if (hour >= 12 && hour < 17) {
@@ -109,7 +110,7 @@ export const getMotivationalMessage = (): string => {
     'Consistency is key!',
     'You\'re stronger than you think!',
   ];
-  
+
   return messages[Math.floor(Math.random() * messages.length)];
 };
 
@@ -126,30 +127,30 @@ export const getCategoryConfig = (category: string) => {
     'bodyweight': { variant: 'info', icon: 'person', color: COLORS.primary.main },
     'weighted': { variant: 'primary', icon: 'barbell', color: COLORS.primary.main },
     'strength': { variant: 'primary', icon: 'barbell', color: COLORS.primary.main },
-    
+
     // Cardio
     'cardio_duration': { variant: 'success', icon: 'heart', color: COLORS.success },
     'cardio': { variant: 'success', icon: 'heart', color: COLORS.success },
     'running': { variant: 'success', icon: 'walk', color: COLORS.success },
     'cycling': { variant: 'success', icon: 'bicycle', color: COLORS.success },
-    
+
     // Flexibility & Recovery
     'flexibility': { variant: 'warning', icon: 'leaf', color: COLORS.warning },
     'yoga': { variant: 'warning', icon: 'leaf', color: COLORS.warning },
     'stretching': { variant: 'warning', icon: 'leaf', color: COLORS.warning },
-    
+
     // Sports
     'sports': { variant: 'secondary', icon: 'football', color: COLORS.gray[500] },
     'basketball': { variant: 'secondary', icon: 'basketball', color: COLORS.gray[500] },
     'soccer': { variant: 'secondary', icon: 'football', color: COLORS.gray[500] },
-    
+
     // Distance-based
     'distance_based': { variant: 'info', icon: 'map', color: '#06b6d4' },
-    
+
     // Default
     'default': { variant: 'secondary', icon: 'fitness', color: COLORS.gray[500] },
   };
-  
+
   return categoryMap[category] || categoryMap['default'];
 };
 
@@ -165,7 +166,7 @@ export const getStatusConfig = (status: string) => {
     'cancelled': { variant: 'danger', icon: 'close-circle', color: COLORS.danger },
     'paused': { variant: 'warning', icon: 'pause-circle', color: COLORS.warning },
   };
-  
+
   return statusMap[status] || statusMap['inactive'];
 };
 
@@ -180,7 +181,7 @@ export const getDifficultyConfig = (difficulty: string) => {
     'advanced': { variant: 'danger', icon: 'flash', color: COLORS.danger },
     'expert': { variant: 'danger', icon: 'flash', color: COLORS.danger },
   };
-  
+
   return difficultyMap[difficulty] || difficultyMap['beginner'];
 };
 
@@ -212,7 +213,7 @@ export const getSizeConfig = (size: 'small' | 'medium' | 'large') => {
       height: 52,
     },
   };
-  
+
   return sizeMap[size] || sizeMap.medium;
 };
 
@@ -275,7 +276,7 @@ export const getExerciseCategory = (exerciseName: string): string => {
     'tennis': 'sports',
     'volleyball': 'sports',
   };
-  
+
   const lowerName = exerciseName.toLowerCase();
   return commonExerciseMappings[lowerName] || 'weighted';
 };
@@ -305,26 +306,26 @@ export const getAlignmentText = (alignment: 'closer' | 'further' | 'same'): stri
  */
 export const getRelevanceScore = (name: string, query: string): number => {
   let score = 0;
-  
+
   // Exact match gets highest score
   if (name.toLowerCase() === query.toLowerCase()) {
     score += 100;
   }
-  
+
   // Starts with query gets high score
   if (name.toLowerCase().startsWith(query.toLowerCase())) {
     score += 50;
   }
-  
+
   // Contains query gets medium score
   if (name.toLowerCase().includes(query.toLowerCase())) {
     score += 25;
   }
-  
+
   // Word boundary matches get bonus
   const words = name.toLowerCase().split(/\s+/);
   const queryWords = query.toLowerCase().split(/\s+/);
-  
+
   queryWords.forEach(queryWord => {
     words.forEach(word => {
       if (word.startsWith(queryWord)) {
@@ -332,7 +333,7 @@ export const getRelevanceScore = (name: string, query: string): number => {
       }
     });
   });
-  
+
   return score;
 };
 
@@ -378,6 +379,6 @@ export const getToastConfig = (type: 'success' | 'error' | 'info' | 'warning') =
       iconColor: COLORS.text.inverse,
     },
   };
-  
+
   return configs[type] || configs.info;
 };

@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { ValidationErrors, ValidationRules, FormValidator } from '../utils/formValidation';
 
 /**
@@ -6,18 +7,18 @@ import { ValidationErrors, ValidationRules, FormValidator } from '../utils/formV
  * Integrates with the existing formValidation utility
  */
 export const useFormState = <T extends Record<string, any>>(
-  initialData: T, 
+  initialData: T,
   rules?: ValidationRules
 ) => {
   const [data, setData] = useState<T>(initialData);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>);
-  
+
   const validator = useMemo(() => rules ? new FormValidator(rules) : null, [rules]);
 
   const updateField = useCallback((field: keyof T, value: unknown) => {
     setData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     setErrors(prev => {
       if (prev[field as string]) {
@@ -25,14 +26,14 @@ export const useFormState = <T extends Record<string, any>>(
       }
       return prev;
     });
-    
+
     // Mark field as touched
     setTouched(prev => ({ ...prev, [field]: true }));
   }, []); // Remove errors dependency to prevent infinite loops
 
   const updateFields = useCallback((updates: Partial<T>) => {
     setData(prev => ({ ...prev, ...updates }));
-    
+
     // Clear errors for updated fields
     const fieldNames = Object.keys(updates) as (keyof T)[];
     setErrors(prev => {
@@ -44,7 +45,7 @@ export const useFormState = <T extends Record<string, any>>(
       });
       return newErrors;
     });
-    
+
     // Mark fields as touched
     setTouched(prev => {
       const newTouched = { ...prev };
@@ -57,20 +58,20 @@ export const useFormState = <T extends Record<string, any>>(
 
   const validateField = useCallback((field: keyof T): boolean => {
     if (!validator) return true;
-    
+
     const fieldRules = rules?.[field as string];
     if (!fieldRules) return true;
-    
+
     const fieldValidator = new FormValidator({ [field as string]: fieldRules });
     const fieldErrors = fieldValidator.validateField(field as string, data[field]);
-    
+
     setErrors(prev => ({ ...prev, ...(fieldErrors || {}) as Record<string, string> }));
     return !fieldValidator.hasErrors((fieldErrors || {}) as any);
   }, [data, validator, rules]);
 
   const validateForm = useCallback((): boolean => {
     if (!validator) return true;
-    
+
     const newErrors = validator.validateForm(data);
     setErrors(newErrors);
     return !validator.hasErrors(newErrors);

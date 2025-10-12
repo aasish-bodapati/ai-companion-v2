@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+
 import { LoggingItemData } from '../components/ui/LoggingItem';
 import { BaseLog, BaseLogCreate } from '../types/BaseLog';
 
@@ -67,7 +68,7 @@ export function useLoggingModal<T extends BaseLog, S>(
   // Handle search
   const handleSearch = useCallback(async (query: string) => {
     setSearchQuery(query);
-    
+
     if (query.length < 2) {
       setSearchResults([]);
       setIsSearching(false);
@@ -81,7 +82,7 @@ export function useLoggingModal<T extends BaseLog, S>(
       const results = await searchService.search(query);
       setSearchResults(results);
     } catch (error: unknown) {
-      const errorMessage = error && typeof error === 'object' && 'message' in error ? 
+      const errorMessage = error && typeof error === 'object' && 'message' in error ?
         (error as Error).message : 'Search failed';
       setSearchError(errorMessage);
       setSearchResults([]);
@@ -144,7 +145,7 @@ export function useLoggingModal<T extends BaseLog, S>(
   const hasItems = useMemo(() => items.length > 0, [items.length]);
   const canSave = useMemo(() => isFormValid() && !saving, [isFormValid, saving]);
   const hasSearchResults = useMemo(() => searchResults.length > 0, [searchResults.length]);
-  const isSearchEmpty = useMemo(() => 
+  const isSearchEmpty = useMemo(() =>
     searchQuery.length >= 2 && !isSearching && searchResults.length === 0 && !searchError
   , [searchQuery.length, isSearching, searchResults.length, searchError]);
 
@@ -156,7 +157,7 @@ export function useLoggingModal<T extends BaseLog, S>(
     searchResults,
     isSearching,
     searchError,
-    
+
     // Actions
     addItem,
     removeItem,
@@ -167,7 +168,7 @@ export function useLoggingModal<T extends BaseLog, S>(
     handleSave,
     handleClose,
     resetModal,
-    
+
     // Computed values
     hasItems,
     canSave,

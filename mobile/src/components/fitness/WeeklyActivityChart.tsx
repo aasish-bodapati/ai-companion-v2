@@ -1,5 +1,9 @@
-import React from 'react';
+
 import { View, Text, StyleSheet } from 'react-native';
+import React from 'react';
+
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 interface WeeklyActivityChartProps {
   weeklyData: {
@@ -70,7 +74,7 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({
           </View>
         ))}
       </View>
-      
+
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
@@ -85,9 +89,9 @@ const WeeklyActivityChart: React.FC<WeeklyActivityChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -115,19 +119,19 @@ const styles = StyleSheet.create({
   },
   bar: {
     width: '80%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     minHeight: 4,
   },
   barValue: {
     position: 'absolute',
     top: -20,
-    fontSize: 10,
+    fontSize: FONT_SIZE.xs,
     fontWeight: '600',
     color: '#374151',
   },
   dayLabel: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     marginTop: 8,
     fontWeight: '500',
   },
@@ -150,17 +154,17 @@ const styles = StyleSheet.create({
   legendDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     marginRight: 6,
   },
   legendText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     fontWeight: '500',
   },
   maxValue: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.tertiary,
     fontWeight: '500',
   },
 });

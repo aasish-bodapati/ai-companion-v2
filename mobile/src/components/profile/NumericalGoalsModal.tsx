@@ -9,10 +9,12 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { NumericalGoal, getNumericalGoalsForHealthGoals, customizeGoalForUser } from '../../services/goalTemplates';
+import { NumericalGoal, getNumericalGoalsForHealthGoals, customizeGoalForUser } from '../../services/GoalTemplatesService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface NumericalGoalsModalProps {
   visible: boolean;
@@ -39,21 +41,21 @@ export default function NumericalGoalsModal({
 
   useEffect(() => {
     if (visible && healthGoals.length > 0) {
-      console.log('🎯 NumericalGoalsModal: Health goals received:', healthGoals);
-      
+      DebugUtils.log('🎯 NumericalGoalsModal: Health goals received:', healthGoals);
+
       // Generate numerical goals based on selected health goals
       const baseGoals = getNumericalGoalsForHealthGoals(healthGoals);
-      console.log('🎯 NumericalGoalsModal: Base goals generated:', baseGoals.length);
-      
+      DebugUtils.log('🎯 NumericalGoalsModal: Base goals generated:', baseGoals.length);
+
       // Customize goals based on user data
-      const customizedGoals = baseGoals.map(goal => 
+      const customizedGoals = baseGoals.map(goal =>
         customizeGoalForUser(goal, userData || {})
       );
-      
-      console.log('🎯 NumericalGoalsModal: Customized goals:', customizedGoals.length);
+
+      DebugUtils.log('🎯 NumericalGoalsModal: Customized goals:', customizedGoals.length);
       setNumericalGoals(customizedGoals);
     } else if (visible) {
-      console.log('🎯 NumericalGoalsModal: No health goals provided or modal not visible');
+      DebugUtils.log('🎯 NumericalGoalsModal: No health goals provided or modal not visible');
     }
   }, [visible, healthGoals, userData]);
 
@@ -80,7 +82,6 @@ export default function NumericalGoalsModal({
       )
     );
   };
-
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -124,7 +125,7 @@ export default function NumericalGoalsModal({
           <View style={styles.introSection}>
             <Text style={styles.introTitle}>Make Your Goals Measurable</Text>
             <Text style={styles.introText}>
-              We've created specific, trackable targets based on your health goals. 
+              We've created specific, trackable targets based on your health goals.
               Customize them to match your preferences and capabilities.
             </Text>
           </View>
@@ -134,10 +135,10 @@ export default function NumericalGoalsModal({
               <View style={styles.goalHeader}>
                 <View style={styles.goalInfo}>
                   <View style={styles.goalTitleRow}>
-                    <Ionicons 
-                      name={getCategoryIcon(goal.category)} 
-                      size={20} 
-                      color={goal.color} 
+                    <Ionicons
+                      name={getCategoryIcon(goal.category)}
+                      size={20}
+                      color={goal.color}
                     />
                     <Text style={styles.goalName}>{goal.name}</Text>
                     <View style={[styles.priorityBadge, { backgroundColor: getPriorityColor(goal.priority) }]}>
@@ -160,9 +161,9 @@ export default function NumericalGoalsModal({
                   />
                   <Text style={styles.unitText}>{goal.unit}</Text>
                 </View>
-                
+
                 {goal.isCustomizable && (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.customizeButton}
                     onPress={() => setEditingGoal(goal)}
                   >
@@ -178,14 +179,14 @@ export default function NumericalGoalsModal({
                     Current: {goal.currentValue} {goal.unit}
                   </Text>
                   <View style={styles.progressBar}>
-                    <View 
+                    <View
                       style={[
-                        styles.progressFill, 
-                        { 
+                        styles.progressFill,
+                        {
                           width: `${Math.min((goal.currentValue / goal.targetValue) * 100, 100)}%`,
-                          backgroundColor: goal.color 
+                          backgroundColor: goal.color
                         }
-                      ]} 
+                      ]}
                     />
                   </View>
                 </View>

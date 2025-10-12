@@ -15,25 +15,10 @@ from app.models.health.exercise_database import Exercise
 router = APIRouter()
 
 
-def get_exercise_name(db: Session, exercise_id: str) -> str:
-    """Get exercise name from database by ID."""
-    try:
-        exercise = db.query(Exercise).filter(Exercise.id == int(exercise_id)).first()
-        return exercise.name if exercise else f"Exercise {exercise_id}"
-    except (ValueError, TypeError):
-        return f"Exercise {exercise_id}"
-
-def get_exercise_category(db: Session, exercise_id: str) -> str:
-    """Get exercise category from database by ID."""
-    try:
-        exercise = db.query(Exercise).filter(Exercise.id == int(exercise_id)).first()
-        return exercise.logging_category if exercise else "unknown"
-    except (ValueError, TypeError):
-        return "unknown"
 
 
 class ActiveRoutineRequest(BaseModel):
-    routine_id: str
+    routine_id: str | int
 
 
 class ActiveRoutineResponse(BaseModel):
@@ -83,12 +68,29 @@ async def set_active_routine(
     """Set a routine as active for the user."""
     try:
         from app.crud.health.simple_routine import simple_user_routine_progress
+        from datetime import datetime
+        
+        print(f"🔄 [SET ACTIVE] Setting routine {request.routine_id} as active for user {current_user.id}")
+        
+        # Convert routine_id to string for consistency
+        routine_id_str = str(request.routine_id)
+        routine_id_int = int(request.routine_id)
+        
+        # Validate that the routine exists
+        from app.crud.health.simple_routine import simple_routine
+        routine = simple_routine.get(db, id=routine_id_str)
+        if not routine:
+            print(f"❌ [SET ACTIVE] Routine {routine_id_str} not found")
+            raise HTTPException(status_code=404, detail="Routine not found")
+        
+        print(f"✅ [SET ACTIVE] Routine {routine_id_str} found: {routine.name}")
         
         # Update the user's active routine
-        current_user.active_routine_id = request.routine_id
+        current_user.active_routine_id = routine_id_str
+        db.commit()  # Commit the user table update
         
         # Also create/update the SimpleUserRoutineProgress record
-        routine_id = int(request.routine_id)
+        routine_id = routine_id_int
         
         # Ensure user_id is not None
         if not current_user.id:
@@ -108,6 +110,8 @@ async def set_active_routine(
             active_routine.is_active = False
             active_routine.updated_at = datetime.utcnow()
             print(f"🔄 [SET ACTIVE] Deactivated routine {active_routine.routine_id}")
+            # Commit each deactivation individually to avoid constraint issues
+            db.commit()
         
         print(f"🔄 [SET ACTIVE] Deactivated {len(active_routines)} active routines")
         
@@ -121,23 +125,32 @@ async def set_active_routine(
             existing_progress.is_active = True
             existing_progress.updated_at = datetime.utcnow()
             print(f"✅ [SET ACTIVE] Activated existing progress for routine {routine_id}")
+            # Commit the activation
+            db.commit()
         else:
             # Create new progress record
-            from app.schemas.health.simple_routine import SimpleUserRoutineProgressCreate
-            progress_data = SimpleUserRoutineProgressCreate(
-                user_id=current_user.id,  # Pass as integer, not string
-                routine_id=routine_id,
-                is_active=True
-            )
-            simple_user_routine_progress.create(db, obj_in=progress_data)
-            print(f"✅ [SET ACTIVE] Created new progress for routine {routine_id}")
+            print(f"🔄 [SET ACTIVE] Creating new progress record for routine {routine_id}")
+            try:
+                progress = SimpleUserRoutineProgress(
+                    routine_id=routine_id,
+                    user_id=current_user.id,
+                    is_active=True,
+                    started_at=datetime.utcnow()
+                )
+                db.add(progress)
+                db.commit()
+                print(f"✅ [SET ACTIVE] Created new progress for routine {routine_id}")
+            except Exception as schema_error:
+                print(f"❌ [SET ACTIVE] Database error: {str(schema_error)}")
+                print(f"❌ [SET ACTIVE] User ID: {current_user.id} (type: {type(current_user.id)})")
+                print(f"❌ [SET ACTIVE] Routine ID: {routine_id} (type: {type(routine_id)})")
+                raise HTTPException(status_code=422, detail=f"Database error: {str(schema_error)}")
         
-        db.commit()
         db.refresh(current_user)
         
         return ActiveRoutineResponse(
-            active_routine_id=current_user.active_routine_id,
-            message=f"Routine {request.routine_id} set as active successfully"
+            active_routine_id=str(current_user.active_routine_id),
+            message=f"Routine {routine_id_str} set as active successfully"
         )
     except Exception as e:
         db.rollback()

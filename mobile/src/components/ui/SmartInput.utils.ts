@@ -1,3 +1,4 @@
+
 // Utility functions for SmartInput component
 
 export const inputFormatters = {

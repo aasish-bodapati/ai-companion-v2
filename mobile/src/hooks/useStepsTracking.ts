@@ -4,7 +4,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import stepTrackingService from '../services/stepTrackingService';
+import { stepTrackingService } from '../services/StepTrackingService';
+
+import { DebugUtils } from '../utils/debugUtils';
 
 export function useStepsTracking() {
   const [steps, setSteps] = useState(0);
@@ -14,22 +16,22 @@ export function useStepsTracking() {
   const refreshSteps = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       // Get today's steps from storage
       const todaySteps = await stepTrackingService.getTodaySteps();
-      
+
       // Get current steps from device
       const currentSteps = stepTrackingService.getCurrentSteps();
-      
+
       // Use the higher value
       const finalSteps = Math.max(todaySteps, currentSteps);
-      
+
       setSteps(finalSteps);
       setIsTracking(stepTrackingService.isCurrentlyTracking());
-      
-      console.log('🚶 Steps refreshed:', { todaySteps, currentSteps, finalSteps });
+
+      DebugUtils.log('🚶 Steps refreshed:', { todaySteps, currentSteps, finalSteps });
     } catch (error) {
-      console.error('Error refreshing steps:', error);
+      DebugUtils.error('Error refreshing steps:', error);
     } finally {
       setLoading(false);
     }
@@ -45,7 +47,7 @@ export function useStepsTracking() {
       }
       return started;
     } catch (error) {
-      console.error('Error starting step tracking:', error);
+      DebugUtils.error('Error starting step tracking:', error);
       return false;
     }
   }, [refreshSteps]);
@@ -55,7 +57,7 @@ export function useStepsTracking() {
       await stepTrackingService.stopTracking();
       setIsTracking(false);
     } catch (error) {
-      console.error('Error stopping step tracking:', error);
+      DebugUtils.error('Error stopping step tracking:', error);
     }
   }, []);
 

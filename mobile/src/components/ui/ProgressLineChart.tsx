@@ -1,8 +1,9 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { COMMON_STYLES } from '../../theme/constants';
-
 
 interface ProgressLineChartProps {
   title: string;
@@ -105,23 +106,23 @@ export default function ProgressLineChart({
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.titleContainer}>
-          <Ionicons 
-            name={icon as keyof typeof Ionicons.glyphMap} 
-            size={sizeStyles.iconSize} 
-            color={color} 
+          <Ionicons
+            name={icon as keyof typeof Ionicons.glyphMap}
+            size={sizeStyles.iconSize}
+            color={color}
             style={styles.icon}
           />
           <Text style={[styles.title, { fontSize: sizeStyles.titleSize }]}>
             {title}
           </Text>
         </View>
-        
+
         {trend && trendValue && (
           <View style={styles.trendContainer}>
-            <Ionicons 
-              name={getTrendIcon() as keyof typeof Ionicons.glyphMap} 
-              size={14} 
-              color={getTrendColor()} 
+            <Ionicons
+              name={getTrendIcon() as keyof typeof Ionicons.glyphMap}
+              size={14}
+              color={getTrendColor()}
             />
             <Text style={[styles.trendText, { color: getTrendColor() }]}>
               {trendValue}%
@@ -148,20 +149,20 @@ export default function ProgressLineChart({
                 ]}
               />
             ))}
-            
+
             {/* Data line */}
             <View style={styles.lineContainer}>
               {chartData.map((value, index) => {
                 if (index === 0) return null;
-                
+
                 const x1 = ((index - 1) / (chartData.length - 1)) * chartWidth;
                 const y1 = chartHeight - (chartData[index - 1] / maxValue) * chartHeight;
                 const x2 = (index / (chartData.length - 1)) * chartWidth;
                 const y2 = chartHeight - (value / maxValue) * chartHeight;
-                
+
                 const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
                 const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
-                
+
                 return (
                   <View
                     key={index}
@@ -179,12 +180,12 @@ export default function ProgressLineChart({
                   />
                 );
               })}
-              
+
               {/* Data points */}
               {chartData.map((value, index) => {
                 const x = (index / (chartData.length - 1)) * chartWidth;
                 const y = chartHeight - (value / maxValue) * chartHeight;
-                
+
                 return (
                   <View
                     key={index}
@@ -200,7 +201,7 @@ export default function ProgressLineChart({
                 );
               })}
             </View>
-            
+
             {/* Goal line */}
             <View
               style={[
@@ -213,7 +214,7 @@ export default function ProgressLineChart({
             />
           </View>
         </View>
-        
+
         {/* Stats */}
         <View style={styles.stats}>
           <View style={styles.statItem}>
@@ -222,14 +223,14 @@ export default function ProgressLineChart({
             </Text>
             <Text style={styles.statLabel}>Current</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { fontSize: sizeStyles.valueSize }]}>
               {goal}
             </Text>
             <Text style={styles.statLabel}>Goal</Text>
           </View>
-          
+
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { fontSize: sizeStyles.valueSize }]}>
               {percentage}%

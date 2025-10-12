@@ -8,7 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { apiClient } from '../../services/api';
+import { ApiServiceClient } from '../../services/ApiService';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
 
@@ -42,9 +42,9 @@ export default function TimezoneSelector({ currentTimezone, onTimezoneChange }: 
 
     try {
       setLoading(true);
-      
+
       // Update timezone on server
-      const response = await apiClient.put('/me', {
+      const response = await api.put('/me', {
         timezone: timezone
       });
 

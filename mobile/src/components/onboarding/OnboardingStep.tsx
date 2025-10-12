@@ -10,6 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { mobileUtils } from '../../utils/haptics';
 
+import { COLORS, SPACING } from '../../theme/constants';
+
 interface OnboardingStepProps {
   icon?: string;
   image?: string | number;
@@ -67,7 +69,6 @@ export default function OnboardingStep({
     return mobileUtils.getResponsiveFontSize(baseSize, screenWidth);
   };
 
-
   const renderIcon = () => {
     if (!showIcon || (!icon && !image)) return null;
 
@@ -107,7 +108,7 @@ export default function OnboardingStep({
 
   const getContainerStyle = () => {
     const baseStyle = [styles.container, { backgroundColor }];
-    
+
     switch (variant) {
       case 'centered':
         return [...baseStyle, styles.centeredContainer];
@@ -135,13 +136,13 @@ export default function OnboardingStep({
           <Text style={[styles.title, { fontSize: getResponsiveFontSize(28) }]}>
             {title}
           </Text>
-          
+
           {subtitle && (
             <Text style={[styles.subtitle, { fontSize: getResponsiveFontSize(18) }]}>
               {subtitle}
             </Text>
           )}
-          
+
           <Text style={[styles.description, { fontSize: getResponsiveFontSize(16) }]}>
             {description}
           </Text>
@@ -160,7 +161,7 @@ export default function OnboardingStep({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xl,
     paddingVertical: 40,
   },
   centeredContainer: {
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   minimalContainer: {
-    paddingVertical: 20,
+    paddingVertical: SPACING.lg,
   },
   content: {
     flex: 1,
@@ -213,7 +214,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 36,
@@ -226,7 +227,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   description: {
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: screenWidth * 0.85,

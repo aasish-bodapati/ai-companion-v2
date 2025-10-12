@@ -2,6 +2,7 @@
 
 import { ConfirmationVariant, ConfirmationSize } from './ConfirmationDialog';
 
+
 export const confirmationDialogPresets = {
   // Small confirmation dialogs
   small: {

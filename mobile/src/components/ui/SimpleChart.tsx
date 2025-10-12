@@ -1,5 +1,7 @@
-import React from 'react';
+
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import React from 'react';
+
 import { COMMON_STYLES, COLORS, SPACING, FONT_SIZE } from '../../theme/constants';
 
 const { width } = Dimensions.get('window');
@@ -37,7 +39,7 @@ export default function SimpleChart({
           {data.map((item, index) => {
             const percentage = (item.value / max) * 100;
             const color = item.color || colors[index % colors.length];
-            
+
             return (
               <View key={index} style={styles.barItem}>
                 <View style={styles.barWrapper}>
@@ -86,13 +88,13 @@ export default function SimpleChart({
               ]}
             />
           ))}
-          
+
           {/* Data points and lines */}
           {data.map((item, index) => {
             const x = index * pointSpacing;
             const y = chartHeight - (item.value / max) * chartHeight;
             const color = item.color || colors[index % colors.length];
-            
+
             return (
               <View key={index}>
                 {/* Line to next point */}
@@ -118,7 +120,7 @@ export default function SimpleChart({
                     ]}
                   />
                 )}
-                
+
                 {/* Data point */}
                 <View
                   style={[
@@ -134,7 +136,7 @@ export default function SimpleChart({
             );
           })}
         </View>
-        
+
         {/* Labels */}
         <View style={styles.lineLabels}>
           {data.map((item, index) => (
@@ -151,7 +153,7 @@ export default function SimpleChart({
     const radius = 150;
     const strokeWidth = 40;
     // const circumference = 2 * Math.PI * radius;
-    
+
     // Check if all values are zero
     const totalValue = data.reduce((sum, item) => sum + item.value, 0);
     const isEmpty = totalValue === 0;
@@ -165,7 +167,7 @@ export default function SimpleChart({
                 {data.map((item, index) => {
                   // const percentage = (item.value / max) * 100;
                   const color = item.color || colors[index % colors.length];
-                  
+
                   return (
                     <View
                       key={index}
@@ -193,7 +195,7 @@ export default function SimpleChart({
                     </View>
                   );
                 })}
-                
+
                 {/* Center text */}
                 <View style={styles.donutCenter}>
                   <Text style={styles.donutCenterText}>{totalValue}</Text>
@@ -217,7 +219,7 @@ export default function SimpleChart({
               </View>
             )}
           </View>
-          
+
           {/* Legend */}
           <View style={styles.legend}>
             {data.map((item, index) => {

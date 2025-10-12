@@ -62,7 +62,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
 
   const handleFocus = (e: unknown) => {
     setIsFocused(true);
-    
+
     // Haptic feedback on focus
     if (hapticType !== 'none') {
       hapticFeedback[hapticType]();
@@ -217,10 +217,10 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
           {required && <Text style={styles.required}> *</Text>}
         </Animated.Text>
       )}
-      
+
       <View style={getInputContainerStyle()}>
         {icon && iconPosition === 'left' && renderIcon()}
-        
+
         <TextInput
           ref={ref}
           style={[
@@ -238,7 +238,7 @@ const MobileOptimizedInput = forwardRef<TextInput, MobileOptimizedInputProps>(({
           testID={testID}
           {...props}
         />
-        
+
         {icon && iconPosition === 'right' && renderIcon()}
       </View>
 

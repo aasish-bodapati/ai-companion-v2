@@ -1,12 +1,14 @@
 import * as Haptics from 'expo-haptics';
 
+import { DebugUtils } from '../utils/debugUtils';
+
 export const hapticFeedback = {
   // Light haptic feedback for subtle interactions
   light: () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -15,7 +17,7 @@ export const hapticFeedback = {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -24,7 +26,7 @@ export const hapticFeedback = {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -33,7 +35,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -42,7 +44,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -51,7 +53,7 @@ export const hapticFeedback = {
     try {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 
@@ -60,7 +62,7 @@ export const hapticFeedback = {
     try {
       Haptics.selectionAsync();
     } catch (error) {
-      console.log('Haptic feedback not available:', error);
+      DebugUtils.log('Haptic feedback not available:', error);
     }
   },
 };
@@ -69,7 +71,7 @@ export const hapticFeedback = {
 export const touchUtils = {
   // Minimum touch target size (44pt as per Apple HIG)
   MIN_TOUCH_TARGET_SIZE: 44,
-  
+
   // Check if touch target meets minimum size requirements
   validateTouchTarget: (width: number, height: number): boolean => {
     return width >= touchUtils.MIN_TOUCH_TARGET_SIZE && height >= touchUtils.MIN_TOUCH_TARGET_SIZE;
@@ -87,7 +89,7 @@ export const touchUtils = {
 };
 
 // Animation utilities for mobile
-export const animationUtils = {
+export const hapticAnimationUtils = {
   // Standard animation durations
   durations: {
     fast: 150,

@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService, NutritionLog } from '../../services/nutritionService';
+import { nutritionService, NutritionLog } from '../../services/NutritionService';
 // Removed unused import
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';
@@ -19,6 +19,8 @@ import DataTable from '../ui/DataTable';
 import Pagination from '../ui/Pagination';
 import { dataTableConfigs } from '../ui/DataTable.utils';
 import { paginationConfigs } from '../ui/Pagination.utils';
+
+import { DebugUtils } from '../../utils/debugUtils';
 
 interface FoodItem {
   id?: string;
@@ -49,7 +51,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const [refreshing, setRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(10);
-  
+
   // DataTable columns configuration
   const columns = [
     {
@@ -72,9 +74,9 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       align: 'center' as const,
       render: (value: string) => (
         <View style={[styles.mealTypeBadge, { backgroundColor: getMealTypeColor(value) }]}>
-          <Ionicons 
-            name={getMealTypeIcon(value) as keyof typeof Ionicons.glyphMap} 
-            size={8} 
+          <Ionicons
+            name={getMealTypeIcon(value) as keyof typeof Ionicons.glyphMap}
+            size={8}
             color="#ffffff"
             style={styles.badgeIcon}
           />
@@ -161,7 +163,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       ),
     },
   ];
-  
+
   const [editingLog, setEditingLog] = useState<NutritionLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editFoodItems, setEditFoodItems] = useState<{id: string, quantity: number, quantity_unit: string}[]>([]);
@@ -173,7 +175,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
   const loadLogs = useCallback(async (date?: Date) => {
     try {
-      console.log('🍽️ [NUTRITION LOGS] Starting loadLogs...');
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Starting loadLogs...');
       setLoading(true);
       const targetDate = date || selectedDate;
       // Use local date instead of UTC to match user's timezone
@@ -181,28 +183,28 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       const month = String(targetDate.getMonth() + 1).padStart(2, '0');
       const day = String(targetDate.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      console.log('🍽️ [NUTRITION LOGS] Target date:', targetDate);
-      console.log('🍽️ [NUTRITION LOGS] Date string (local):', dateStr);
-      console.log('🍽️ [NUTRITION LOGS] UTC date string:', targetDate.toISOString().split('T')[0]);
-      
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Target date:', targetDate);
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Date string (local):', dateStr);
+      DebugUtils.log('🍽️ [NUTRITION LOGS] UTC date string:', targetDate.toISOString().split('T')[0]);
+
       const requestParams = {
         start_date: dateStr,
         end_date: dateStr,
         page: 1,
         size: 50
       };
-      console.log('🍽️ [NUTRITION LOGS] Request params:', requestParams);
-      
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Request params:', requestParams);
+
       const response = await nutritionService.getNutritionLogs(requestParams);
-      console.log('🍽️ [NUTRITION LOGS] Raw response:', response);
-      
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Raw response:', response);
+
       const logs = response || [];
-      console.log('🍽️ [NUTRITION LOGS] Processed logs:', logs);
-      console.log('🍽️ [NUTRITION LOGS] Number of logs found:', logs.length);
-      
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Processed logs:', logs);
+      DebugUtils.log('🍽️ [NUTRITION LOGS] Number of logs found:', logs.length);
+
       // Log each individual log for debugging
       logs.forEach((log, index) => {
-        console.log(`🍽️ [NUTRITION LOGS] Log ${index + 1}:`, {
+        DebugUtils.log(`🍽️ [NUTRITION LOGS] Log ${index + 1}:`, {
           id: log.id,
           meal_type: log.meal_type,
           meal_name: log.meal_name,
@@ -212,7 +214,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           food_items: log.food_items
         });
       });
-      
+
       // Sort logs by time (earliest to latest) for chronological order
       // All dates from backend are in UTC, so we can compare them directly
       const sortedLogs = logs.sort((a: NutritionLog, b: NutritionLog) => {
@@ -220,7 +222,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         const timeB = new Date(b.meal_date || b.created_at || 0).getTime();
         return timeA - timeB; // Chronological order: earliest first
       });
-      
+
       setLogs(sortedLogs);
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -238,7 +240,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      
+
       const response = await nutritionService.getNutritionLogs({
         start_date: dateStr,
         end_date: dateStr,
@@ -316,7 +318,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
         const editItem = editFoodItems[0];
         const quantity = editItem.quantity;
-        
+
         // Calculate per-serving nutrition
         const originalCalories = foodItem.calories / (foodItem.quantity || 1);
         const originalProtein = foodItem.protein_g / (foodItem.quantity || 1);
@@ -334,7 +336,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             }
           }
         } catch {
-          console.error('Error parsing food_items:', error);
+          DebugUtils.error('Error parsing food_items:', error);
           foodItems = [];
         }
 
@@ -377,23 +379,23 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             }
           }
         } catch {
-          console.error('Error parsing food_items:', error);
+          DebugUtils.error('Error parsing food_items:', error);
           foodItems = [];
         }
 
         // Editing entire meal
         const updatedFoodItems = foodItems.map((item: FoodItem) => {
-          const editItem = editFoodItems.find(editItem => 
+          const editItem = editFoodItems.find(editItem =>
             editItem.id === `${editingLog.id}-${item.food_id || item.id}`
           );
-          
+
           if (editItem) {
             const quantity = editItem.quantity;
             const originalCalories = item.calories / (item.quantity || 1);
             const originalProtein = item.protein_g / (item.quantity || 1);
             const originalCarbs = item.carbs_g / (item.quantity || 1);
             const originalFat = item.fat_g / (item.quantity || 1);
-            
+
             return {
               ...item,
               quantity: quantity,
@@ -454,7 +456,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
         }
       }
     } catch {
-      console.error('Error parsing food_items:', error);
+      DebugUtils.error('Error parsing food_items:', error);
       foodItems = [];
     }
 
@@ -470,7 +472,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const confirmDeleteFoodItem = async (logId: number, foodItemId: string) => {
     try {
       setDeletingLogId(logId);
-      
+
       // Find the log and remove the specific food item
       const log = logs.find(l => l.id === logId);
       if (!log) return;
@@ -486,11 +488,11 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           }
         }
       } catch {
-        console.error('Error parsing food_items:', error);
+        DebugUtils.error('Error parsing food_items:', error);
         foodItems = [];
       }
 
-      const updatedFoodItems = foodItems.filter((item: FoodItem) => 
+      const updatedFoodItems = foodItems.filter((item: FoodItem) =>
         `${log.id}-${item.id || item.food_id || foodItems.indexOf(item)}` !== foodItemId
       );
 
@@ -544,11 +546,11 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   const confirmDeleteLog = async (logId: number) => {
     try {
       setDeletingLogId(logId);
-      
+
       await nutritionService.deleteMeal(logId.toString());
-      
+
       setLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-      
+
       showRapidToast('Meal log deleted successfully!', 'success');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -635,7 +637,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
           }
         }
       } catch {
-        console.error('Error parsing food_items:', error);
+        DebugUtils.error('Error parsing food_items:', error);
         foodItems = [];
       }
 
@@ -683,7 +685,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       refreshControl={
         <RefreshControl
@@ -701,8 +703,8 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
 
       {/* Date Picker Component */}
       <View style={styles.datePickerContainer}>
-        <TouchableOpacity 
-          style={styles.dateNavButton} 
+        <TouchableOpacity
+          style={styles.dateNavButton}
           onPress={() => navigateDate('prev')}
           disabled={navigating}
         >
@@ -712,18 +714,18 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             <Ionicons name="chevron-back" size={20} color="#6b7280" />
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.dateDisplayButton} 
+
+        <TouchableOpacity
+          style={styles.dateDisplayButton}
           onPress={() => setShowDatePicker(true)}
         >
           <Ionicons name="calendar-outline" size={16} color="#6b7280" />
           <Text style={styles.dateDisplayText}>{formatDateForPicker(selectedDate)}</Text>
           <Ionicons name="chevron-down" size={16} color="#6b7280" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.dateNavButton} 
+
+        <TouchableOpacity
+          style={styles.dateNavButton}
           onPress={() => navigateDate('next')}
           disabled={navigating}
         >
@@ -733,13 +735,13 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             <Ionicons name="chevron-forward" size={20} color="#6b7280" />
           )}
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={[
-            styles.todayButton, 
+            styles.todayButton,
             isToday(selectedDate) && styles.todayButtonActive,
             navigating && styles.todayButtonDisabled
-          ]} 
+          ]}
           onPress={goToToday}
           disabled={navigating}
         >
@@ -770,7 +772,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
             testID="nutrition-logs-table"
             {...dataTableConfigs.nutritionLogs}
           />
-          
+
           {totalPages > 1 && (
             <Pagination
               currentPage={currentPage}
@@ -801,12 +803,12 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                 <Ionicons name="close" size={24} color="#6b7280" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalBody}>
               <Text style={styles.modalLabel}>
                 Meal: {editingLog?.meal_type || editingSingleFood?.foodItem.meal_type}
               </Text>
-              
+
               {/* Food Items with serving quantities */}
               <Text style={styles.modalLabel}>Food Item:</Text>
               {editingSingleFood ? (
@@ -846,12 +848,12 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                       }
                     }
                   } catch {
-                    console.error('Error parsing food_items:', error);
+                    DebugUtils.error('Error parsing food_items:', error);
                     foodItems = [];
                   }
 
                   return foodItems.map((foodItem: FoodItem, index: number) => {
-                    const editItem = editFoodItems.find(item => 
+                    const editItem = editFoodItems.find(item =>
                       item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
                     );
                     return (
@@ -863,8 +865,8 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                             value={editItem?.quantity.toString() || '1'}
                             onChangeText={(text) => {
                               const quantity = parseFloat(text) || 1;
-                              setEditFoodItems(prev => 
-                                prev.map(item => 
+                              setEditFoodItems(prev =>
+                                prev.map(item =>
                                   item.id === `${editingLog.id}-${foodItem.food_id || foodItem.id}`
                                     ? { ...item, quantity: quantity }
                                     : item
@@ -886,7 +888,7 @@ const NutritionLogsView = forwardRef<NutritionLogsViewRef, NutritionLogsViewProp
                 <Text style={styles.noFoodItems}>No food items found</Text>
               )}
             </View>
-            
+
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
@@ -1304,12 +1306,5 @@ const styles = StyleSheet.create({
   tableText: {
     fontSize: 14,
     color: '#1f2937',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    padding: 4,
   },
 });

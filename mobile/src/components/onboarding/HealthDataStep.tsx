@@ -28,7 +28,6 @@ interface HealthDataStepProps {
   initialData?: Partial<HealthData>;
 }
 
-
 const GENDER_OPTIONS = [
   { id: 'male', label: 'Male', icon: 'male-outline' },
   { id: 'female', label: 'Female', icon: 'female-outline' },
@@ -43,8 +42,8 @@ const ACTIVITY_LEVEL_OPTIONS = [
   { id: 'very_active', label: 'Very Active', icon: 'flash-outline' },
 ];
 
-export default function HealthDataStep({ 
-  onDataChange, 
+export default function HealthDataStep({
+  onDataChange,
   initialData = {},
 }: HealthDataStepProps) {
   const [data, setData] = useState<HealthData>({
@@ -67,7 +66,7 @@ export default function HealthDataStep({
 
   const updateData = (field: keyof HealthData, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
@@ -89,7 +88,7 @@ export default function HealthDataStep({
     const heightInMeters = height / 100;
     const idealFFMI = 22;
     const targetBodyFat = 0.14; // 14%
-    
+
     const idealWeight = (idealFFMI * heightInMeters * heightInMeters) / (1 - targetBodyFat);
     return Math.round(idealWeight * 10) / 10; // Round to 1 decimal place
   };
@@ -102,34 +101,34 @@ export default function HealthDataStep({
       const proteinTarget = ffm * 1.6 * (1 + 0.3 * smm / 30 + 0.1 * (ffmi - 20));
       return Math.round(proteinTarget * 10) / 10;
     }
-    
+
     // Case 2: FFM provided, SMM and FFMI not provided
     if (ffm && !smm && !bodyFat) {
       const proteinTarget = ffm * 1.8;
       return Math.round(proteinTarget * 10) / 10;
     }
-    
+
     // Case 3: SMM and BF% provided, FFM not provided
     if (smm && bodyFat && !ffm) {
       const estimatedFFM = weight * (1 - bodyFat / 100);
       const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
       return Math.round(proteinTarget * 10) / 10;
     }
-    
+
     // Case 4: Only BF% provided, SMM and FFM not provided
     if (bodyFat && !smm && !ffm) {
       const estimatedFFM = weight * (1 - bodyFat / 100);
       const proteinTarget = estimatedFFM * 1.8;
       return Math.round(proteinTarget * 10) / 10;
     }
-    
+
     // Case 5: Only SMM provided, FFM & BF% not provided
     if (smm && !ffm && !bodyFat) {
       const estimatedFFM = smm * 2; // Skeletal muscle is ~50% of FFM
       const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
       return Math.round(proteinTarget * 10) / 10;
     }
-    
+
     // Case 6: None of the optional metrics provided (only height & weight)
     const proteinTarget = weight * 1.6;
     return Math.round(proteinTarget * 10) / 10;
@@ -146,7 +145,6 @@ export default function HealthDataStep({
     hapticFeedback.selection();
     setData(prev => ({ ...prev, activityLevel }));
   };
-
 
   const calculateBMI = () => {
     const height = Number(data.height) / 100; // Convert cm to m
@@ -180,10 +178,10 @@ export default function HealthDataStep({
               data.gender === option.id ? styles.optionButtonSelected : styles.optionButtonUnselected,
             ]}
           >
-            <Ionicons 
-              name={option.icon as keyof typeof Ionicons.glyphMap} 
-              size={20} 
-              color={data.gender === option.id ? '#ffffff' : '#3b82f6'} 
+            <Ionicons
+              name={option.icon as keyof typeof Ionicons.glyphMap}
+              size={20}
+              color={data.gender === option.id ? '#ffffff' : '#3b82f6'}
             />
             <Text style={[
               styles.optionButtonText,
@@ -216,10 +214,10 @@ export default function HealthDataStep({
               data.activityLevel === option.id ? styles.optionButtonSelected : styles.optionButtonUnselected,
             ]}
           >
-            <Ionicons 
-              name={option.icon as keyof typeof Ionicons.glyphMap} 
-              size={20} 
-              color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'} 
+            <Ionicons
+              name={option.icon as keyof typeof Ionicons.glyphMap}
+              size={20}
+              color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'}
             />
             <Text style={[
               styles.optionButtonText,
@@ -234,7 +232,6 @@ export default function HealthDataStep({
     </View>
   );
 
-
   const renderBMIPreview = () => {
     if (!data.height || !data.weight) return null;
 
@@ -242,7 +239,7 @@ export default function HealthDataStep({
     if (isNaN(bmi)) return null;
 
     const { category, color } = getBMICategory(bmi);
-    
+
     // Calculate FFMI if FFM is provided
     let ffmi = null;
     if (data.ffm && !isNaN(Number(data.ffm))) {
@@ -258,7 +255,7 @@ export default function HealthDataStep({
     const ffm = data.ffm ? Number(data.ffm) : undefined;
     const smm = data.smm ? Number(data.smm) : undefined;
     const bodyFat = data.bodyFat ? Number(data.bodyFat) : undefined;
-    
+
     if (weight && (ffm || smm || bodyFat)) {
       proteinTarget = calculateProteinTarget(weight, ffm, smm, bodyFat);
     }
@@ -304,16 +301,16 @@ export default function HealthDataStep({
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        
+
         {/* Basic Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
-          
+
           {/* Row 1: Age, Height, Weight */}
           <View style={styles.fieldRow}>
             <View style={styles.fieldColumn}>

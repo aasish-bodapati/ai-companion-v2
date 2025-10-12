@@ -5,11 +5,14 @@
 
 import { useState, useCallback } from 'react';
 
+
+import { DebugUtils } from '../utils/debugUtils';
+
 // Custom hook for loading state management
 export const useLoadingState = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
     try {
       setLoading(true);
@@ -22,11 +25,11 @@ export const useLoadingState = () => {
       setLoading(false);
     }
   }, []);
-  
+
   const resetError = useCallback(() => {
     setError(null);
   }, []);
-  
+
   return { loading, error, withLoading, resetError };
 };
 
@@ -34,7 +37,7 @@ export const DuplicateCodeUtils = {
 
   // Safe error handling
   handleError: (error: unknown, context: string) => {
-    console.error(`Error in ${context}:`, error);
+    DebugUtils.error(`Error in ${context}:`, error);
     // Don't change existing error handling yet
     // This is just a placeholder for future improvements
   },
@@ -64,7 +67,7 @@ export const DuplicateCodeUtils = {
       try {
         return await apiFunction();
       } catch (error) {
-        console.error('API call failed:', error);
+        DebugUtils.error('API call failed:', error);
         throw error;
       }
     };
@@ -81,30 +84,30 @@ export const DuplicateCodeUtils = {
   // Safe number validation
   validateNumber: (value: string | number, fieldName: string, min?: number, max?: number) => {
     const num = typeof value === 'string' ? parseFloat(value) : value;
-    
+
     if (isNaN(num)) {
       return `${fieldName} must be a valid number`;
     }
-    
+
     if (min !== undefined && num < min) {
       return `${fieldName} must be at least ${min}`;
     }
-    
+
     if (max !== undefined && num > max) {
       return `${fieldName} must be at most ${max}`;
     }
-    
+
     return null;
   },
 };
 
 // Export individual functions for convenience
-export const { 
-  handleError, 
-  getCommonStyles, 
+export const {
+  handleError,
+  getCommonStyles,
   createApiCall,
   validateRequired,
-  validateNumber 
+  validateNumber
 } = DuplicateCodeUtils;
 
 // Export createLoadingState as a factory function that returns a hook
@@ -112,7 +115,7 @@ export const createLoadingState = () => {
   return () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
       try {
         setLoading(true);
@@ -125,11 +128,11 @@ export const createLoadingState = () => {
         setLoading(false);
       }
     }, []);
-    
+
     const resetError = useCallback(() => {
       setError(null);
     }, []);
-    
+
     return { loading, error, setLoading, withLoading, resetError };
   };
 };
@@ -138,7 +141,7 @@ export const createLoadingState = () => {
 export const useCreateLoadingState = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const withLoading = useCallback(async (fn: () => Promise<unknown>) => {
     try {
       setLoading(true);
@@ -151,10 +154,10 @@ export const useCreateLoadingState = () => {
       setLoading(false);
     }
   }, []);
-  
+
   const resetError = useCallback(() => {
     setError(null);
   }, []);
-  
+
   return { loading, error, setLoading, withLoading, resetError };
 };

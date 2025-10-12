@@ -12,6 +12,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { useToast } from '../../contexts/ToastContext';
+import { DebugUtils } from '../../utils/debugUtils';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -23,20 +26,34 @@ export default function LoginScreen() {
   const navigation = useNavigation();
 
   const handleLogin = async () => {
+    if (__DEV__) {
+      DebugUtils.log('🔐 [LOGIN SCREEN] Starting login for:', email);
+    }
+
     if (!email || !password) {
+      if (__DEV__) {
+        DebugUtils.log('🔐 [LOGIN SCREEN] Validation failed - missing email or password');
+      }
       showToast('Error: Please fill in all fields', 'error', 5000);
       return;
     }
 
     setLoginError(''); // Clear previous errors
     setIsLoading(true);
+    
+    // Calling login function
+
     try {
       const result = await login(email, password);
+      
       if (!result.success) {
         setLoginError(result.error || 'Invalid email or password');
         // Toast notification is now handled in AuthContext
       }
-    } catch {
+    } catch (error) {
+      if (__DEV__) {
+        DebugUtils.log('🔐 [LOGIN SCREEN] Login threw exception:', error);
+      }
       const errorMessage = 'Login failed. Please try again.';
       setLoginError(errorMessage);
       // Toast notification is now handled in AuthContext
@@ -50,8 +67,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -128,14 +145,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   scrollContainer: {
     flexGrow: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.xl,
     paddingTop: 60,
     paddingBottom: 40,
   },
@@ -146,12 +163,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   form: {
@@ -162,20 +179,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
     paddingVertical: 14,
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
   },
   inputError: {
     borderColor: '#ef4444',
@@ -187,13 +204,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#ef4444',
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
   },
   loginButton: {
     backgroundColor: '#6366f1',
-    borderRadius: 12,
-    paddingVertical: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
     marginTop: 20,
   },
@@ -201,8 +218,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#9ca3af',
   },
   loginButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
+    color: COLORS.text.inverse,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
   },
   footer: {
@@ -212,11 +229,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   linkText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     color: '#6366f1',
     fontWeight: '600',
   },

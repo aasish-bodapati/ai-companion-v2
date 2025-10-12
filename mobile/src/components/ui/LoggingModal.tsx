@@ -31,11 +31,11 @@ interface LoggingModalProps {
   onSave: (data: unknown) => Promise<void>;
   title: string;
   subtitle?: string;
-  
+
   // Form configuration
   formType: 'meal' | 'workout' | 'water' | 'mood' | 'custom';
   initialData?: unknown;
-  
+
   // Search configuration
   searchPlaceholder: string;
   searchResults: SearchResult[];
@@ -43,35 +43,35 @@ interface LoggingModalProps {
   onSelectItem: (item: SearchResult) => void;
   onClearSearch?: () => void;
   searchLoading?: boolean;
-  
+
   // Items management
   items: LoggingItem[];
   onAddItem: (item: LoggingItem) => void;
   onRemoveItem: (id: number | string) => void;
   onUpdateItem: (id: number | string, updates: Partial<LoggingItem>) => void;
   renderItem: (item: LoggingItem, index: number) => React.ReactNode;
-  
+
   // Form validation
   isFormValid: () => boolean;
   getFormData: () => unknown;
-  
+
   // Additional form fields (for custom forms)
   additionalFields?: React.ReactNode;
-  
+
   // Modal configuration
   variant?: 'default' | 'bottomSheet' | 'fullScreen' | 'centered';
   size?: 'small' | 'medium' | 'large' | 'full';
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
-  
+
   // Loading state
   saving?: boolean;
-  
+
   // Custom styling
   contentStyle?: Record<string, unknown>;
   headerStyle?: Record<string, unknown>;
   footerStyle?: Record<string, unknown>;
-  
+
   testID?: string;
 }
 
@@ -143,7 +143,6 @@ export default function LoggingModal({
     }
   }, [visible, initialData]);
 
-
   const handleSave = async () => {
     if (!isFormValid || !isFormValid()) {
       hapticFeedback.error();
@@ -185,30 +184,30 @@ export default function LoggingModal({
     <View style={styles.itemsSection}>
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>
-          {formType === 'meal' ? 'Food Items' : 
-           formType === 'workout' ? 'Exercises' : 
-           formType === 'water' ? 'Water Intake' : 
+          {formType === 'meal' ? 'Food Items' :
+           formType === 'workout' ? 'Exercises' :
+           formType === 'water' ? 'Water Intake' :
            formType === 'mood' ? 'Mood Entry' : 'Items'}
         </Text>
         <Text style={styles.itemsCount}>
           {items.length} {items.length === 1 ? 'item' : 'items'}
         </Text>
       </View>
-      
+
       {items.length === 0 ? (
         <View style={styles.emptyState}>
-          <Ionicons 
-            name={formType === 'meal' ? 'restaurant-outline' : 
-                  formType === 'workout' ? 'fitness-outline' : 
-                  formType === 'water' ? 'water-outline' : 
-                  formType === 'mood' ? 'happy-outline' : 'add-outline'} 
-            size={48} 
-            color={COLORS.text.secondary} 
+          <Ionicons
+            name={formType === 'meal' ? 'restaurant-outline' :
+                  formType === 'workout' ? 'fitness-outline' :
+                  formType === 'water' ? 'water-outline' :
+                  formType === 'mood' ? 'happy-outline' : 'add-outline'}
+            size={48}
+            color={COLORS.text.secondary}
           />
           <Text style={styles.emptyStateText}>
-            {formType === 'meal' ? 'No food items added yet' : 
-             formType === 'workout' ? 'No exercises added yet' : 
-             formType === 'water' ? 'No water logged yet' : 
+            {formType === 'meal' ? 'No food items added yet' :
+             formType === 'workout' ? 'No exercises added yet' :
+             formType === 'water' ? 'No water logged yet' :
              formType === 'mood' ? 'No mood entry yet' : 'No items added yet'}
           </Text>
           <Text style={styles.emptyStateSubtext}>
@@ -216,7 +215,7 @@ export default function LoggingModal({
           </Text>
         </View>
       ) : (
-        <ScrollView 
+        <ScrollView
           style={styles.itemsList}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled={true}
@@ -241,13 +240,13 @@ export default function LoggingModal({
         <DateSelector
           selectedDate={new Date()}
           onDateSelect={() => {}} // This should be handled by parent
-          label={`${formType === 'meal' ? 'Meal' : 
-                  formType === 'workout' ? 'Workout' : 
-                  formType === 'water' ? 'Water' : 
+          label={`${formType === 'meal' ? 'Meal' :
+                  formType === 'workout' ? 'Workout' :
+                  formType === 'water' ? 'Water' :
                   formType === 'mood' ? 'Mood' : 'Entry'} Date`}
-          calendarModalTitle={`Select ${formType === 'meal' ? 'Meal' : 
-                                      formType === 'workout' ? 'Workout' : 
-                                      formType === 'water' ? 'Water' : 
+          calendarModalTitle={`Select ${formType === 'meal' ? 'Meal' :
+                                      formType === 'workout' ? 'Workout' :
+                                      formType === 'water' ? 'Water' :
                                       formType === 'mood' ? 'Mood' : 'Entry'} Date`}
           showLogsIndicator={false}
         />
@@ -287,9 +286,9 @@ export default function LoggingModal({
       isFormValid={isFormValid ? isFormValid() : false}
       scrollEnabled={true}
       primaryAction={{
-        label: saving ? 'Saving...' : `Log ${formType === 'meal' ? 'Meal' : 
-                                               formType === 'workout' ? 'Workout' : 
-                                               formType === 'water' ? 'Water' : 
+        label: saving ? 'Saving...' : `Log ${formType === 'meal' ? 'Meal' :
+                                               formType === 'workout' ? 'Workout' :
+                                               formType === 'water' ? 'Water' :
                                                formType === 'mood' ? 'Mood' : 'Entry'}`,
         onPress: handleSave,
         disabled: !(isFormValid ? isFormValid() : false) || saving,

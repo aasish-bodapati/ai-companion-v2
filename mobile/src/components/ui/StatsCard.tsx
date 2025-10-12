@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 
@@ -171,7 +173,7 @@ export default function StatsCard({
             />
           )}
         </View>
-        
+
         <View style={styles.valueContainer}>
           <Text style={[styles.value, disabled && styles.disabledText]}>
             {loading ? '...' : value}
@@ -189,13 +191,13 @@ export default function StatsCard({
             </View>
           )}
         </View>
-        
+
         {subtitle && (
           <Text style={[styles.subtitle, disabled && styles.disabledText]}>
             {subtitle}
           </Text>
         )}
-        
+
         {/* Progress Bar */}
         {progress && (
           <View style={styles.progressContainer}>
@@ -208,7 +210,7 @@ export default function StatsCard({
               </Text>
             </View>
             <View style={styles.progressBarContainer}>
-              <View 
+              <View
                 style={[
                   styles.progressBar,
                   {
@@ -220,7 +222,7 @@ export default function StatsCard({
             </View>
           </View>
         )}
-        
+
         {/* Achievement */}
         {achievement && achievement.reached && (
           <View style={styles.achievementContainer}>

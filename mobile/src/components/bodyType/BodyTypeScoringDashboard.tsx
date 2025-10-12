@@ -8,8 +8,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BodyTypeScoringService, ScoringResult, DailyLog, WeeklyLog } from '../../services/bodyTypeScoringService';
-import { BodyTypeGoal, UserAttributes } from '../../services/bodyTypeGoals';
+import { BodyTypeScoringService, ScoringResult, DailyLog, WeeklyLog } from '../../services/BodyTypeScoringService';
+import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
+
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 interface BodyTypeScoringDashboardProps {
   bodyTypeGoal: BodyTypeGoal;
@@ -42,7 +45,7 @@ export default function BodyTypeScoringDashboard({
         const result = scoringService.scoreDailyProgress(dailyLog);
         setDailyResult(result);
       }
-      
+
       if (weeklyLog) {
         const result = scoringService.scoreWeeklyProgress(weeklyLog);
         setWeeklyResult(result);
@@ -63,7 +66,7 @@ export default function BodyTypeScoringDashboard({
       case 'farther':
         return { name: 'trending-down', color: '#ef4444' };
       default:
-        return { name: 'help', color: '#6b7280' };
+        return { name: 'help', color: COLORS.text.secondary };
     }
   };
 
@@ -103,7 +106,7 @@ export default function BodyTypeScoringDashboard({
             <Text style={styles.scoreValue}>{result.percentage}%</Text>
             <Text style={styles.scoreLabel}>Alignment</Text>
           </View>
-          
+
           <View style={styles.scoreDetails}>
             <View style={styles.scoreDetail}>
               <Text style={styles.scoreDetailValue}>{result.score}</Text>
@@ -117,14 +120,14 @@ export default function BodyTypeScoringDashboard({
         </View>
 
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
-              styles.progressFill, 
-              { 
+              styles.progressFill,
+              {
                 width: `${result.percentage}%`,
                 backgroundColor: alignmentColor
               }
-            ]} 
+            ]}
           />
         </View>
 
@@ -147,7 +150,7 @@ export default function BodyTypeScoringDashboard({
 
   const renderScoringTable = () => {
     const goalType = bodyTypeGoal.name;
-    
+
     return (
       <View style={styles.tableCard}>
         <Text style={styles.tableTitle}>Scoring Guide for {goalType}</Text>
@@ -157,7 +160,7 @@ export default function BodyTypeScoringDashboard({
               <Text style={styles.tableHeaderText}>Activity</Text>
               <Text style={styles.tableHeaderText}>Points</Text>
             </View>
-            
+
             {getScoringTableRows(goalType).map((row, index) => (
               <View key={index} style={styles.tableRow}>
                 <Text style={styles.tableCell}>{row.activity}</Text>
@@ -247,48 +250,48 @@ export default function BodyTypeScoringDashboard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: SPACING.lg,
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#ffffff',
+    padding: SPACING.lg,
+    backgroundColor: COLORS.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 4,
   },
   refreshButton: {
-    padding: 8,
-    borderRadius: 20,
+    padding: SPACING.xs,
+    borderRadius: BORDER_RADIUS.xxl,
     backgroundColor: '#f1f5f9',
   },
   scoreCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -302,19 +305,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scoreTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   alignmentBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
   },
   alignmentText: {
-    fontSize: 12,
+    fontSize: FONT_SIZE.sm,
     fontWeight: '600',
     marginLeft: 4,
   },
@@ -330,11 +333,11 @@ const styles = StyleSheet.create({
   scoreValue: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   scoreLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginTop: 4,
   },
   scoreDetails: {
@@ -345,27 +348,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   scoreDetailValue: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   scoreDetailLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
   },
   progressBar: {
     height: 8,
-    backgroundColor: '#e5e7eb',
-    borderRadius: 4,
+    backgroundColor: COLORS.gray[200],
+    borderRadius: BORDER_RADIUS.xs,
     marginBottom: 16,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   feedbackText: {
-    fontSize: 16,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.primary,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -373,9 +376,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   suggestionsTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   suggestionItem: {
@@ -384,16 +387,16 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   suggestionText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     marginLeft: 8,
     flex: 1,
   },
   tableCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     margin: 16,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -401,9 +404,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   tableTitle: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -412,29 +415,29 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f8fafc',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    backgroundColor: COLORS.background.secondary,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
     marginBottom: 8,
   },
   tableHeaderText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   tableRow: {
     flexDirection: 'row',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: SPACING.md,
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
   tableCell: {
     flex: 1,
-    fontSize: 14,
-    color: '#1f2937',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.primary,
   },
   tablePoints: {
     fontWeight: '600',

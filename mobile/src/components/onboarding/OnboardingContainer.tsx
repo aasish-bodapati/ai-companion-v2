@@ -11,6 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
 
+import { DebugUtils } from '../../utils/debugUtils';
+
 interface OnboardingContainerProps {
   children: React.ReactNode;
   currentStep: number;
@@ -53,13 +55,13 @@ export default function OnboardingContainer({
       const shouldSwipeNext = translationX < -threshold || velocityX < -500;
       const shouldSwipePrevious = translationX > threshold || velocityX > 500;
 
-      console.log('🎬 Swipe gesture - shouldSwipeNext:', shouldSwipeNext, 'canGoNext:', canGoNext, 'shouldSwipePrevious:', shouldSwipePrevious, 'canGoPrevious:', canGoPrevious);
-      
+      DebugUtils.log('🎬 Swipe gesture - shouldSwipeNext:', shouldSwipeNext, 'canGoNext:', canGoNext, 'shouldSwipePrevious:', shouldSwipePrevious, 'canGoPrevious:', canGoPrevious);
+
       if (shouldSwipeNext && canGoNext) {
-        console.log('🎬 Swipe next allowed - calling handleNext');
+        DebugUtils.log('🎬 Swipe next allowed - calling handleNext');
         handleNext();
       } else if (shouldSwipePrevious && canGoPrevious) {
-        console.log('🎬 Swipe previous allowed - calling handlePrevious');
+        DebugUtils.log('🎬 Swipe previous allowed - calling handlePrevious');
         handlePrevious();
       } else {
         // Snap back
@@ -74,24 +76,24 @@ export default function OnboardingContainer({
   };
 
   const handleNext = () => {
-    console.log('🎬 OnboardingContainer handleNext - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
-    
+    DebugUtils.log('🎬 OnboardingContainer handleNext - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
+
     if (!canGoNext || isAnimating) {
-      console.log('❌ OnboardingContainer handleNext blocked - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
+      DebugUtils.log('❌ OnboardingContainer handleNext blocked - canGoNext:', canGoNext, 'isAnimating:', isAnimating);
       return;
     }
-    
-    console.log('✅ OnboardingContainer handleNext proceeding');
+
+    DebugUtils.log('✅ OnboardingContainer handleNext proceeding');
 
     hapticFeedback.light();
-    
+
     // Check if this is the last step - if so, complete immediately without animation
     if (isLastStep) {
-      console.log('🎬 OnboardingContainer - last step, completing immediately');
+      DebugUtils.log('🎬 OnboardingContainer - last step, completing immediately');
       onNext();
       return;
     }
-    
+
     setIsAnimating(true);
 
     // Animate out
@@ -100,10 +102,10 @@ export default function OnboardingContainer({
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      console.log('🎬 OnboardingContainer calling onNext()');
+      DebugUtils.log('🎬 OnboardingContainer calling onNext()');
       onNext();
       translateX.setValue(screenWidth);
-      
+
       // Animate in
       Animated.timing(translateX, {
         toValue: 0,
@@ -129,7 +131,7 @@ export default function OnboardingContainer({
     }).start(() => {
       onPrevious();
       translateX.setValue(-screenWidth);
-      
+
       // Animate in
       Animated.timing(translateX, {
         toValue: 0,
@@ -140,7 +142,6 @@ export default function OnboardingContainer({
       });
     });
   };
-
 
   const content = (
     <Animated.View
@@ -164,7 +165,7 @@ export default function OnboardingContainer({
       ) : (
         content
       )}
-      
+
       {/* Swipe Instruction */}
       {enableSwipe && (
         <View style={styles.swipeInstruction}>

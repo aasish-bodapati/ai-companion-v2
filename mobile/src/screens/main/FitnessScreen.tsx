@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import TodaysSnapshot, { TodaysWorkout } from '../../components/fitness/TodaysSnapshot';
 import SimpleRoutineDisplay from '../../components/fitness/SimpleRoutineDisplay';
-import { routineService, SimpleRoutineWithProgress } from '../../services/routineService';
+import { routineService, SimpleRoutineWithProgress } from '../../services/RoutineService';
 import ProgressTracking from '../../components/fitness/ProgressTracking';
 import SimpleFitnessLogs from '../../components/fitness/SimpleFitnessLogs';
 import WeeklyActivityChart from '../../components/fitness/WeeklyActivityChart';
@@ -19,10 +19,14 @@ import ComprehensiveRoutineModal from '../../components/routines/ComprehensiveRo
 import { useActiveRoutine } from '../../hooks/useActiveRoutine';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 
+import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
+import { STYLE_PRESETS } from '../../theme/duplicateStyles';
+
+import { DebugUtils } from '../../utils/debugUtils';
+
 export default function FitnessScreen() {
   const { user } = useAuth();
-  
-  
+
   // Local state
   const [activeTab, setActiveTab] = useState('overview');
   const [fitnessLogsKey, setFitnessLogsKey] = useState(0);
@@ -34,37 +38,48 @@ export default function FitnessScreen() {
   const routinesLoadedRef = React.useRef(false);
   const [showCreateRoutineModal, setShowCreateRoutineModal] = useState(false);
   const [recommendedWorkout, setRecommendedWorkout] = useState<TodaysWorkout | null>(null);
-  
+
   // Refs
   const isLoadingRef = useRef(false);
-  
-
 
   const loadOverviewData = async () => {
     // Prevent multiple simultaneous calls
     if (isLoadingRef.current) {
       return;
     }
-    
+
     try {
       isLoadingRef.current = true;
-      
+
       // Load today's workout from active routine
-      const todaysWorkoutData = await routineService.getTodaysWorkout();
-      if (todaysWorkoutData) {
-        setRecommendedWorkout(todaysWorkoutData);
-      } else {
+      try {
+        const todaysWorkoutData = await routineService.getTodaysWorkout();
+        if (todaysWorkoutData) {
+          setRecommendedWorkout(todaysWorkoutData);
+          DebugUtils.log('✅ [FITNESS SCREEN] Today\'s workout loaded:', todaysWorkoutData);
+        } else {
+          DebugUtils.log('ℹ️ [FITNESS SCREEN] No workout scheduled for today');
+        }
+      } catch (error: any) {
+        // Handle 404 as expected behavior (no workout scheduled)
+        if (error?.response?.status === 404 || 
+            error?.status === 404 || 
+            (error?.data && error.data.status === 404)) {
+          DebugUtils.log('ℹ️ [FITNESS SCREEN] No workout scheduled for today (404)');
+          setRecommendedWorkout(null);
+        } else {
+          DebugUtils.error('❌ [FITNESS SCREEN] Error loading today\'s workout:', error);
+        }
       }
-      
+
       // Weekly activity data is now handled by useWeeklyActivity hook
-      
-    } catch (_error) {
-      console.error('❌ [FITNESS SCREEN] Error loading overview data:', _error);
+
+    } catch (error) {
+      DebugUtils.error('❌ [FITNESS SCREEN] Unexpected error loading overview data:', error);
     } finally {
       isLoadingRef.current = false;
     }
   };
-
 
   // Handler functions - optimized with useCallback
   const handleCreateRoutine = useCallback(() => {
@@ -74,10 +89,13 @@ export default function FitnessScreen() {
   const handleSetActiveRoutine = useCallback(async (routine: SimpleRoutineWithProgress) => {
     setSettingActiveRoutine(routine.id);
     try {
+      DebugUtils.log('🔄 [FITNESS SCREEN] Setting routine as active:', routine.id);
       await routineService.setActiveRoutine(routine.id.toString());
+      DebugUtils.log('✅ [FITNESS SCREEN] Routine set as active successfully');
       await refreshActiveRoutine(); // Refresh the global state
+      DebugUtils.log('✅ [FITNESS SCREEN] Active routine refreshed');
     } catch (error) {
-      console.error('Error setting active routine:', error);
+      DebugUtils.error('❌ [FITNESS SCREEN] Error setting active routine:', error);
     } finally {
       setSettingActiveRoutine(null);
     }
@@ -91,23 +109,23 @@ export default function FitnessScreen() {
         routineService.getRoutines({ limit: 10 }),
         routineService.getRoutineTemplates({ limit: 10 })
       ]);
-      
+
       // Extract routines from both responses
-      const userRoutines = Array.isArray(userRoutinesData) 
-        ? userRoutinesData 
+      const userRoutines = Array.isArray(userRoutinesData)
+        ? userRoutinesData
         : userRoutinesData.routines || [];
-      
-      const templateRoutines = Array.isArray(templateRoutinesData) 
-        ? templateRoutinesData 
+
+      const templateRoutines = Array.isArray(templateRoutinesData)
+        ? templateRoutinesData
         : templateRoutinesData.routines || [];
-      
+
       // Combine user routines and template routines
       const allRoutines = [...userRoutines, ...templateRoutines];
       setRoutines(allRoutines);
-      
-      console.log('🔍 Loaded routines - user:', userRoutines.length, 'templates:', templateRoutines.length, 'total:', allRoutines.length);
+
+      DebugUtils.log('🔍 Loaded routines - user:', userRoutines.length, 'templates:', templateRoutines.length, 'total:', allRoutines.length);
     } catch (error) {
-      console.error('Error loading routines:', error);
+      DebugUtils.error('Error loading routines:', error);
     } finally {
       setRoutinesLoading(false);
     }
@@ -133,18 +151,10 @@ export default function FitnessScreen() {
   // }) => {
   //   setShowUnifiedWorkoutLogger(false);
   //   setRecommendedWorkout(null);
-  //   
+  //
   //   // Force component remount with new key
   //   setFitnessLogsKey(prev => prev + 1);
   // }, []);
-
-
-
-
-
-
-
-
 
   // Load routines when routines tab is accessed
   React.useEffect(() => {
@@ -164,13 +174,12 @@ export default function FitnessScreen() {
     }
   }, [activeTab]);
 
-
   // No predefined workout - users create their own
   const todaysWorkout = recommendedWorkout || null;
 
   // Calculate weekly workout count from activity data
   const weeklyWorkoutCount = Object.values(weeklyActivityData).reduce((sum, count) => sum + count, 0);
-  
+
   const progressRings = [
     {
       id: '1',
@@ -281,7 +290,7 @@ export default function FitnessScreen() {
       {/* Weekly Activity Chart */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Weekly Activity</Text>
-        <WeeklyActivityChart 
+        <WeeklyActivityChart
           weeklyData={weeklyActivityData}
           color="#f97316"
         />
@@ -323,10 +332,10 @@ export default function FitnessScreen() {
           style={[styles.tab, activeTab === 'overview' && styles.activeTab]}
           onPress={() => setActiveTab('overview')}
         >
-          <Ionicons 
-            name="analytics-outline" 
-            size={20} 
-            color={activeTab === 'overview' ? '#f97316' : '#6b7280'} 
+          <Ionicons
+            name="analytics-outline"
+            size={20}
+            color={activeTab === 'overview' ? '#f97316' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -340,10 +349,10 @@ export default function FitnessScreen() {
           style={[styles.tab, activeTab === 'routines' && styles.activeTab]}
           onPress={() => setActiveTab('routines')}
         >
-          <Ionicons 
-            name="list-outline" 
-            size={20} 
-            color={activeTab === 'routines' ? '#f97316' : '#6b7280'} 
+          <Ionicons
+            name="list-outline"
+            size={20}
+            color={activeTab === 'routines' ? '#f97316' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -357,10 +366,10 @@ export default function FitnessScreen() {
           style={[styles.tab, activeTab === 'logs' && styles.activeTab]}
           onPress={() => setActiveTab('logs')}
         >
-          <Ionicons 
-            name="calendar-outline" 
-            size={20} 
-            color={activeTab === 'logs' ? '#f97316' : '#6b7280'} 
+          <Ionicons
+            name="calendar-outline"
+            size={20}
+            color={activeTab === 'logs' ? '#f97316' : '#6b7280'}
           />
           <Text style={[
             styles.tabText,
@@ -372,7 +381,7 @@ export default function FitnessScreen() {
       </View>
 
       {/* Content */}
-      {activeTab === 'overview' ? renderOverview() : 
+      {activeTab === 'overview' ? renderOverview() :
        activeTab === 'routines' ? (
         <SimpleRoutineDisplay
           routines={routines || []}
@@ -391,7 +400,6 @@ export default function FitnessScreen() {
         />
       )}
 
-
       {/* Create Routine Modal */}
       <ComprehensiveRoutineModal
         isVisible={showCreateRoutineModal}
@@ -405,18 +413,18 @@ export default function FitnessScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: COLORS.background.secondary,
   },
   debugContainer: {
     backgroundColor: '#fff',
-    padding: 20,
+    padding: SPACING.lg,
     margin: 10,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   debugText: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     marginBottom: 10,
     color: '#333',
   },
@@ -425,9 +433,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 12,
   },
   debugButton: {
@@ -439,30 +447,30 @@ const styles = StyleSheet.create({
   },
   debugButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: 'bold',
   },
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg,
     paddingTop: 20,
     paddingBottom: 16,
   },
   title: {
-    fontSize: 28,
+    fontSize: FONT_SIZE.xxxxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background.primary,
     marginHorizontal: 16,
-    borderRadius: 12,
-    padding: 4,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.xxs,
     marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {
@@ -478,21 +486,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.sm,
   },
   activeTab: {
     backgroundColor: '#f97316',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '500',
-    color: '#6b7280',
+    color: COLORS.text.secondary,
     marginLeft: 6,
   },
   activeTabText: {
-    color: '#ffffff',
+    color: COLORS.text.inverse,
   },
   // Overview styles
   content: {
@@ -503,9 +511,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitleLarge: {
-    fontSize: 18,
+    fontSize: FONT_SIZE.xl,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -515,8 +523,8 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     minWidth: '45%',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -539,18 +547,18 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 4,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: FONT_SIZE.md,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.text.inverse,
     marginBottom: 2,
   },
   statSubtitle: {
-    fontSize: 12,
-    color: '#ffffff',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.inverse,
     opacity: 0.8,
   },
   snapshotScroll: {
@@ -558,9 +566,9 @@ const styles = StyleSheet.create({
   },
   snapshotCard: {
     width: 100,
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 16,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
     marginRight: 12,
     alignItems: 'center',
     shadowColor: '#000',
@@ -570,24 +578,24 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   snapshotValue: {
-    fontSize: 20,
+    fontSize: FONT_SIZE.xxl,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
   },
   snapshotLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   trendIndicator: {
     marginTop: 4,
   },
   weekCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     flexDirection: 'row',
@@ -606,19 +614,19 @@ const styles = StyleSheet.create({
   weekValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginBottom: 4,
   },
   weekLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   // New week overview styles
   weekOverviewCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -640,20 +648,20 @@ const styles = StyleSheet.create({
   weekMetricValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1f2937',
+    color: COLORS.text.primary,
     marginTop: 8,
     marginBottom: 4,
   },
   weekMetricLabel: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.sm,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
   // Weekly breakdown styles
   breakdownCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.background.primary,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
     marginHorizontal: 16,
     marginBottom: 12,
     shadowColor: '#000',
@@ -666,31 +674,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
   breakdownLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text.secondary,
     flex: 1,
   },
   breakdownValue: {
-    fontSize: 16,
+    fontSize: FONT_SIZE.lg,
     fontWeight: '600',
-    color: '#1f2937',
+    color: COLORS.text.primary,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    padding: 20,
+    backgroundColor: COLORS.background.secondary,
+    padding: SPACING.lg,
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: FONT_SIZE.lg,
+    color: COLORS.text.secondary,
     textAlign: 'center',
   },
 });

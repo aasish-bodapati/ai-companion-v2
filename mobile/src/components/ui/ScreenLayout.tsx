@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
+
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
@@ -68,7 +70,7 @@ export default function ScreenLayout({
     return (
       <View style={styles.header}>
         <StatusBar barStyle={statusBarStyle} backgroundColor={backgroundColor} />
-        
+
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
             {showBackButton && (
@@ -80,13 +82,13 @@ export default function ScreenLayout({
                 <Ionicons name="arrow-back" size={24} color={COLORS.text.primary} />
               </TouchableOpacity>
             )}
-            
+
             <View style={styles.titleContainer}>
               {title && <Text style={styles.title}>{title}</Text>}
               {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
             </View>
           </View>
-          
+
           <View style={styles.headerRight}>
             {showRefreshButton && (
               <TouchableOpacity
@@ -94,9 +96,9 @@ export default function ScreenLayout({
                 onPress={handleRefresh}
                 testID={`${testID}-refresh-button`}
               >
-                <Ionicons 
-                  name="refresh" 
-                  size={20} 
+                <Ionicons
+                  name="refresh"
+                  size={20}
                   color={COLORS.text.primary}
                   style={refreshing ? styles.refreshingIcon : undefined}
                 />

@@ -17,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 // Removed deprecationUtils import
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
 
-
 // Combined interface supporting all loading variants
 interface UnifiedLoadingStateProps {
   // Basic loading props
@@ -25,30 +24,30 @@ interface UnifiedLoadingStateProps {
   message?: string;
   subMessage?: string;
   children?: React.ReactNode;
-  
+
   // Variant props
   variant?: 'default' | 'overlay' | 'inline' | 'skeleton' | 'spinner' | 'progress' | 'ring';
   size?: 'small' | 'medium' | 'large';
-  
+
   // Progress props
   showProgress?: boolean;
   progress?: number;
-  
+
   // Interactive props
   showRetry?: boolean;
   onRetry?: () => void;
   retryText?: string;
-  
+
   // Visual props
   icon?: string;
   color?: string;
   backgroundColor?: string;
   animated?: boolean;
-  
+
   // Style props
   style?: object;
   testID?: string;
-  
+
   // Legacy props for backward compatibility
   duration?: number;
   onHide?: () => void;

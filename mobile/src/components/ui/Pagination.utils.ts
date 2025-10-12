@@ -2,6 +2,7 @@
 
 import { PaginationSize, PaginationVariant, PaginationAlignment } from './Pagination';
 
+
 export const paginationPresets = {
   // Small pagination
   small: {
@@ -234,7 +235,7 @@ export const paginationUtils = {
   ) => {
     const startItem = (currentPage - 1) * pageSize + 1;
     const endItem = Math.min(currentPage * pageSize, totalItems);
-    
+
     return {
       startItem,
       endItem,
@@ -256,7 +257,7 @@ export const paginationUtils = {
       const endItem = Math.min(currentPage * pageSize, totalItems);
       return `Showing ${startItem}-${endItem} of ${totalItems} items`;
     }
-    
+
     return `Page ${currentPage} of ${totalPages}`;
   },
 
@@ -311,7 +312,7 @@ export const paginationUtils = {
 
     const basePageSize = pageSizeMap[context];
     const maxPageSize = Math.min(basePageSize * 2, totalItems);
-    
+
     return Math.max(5, Math.min(basePageSize, maxPageSize));
   },
 
@@ -326,32 +327,32 @@ export const paginationUtils = {
     }
 
     const options = new Set<number>();
-    
+
     // Always include first and last pages
     options.add(1);
     options.add(totalPages);
-    
+
     // Add current page and surrounding pages
     const start = Math.max(1, currentPage - 2);
     const end = Math.min(totalPages, currentPage + 2);
-    
+
     for (let i = start; i <= end; i++) {
       options.add(i);
     }
-    
+
     // Add some random pages if we have space
     const remaining = maxOptions - options.size;
     if (remaining > 0) {
       const availablePages = Array.from({ length: totalPages }, (_, i) => i + 1)
         .filter(page => !options.has(page));
-      
+
       const randomPages = availablePages
         .sort(() => Math.random() - 0.5)
         .slice(0, remaining);
-      
+
       randomPages.forEach(page => options.add(page));
     }
-    
+
     return Array.from(options).sort((a, b) => a - b);
   },
 };

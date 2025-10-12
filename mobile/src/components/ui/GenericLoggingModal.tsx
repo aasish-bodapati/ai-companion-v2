@@ -20,11 +20,11 @@ export interface GenericLoggingModalProps<S = unknown> {
   onSave: (data: Record<string, unknown>) => Promise<void>;
   title: string;
   subtitle?: string;
-  
+
   // Form configuration
   formType: 'workout' | 'meal' | 'water' | 'mood' | 'custom';
   initialData?: Record<string, unknown>;
-  
+
   // Search configuration
   searchService: SearchService<S>;
   searchPlaceholder: string;
@@ -33,35 +33,35 @@ export interface GenericLoggingModalProps<S = unknown> {
   onSelectItem: (item: S) => void;
   onClearSearch?: () => void;
   searchLoading?: boolean;
-  
+
   // Items management
   items: LoggingItemData[];
   onAddItem: (item: LoggingItemData) => void;
   onRemoveItem: (id: number | string) => void;
   onUpdateItem: (id: number | string, updates: Partial<LoggingItemData>) => void;
   renderItem: (item: LoggingItemData, index: number) => React.ReactNode;
-  
+
   // Form validation
   isFormValid: () => boolean;
   getFormData: () => Record<string, unknown>;
-  
+
   // Additional form fields (for custom forms)
   additionalFields?: React.ReactNode;
-  
+
   // Modal configuration
   variant?: 'default' | 'bottomSheet' | 'fullScreen' | 'centered';
   size?: 'small' | 'medium' | 'large' | 'full';
   showCloseButton?: boolean;
   closeOnBackdrop?: boolean;
-  
+
   // Loading state
   saving?: boolean;
-  
+
   // Custom styling
   contentStyle?: object;
   headerStyle?: object;
   footerStyle?: object;
-  
+
   testID?: string;
 }
 
@@ -98,7 +98,6 @@ export default function GenericLoggingModal<S>({
   footerStyle,
   testID,
 }: GenericLoggingModalProps<T, S>) {
-  
 
   // Reset form when modal opens
   useEffect(() => {
@@ -153,7 +152,7 @@ export default function GenericLoggingModal<S>({
         }))}
         onSearch={onSearch}
         onSelect={(result: SearchResult) => {
-          const selectedItem = searchResults.find((item: Record<string, unknown>) => 
+          const selectedItem = searchResults.find((item: Record<string, unknown>) =>
             (item.id || item.food_code || item.name) === result.id
           );
           if (selectedItem) {
@@ -211,9 +210,9 @@ export default function GenericLoggingModal<S>({
       isFormValid={isFormValid ? isFormValid() : false}
       scrollEnabled={true}
       primaryAction={{
-        label: saving ? 'Saving...' : `Log ${formType === 'meal' ? 'Meal' : 
-                                           formType === 'workout' ? 'Workout' : 
-                                           formType === 'water' ? 'Water' : 
+        label: saving ? 'Saving...' : `Log ${formType === 'meal' ? 'Meal' :
+                                           formType === 'workout' ? 'Workout' :
+                                           formType === 'water' ? 'Water' :
                                            formType === 'mood' ? 'Mood' : 'Entry'}`,
         onPress: handleSave,
         disabled: !(isFormValid ? isFormValid() : false) || saving,

@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedModal from '../ui/MobileOptimizedModal';
 import TouchOptimizedButton from '../ui/TouchOptimizedButton';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
-import { onboardingService, HealthData } from '../../services/onboardingService';
+import { onboardingService, HealthData } from '../../services/OnboardingService';
 import { hapticFeedback } from '../../utils/haptics';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
@@ -92,7 +92,7 @@ export default function EditHealthDataModal({
 
   const updateData = (field: keyof HealthData, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -127,11 +127,11 @@ export default function EditHealthDataModal({
     try {
       setLoading(true);
       hapticFeedback.success();
-      
+
       await onboardingService.updateHealthData(data);
       onSave(data);
       onClose();
-      
+
       showToast.success('Success!', 'Health data updated successfully');
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
@@ -206,7 +206,7 @@ export default function EditHealthDataModal({
         {/* Basic Info */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Basic Information</Text>
-          
+
           <View style={styles.inputRow}>
             <Text style={styles.inputLabel}>Age</Text>
             <TextInput
