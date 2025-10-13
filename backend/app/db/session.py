@@ -5,15 +5,10 @@ from app.core.config import settings
 
 db_url = settings.SQLALCHEMY_DATABASE_URI
 
-# Database connection settings - PostgreSQL
+# Database connection settings - SQLite
 engine_kwargs = {
-    "pool_pre_ping": True,
-    "pool_timeout": 30,  # 30 seconds timeout for getting connection from pool
-    "pool_recycle": 3600,  # Recycle connections after 1 hour
-    "pool_size": 10,  # PostgreSQL connection pool size
-    "max_overflow": 20,  # Additional connections beyond pool_size
     "connect_args": {
-        "options": "-c timezone=UTC"  # Force UTC timezone for all connections
+        "check_same_thread": False  # SQLite specific: allow multiple threads
     }
 }
 

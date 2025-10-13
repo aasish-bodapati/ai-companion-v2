@@ -10,12 +10,13 @@ class SimpleRoutineBase(BaseModel):
     """Base routine schema"""
     name: str
     description: Optional[str] = None
-    difficulty: str  # beginner, intermediate, advanced
-    duration_weeks: int = 4
+    routine_type: str  # 'workout', 'nutrition'
+    workout_days: Optional[List[dict]] = None
+    exercises: Optional[List[dict]] = None
+    nutrition_plan: Optional[dict] = None
+    progress_data: Optional[dict] = None
+    notes: Optional[str] = None
     tags: Optional[List[str]] = None
-    is_template: bool = True
-    # Note: workout_schedule and total_workouts_per_week removed
-    # Workout details are now in workout_days relationship
 
 class SimpleRoutineCreate(SimpleRoutineBase):
     """Schema for creating a routine"""
@@ -24,13 +25,12 @@ class SimpleRoutineCreate(SimpleRoutineBase):
 class SimpleRoutineUpdate(SimpleRoutineBase):
     """Schema for updating a routine"""
     name: Optional[str] = None
-    difficulty: Optional[str] = None
-    duration_weeks: Optional[int] = None
+    routine_type: Optional[str] = None
 
 class SimpleRoutine(SimpleRoutineBase):
     """Schema for returning a routine"""
     id: int
-    created_by_user_id: Optional[int] = None
+    user_id: int
     is_active: bool = True
     created_at: datetime
     updated_at: datetime

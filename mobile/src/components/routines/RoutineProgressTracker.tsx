@@ -85,7 +85,7 @@ export default function RoutineProgressTracker({
 
   useEffect(() => {
     loadWorkoutProgress();
-  }, [routine, loadWorkoutProgress]);
+  }, [routine]); // Remove loadWorkoutProgress from dependencies to prevent infinite re-renders
 
   const handleCompleteWorkout = async (dayIndex: number) => {
     try {

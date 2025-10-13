@@ -11,7 +11,7 @@ from sqlalchemy import and_, or_, func
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.health.fitness_log import FitnessLog, NutritionLog
-from app.models.health.simple_routine import SimpleRoutine, SimpleUserRoutineProgress
+from app.models.health.simple_routine import SimpleRoutine
 from app.models.health.nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress
 from app.models.health.exercise_database import Exercise, UserExerciseHistory
 from app.models.health.food_database import Food, UserFoodHistory
@@ -41,14 +41,15 @@ async def get_logging_context(
         current_hour = now_utc.hour
 
         # Get active routines
-        active_fitness_routines = db.query(SimpleRoutine).join(
-            SimpleUserRoutineProgress
-        ).filter(
-            and_(
-                SimpleUserRoutineProgress.user_id == current_user.id,
-                SimpleUserRoutineProgress.is_active == True
-            )
-        ).all()
+        # active_fitness_routines = db.query(SimpleRoutine).join(
+        #     SimpleUserRoutineProgress
+        # ).filter(
+        #     and_(
+        #         SimpleUserRoutineProgress.user_id == current_user.id,
+        #         SimpleUserRoutineProgress.is_active == True
+        #     )
+        # ).all()
+        active_fitness_routines = []  # Temporarily disabled
 
         active_nutrition_routines = db.query(NutritionRoutine).join(
             NutritionUserRoutineProgress
@@ -589,12 +590,13 @@ async def update_routine_progress(
     """Update routine progress based on logged activity."""
 
     if routine_type == "fitness":
-        progress = db.query(SimpleUserRoutineProgress).filter(
-            and_(
-                SimpleUserRoutineProgress.user_id == user_id,
-                SimpleUserRoutineProgress.routine_id == routine_id
-            )
-        ).first()
+        # progress = db.query(SimpleUserRoutineProgress).filter(
+        #     and_(
+        #         SimpleUserRoutineProgress.user_id == user_id,
+        #         SimpleUserRoutineProgress.routine_id == routine_id
+        #     )
+        # ).first()
+        progress = None  # Temporarily disabled
 
         if progress:
             progress.workouts_completed = (progress.workouts_completed or 0) + 1

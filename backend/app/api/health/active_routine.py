@@ -90,61 +90,61 @@ async def set_active_routine(
         db.commit()  # Commit the user table update
         
         # Also create/update the SimpleUserRoutineProgress record
-        routine_id = routine_id_int
+        # routine_id = routine_id_int
         
         # Ensure user_id is not None
-        if not current_user.id:
-            raise HTTPException(status_code=400, detail="User ID is required")
+        # if not current_user.id:
+        #     raise HTTPException(status_code=400, detail="User ID is required")
         
         # FIRST: Deactivate ALL currently active routines for this user
-        from sqlalchemy import and_
-        from app.models.health.simple_routine import SimpleUserRoutineProgress
-        active_routines = db.query(SimpleUserRoutineProgress).filter(
-            and_(
-                SimpleUserRoutineProgress.user_id == current_user.id,
-                SimpleUserRoutineProgress.is_active == True
-            )
-        ).all()
+        # from sqlalchemy import and_
+        # from app.models.health.simple_routine import SimpleUserRoutineProgress
+        # active_routines = db.query(SimpleUserRoutineProgress).filter(
+        #     and_(
+        #         SimpleUserRoutineProgress.user_id == current_user.id,
+        #         SimpleUserRoutineProgress.is_active == True
+        #     )
+        # ).all()
         
-        for active_routine in active_routines:
-            active_routine.is_active = False
-            active_routine.updated_at = datetime.utcnow()
-            print(f"🔄 [SET ACTIVE] Deactivated routine {active_routine.routine_id}")
-            # Commit each deactivation individually to avoid constraint issues
-            db.commit()
+        # for active_routine in active_routines:
+        #     active_routine.is_active = False
+        #     active_routine.updated_at = datetime.utcnow()
+        #     print(f"🔄 [SET ACTIVE] Deactivated routine {active_routine.routine_id}")
+        #     # Commit each deactivation individually to avoid constraint issues
+        #     db.commit()
         
-        print(f"🔄 [SET ACTIVE] Deactivated {len(active_routines)} active routines")
+        # print(f"🔄 [SET ACTIVE] Deactivated {len(active_routines)} active routines")
         
         # SECOND: Check if user already has progress for this routine
-        existing_progress = simple_user_routine_progress.get_by_user_and_routine(
-            db, user_id=current_user.id, routine_id=routine_id
-        )
+        # existing_progress = simple_user_routine_progress.get_by_user_and_routine(
+        #     db, user_id=current_user.id, routine_id=routine_id
+        # )
         
-        if existing_progress:
-            # Update existing progress to be active
-            existing_progress.is_active = True
-            existing_progress.updated_at = datetime.utcnow()
-            print(f"✅ [SET ACTIVE] Activated existing progress for routine {routine_id}")
-            # Commit the activation
-            db.commit()
-        else:
-            # Create new progress record
-            print(f"🔄 [SET ACTIVE] Creating new progress record for routine {routine_id}")
-            try:
-                progress = SimpleUserRoutineProgress(
-                    routine_id=routine_id,
-                    user_id=current_user.id,
-                    is_active=True,
-                    started_at=datetime.utcnow()
-                )
-                db.add(progress)
-                db.commit()
-                print(f"✅ [SET ACTIVE] Created new progress for routine {routine_id}")
-            except Exception as schema_error:
-                print(f"❌ [SET ACTIVE] Database error: {str(schema_error)}")
-                print(f"❌ [SET ACTIVE] User ID: {current_user.id} (type: {type(current_user.id)})")
-                print(f"❌ [SET ACTIVE] Routine ID: {routine_id} (type: {type(routine_id)})")
-                raise HTTPException(status_code=422, detail=f"Database error: {str(schema_error)}")
+        # if existing_progress:
+        #     # Update existing progress to be active
+        #     existing_progress.is_active = True
+        #     existing_progress.updated_at = datetime.utcnow()
+        #     print(f"✅ [SET ACTIVE] Activated existing progress for routine {routine_id}")
+        #     # Commit the activation
+        #     db.commit()
+        # else:
+        #     # Create new progress record
+        #     print(f"🔄 [SET ACTIVE] Creating new progress record for routine {routine_id}")
+        #     try:
+        #         # progress = SimpleUserRoutineProgress(
+        #             routine_id=routine_id,
+        #             user_id=current_user.id,
+        #             is_active=True,
+        #             started_at=datetime.utcnow()
+        #         )
+        #         db.add(progress)
+        #         db.commit()
+        #         print(f"✅ [SET ACTIVE] Created new progress for routine {routine_id}")
+        #     except Exception as schema_error:
+        #         print(f"❌ [SET ACTIVE] Database error: {str(schema_error)}")
+        #         print(f"❌ [SET ACTIVE] User ID: {current_user.id} (type: {type(current_user.id)})")
+        #         print(f"❌ [SET ACTIVE] Routine ID: {routine_id} (type: {type(routine_id)})")
+        #         raise HTTPException(status_code=422, detail=f"Database error: {str(schema_error)}")
         
         db.refresh(current_user)
         

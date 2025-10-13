@@ -31,7 +31,7 @@ Transform your health journey with intelligent logging and AI-powered insights. 
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL (required)
+- SQLite (built into Python, no additional setup required)
 
 ### Backend Setup
 ```bash

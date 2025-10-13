@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, setAuthToken, clearAuthToken } from '../services/api';
 import { DebugUtils } from '../utils/debugUtils';
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Check token status every 5 seconds
     const interval = setInterval(checkTokenStatus, 5000);
     return () => clearInterval(interval);
-  }, [token]);
+  }, []); // Remove token from dependencies to prevent infinite re-renders
 
   const checkAuthStatus = async () => {
     try {
@@ -444,15 +444,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const isAuthenticatedValue = !!user && !!token;
-  
-  if (__DEV__) {
-    // Only log when authentication state actually changes
-    if (isAuthenticatedValue !== (!!user && !!token)) {
-      DebugUtils.log('🔐 [AUTH CONTEXT] Auth state changed - isAuthenticated:', isAuthenticatedValue);
-    }
-  }
 
-  const value: AuthContextType = {
+  const value: AuthContextType = useMemo(() => ({
     user,
     token,
     isAuthenticated: isAuthenticatedValue,
@@ -465,7 +458,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     rerunOnboarding,
     updateUser,
     deleteAccount,
-  };
+  }), [user, token, isAuthenticatedValue, isLoading, needsOnboarding, login, register, logout, completeOnboarding, rerunOnboarding, updateUser, deleteAccount]);
 
   return (
     <AuthContext.Provider value={value}>

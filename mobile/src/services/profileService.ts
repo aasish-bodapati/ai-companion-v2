@@ -21,7 +21,6 @@ export interface UserProfile {
   health_data?: HealthProfile;
   goals: string[];
   bodyTypeGoal?: string;
-  bodyTypeGoals?: Record<string, unknown>[]; // User's body type goals
   preferences: {
     notifications: boolean;
     reminders: boolean;

@@ -21,8 +21,8 @@ httpx>=0.25.1,<0.28.0
 numpy>=1.26.0
 pandas>=2.0.0
 
-# Database: PostgreSQL
-psycopg2-binary==2.9.9
+# Database: SQLite (built into Python)
+# No additional database driver needed for SQLite
 
 # Migrations
 alembic==1.13.2

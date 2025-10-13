@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, String, Integer
+from sqlalchemy import Boolean, Column, String, Integer, JSON
 from sqlalchemy.orm import relationship
 from typing import TYPE_CHECKING
 
@@ -30,6 +30,12 @@ class User(Base):
     # User preferences
     timezone = Column(String(50), nullable=True, default="UTC")  # User's timezone (e.g., "America/New_York", "Asia/Kolkata")
     active_routine_id = Column(String(100), nullable=True)  # Currently active routine ID
+    
+    # JSON fields for consolidated user data (added in Phase 5 migration)
+    health_profile = Column(JSON, nullable=True)  # Health profile data (age, height, weight, etc.)
+    onboarding_data = Column(JSON, nullable=True)  # Onboarding completion status and data
+    goals = Column(JSON, nullable=True)  # User goals and objectives
+    preferences = Column(JSON, nullable=True)  # User preferences and settings
 
     # Relationships
     onboarding_profile = relationship(

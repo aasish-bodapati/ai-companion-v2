@@ -64,7 +64,7 @@ npm run test:all
 - **Main App**: `backend/app/main.py`
 - **API Routes**: `backend/app/api/`
 - **Models**: `backend/app/models/`
-- **Database**: PostgreSQL (`healthlog_db`)
+- **Database**: SQLite (`healthlog.db`)
 
 ### Frontend (Next.js)
 - **App Router**: `frontend/src/app/`

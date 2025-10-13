@@ -7,7 +7,7 @@ from app.models.user import User
 from app.models.onboarding import OnboardingProfile
 from app.models.health import (
     FitnessLog, NutritionLog, MoodLog, UserHealthProfile,
-    SimpleRoutine, SimpleUserRoutineProgress,
+    SimpleRoutine,
     WorkoutCategory, UserWeightLog
 )
 from app.models.health.water_log import WaterLog
@@ -26,7 +26,6 @@ __all__ = [
     "MoodLog",
     "UserHealthProfile",
     "SimpleRoutine",
-    "SimpleUserRoutineProgress",
     "WorkoutCategory",
     "UserWeightLog",
     "WaterLog",

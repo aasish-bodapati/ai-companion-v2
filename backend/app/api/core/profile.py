@@ -4,16 +4,11 @@ User Profile API endpoints
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from app.api.deps import get_current_user, get_db
 from app.models.user import User
-from app.models.health.user_goal import UserGoal
-from app.models.health.user_goals import UserHealthProfile
-from app.models.onboarding import OnboardingProfile
 from app.schemas.profile import UserProfile, HealthProfile
-from app.crud.health.body_type_goals import body_type_goal
-from app.schemas.health.body_type_goals import BodyTypeGoal
 
 router = APIRouter()
 
@@ -27,56 +22,34 @@ async def get_user_profile(
     Get complete user profile including health data and onboarding status
     """
     try:
-        # Get health profile
-        health_profile = db.query(UserHealthProfile).filter(
-            UserHealthProfile.user_id == current_user.id
-        ).first()
-        
-        # Get onboarding status
-        onboarding_status = db.query(OnboardingProfile).filter(
-            OnboardingProfile.user_id == current_user.id
-        ).first()
-        
-        
-        # Get user goals (if table exists)
-        goals = []
-        try:
-            user_goals = db.query(UserGoal).filter(
-                UserGoal.user_id == current_user.id
-            ).all()
-            goals = [goal.title for goal in user_goals]
-        except Exception as e:
-            print(f"Warning: Could not query user_goals table: {e}")
-            goals = []
-        
-        # Build health profile data
+        # Get health profile from JSON field
+        health_profile_data = current_user.health_profile or {}
         health_data = None
-        if health_profile:
+        if health_profile_data:
             health_data = HealthProfile(
-                age=str(health_profile.age) if health_profile.age else None,
-                height=str(health_profile.height_cm) if health_profile.height_cm else None,
-                weight=str(health_profile.current_weight_kg) if health_profile.current_weight_kg else None,
-                gender=health_profile.gender,
-                activity_level=health_profile.activity_level,
-                smm=str(health_profile.smm_kg) if health_profile.smm_kg else None,
-                body_fat_percentage=str(health_profile.body_fat_percentage) if health_profile.body_fat_percentage else None,
-                ffm=str(health_profile.ffm_kg) if health_profile.ffm_kg else None,
-                workout_days_per_week=str(health_profile.workout_days_per_week) if health_profile.workout_days_per_week else None
+                age=str(health_profile_data.get('age', '')) if health_profile_data.get('age') else None,
+                height=str(health_profile_data.get('height_cm', '')) if health_profile_data.get('height_cm') else None,
+                weight=str(health_profile_data.get('current_weight_kg', '')) if health_profile_data.get('current_weight_kg') else None,
+                gender=health_profile_data.get('gender'),
+                activity_level=health_profile_data.get('activity_level'),
+                smm=str(health_profile_data.get('smm_kg', '')) if health_profile_data.get('smm_kg') else None,
+                body_fat_percentage=str(health_profile_data.get('body_fat_percentage', '')) if health_profile_data.get('body_fat_percentage') else None,
+                ffm=str(health_profile_data.get('ffm_kg', '')) if health_profile_data.get('ffm_kg') else None,
+                workout_days_per_week=str(health_profile_data.get('workout_days_per_week', '')) if health_profile_data.get('workout_days_per_week') else None
             )
         
-        # Get body type goal from onboarding status
-        user_body_type_goal_name = onboarding_status.body_type_goal if onboarding_status else None
+        # Get goals from JSON field
+        goals_data = current_user.goals or {}
+        goals = []
+        if goals_data.get('goals'):
+            goals = [goal.get('title', '') for goal in goals_data['goals'] if goal.get('title')]
         
-        # Get user's body type goals (if any exist)
-        user_body_type_goals = []
-        try:
-            user_body_type_goals = body_type_goal.get_user_goals(db, user_id=current_user.id)
-        except Exception as e:
-            print(f"Warning: Could not query body type goals: {e}")
-            user_body_type_goals = []
+        # Get body type goal from onboarding data
+        onboarding_data = current_user.onboarding_data or {}
+        user_body_type_goal_name = onboarding_data.get('body_type_goal')
         
-        # Build onboarding status
-        onboarding_completed = onboarding_status.completed if onboarding_status else False
+        # Get onboarding completion status
+        onboarding_completed = onboarding_data.get('completed', False)
         
         return UserProfile(
             user_id=current_user.id,
@@ -86,9 +59,9 @@ async def get_user_profile(
             health_data=health_data,
             goals=goals,
             bodyTypeGoal=user_body_type_goal_name,
-            bodyTypeGoals=user_body_type_goals,
-            preferences={
-                "notifications": True,  # Default values
+            bodyTypeGoals=[],  # No longer using separate body type goals table
+            preferences=current_user.preferences or {
+                "notifications": True,
                 "reminders": True,
                 "dataSharing": False
             },
@@ -111,50 +84,46 @@ async def update_user_profile(
     try:
         # Update health profile if provided
         if profile_data.health_data:
-            health_profile = db.query(UserHealthProfile).filter(
-                UserHealthProfile.user_id == current_user.id
-            ).first()
+            health_profile_data = current_user.health_profile or {}
             
-            if health_profile:
-                # Update existing health profile
-                if profile_data.health_data.age:
-                    health_profile.age = int(profile_data.health_data.age)
-                if profile_data.health_data.height:
-                    health_profile.height_cm = float(profile_data.health_data.height)
-                if profile_data.health_data.weight:
-                    health_profile.current_weight_kg = float(profile_data.health_data.weight)
-                if profile_data.health_data.gender:
-                    health_profile.gender = profile_data.health_data.gender
-                if profile_data.health_data.activity_level:
-                    health_profile.activity_level = profile_data.health_data.activity_level
-            else:
-                # Create new health profile
-                health_profile = UserHealthProfile(
-                    user_id=current_user.id,
-                    age=int(profile_data.health_data.age) if profile_data.health_data.age else None,
-                    height_cm=float(profile_data.health_data.height) if profile_data.health_data.height else None,
-                    current_weight_kg=float(profile_data.health_data.weight) if profile_data.health_data.weight else None,
-                    gender=profile_data.health_data.gender,
-                    activity_level=profile_data.health_data.activity_level
-                )
-                db.add(health_profile)
+            # Update health profile fields
+            if profile_data.health_data.age:
+                health_profile_data['age'] = int(profile_data.health_data.age)
+            if profile_data.health_data.height:
+                health_profile_data['height_cm'] = float(profile_data.health_data.height)
+            if profile_data.health_data.weight:
+                health_profile_data['current_weight_kg'] = float(profile_data.health_data.weight)
+            if profile_data.health_data.gender:
+                health_profile_data['gender'] = profile_data.health_data.gender
+            if profile_data.health_data.activity_level:
+                health_profile_data['activity_level'] = profile_data.health_data.activity_level
+            if profile_data.health_data.smm:
+                health_profile_data['smm_kg'] = float(profile_data.health_data.smm)
+            if profile_data.health_data.body_fat_percentage:
+                health_profile_data['body_fat_percentage'] = float(profile_data.health_data.body_fat_percentage)
+            if profile_data.health_data.ffm:
+                health_profile_data['ffm_kg'] = float(profile_data.health_data.ffm)
+            if profile_data.health_data.workout_days_per_week:
+                health_profile_data['workout_days_per_week'] = int(profile_data.health_data.workout_days_per_week)
+            
+            current_user.health_profile = health_profile_data
         
-        # Update goals if provided (if table exists)
+        # Update goals if provided
         if profile_data.goals is not None:
-            try:
-                # Delete existing goals
-                db.query(UserGoal).filter(UserGoal.user_id == current_user.id).delete()
-                
-                # Add new goals
-                for goal_name in profile_data.goals:
-                    goal = UserGoal(
-                        user_id=current_user.id,
-                        title=goal_name
-                    )
-                    db.add(goal)
-            except Exception as e:
-                print(f"Warning: Could not update user_goals table: {e}")
-                # Continue without goals
+            goals_data = current_user.goals or {}
+            goals_data['goals'] = [
+                {
+                    'id': i + 1,
+                    'title': goal_name,
+                    'description': '',
+                    'category': 'health',
+                    'status': 'active',
+                    'priority': 'medium',
+                    'created_at': '2024-01-01T00:00:00Z'
+                }
+                for i, goal_name in enumerate(profile_data.goals)
+            ]
+            current_user.goals = goals_data
         
         # Update user timezone if provided
         if profile_data.timezone:
@@ -162,21 +131,14 @@ async def update_user_profile(
         
         # Update bodyTypeGoal if provided
         if profile_data.bodyTypeGoal is not None:
-            # Get or create onboarding profile
-            onboarding_status = db.query(OnboardingProfile).filter(
-                OnboardingProfile.user_id == current_user.id
-            ).first()
-            
-            if onboarding_status:
-                onboarding_status.body_type_goal = profile_data.bodyTypeGoal
-            else:
-                # Create new onboarding profile
-                onboarding_status = OnboardingProfile(
-                    user_id=current_user.id,
-                    body_type_goal=profile_data.bodyTypeGoal,
-                    completed=True
-                )
-                db.add(onboarding_status)
+            onboarding_data = current_user.onboarding_data or {}
+            onboarding_data['body_type_goal'] = profile_data.bodyTypeGoal
+            onboarding_data['completed'] = True
+            current_user.onboarding_data = onboarding_data
+        
+        # Update preferences if provided
+        if profile_data.preferences:
+            current_user.preferences = profile_data.preferences
         
         db.commit()
         

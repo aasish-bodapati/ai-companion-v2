@@ -139,7 +139,7 @@ export default function EnhancedOnboardingScreen() {
     } else {
       DebugUtils.log('🔄 Component mounted but completion already in progress, preventing reset');
     }
-  }, [loadExistingProfileData]);
+  }, []); // Remove loadExistingProfileData from dependencies to prevent infinite re-renders
 
   // Check if we should prevent rendering (but don't return early to avoid hooks violation)
   const shouldPreventRender = hasCompleted || isCompleting || completionRef.current ||
@@ -186,11 +186,14 @@ export default function EnhancedOnboardingScreen() {
   }
 
   const handlePrevious = useCallback(() => {
-    if (currentStep > 0) {
-      hapticFeedback.light();
-      setCurrentStep(prev => prev - 1);
-    }
-  }, [currentStep]);
+    setCurrentStep(prev => {
+      if (prev > 0) {
+        hapticFeedback.light();
+        return prev - 1;
+      }
+      return prev;
+    });
+  }, []); // Remove currentStep from dependencies to prevent infinite re-renders
 
   const handleNext = useCallback(() => {
     if (__DEV__) {
@@ -226,7 +229,7 @@ export default function EnhancedOnboardingScreen() {
       // If on the last step, complete onboarding immediately without animation
       handleComplete();
     }
-  }, [currentStep, isLastStep, isCompleting, hasCompleted, handleComplete]);
+  }, []); // Remove all dependencies to prevent infinite re-renders
 
   const handleComplete = useCallback(async () => {
     DebugUtils.log('🎯 handleComplete called - currentStep:', currentStep, 'isLastStep:', isLastStep, 'isCompleting:', isCompleting, 'hasCompleted:', hasCompleted);
@@ -259,7 +262,7 @@ export default function EnhancedOnboardingScreen() {
         gender: onboardingData.healthData.gender === 'Please select your gender' ? 'male' : onboardingData.healthData.gender as 'male' | 'female' | 'other',
         height_cm: parseInt(onboardingData.healthData.height) || 175,
         current_weight_kg: parseInt(onboardingData.healthData.weight) || 70,
-        activity_level: onboardingData.healthData.activityLevel,
+        activity_level: onboardingData.healthData.activityLevel || 'moderate',
         smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : null,
         body_fat_percentage: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : null,
         ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : null,
@@ -283,7 +286,7 @@ export default function EnhancedOnboardingScreen() {
     } finally {
       setIsCompleting(false);
     }
-  }, [onboardingData, completeOnboarding, currentStep, isLastStep, isCompleting, hasCompleted]);
+  }, []); // Remove all dependencies to prevent infinite re-renders
 
   const handleHealthDataChange = useCallback((healthData: HealthData) => {
     setOnboardingData(prev => ({ ...prev, healthData }));
@@ -306,14 +309,13 @@ export default function EnhancedOnboardingScreen() {
   const canGoNext = () => {
     switch (currentStepData.id) {
       case 'health_data':
-        const { age, height, weight } = onboardingData.healthData;
-        return age && height && weight && !isNaN(Number(age)) && !isNaN(Number(height)) && !isNaN(Number(weight));
+        const { age, height, weight, gender, activityLevel } = onboardingData.healthData;
+        return age && height && weight && gender && activityLevel && 
+               !isNaN(Number(age)) && !isNaN(Number(height)) && !isNaN(Number(weight));
       case 'body_type_goal':
-        // Check if body type goal is one of the valid options (using actual UUIDs)
+        // Check if body type goal is one of the valid options
         const validBodyTypeIds = [
-          'e5a3f772-4d59-434e-bf06-da04e64ff756', // Sleek & Graceful
-          'eda6cd66-d5f8-44a9-8891-7d4ef4f4e5ec', // Strong & Steady
-          '76f3a745-02b9-4040-b90e-a1f94d9b91cf'  // Big & Bold
+          'balanced-fit-001'  // Balanced & Fit
         ];
         const isValid = !!(onboardingData.bodyTypeGoal &&
                        onboardingData.bodyTypeGoal.length > 0 &&

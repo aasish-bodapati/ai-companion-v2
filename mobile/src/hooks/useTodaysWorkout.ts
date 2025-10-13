@@ -73,12 +73,12 @@ export function useTodaysWorkout(activeRoutineId?: number | null): UseTodaysWork
 
   const refreshWorkout = useCallback(async () => {
     await loadTodaysWorkout();
-  }, [loadTodaysWorkout]);
+  }, []); // Remove loadTodaysWorkout from dependencies to prevent infinite re-renders
 
   useEffect(() => {
     DebugUtils.log('🔄 [USE TODAYS WORKOUT] Effect triggered - activeRoutineId:', activeRoutineId);
     loadTodaysWorkout();
-  }, [loadTodaysWorkout, activeRoutineId]);
+  }, [activeRoutineId]); // Remove loadTodaysWorkout from dependencies to prevent infinite re-renders
 
   return {
     todaysWorkout,

@@ -40,7 +40,7 @@ export default function FitnessScreen() {
   // Refs
   const isLoadingRef = useRef(false);
 
-  const loadOverviewData = async () => {
+  const loadOverviewData = useCallback(async () => {
     // Prevent multiple simultaneous calls
     if (isLoadingRef.current) {
       return;
@@ -77,7 +77,7 @@ export default function FitnessScreen() {
     } finally {
       isLoadingRef.current = false;
     }
-  };
+  }, []); // Empty dependencies to prevent infinite re-renders
 
   // Handler functions - optimized with useCallback
   const handleCreateRoutine = useCallback(() => {
@@ -99,7 +99,7 @@ export default function FitnessScreen() {
     }
   }, [refreshActiveRoutine]);
 
-  const loadRoutines = async () => {
+  const loadRoutines = useCallback(async () => {
     setRoutinesLoading(true);
     try {
       // Load both user routines and template routines
@@ -127,7 +127,7 @@ export default function FitnessScreen() {
     } finally {
       setRoutinesLoading(false);
     }
-  };
+  }, []); // Empty dependencies to prevent infinite re-renders
 
   const handleRoutineCreated = () => {
     setShowCreateRoutineModal(false);
@@ -163,14 +163,14 @@ export default function FitnessScreen() {
       // Reset the ref when switching away from routines tab
       routinesLoadedRef.current = false;
     }
-  }, [activeTab, routinesLoading]); // Add routinesLoading dependency
+  }, [activeTab, routinesLoading, loadRoutines]); // Add loadRoutines dependency
 
   // Load overview data when overview tab is accessed
   React.useEffect(() => {
     if (activeTab === 'overview') {
       loadOverviewData();
     }
-  }, [activeTab]);
+  }, [activeTab, loadOverviewData]);
 
   // No predefined workout - users create their own
   const todaysWorkout = recommendedWorkout || null;

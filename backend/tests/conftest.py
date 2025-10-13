@@ -16,17 +16,13 @@ from app.db.base_class import Base
 from app.core.config import settings
 
 
-# Test database URL - using PostgreSQL for tests
-SQLALCHEMY_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/healthlog_test_db"
+# Test database URL - using SQLite for tests
+SQLALCHEMY_DATABASE_URL = "sqlite:///./test_healthlog.db"
 
 # Create test engine
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
-    pool_pre_ping=True,
-    pool_timeout=30,
-    pool_recycle=3600,
-    pool_size=5,
-    max_overflow=10
+    connect_args={"check_same_thread": False}  # SQLite specific
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

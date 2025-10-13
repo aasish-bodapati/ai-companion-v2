@@ -4,7 +4,6 @@ Profile schemas for user profile data
 
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from .health.body_type_goals import BodyTypeGoal
 
 class HealthProfile(BaseModel):
     age: Optional[str] = None
@@ -25,6 +24,5 @@ class UserProfile(BaseModel):
     health_data: Optional[HealthProfile] = None
     goals: List[str] = []  # User's health goals
     bodyTypeGoal: Optional[str] = None
-    bodyTypeGoals: Optional[List[BodyTypeGoal]] = None  # User's body type goals
     preferences: Dict[str, Any] = {}
     onboarding_completed: bool = False

@@ -8,7 +8,7 @@ from .health.nutrition_routine import (
     nutrition_routine,
     nutrition_user_routine_progress
 )
-from .health.simple_routine import simple_routine, simple_user_routine_progress
+from .health.simple_routine import simple_routine
 from .health.user_goals import user_health_profile
 # Coaching CRUD removed for MVP focus
 
@@ -23,6 +23,5 @@ __all__ = [
     "nutrition_routine",
     "nutrition_user_routine_progress",
     "simple_routine",
-    "simple_user_routine_progress",
     "user_health_profile",
 ]

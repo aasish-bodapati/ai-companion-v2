@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 from app.api.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.health.fitness_log import FitnessLog
-from app.models.health.simple_routine import SimpleRoutine, RoutineWorkoutDay
-from app.crud.health.simple_routine import simple_routine, simple_user_routine_progress
-from app.crud.health.routine_workout_day import routine_workout_day
-from app.crud.health.routine_exercise import routine_exercise
+from app.models.health.simple_routine import SimpleRoutine
+from app.crud.health.simple_routine import simple_routine
+# from app.crud.health.routine_workout_day import routine_workout_day
+# from app.crud.health.routine_exercise import routine_exercise
 from app.schemas.health.simple_routine import (
     SimpleRoutine, SimpleRoutineCreate, SimpleRoutineUpdate,
     SimpleRoutineWithProgress, SimpleRoutineListResponse,

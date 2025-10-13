@@ -37,13 +37,13 @@ export default function NutritionScreen() {
   const loadWeekStats = useCallback(async () => {
     // This is now handled by the Zustand store
     await refreshNutritionData();
-  }, [refreshNutritionData]);
+  }, []); // Remove refreshNutritionData from dependencies to prevent infinite re-renders
 
   // Weekly activity data is now handled by useWeeklyActivity hook
 
   const loadOverviewData = useCallback(async () => {
     await loadWeekStats();
-  }, [loadWeekStats]);
+  }, []); // Remove loadWeekStats from dependencies to prevent infinite re-renders
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -53,7 +53,7 @@ export default function NutritionScreen() {
 
   useEffect(() => {
     loadOverviewData();
-  }, [loadOverviewData]); // Add loadOverviewData dependency
+  }, []); // Remove loadOverviewData from dependencies to prevent infinite re-renders
 
   // Reset to overview tab when screen comes into focus
   useFocusEffect(

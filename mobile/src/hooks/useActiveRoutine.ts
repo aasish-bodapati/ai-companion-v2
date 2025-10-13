@@ -93,7 +93,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
     } finally {
       setLoading(false);
     }
-  }, [loadFromStorage, saveActiveRoutine]);
+  }, []); // Remove loadFromStorage and saveActiveRoutine from dependencies to prevent infinite re-renders
 
   const refreshActiveRoutine = useCallback(async () => {
     DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Refreshing active routine...');
@@ -101,11 +101,11 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
     await new Promise(resolve => setTimeout(resolve, 500));
     await loadActiveRoutine();
     DebugUtils.log('✅ [USE ACTIVE ROUTINE] Active routine refreshed');
-  }, [loadActiveRoutine]);
+  }, []); // Remove loadActiveRoutine from dependencies to prevent infinite re-renders
 
   useEffect(() => {
     loadActiveRoutine();
-  }, [loadActiveRoutine]);
+  }, []); // Remove loadActiveRoutine from dependencies to prevent infinite re-renders
 
   // Only log when state actually changes
   if (__DEV__ && activeRoutineId !== null) {

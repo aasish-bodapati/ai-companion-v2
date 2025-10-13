@@ -5,13 +5,13 @@
 ## 🎯 **Project Overview**
 AI-powered health and wellness platform that combines manual logging with intelligent insights. Built for busy professionals who need simple, fast health tracking with clean data visualization across web and mobile platforms.
 
-**Current Status**: Active development with comprehensive backend API, React Native mobile app, and PostgreSQL database. Recent focus on water logging improvements, timezone handling, and enhanced analytics dashboard.
+**Current Status**: Active development with comprehensive backend API, React Native mobile app, and SQLite database. Recent focus on water logging improvements, timezone handling, and enhanced analytics dashboard.
 
 ## 🏗️ **Architecture & Tech Stack**
 
-### Backend (FastAPI + PostgreSQL)
+### Backend (FastAPI + SQLite)
 - **Framework**: FastAPI 0.104.1 with SQLAlchemy 2.0.23 ORM
-- **Database**: PostgreSQL (REQUIRED - never use SQLite)
+- **Database**: SQLite (file-based, no server required)
 - **Authentication**: JWT with bcrypt password hashing
 - **API Structure**: Feature-based organization (`/api/health/`, `/api/core/`, `/api/analytics/`)
 - **Key Services**: Indian food database, AI insights, analytics engine, water logging with timezone support
@@ -83,7 +83,7 @@ AI-powered health and wellness platform that combines manual logging with intell
 ## 🚨 **Critical Ground Truths**
 
 ### Database
-- **ALWAYS use PostgreSQL** - never SQLite (postgresql://postgres:postgres@localhost:5432/healthlog_db)
+- **SQLite database** - file-based, no server required (sqlite:///./healthlog.db)
 - **Integer IDs** - migrated from UUIDs, use SERIAL primary keys
 - **Timezone Support** - All timestamps are timezone-aware with user timezone handling via TimezoneHandler
 - **Data Validation** - Comprehensive field constraints and validation

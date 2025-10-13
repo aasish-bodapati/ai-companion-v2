@@ -4,7 +4,7 @@ Health models - All health-related database models
 
 from .fitness_log import FitnessLog, NutritionLog, MoodLog
 from .user_goals import UserHealthProfile
-from .simple_routine import SimpleRoutine, SimpleUserRoutineProgress
+from .simple_routine import SimpleRoutine
 from .nutrition_routine import NutritionRoutine, NutritionUserRoutineProgress
 from .workout_categories import WorkoutCategory
 from .weight_logs import UserWeightLog
@@ -18,7 +18,6 @@ __all__ = [
     "MoodLog",
     "UserHealthProfile",
     "SimpleRoutine",
-    "SimpleUserRoutineProgress",
     "NutritionRoutine",
     "NutritionUserRoutineProgress",
     "WorkoutCategory",

@@ -3,7 +3,7 @@
  * Provides body type goals fetched from the backend API
  */
 
-import { BodyTypeGoalsServiceApiService, BodyTypeGoal as ApiBodyTypeGoal } from './BodyTypeGoalsApiService';
+import { bodyTypeGoalsApiService, BodyTypeGoal as ApiBodyTypeGoal } from './BodyTypeGoalsApiService';
 
 
 export interface UserAttributes {
@@ -134,6 +134,10 @@ function convertApiBodyTypeGoal(apiGoal: ApiBodyTypeGoal): BodyTypeGoal {
 
       // SMM level
       smmLevel: targetAttributes.smm_level || 'Moderate',
+
+      // Gender-specific SMM ranges
+      smmRangeMen: targetAttributes.smm_range_men || { min: 0, max: 0, recommended: 0, unit: '% body weight' },
+      smmRangeWomen: targetAttributes.smm_range_women || { min: 0, max: 0, recommended: 0, unit: '% body weight' },
 
       // Gender-specific protein requirements
       proteinPerKgMen: targetAttributes.protein_per_kg_men || { min: 0, max: 0, recommended: 0, unit: 'g/kg' },
@@ -419,7 +423,8 @@ export async function calculateBodyTypeGoal(
 // Get available body types for a user based on their current state
 export async function getAvailableBodyTypes(userData: UserAttributes): Promise<BodyTypeGoal[]> {
   try {
-    const apiGoals = await bodyTypeGoalsApiService.getBodyTypeGoals();
+    const response = await bodyTypeGoalsApiService.getBodyTypeGoals();
+    const apiGoals = response.body_type_goals || response; // Handle both response formats
     return apiGoals.map(convertApiBodyTypeGoal);
     } catch {
     // Silent error handling - no console logging to prevent Expo Go notifications

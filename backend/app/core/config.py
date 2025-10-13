@@ -79,12 +79,13 @@ class Settings(BaseSettings):
         """Validate database URI format."""
         if not v:
             raise ValueError("SQLALCHEMY_DATABASE_URI must be set")
-        if not v.startswith("postgresql://"):
-            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL URI")
+        # Allow both PostgreSQL and SQLite for development
+        if not (v.startswith("postgresql://") or v.startswith("sqlite:///")):
+            raise ValueError("SQLALCHEMY_DATABASE_URI must be a valid PostgreSQL or SQLite URI")
         return v
 
-    # Database settings - PostgreSQL
-    SQLALCHEMY_DATABASE_URI: Optional[str] = "postgresql://postgres:postgres@localhost:5432/healthlog_db"
+    # Database settings - SQLite for development
+    SQLALCHEMY_DATABASE_URI: Optional[str] = "sqlite:///./healthlog.db"
 
     # User management
     FIRST_SUPERUSER: str = "admin@example.com"

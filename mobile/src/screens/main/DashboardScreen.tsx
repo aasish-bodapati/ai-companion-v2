@@ -22,13 +22,13 @@ export default function DashboardScreen() {
       hasRefreshedRef.current = true;
       refreshData(); // Re-enabled with loading guard in store
     }
-  }, [user, refreshData]); // Include refreshData in dependencies
+  }, [user]); // Remove refreshData from dependencies to prevent infinite re-renders
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshData(); // Re-enabled with loading guard in store
     setRefreshing(false);
-  }, [refreshData]); // Include refreshData in dependencies
+  }, []); // Remove refreshData from dependencies to prevent infinite re-renders
 
   const handleNavigate = useCallback((screen: string, params?: unknown) => {
     // Handle navigation to other screens

@@ -3,8 +3,7 @@ Body Type Goals Model
 Stores predefined body type goals with their target attributes
 """
 
-from sqlalchemy import Column, Integer, String, Float, Text, Boolean
-from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy import Column, Integer, String, Float, Text, Boolean, JSON
 from app.db.base_class import Base
 
 

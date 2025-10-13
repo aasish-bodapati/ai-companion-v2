@@ -17,7 +17,7 @@ interface HealthData {
   height: string;
   weight: string;
   gender: 'male' | 'female' | 'other' | '' | 'Please select your gender';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | '';
   ffm?: string; // Fat-Free Mass (optional)
   smm?: string; // Skeletal Muscle Mass (optional)
   bodyFat?: string; // Body Fat Percentage (optional)
@@ -51,7 +51,7 @@ export default function HealthDataStep({
     height: '',
     weight: '',
     gender: initialData.gender || '', // No pre-selection for new users
-    activityLevel: initialData.activityLevel || 'moderate',
+    activityLevel: initialData.activityLevel || '', // No pre-selection for new users
     ffm: '',
     smm: '',
     bodyFat: '',
@@ -141,7 +141,7 @@ export default function HealthDataStep({
     setData(prev => ({ ...prev, gender }));
   };
 
-  const handleActivityLevelSelect = (activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') => {
+  const handleActivityLevelSelect = (activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | '') => {
     hapticFeedback.selection();
     setData(prev => ({ ...prev, activityLevel }));
   };
@@ -163,7 +163,7 @@ export default function HealthDataStep({
   const renderGenderSelector = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Gender</Text>
-      <View style={styles.optionGrid}>
+      <View style={styles.genderGrid}>
         {GENDER_OPTIONS.map((option) => (
           <TouchableOpacity
             key={option.id}
@@ -174,7 +174,7 @@ export default function HealthDataStep({
               }
             }}
             style={[
-              styles.optionButton,
+              styles.genderButton,
               data.gender === option.id ? styles.optionButtonSelected : styles.optionButtonUnselected,
             ]}
           >
@@ -184,7 +184,7 @@ export default function HealthDataStep({
               color={data.gender === option.id ? '#ffffff' : '#3b82f6'}
             />
             <Text style={[
-              styles.optionButtonText,
+              styles.genderButtonText,
               data.gender === option.id ? styles.optionButtonTextSelected : styles.optionButtonTextUnselected,
             ]}>
               {option.label}
@@ -199,28 +199,28 @@ export default function HealthDataStep({
   const renderActivityLevelSelector = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Activity Level</Text>
-      <View style={styles.optionGrid}>
+      <View style={styles.activityLevelGrid}>
         {ACTIVITY_LEVEL_OPTIONS.map((option) => (
           <TouchableOpacity
             key={option.id}
             onPress={() => {
               hapticFeedback.selection();
               if (option.id === 'sedentary' || option.id === 'light' || option.id === 'moderate' || option.id === 'active' || option.id === 'very_active') {
-                handleActivityLevelSelect(option.id);
+                handleActivityLevelSelect(option.id as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active');
               }
             }}
             style={[
-              styles.optionButton,
+              styles.activityLevelButton,
               data.activityLevel === option.id ? styles.optionButtonSelected : styles.optionButtonUnselected,
             ]}
           >
             <Ionicons
               name={option.icon as keyof typeof Ionicons.glyphMap}
-              size={20}
+              size={18}
               color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'}
             />
             <Text style={[
-              styles.optionButtonText,
+              styles.activityLevelButtonText,
               data.activityLevel === option.id ? styles.optionButtonTextSelected : styles.optionButtonTextUnselected,
             ]}>
               {option.label}
@@ -504,6 +504,17 @@ const styles = StyleSheet.create({
     gap: 8,
     justifyContent: 'space-between',
   },
+  genderGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
+  activityLevelGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
   optionButton: {
     flex: 1,
     paddingVertical: 14,
@@ -514,6 +525,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
     minHeight: 48,
+  },
+  genderButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: COMMON_STYLES.standardRadius,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    minHeight: 48,
+  },
+  activityLevelButton: {
+    width: '48%', // 2 columns with gap
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: COMMON_STYLES.standardRadius,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    gap: 4,
+    minHeight: 60,
   },
   optionButtonSelected: {
     backgroundColor: '#3b82f6',
@@ -526,6 +559,15 @@ const styles = StyleSheet.create({
   optionButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  genderButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activityLevelButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   optionButtonTextSelected: {
     color: '#ffffff',
