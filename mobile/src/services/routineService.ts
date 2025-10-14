@@ -174,7 +174,7 @@ class RoutineService extends BaseService {
   async getActiveRoutine(): Promise<SimpleRoutineWithProgress | null> {
     try {
       const data = await this.makeRequest(
-        () => api.get('/api/v1/health/simple-routines/active'),
+        () => api.get('/api/v1/health/active-routine'),
         'ROUTINE SERVICE - getActiveRoutine'
       );
       return data;

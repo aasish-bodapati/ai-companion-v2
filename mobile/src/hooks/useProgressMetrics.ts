@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useProgressMetrics, useStreaks, useAchievements } from '../stores';
+import { useHealthStats } from '../stores';
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -34,9 +34,7 @@ interface ProgressMetricsData {
 }
 
 export function useProgressMetricsData(): ProgressMetricsData {
-  const progressMetrics = useProgressMetrics();
-  const { streaks } = useStreaks();
-  const { achievements } = useAchievements();
+  const { workoutsToday, caloriesToday, waterToday, mealsToday } = useHealthStats();
   const renderCountRef = useRef(0);
 
   renderCountRef.current += 1;
@@ -47,24 +45,13 @@ export function useProgressMetricsData(): ProgressMetricsData {
   }
 
   return useMemo(() => {
-
-    // Default values if progressMetrics is undefined
-    const defaultMetrics = {
-      workouts: { current: 0, target: 0 },
-      calories: { current: 0, target: 0 },
-      protein: { current: 0, target: 0 },
-      steps: { current: 0, target: 0 },
-      mood: { current: 0, target: 0 },
-    };
-
-    const metrics = progressMetrics || defaultMetrics;
-
+    // Simple data mapping from the simplified store
     const rings = [
       {
         id: 'workouts',
         label: 'Workouts',
-        value: metrics.workouts?.current || 0,
-        target: metrics.workouts?.target || 0,
+        value: workoutsToday,
+        target: 5, // Default target
         unit: '',
         icon: 'fitness',
         color: '#3b82f6',
@@ -72,65 +59,56 @@ export function useProgressMetricsData(): ProgressMetricsData {
       {
         id: 'calories',
         label: 'Calories',
-        value: metrics.calories?.current || 0,
-        target: metrics.calories?.target || 0,
+        value: caloriesToday,
+        target: 2000, // Default target
         unit: 'cal',
         icon: 'flame',
         color: '#ef4444',
       },
       {
-        id: 'protein',
-        label: 'Protein',
-        value: metrics.protein?.current || 0,
-        target: metrics.protein?.target || 0,
-        unit: 'g',
-        icon: 'nutrition',
-        color: '#10b981',
-      },
-      {
-        id: 'steps',
-        label: 'Steps',
-        value: metrics.steps?.current || 0,
-        target: metrics.steps?.target || 0,
-        unit: '',
-        icon: 'walk',
-        color: '#8b5cf6',
+        id: 'water',
+        label: 'Water',
+        value: waterToday / 1000, // Convert ml to L
+        target: 3, // 3L target
+        unit: 'L',
+        icon: 'water',
+        color: '#06b6d4',
       },
     ];
 
     const bars = [
       {
-        id: 'mood',
-        label: 'Mood',
-        value: metrics.mood?.current || 0,
-        target: metrics.mood?.target || 0,
-        unit: '/10',
-        icon: 'happy',
-        color: '#f59e0b',
+        id: 'meals',
+        label: 'Meals',
+        value: mealsToday,
+        target: 3, // 3 meals per day
+        unit: '',
+        icon: 'nutrition',
+        color: '#10b981',
       },
     ];
 
     const numbers = [
       {
-        id: 'achievements',
-        label: 'Achievements',
-        value: achievements?.filter(a => a.unlocked).length || 0,
-        target: achievements?.length || 0,
+        id: 'workouts',
+        label: 'Workouts Today',
+        value: workoutsToday,
+        target: 5,
         unit: '',
-        icon: 'trophy',
-        color: '#8b5cf6',
+        icon: 'fitness',
+        color: '#3b82f6',
       },
       {
-        id: 'streaks',
-        label: 'Best Streak',
-        value: streaks?.length > 0 ? Math.max(...streaks.map(s => s.best)) : 0,
-        target: 30,
-        unit: 'days',
+        id: 'calories',
+        label: 'Calories Today',
+        value: caloriesToday,
+        target: 2000,
+        unit: 'cal',
         icon: 'flame',
         color: '#ef4444',
       },
     ];
 
     return { rings, bars, numbers };
-  }, [progressMetrics, streaks, achievements]);
+  }, [workoutsToday, caloriesToday, waterToday, mealsToday]);
 }

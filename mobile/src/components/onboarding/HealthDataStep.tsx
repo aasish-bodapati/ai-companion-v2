@@ -28,6 +28,13 @@ interface HealthDataStepProps {
   initialData?: Partial<HealthData>;
 }
 
+// Form constants - using existing theme system approach
+const FORM_PLACEHOLDERS = {
+  AGE: '25',
+  HEIGHT: '175', 
+  WEIGHT: '70',
+};
+
 const GENDER_OPTIONS = [
   { id: 'male', label: 'Male', icon: 'male-outline' },
   { id: 'female', label: 'Female', icon: 'female-outline' },
@@ -62,7 +69,7 @@ export default function HealthDataStep({
 
   useEffect(() => {
     onDataChange(data);
-  }, [data, onDataChange]);
+  }, [data]); // Remove onDataChange from dependencies to prevent infinite loop
 
   const updateData = (field: keyof HealthData, value: string) => {
     setData(prev => ({ ...prev, [field]: value }));
@@ -318,7 +325,7 @@ export default function HealthDataStep({
               <TextInput
                 value={data.age}
                 onChangeText={(text) => updateData('age', text)}
-                placeholder="25"
+                placeholder={FORM_PLACEHOLDERS.AGE}
                 keyboardType="numeric"
                 style={[styles.input, errors.age && styles.inputError]}
                 blurOnSubmit={true}
@@ -333,7 +340,7 @@ export default function HealthDataStep({
               <TextInput
                 value={data.height}
                 onChangeText={(text) => updateData('height', text)}
-                placeholder="175"
+                placeholder={FORM_PLACEHOLDERS.HEIGHT}
                 keyboardType="numeric"
                 style={[styles.input, errors.height && styles.inputError]}
                 blurOnSubmit={true}
@@ -348,7 +355,7 @@ export default function HealthDataStep({
               <TextInput
                 value={data.weight}
                 onChangeText={(text) => updateData('weight', text)}
-                placeholder="70"
+                placeholder={FORM_PLACEHOLDERS.WEIGHT}
                 keyboardType="numeric"
                 style={[styles.input, errors.weight && styles.inputError]}
                 blurOnSubmit={true}

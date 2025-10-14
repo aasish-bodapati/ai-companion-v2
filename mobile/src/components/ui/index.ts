@@ -1,21 +1,24 @@
-// Export all reusable UI components
-export { default as MobileOptimizedCard } from './MobileOptimizedCard';
-export { default as MobileOptimizedInput } from './MobileOptimizedInput';
-export { default as MobileOptimizedModal } from './MobileOptimizedModal';
-export { default as TouchOptimizedButton } from './TouchOptimizedButton';
-// EnhancedLoadingState removed - use UnifiedLoadingState instead
-export { default as MobileOptimizedList } from './MobileOptimizedList';
+/**
+ * UI Components Index - Centralized exports for all base components
+ * Reduces complexity by providing a single import point
+ */
 
-// New reusable components
-export { default as DateSelector } from './DateSelector';
-export { default as FormModal } from './FormModal';
-export { default as NumericInput } from './NumericInput';
-export { default as SectionHeader } from './SectionHeader';
-export { default as StatsCard } from './StatsCard';
-export { default as ActionCard } from './ActionCard';
-export { default as SearchableList } from './SearchableList';
-export { default as ProgressCard } from './ProgressCard';
-export { default as BadgeCard } from './BadgeCard';
+// Base Components
+export { default as BaseCard } from './BaseCard';
+export { default as BaseButton } from './BaseButton';
+export { default as BaseInput } from './BaseInput';
+export { default as BaseModal } from './BaseModal';
+export { default as BaseForm, useFormContext } from './BaseForm';
 
-// Export theme constants for easy access
-export * from '../../theme/constants';
+// Mobile-First Components
+export { default as ThumbZoneLayout } from './ThumbZoneLayout';
+export { default as MobileButton } from './MobileButton';
+export { default as SwipeableCard } from './SwipeableCard';
+export { default as FloatingActionButton } from './FloatingActionButton';
+
+// Re-export types
+export type { BaseCardProps } from './BaseCard';
+export type { BaseButtonProps } from './BaseButton';
+export type { BaseInputProps } from './BaseInput';
+export type { BaseModalProps, ModalSize, ModalPosition } from './BaseModal';
+export type { BaseFormProps, FormField, FormContextType } from './BaseForm';

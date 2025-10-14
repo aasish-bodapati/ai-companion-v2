@@ -1,90 +1,41 @@
-import { DebugUtils } from '../utils/debugUtils';
-
 /**
- * Combined store exports
- * Centralized access to all Zustand stores
+ * Simplified Store Exports
+ * Replaces complex multi-store architecture with 2 simple stores
  */
 
-// Export all stores
-export { useAppStore } from './appStore';
-export { useNutritionStore } from './nutritionStore';
-export { useFitnessStore } from './fitnessStore';
-// export { useAnalyticsStore } from './analyticsStore'; // REMOVED
-export { useExerciseCategoriesStore } from './exerciseCategoriesStore';
+// Export the two simple stores
+export { 
+  useHealthStore, 
+  useHealthStats, 
+  useHealthActions 
+} from './simpleStore';
 
-// Export all types
-export * from './types';
-
-// Export selector hooks
-export {
-  useUser,
-  useProgressMetrics,
-  useAchievements,
-  useStreaks,
-  useAIInsights,
-  useAppLoading,
-  useAppError,
-  useAppLastUpdated,
-} from './appStore';
-
-export {
-  useNutritionTodayStats,
-  useNutritionWeekStats,
-  useRecentMeals,
-  useNutritionLoading,
-  useNutritionError,
-  useNutritionLastUpdated,
-  useNutritionActions,
-} from './nutritionStore';
-
-export {
-  useFitnessTodayStats,
-  useFitnessWeekStats,
-  useRecentWorkouts,
-  useFitnessLoading,
-  useFitnessError,
-  useFitnessLastUpdated,
-  useFitnessActions,
-} from './fitnessStore';
-
-// Analytics store exports removed
-
-export {
+export { 
+  useExerciseCategoriesStore,
   useExerciseCategories,
   useExerciseCategoriesLoading,
   useExerciseCategoriesError,
-  useExerciseCategoriesLoaded,
-  useExerciseCategoriesLastUpdated,
-  useExerciseCategoriesActions,
-  useExerciseCategoriesWithAutoLoad,
-} from './exerciseCategoriesStore';
+  useExerciseCategoriesLoaded
+} from './simpleExerciseStore';
 
-// Combined refresh function that refreshes all stores
+// Export types
+export type { HealthStats, HealthActions, ExerciseCategory } from './simpleStore';
+export type { ExerciseCategory as ExerciseCategoryType } from './simpleExerciseStore';
+
+// Simple refresh function
 export const refreshAllStores = async () => {
   try {
-    // Use Promise.all to refresh all stores concurrently
     await Promise.all([
-      useAppStore.getState().refreshData(),
-      useNutritionStore.getState().refreshNutritionData(),
-      useFitnessStore.getState().refreshFitnessData(),
-      useExerciseCategoriesStore.getState().refreshCategories(),
+      useHealthStore.getState().refreshData(),
+      useExerciseCategoriesStore.getState().loadCategories(),
     ]);
   } catch (error) {
-    DebugUtils.error('❌ [STORE REFRESH] Error refreshing stores:', error);
-    throw error;
+    console.error('Error refreshing stores:', error);
   }
 };
 
-// Combined reset function that resets all stores
+// Simple reset function
 export const resetAllStores = () => {
-  try {
-    // Reset all stores synchronously
-    useAppStore.getState().resetState();
-    useNutritionStore.getState().resetNutritionState();
-    useFitnessStore.getState().resetFitnessState();
-    useExerciseCategoriesStore.getState().resetExerciseCategoriesState();
-  } catch (error) {
-    DebugUtils.error('❌ [STORE RESET] Error resetting stores:', error);
-    throw error;
-  }
+  useHealthStore.getState().reset();
+  useExerciseCategoriesStore.getState().reset();
 };

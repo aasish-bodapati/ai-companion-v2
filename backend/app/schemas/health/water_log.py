@@ -30,6 +30,10 @@ class WaterLog(WaterLogBase):
     class Config:
         from_attributes = True
 
+class WaterLogResponse(WaterLog):
+    """Response schema for water log endpoints"""
+    pass
+
 class WaterLogStats(BaseModel):
     total_ml_today: int
     total_oz_today: float

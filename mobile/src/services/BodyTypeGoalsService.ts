@@ -423,12 +423,20 @@ export async function calculateBodyTypeGoal(
 // Get available body types for a user based on their current state
 export async function getAvailableBodyTypes(userData: UserAttributes): Promise<BodyTypeGoal[]> {
   try {
+    // Try to get all goals first (requires authentication)
     const response = await bodyTypeGoalsApiService.getBodyTypeGoals();
     const apiGoals = response.body_type_goals || response; // Handle both response formats
     return apiGoals.map(convertApiBodyTypeGoal);
+  } catch {
+    // If that fails (e.g., during onboarding when not authenticated),
+    // fall back to system goals which don't require authentication
+    try {
+      const systemGoals = await bodyTypeGoalsApiService.getSystemBodyTypeGoals();
+      return systemGoals.map(convertApiBodyTypeGoal);
     } catch {
-    // Silent error handling - no console logging to prevent Expo Go notifications
-    return []; // Return empty array on error
+      // Silent error handling - no console logging to prevent Expo Go notifications
+      return []; // Return empty array on error
+    }
   }
 }
 

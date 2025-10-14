@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useAppStore } from '../stores';
+import { useHealthActions } from '../stores';
 
 interface HealthLoggerOptions {
   type: 'workout' | 'meal' | 'water' | 'mood';
@@ -10,7 +10,7 @@ interface HealthLoggerOptions {
 export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOptions) {
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { refreshData } = useAppStore();
+  const healthActions = useHealthActions();
 
   const openLogger = useCallback(() => {
     setIsVisible(true);
@@ -29,7 +29,7 @@ export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOption
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Refresh global data
-      await refreshData();
+      await healthActions.refreshData();
 
       onSuccess?.(data);
       closeLogger();

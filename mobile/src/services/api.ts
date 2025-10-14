@@ -8,9 +8,11 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } f
 
 import { DebugUtils } from '../utils/debugUtils';
 
+import { API_BASE_URL } from '../config/api';
+
 // API Configuration
 const API_CONFIG = {
-  baseURL: __DEV__ ? 'http://192.168.1.11:8000' : 'https://api.healthlog.app',
+  baseURL: API_BASE_URL.replace('/api/v1', ''), // Remove /api/v1 since we add it in requests
   timeout: 30000,
   retryAttempts: 3,
   retryDelay: 1000,
@@ -65,13 +67,16 @@ const errorInterceptor = (error: AxiosError) => {
     duration
   );
   
-  DebugUtils.error('API Error:', {
-    url: error.config?.url,
-    method: error.config?.method,
-    status: error.response?.status,
-    message: error.message,
-    data: error.response?.data,
-  });
+  // Only log 401 errors in development, suppress them in production
+  if (error.response?.status !== 401) {
+    DebugUtils.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      message: error.message,
+      data: error.response?.data,
+    });
+  }
   
   return Promise.reject(error);
 };
@@ -203,11 +208,14 @@ const handleApiError = (error: any): Error => {
     const { status, data } = error.response;
     const message = data?.message || data?.detail || `HTTP ${status} Error`;
     
-    DebugUtils.error('API Error Response:', {
-      status,
-      message,
-      data,
-    });
+    // Only log 401 errors in development, suppress them in production
+    if (status !== 401) {
+      DebugUtils.error('API Error Response:', {
+        status,
+        message,
+        data,
+      });
+    }
     
     return new Error(message);
   } else if (error.request) {

@@ -1,20 +1,17 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
+import { API_BASE_URL } from '../config/api';
 
 import { DebugUtils } from '../utils/debugUtils';
 
-const API_URL = 'http://192.168.1.11:8000';
-const API_BASE_URL = `${API_URL}/api/v1`;
-
-logger.api('API_URL:', API_URL);
 logger.api('API_BASE_URL:', API_BASE_URL);
 
 // API Client configured
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 25000, // 25 second timeout - backend has 30s timeout
+  timeout: 30000, // Standardized timeout - backend has 30s timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -24,9 +21,14 @@ export const apiClient = axios.create({
 // Request interceptor for adding auth tokens if needed
 api.interceptors.request.use(
   async config => {
-    // Only log important requests in development mode
-    if (__DEV__ && config.url?.includes('/login') || config.url?.includes('/register')) {
-      logger.api('Making request to:', config.url, 'Method:', config.method);
+    // Enhanced logging for debugging
+    if (__DEV__) {
+      DebugUtils.log('🌐 [API REQUEST]', {
+        url: config.url,
+        method: config.method,
+        hasAuth: !!config.headers.Authorization,
+        timestamp: new Date().toISOString()
+      });
     }
 
     // Add auth token for non-public endpoints
@@ -40,18 +42,29 @@ api.interceptors.request.use(
 
         if (token && !config.headers.Authorization) {
           config.headers.Authorization = `Bearer ${token}`;
+          if (__DEV__) {
+            DebugUtils.log('🔐 [API] Added auth token to request:', config.url);
+          }
         } else if (!token) {
           DebugUtils.warn('🔐 [API] No auth token found for request to:', config.url);
+        } else {
+          if (__DEV__) {
+            DebugUtils.log('🔐 [API] Request already has auth token:', config.url);
+          }
         }
       } catch (error) {
         DebugUtils.error('🔐 [API] Error getting auth token:', error);
+      }
+    } else {
+      if (__DEV__) {
+        DebugUtils.log('🔐 [API] Public endpoint, no auth needed:', config.url);
       }
     }
 
     return config;
   },
   error => {
-    // Silent error handling - no console logging to prevent Expo Go notifications
+    DebugUtils.error('🔐 [API] Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -59,9 +72,15 @@ api.interceptors.request.use(
 // Response interceptor for handling errors
 api.interceptors.response.use(
   response => {
-    // Only log important responses in development
-    if (__DEV__ && (response.config.url?.includes('/login') || response.config.url?.includes('/register'))) {
-      logger.api('Response received:', response.status, response.config.url);
+    // Enhanced logging for debugging
+    if (__DEV__) {
+      DebugUtils.log('🌐 [API RESPONSE]', {
+        url: response.config.url,
+        method: response.config.method,
+        status: response.status,
+        hasData: !!response.data,
+        timestamp: new Date().toISOString()
+      });
     }
     return response;
   },
@@ -75,13 +94,26 @@ api.interceptors.response.use(
         headers: error.config?.headers
       });
 
-      // Clear tokens on 401 error
-      try {
-        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-        await AsyncStorage.removeItem('token');
-        await AsyncStorage.removeItem('user');
-      } catch (clearError) {
-        DebugUtils.error('🔐 [API CLIENT] Error clearing tokens:', clearError);
+      // Don't clear tokens for onboarding-related errors - these might be temporary
+      const isOnboardingError = error.config?.url?.includes('/onboarding/');
+      const isUserMeError = error.config?.url?.includes('/users/me');
+      const isBodyTypeGoalsError = error.config?.url?.includes('/body-type-goals/');
+      
+      // Only clear tokens for specific endpoints that should trigger logout
+      const shouldClearTokens = !isOnboardingError && !isUserMeError && !isBodyTypeGoalsError;
+      
+      if (shouldClearTokens) {
+        // Clear tokens on 401 error (except for onboarding and user data endpoints)
+        DebugUtils.log('🔐 [API CLIENT] Clearing tokens due to 401 error on:', error.config?.url);
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.removeItem('token');
+          await AsyncStorage.removeItem('user');
+        } catch (clearError) {
+          DebugUtils.error('🔐 [API CLIENT] Error clearing tokens:', clearError);
+        }
+      } else {
+        DebugUtils.log('🔐 [API CLIENT] Not clearing tokens for protected endpoint:', error.config?.url);
       }
     }
     // Only log important errors

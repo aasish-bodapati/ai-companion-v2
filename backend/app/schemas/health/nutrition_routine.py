@@ -168,3 +168,12 @@ class CreateNutritionRoutineRequest(BaseModel):
 class UpdateNutritionRoutineRequest(BaseModel):
     routine_data: NutritionRoutineUpdate
     meal_plans: List[Dict[str, Any]]  # Will contain meal plans with meals and foods
+
+# Response schemas
+class NutritionRoutineListResponse(BaseModel):
+    """Response schema for nutrition routine list endpoints"""
+    routines: List[NutritionRoutine]
+    total: int
+    page: int
+    size: int
+    pages: int

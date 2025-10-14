@@ -27,31 +27,34 @@ class SimpleWaterService {
   async logWater(amount_ml: number): Promise<SimpleWaterStats> {
     DebugUtils.log('🚰 [SIMPLE WATER] Logging water:', amount_ml, 'ml');
 
-    const response = await api.post('/api/v1/health/simple-water/log', null, {
+    const response = await api.post('/api/v1/health/logging/water/quick', null, {
       params: { amount_ml }
     });
 
     DebugUtils.log('🚰 [SIMPLE WATER] Water logged successfully');
-    return {
-      total_ml_today: response.total_ml_today,
-      total_oz_today: response.total_ml_today * 0.033814,
-      goal_ml: response.goal_ml,
-      goal_oz: response.goal_ml * 0.033814,
-      progress_percentage: response.progress_percentage,
-      logs_today: response.logs_today,
-    };
+    // After logging, get updated stats
+    return this.getTodayStats();
   }
 
   /**
    * Get today's water stats - simple and fast
    */
   async getTodayStats(): Promise<SimpleWaterStats> {
-    const response = await api.get('/api/v1/health/simple-water/stats');
+    const response = await api.get('/api/v1/health/logging/water/today');
 
     if (__DEV__) {
       DebugUtils.log('🚰 Water loaded - progress:', response.progress_percentage + '%');
     }
-    return response;
+    
+    // Map API response to expected format
+    return {
+      total_ml_today: response.total_ml,
+      total_oz_today: response.total_oz,
+      goal_ml: response.goal_ml,
+      goal_oz: response.goal_ml * 0.033814,
+      progress_percentage: response.progress_percentage,
+      logs_today: response.logs_count,
+    };
   }
 
   /**

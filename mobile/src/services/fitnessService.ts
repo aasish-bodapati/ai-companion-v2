@@ -2,6 +2,7 @@ import { api } from './api';
 
 import { BaseService } from './BaseService';
 import { getTodayLocal } from '../utils/dateUtils';
+import { exerciseService, Exercise } from './ExerciseService';
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -50,6 +51,7 @@ export interface ExerciseType {
   instructions?: string;
   difficulty: string;
   logging_category: string;
+  gif_url?: string;
   logging_category_info?: {
     id: string;
     name: string;
@@ -227,8 +229,111 @@ class FitnessService extends BaseService {
   }
 
   async getExercises(): Promise<ExerciseType[]> {
-    // Alias for getExerciseTypes for backward compatibility
-    return this.getExerciseTypes();
+    // Use ExerciseDB service for better exercise data
+    try {
+      const exercises = await exerciseService.getAllExercises({ limit: 100 });
+      return exercises.map(ex => this._mapExerciseToType(ex));
+    } catch (error) {
+      DebugUtils.error('Error fetching exercises from ExerciseDB:', error);
+      // Fallback to original method
+      return this.getExerciseTypes();
+    }
+  }
+
+  /**
+   * Search exercises by name with optional filtering
+   */
+  async searchExercises(query: string, filters?: {
+    body_part?: string;
+    equipment?: string;
+    target_muscle?: string;
+    limit?: number;
+  }): Promise<ExerciseType[]> {
+    try {
+      const response = await exerciseService.searchExercises({
+        q: query,
+        ...filters,
+        limit: filters?.limit || 20
+      });
+      return response.exercises.map(ex => this._mapExerciseToType(ex));
+    } catch (error) {
+      DebugUtils.error('Error searching exercises:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get exercises by body part
+   */
+  async getExercisesByBodyPart(bodyPart: string, limit: number = 50): Promise<ExerciseType[]> {
+    try {
+      const exercises = await exerciseService.getExercisesByBodyPart(bodyPart, limit);
+      return exercises.map(ex => this._mapExerciseToType(ex));
+    } catch (error) {
+      DebugUtils.error(`Error fetching exercises for body part ${bodyPart}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get exercises by equipment
+   */
+  async getExercisesByEquipment(equipment: string, limit: number = 50): Promise<ExerciseType[]> {
+    try {
+      const exercises = await exerciseService.getExercisesByEquipment(equipment, limit);
+      return exercises.map(ex => this._mapExerciseToType(ex));
+    } catch (error) {
+      DebugUtils.error(`Error fetching exercises for equipment ${equipment}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all body parts
+   */
+  async getBodyParts(): Promise<string[]> {
+    try {
+      return await exerciseService.getBodyParts();
+    } catch (error) {
+      DebugUtils.error('Error fetching body parts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all equipment types
+   */
+  async getEquipment(): Promise<string[]> {
+    try {
+      return await exerciseService.getEquipment();
+    } catch (error) {
+      DebugUtils.error('Error fetching equipment:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Map Exercise to ExerciseType for backward compatibility
+   */
+  private _mapExerciseToType(ex: Exercise): ExerciseType {
+    return {
+      id: parseInt(ex.id) || 0, // Convert string ID to number for compatibility
+      name: ex.name,
+      category: ex.category || 'general',
+      muscle_group: ex.muscle_group || 'general',
+      equipment: ex.equipment,
+      instructions: ex.instructions?.join('\n'),
+      difficulty: ex.difficulty || 'intermediate',
+      logging_category: ex.logging_category,
+      gif_url: ex.gif_url, // Add GIF URL support
+      logging_category_info: {
+        id: ex.logging_category,
+        name: ex.logging_category,
+        display_name: ex.logging_category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        color: ex.logging_category === 'bodyweight' ? '#3b82f6' : '#ef4444',
+        icon: ex.logging_category === 'bodyweight' ? 'person-outline' : 'barbell-outline'
+      }
+    };
   }
 
   async getWorkoutStats(period: string): Promise<WorkoutStats> {

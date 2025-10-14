@@ -23,11 +23,15 @@ interface WaterLoggerProps {
 
 export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
   const { showToast } = useToast();
+  // Water goal constants - could be moved to theme constants if needed
+  const WATER_GOAL_ML = 3200;
+  const WATER_GOAL_OZ = 108.2;
+  
   const [stats, setStats] = useState<SimpleWaterStats>({
     total_ml_today: 0,
     total_oz_today: 0,
-    goal_ml: 3200,
-    goal_oz: 108.2,
+    goal_ml: WATER_GOAL_ML,
+    goal_oz: WATER_GOAL_OZ,
     progress_percentage: 0,
     logs_today: 0,
   });
@@ -68,7 +72,9 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
       showToast.success(`${amount_ml}ml water logged!`);
 
       // Add a small delay to prevent rapid state changes
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Using existing theme animation duration
+      const { ANIMATION } = require('../../theme/constants');
+      await new Promise(resolve => setTimeout(resolve, ANIMATION.normal));
     } catch (error) {
       DebugUtils.error('🚰 [WATER LOGGER] Failed to log water:', error);
       hapticFeedback.error();

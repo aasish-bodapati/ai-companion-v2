@@ -10,7 +10,7 @@ import NutritionScreen from '../screens/main/NutritionScreen';
 import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
 // Removed MigrationScreen import
 import QuickAddModal from '../components/common/QuickAddModal';
-import WorkoutLoggingModal from '../components/fitness/WorkoutLoggingModal';
+import SmartWorkoutLogger from '../components/fitness/SmartWorkoutLogger';
 import UnifiedNutritionLogger from '../components/nutrition/UnifiedNutritionLogger';
 
 export type TabParamList = {
@@ -118,11 +118,13 @@ function CustomTabBar({ state, descriptors, navigation }: Record<string, unknown
         onLogMeal={() => setShowLogMealModal(true)}
       />
 
-      {/* Log Workout Modal */}
-      <WorkoutLoggingModal
+      {/* Smart Workout Logger */}
+      <SmartWorkoutLogger
         visible={showLogWorkoutModal}
         onClose={() => setShowLogWorkoutModal(false)}
-        onWorkoutLogged={() => {
+        onSave={(workout) => {
+          // Handle workout saving here
+          console.log('Workout saved:', workout);
           setShowLogWorkoutModal(false);
         }}
       />

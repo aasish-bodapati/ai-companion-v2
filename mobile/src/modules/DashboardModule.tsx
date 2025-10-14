@@ -119,6 +119,18 @@ export default function DashboardModule({
   const progressData = useProgressMetricsData();
   const responsive = useResponsive();
 
+  // Enhanced debugging
+  if (__DEV__) {
+    DebugUtils.log('🔄 [DASHBOARD MODULE] Rendering with:', {
+      hasUser: !!user,
+      userId: user?.id,
+      userEmail: user?.email,
+      activeRoutineId,
+      hasProgressData: !!progressData,
+      timestamp: new Date().toISOString()
+    });
+  }
+
   const quickStats = [
     {
       label: 'Workouts',

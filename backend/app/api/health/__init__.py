@@ -1,45 +1,22 @@
 from fastapi import APIRouter
 
 from . import (
-    logging,
-    simple_routines,
-    nutrition_routines,
-    onboarding,
-    simple_goals,
-    dashboard,
-    exercises,
-    foods,
-    contextual_logging,
-    fitness_logs,
-    nutrition_logs,
-    water_logs,
-    simple_water_logs,
-    profile,
-    body_type_goals,
-    indian_foods,
-    active_routine
+    logging,           # Consolidated health logging (fitness, nutrition, mood, water)
+    routines,          # Consolidated routines (workout, nutrition, active)
+    data,              # Consolidated data (exercises, foods, body type goals)
+    dashboard,         # Dashboard endpoints
+    onboarding,        # Onboarding endpoints
+    simple_goals,      # Simple goals endpoints
+    profile            # Health profile endpoints
 )
 
 router = APIRouter()
 
-# Original health endpoints
+# Consolidated API endpoints - reduced from 20+ modules to 7 focused modules
 router.include_router(logging.router, prefix="/logging", tags=["health-logging"])
-router.include_router(simple_routines.router, prefix="/simple-routines", tags=["routines"])
-router.include_router(nutrition_routines.router, prefix="/nutrition-routines", tags=["nutrition-routines"])
-router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
-router.include_router(simple_goals.router, prefix="/simple-goals", tags=["simple-goals"])
-
-# New high-ROI endpoints
+router.include_router(routines.router, prefix="/routines", tags=["routines"])
+router.include_router(data.router, prefix="/data", tags=["data"])
 router.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
-router.include_router(exercises.router, prefix="/exercises", tags=["exercises"])
-router.include_router(foods.router, prefix="/foods", tags=["foods"])
-router.include_router(contextual_logging.router, prefix="/contextual-logging", tags=["contextual-logging"])
-router.include_router(fitness_logs.router, prefix="/fitness-logs", tags=["fitness-logs"])  # Re-enabled for latest-exercise endpoint
-router.include_router(nutrition_logs.router, prefix="/nutrition-logs", tags=["nutrition-logs"])
-router.include_router(water_logs.router, prefix="/water-logs", tags=["water-logs"])
-router.include_router(simple_water_logs.router, prefix="/simple-water", tags=["simple-water"])
-router.include_router(profile.router, prefix="/profile", tags=["health-profile"])
-# router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])  # Commented out - analytics module not found
-router.include_router(body_type_goals.router, prefix="/body-type-goals", tags=["body-type-goals"])
-router.include_router(indian_foods.router, prefix="/indian-foods", tags=["indian-foods"])
-router.include_router(active_routine.router, tags=["active-routine"])
+router.include_router(onboarding.router, prefix="/onboarding", tags=["onboarding"])
+router.include_router(simple_goals.router, prefix="/goals", tags=["goals"])
+router.include_router(profile.router, prefix="/profile", tags=["profile"])

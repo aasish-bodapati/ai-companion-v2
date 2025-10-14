@@ -9,23 +9,13 @@ logger = logging.getLogger(__name__)
 
 def dump_prometheus() -> str:
     """
-    Dump Prometheus metrics for LLM usage and other system metrics.
+    Dump Prometheus metrics for system usage and other system metrics.
     Returns a string in Prometheus format.
     """
     # For now, return empty metrics
     # In a real implementation, this would collect and format metrics
-    return "# AI Companion Backend Metrics\n# No metrics available yet\n"
+    return "# HealthLog Backend Metrics\n# No metrics available yet\n"
 
-def record_llm_request(model: str, tokens_used: int, response_time: float) -> None:
-    """
-    Record LLM request metrics.
-
-    Args:
-        model: The LLM model used
-        tokens_used: Number of tokens used
-        response_time: Response time in seconds
-    """
-    logger.info(f"LLM request: model={model}, tokens={tokens_used}, time={response_time:.2f}s")
 
 def record_memory_operation(operation: str, success: bool, duration: float) -> None:
     """

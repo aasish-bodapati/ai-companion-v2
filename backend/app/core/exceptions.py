@@ -74,14 +74,6 @@ class RateLimitException(APIException):
             status_code=status.HTTP_429_TOO_MANY_REQUESTS
         )
 
-class LLMException(APIException):
-    """Raised when LLM service fails"""
-
-    def __init__(self, message: str = "LLM service unavailable"):
-        super().__init__(
-            message=message,
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
 
 class DatabaseException(APIException):
     """Raised when database operations fail"""

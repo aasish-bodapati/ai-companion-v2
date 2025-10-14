@@ -1,6 +1,6 @@
 """
-wger.de API Client
-Fetches exercise data from wger.de API and maps it to our system
+ExerciseDB API Client
+Fetches exercise data from our self-hosted ExerciseDB API
 """
 import os
 import requests
@@ -12,42 +12,51 @@ from app.core.config import settings
 # Load environment variables
 load_dotenv()
 
-class WgerApiClient:
+class ExerciseDBApiClient:
     def __init__(self):
-        self.base_url = "https://wger.de/api/v2"
-        self.api_key = os.getenv("WGER_API")
+        # Use our self-hosted ExerciseDB API
+        self.base_url = "http://localhost:80/api/v1"
         self.headers = {
-            "Authorization": f"Token {self.api_key}",
             "Content-Type": "application/json"
         }
 
     def _make_request(self, endpoint: str, params: Dict = None) -> Dict:
-        """Make a request to wger.de API with rate limiting"""
+        """Make a request to our self-hosted ExerciseDB API"""
         url = f"{self.base_url}/{endpoint}"
 
         try:
-            response = requests.get(url, headers=self.headers, params=params)
+            response = requests.get(url, headers=self.headers, params=params, timeout=10)
             response.raise_for_status()
 
-            # Rate limiting - wger.de allows 100 requests per hour
-            time.sleep(0.1)  # 100ms delay between requests
+            # Small delay to be respectful to our own server
+            time.sleep(0.01)  # 10ms delay
 
             return response.json()
         except requests.exceptions.RequestException as e:
-            return {}
+            print(f"Error fetching from ExerciseDB API: {e}")
+            return {"success": False, "data": [], "error": str(e)}
 
-    def get_exercises(self, limit: int = 100, offset: int = 0) -> List[Dict]:
-        """Fetch exercises from wger.de API"""
+    def get_exercises(self, limit: int = 100, offset: int = 0, body_part: str = None, equipment: str = None, target_muscle: str = None) -> List[Dict]:
+        """Fetch exercises from ExerciseDB API with optional filtering"""
         params = {
             "limit": limit,
             "offset": offset
         }
+        
+        if body_part:
+            params["bodyPart"] = body_part
+        if equipment:
+            params["equipment"] = equipment
+        if target_muscle:
+            params["targetMuscle"] = target_muscle
 
-        data = self._make_request("exercise/", params)
-        return data.get("results", [])
+        data = self._make_request("exercises", params)
+        if data.get("success"):
+            return data.get("data", [])
+        return []
 
     def get_all_exercises(self) -> List[Dict]:
-        """Fetch all exercises from wger.de API (handles pagination)"""
+        """Fetch all exercises from ExerciseDB API (handles pagination)"""
         all_exercises = []
         offset = 0
         limit = 100
@@ -60,28 +69,39 @@ class WgerApiClient:
             all_exercises.extend(exercises)
             offset += limit
 
-
             # Safety break to prevent infinite loops
             if len(exercises) < limit:
                 break
 
         return all_exercises
 
+    def get_exercise_by_id(self, exercise_id: str) -> Optional[Dict]:
+        """Fetch a specific exercise by ID"""
+        data = self._make_request(f"exercises/{exercise_id}")
+        if data.get("success"):
+            return data.get("data")
+        return None
+
     def get_exercise_categories(self) -> List[Dict]:
-        """Fetch exercise categories from wger.de API"""
-        return self._make_request("exercisecategory/").get("results", [])
+        """Fetch exercise categories (body parts) from ExerciseDB API"""
+        data = self._make_request("bodyparts")
+        if data.get("success"):
+            return data.get("data", [])
+        return []
 
     def get_muscles(self) -> List[Dict]:
-        """Fetch muscle groups from wger.de API"""
-        return self._make_request("muscle/").get("results", [])
+        """Fetch muscle groups from ExerciseDB API"""
+        data = self._make_request("muscles")
+        if data.get("success"):
+            return data.get("data", [])
+        return []
 
     def get_equipment(self) -> List[Dict]:
-        """Fetch equipment from wger.de API"""
-        return self._make_request("equipment/").get("results", [])
-
-    def get_exercise_translations(self, exercise_id: int) -> List[Dict]:
-        """Fetch exercise translations for a specific exercise"""
-        return self._make_request(f"exercise-translation/?exercise={exercise_id}").get("results", [])
+        """Fetch equipment from ExerciseDB API"""
+        data = self._make_request("equipments")
+        if data.get("success"):
+            return data.get("data", [])
+        return []
 
     def search_exercises(self, query: str, limit: int = 20) -> List[Dict]:
         """Search exercises by name"""
@@ -90,27 +110,44 @@ class WgerApiClient:
             "limit": limit
         }
 
-        return self._make_request("exercise/", params).get("results", [])
+        data = self._make_request("exercises", params)
+        if data.get("success"):
+            return data.get("data", [])
+        return []
 
-# Category mapping from wger.de to our attribute system
-WGER_CATEGORY_MAPPING = {
-    # wger.de category ID -> our category name -> our attribute type
-    8: ("Arms", "strength"),           # Arms
-    11: ("Chest", "strength"),         # Chest
-    12: ("Back", "strength"),          # Back
-    9: ("Legs", "strength"),           # Legs
-    13: ("Shoulders", "strength"),     # Shoulders
-    10: ("Abs", "strength"),           # Abs
-    15: ("Cardio", "cardio"),          # Cardio
-    14: ("Calves", "flexibility"),     # Calves (treat as flexibility)
+    def get_exercises_by_body_part(self, body_part: str, limit: int = 50) -> List[Dict]:
+        """Get exercises for a specific body part"""
+        return self.get_exercises(limit=limit, body_part=body_part)
+
+    def get_exercises_by_equipment(self, equipment: str, limit: int = 50) -> List[Dict]:
+        """Get exercises for a specific equipment type"""
+        return self.get_exercises(limit=limit, equipment=equipment)
+
+    def get_exercises_by_target_muscle(self, target_muscle: str, limit: int = 50) -> List[Dict]:
+        """Get exercises for a specific target muscle"""
+        return self.get_exercises(limit=limit, target_muscle=target_muscle)
+
+# Category mapping from ExerciseDB to our attribute system
+EXERCISEDB_CATEGORY_MAPPING = {
+    # ExerciseDB body part -> our category name -> our attribute type
+    "chest": ("Chest", "strength"),
+    "back": ("Back", "strength"),
+    "upper arms": ("Arms", "strength"),
+    "lower arms": ("Arms", "strength"),
+    "shoulders": ("Shoulders", "strength"),
+    "upper legs": ("Legs", "strength"),
+    "lower legs": ("Legs", "strength"),
+    "waist": ("Abs", "strength"),
+    "cardio": ("Cardio", "cardio"),
+    "neck": ("Neck", "flexibility"),
 }
 
-def map_wger_category_to_attributes(category_id: int) -> Dict:
-    """Map wger.de category to our attribute system"""
-    if category_id not in WGER_CATEGORY_MAPPING:
+def map_exercisedb_category_to_attributes(body_part: str) -> Dict:
+    """Map ExerciseDB body part to our attribute system"""
+    if body_part not in EXERCISEDB_CATEGORY_MAPPING:
         return {"category": "Other", "type": "general", "attributes": []}
 
-    category_name, attribute_type = WGER_CATEGORY_MAPPING[category_id]
+    category_name, attribute_type = EXERCISEDB_CATEGORY_MAPPING[body_part]
 
     # Define attributes based on type
     if attribute_type == "strength":

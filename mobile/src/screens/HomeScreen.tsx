@@ -31,7 +31,8 @@ export default function HomeScreen() {
 
       // Test basic connectivity first with fetch
       DebugUtils.log('📱 HomeScreen: Testing basic connectivity with fetch...');
-      const testUrl = 'http://192.168.1.11:8000/health';
+      const { API_BASE_URL } = require('../config/api');
+      const testUrl = API_BASE_URL.replace('/api/v1', '/health');
       DebugUtils.log('📱 HomeScreen: Test URL:', testUrl);
 
       try {

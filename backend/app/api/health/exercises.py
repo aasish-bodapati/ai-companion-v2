@@ -1,223 +1,90 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
 from typing import List, Optional
 from app.models.user import User
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models.health.exercise_database import Exercise
-from app.models.health.exercise_logging_categories import ExerciseLoggingCategory, ExerciseLoggingCategoryEnum, get_form_schema
-from app.services.wger_api import map_wger_category_to_attributes
+from app.services.exercise_api import ExerciseApiClient, map_exercise_category_to_attributes
 from pydantic import BaseModel
 
 router = APIRouter()
 
+# Initialize ExerciseDB client
+exercise_client = ExerciseApiClient()
+
 class ExerciseResponse(BaseModel):
-    """Simplified exercise response model for API documentation"""
-    id: int
+    """Exercise response model for API documentation"""
+    id: str  # ExerciseDB exerciseId
     name: str
     category: str
     muscle_group: str
     equipment: Optional[str] = None
-    instructions: Optional[str] = None
-    difficulty: str
+    instructions: Optional[List[str]] = None
+    difficulty: str = "intermediate"
     logging_category: str
     logging_category_info: dict
+    gif_url: Optional[str] = None
+    target_muscles: Optional[List[str]] = None
+    secondary_muscles: Optional[List[str]] = None
+    body_parts: Optional[List[str]] = None
 
 class ExerciseSearchResponse(BaseModel):
     """Exercise search response model"""
     exercises: List[ExerciseResponse]
+    total: int
+    page: int
+    limit: int
 
-@router.get(
-    "/search",
-    response_model=ExerciseSearchResponse,
-    summary="Search exercises",
-    description="Search for exercises by name or description. Returns a list of matching exercises with their details.",
-    responses={
-        200: {
-            "description": "Successful search results",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "exercises": [
-                            {
-                                "id": 1,
-                                "name": "Push-ups",
-                                "logging_category": "strength",
-                                "logging_category_info": {
-                                    "id": 1,
-                                    "name": "strength",
-                                    "display_name": "Strength Training"
-                                },
-                                "difficulty": "beginner",
-                                "calories_per_minute": 8.0,
-                                "description": "A basic bodyweight exercise for chest and arms"
-                            }
-                        ]
-                    }
-                }
-            }
-        },
-        400: {
-            "description": "Invalid search parameters",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "detail": "Search query must be at least 2 characters long"
-                    }
-                }
-            }
-        }
-    }
-)
-async def search_exercises(
-    q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
-    limit: int = Query(20, ge=1, le=50, description="Maximum number of results to return"),
-    db: Session = Depends(get_db)
-):
-    if not q or len(q) < 2:
-        return {"exercises": []}
-
-    search_term = f"%{q.lower()}%"
-    exact_term = q.lower()
-
-    # Query the database for exercises matching the search term with proper sorting
-    from sqlalchemy import case, desc
+def _map_exercisedb_to_response(exercise_data: dict) -> ExerciseResponse:
+    """Map ExerciseDB exercise data to our response format"""
+    # Determine logging category based on body parts and equipment
+    body_parts = exercise_data.get("bodyParts", [])
+    equipments = exercise_data.get("equipments", [])
     
-    exercises = db.query(Exercise).filter(
-        Exercise.name.ilike(search_term)
-    ).order_by(
-        # Exact match first
-        case(
-            (Exercise.name.ilike(exact_term), 1),
-            # Starts with search term
-            (Exercise.name.ilike(f"{exact_term}%"), 2),
-            # Contains search term
-            else_=3
-        ),
-        # Then by name alphabetically
-        Exercise.name
-    ).limit(limit).all()
-
-    # Convert to response format
-    results = []
-    for ex in exercises:
-        # Get logging category info
-        logging_category_info = _get_logging_category_info(ex.logging_category, db)
-
-        results.append(ExerciseResponse(
-            id=ex.id,
-            name=ex.name,
-            category=ex.logging_category if ex.logging_category else 'weighted',
-            muscle_group='general',  # Default muscle group since it's not in the database
-            equipment=None,
-            instructions=None,
-            difficulty='intermediate',  # Default difficulty
-            logging_category=ex.logging_category if ex.logging_category else None,
-            logging_category_info=logging_category_info
-        ))
-
-    return ExerciseSearchResponse(exercises=results)
-
-@router.get(
-    "/all",
-    response_model=ExerciseSearchResponse,
-    summary="Get all exercises",
-    description="Retrieve all available exercises in the database with optional filtering by logging category.",
-    responses={
-        200: {
-            "description": "All exercises retrieved successfully",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "exercises": [
-                            {
-                                "id": 1,
-                                "name": "Push-ups",
-                                "logging_category": "bodyweight",
-                                "logging_category_info": {
-                                    "id": 1,
-                                    "name": "bodyweight",
-                                    "display_name": "Bodyweight Exercises"
-                                },
-                                "difficulty": "beginner",
-                                "calories_per_minute": 8.0,
-                                "description": "A basic bodyweight exercise for chest and arms"
-                            }
-                        ]
-                    }
-                }
-            }
-        }
-    }
-)
-async def get_all_exercises(
-    logging_category: Optional[str] = Query(None, description="Filter by logging category (bodyweight, weighted, cardio_duration, hold_static, repetition_only, distance_based)"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results to return"),
-    db: Session = Depends(get_db)
-):
-    # Build query with filters
-    query = db.query(Exercise)
+    # Map to logging category
+    if "cardio" in body_parts:
+        logging_category = "cardio_duration"
+    elif "body weight" in equipments:
+        logging_category = "bodyweight"
+    elif any(eq in equipments for eq in ["barbell", "dumbbell", "kettlebell", "weighted"]):
+        logging_category = "weighted"
+    else:
+        logging_category = "weighted"  # Default fallback
     
-    # Apply logging category filter
-    if logging_category:
-        try:
-            category_enum = ExerciseLoggingCategoryEnum(logging_category)
-            query = query.filter(Exercise.logging_category == category_enum)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"Invalid logging category: {logging_category}")
+    # Get logging category info
+    logging_category_info = _get_logging_category_info(logging_category)
     
-    # Apply limit
-    exercises = query.limit(limit).all()
-
-    results = []
-    for ex in exercises:
-        # Get logging category info
-        logging_category_info = _get_logging_category_info(ex.logging_category, db)
-
-        results.append(ExerciseResponse(
-            id=ex.id,
-            name=ex.name,
-            category=ex.logging_category if ex.logging_category else 'weighted',
-            muscle_group='general',  # Default muscle group since it's not in the database
-            equipment=None,
-            instructions=None,
-            difficulty='intermediate',  # Default difficulty
-            logging_category=ex.logging_category if ex.logging_category else None,
-            logging_category_info=logging_category_info
-        ))
-
-    return ExerciseSearchResponse(exercises=results)
-
-@router.get("/categories")
-async def get_exercise_categories(
-    db: Session = Depends(get_db)
-):
-    """Get all exercise logging categories with their attribute schemas"""
-    categories = db.query(ExerciseLoggingCategory).filter(ExerciseLoggingCategory.is_active == True).order_by(ExerciseLoggingCategory.sort_order).all()
-
-    results = []
-    for category in categories:
-        results.append({
-            "id": category.id,
-            "name": category.name,
-            "category": category.name,  # Use name as category value
-            "display_name": category.display_name,
-            "description": category.description,
-            "logging_attributes": get_form_schema(ExerciseLoggingCategoryEnum(category.name)),
-            "icon": category.icon,
-            "color": category.color
-        })
-
-    return {"categories": results}
-
-
-def _get_logging_category_info(logging_category: str, db: Session) -> dict:
-    """Get logging category information - using hardcoded data since categories are in exercises table"""
-    if not logging_category:
-        return {"id": "unknown", "name": "unknown", "display_name": "Unknown", "color": "gray", "icon": "help-outline"}
+    # Determine primary muscle group
+    target_muscles = exercise_data.get("targetMuscles", [])
+    muscle_group = target_muscles[0] if target_muscles else "general"
     
-    # Hardcoded category data based on the actual categories in the exercises table
+    # Determine difficulty (we'll use a simple heuristic)
+    instructions = exercise_data.get("instructions", [])
+    if len(instructions) <= 3:
+        difficulty = "beginner"
+    elif len(instructions) <= 6:
+        difficulty = "intermediate"
+    else:
+        difficulty = "advanced"
+    
+    return ExerciseResponse(
+        id=exercise_data.get("exerciseId", ""),
+        name=exercise_data.get("name", ""),
+        category=body_parts[0] if body_parts else "general",
+        muscle_group=muscle_group,
+        equipment=", ".join(equipments) if equipments else None,
+        instructions=exercise_data.get("instructions", []),
+        difficulty=difficulty,
+        logging_category=logging_category,
+        logging_category_info=logging_category_info,
+        gif_url=exercise_data.get("gifUrl"),
+        target_muscles=target_muscles,
+        secondary_muscles=exercise_data.get("secondaryMuscles", []),
+        body_parts=body_parts
+    )
+
+def _get_logging_category_info(logging_category: str) -> dict:
+    """Get logging category information"""
     category_data = {
         "weighted": {
             "id": "weighted",
@@ -258,10 +125,203 @@ def _get_logging_category_info(logging_category: str, db: Session) -> dict:
     })
 
 @router.get(
+    "/search",
+    response_model=ExerciseSearchResponse,
+    summary="Search exercises",
+    description="Search for exercises by name using ExerciseDB. Returns a list of matching exercises with their details.",
+    responses={
+        200: {
+            "description": "Successful search results",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "exercises": [
+                            {
+                                "id": "VPPtusI",
+                                "name": "inverted row bent knees",
+                                "category": "back",
+                                "muscle_group": "upper back",
+                                "equipment": "body weight",
+                                "logging_category": "bodyweight",
+                                "difficulty": "intermediate",
+                                "gif_url": "https://static.exercisedb.dev/media/VPPtusI.gif"
+                            }
+                        ],
+                        "total": 1,
+                        "page": 1,
+                        "limit": 20
+                    }
+                }
+            }
+        }
+    }
+)
+async def search_exercises(
+    q: str = Query(..., min_length=2, description="Search query (minimum 2 characters)"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum number of results to return"),
+    page: int = Query(1, ge=1, description="Page number"),
+    body_part: Optional[str] = Query(None, description="Filter by body part"),
+    equipment: Optional[str] = Query(None, description="Filter by equipment"),
+    target_muscle: Optional[str] = Query(None, description="Filter by target muscle")
+):
+    """Search exercises using ExerciseDB with optional filtering"""
+    if not q or len(q) < 2:
+        return ExerciseSearchResponse(exercises=[], total=0, page=page, limit=limit)
+
+    try:
+        # Calculate offset for pagination
+        offset = (page - 1) * limit
+        
+        # Search exercises with filters
+        exercises_data = exercise_client.get_exercises(
+            limit=limit,
+            offset=offset,
+            body_part=body_part,
+            equipment=equipment,
+            target_muscle=target_muscle
+        )
+        
+        # Filter by search query (ExerciseDB doesn't have built-in search, so we filter client-side)
+        filtered_exercises = [
+            ex for ex in exercises_data 
+            if q.lower() in ex.get("name", "").lower()
+        ]
+        
+        # Map to response format
+        exercises = [_map_exercisedb_to_response(ex) for ex in filtered_exercises]
+        
+        return ExerciseSearchResponse(
+            exercises=exercises,
+            total=len(filtered_exercises),
+            page=page,
+            limit=limit
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error searching exercises: {str(e)}")
+
+@router.get(
+    "/all",
+    response_model=ExerciseSearchResponse,
+    summary="Get all exercises",
+    description="Retrieve all available exercises from ExerciseDB with optional filtering.",
+    responses={
+        200: {
+            "description": "All exercises retrieved successfully",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "exercises": [
+                            {
+                                "id": "VPPtusI",
+                                "name": "inverted row bent knees",
+                                "category": "back",
+                                "muscle_group": "upper back",
+                                "equipment": "body weight",
+                                "logging_category": "bodyweight"
+                            }
+                        ],
+                        "total": 1500,
+                        "page": 1,
+                        "limit": 100
+                    }
+                }
+            }
+        }
+    }
+)
+async def get_all_exercises(
+    body_part: Optional[str] = Query(None, description="Filter by body part"),
+    equipment: Optional[str] = Query(None, description="Filter by equipment"),
+    target_muscle: Optional[str] = Query(None, description="Filter by target muscle"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of results to return"),
+    page: int = Query(1, ge=1, description="Page number")
+):
+    """Get all exercises from ExerciseDB with optional filtering"""
+    try:
+        # Calculate offset for pagination
+        offset = (page - 1) * limit
+        
+        # Get exercises with filters
+        exercises_data = exercise_client.get_exercises(
+            limit=limit,
+            offset=offset,
+            body_part=body_part,
+            equipment=equipment,
+            target_muscle=target_muscle
+        )
+        
+        # Map to response format
+        exercises = [_map_exercisedb_to_response(ex) for ex in exercises_data]
+        
+        return ExerciseSearchResponse(
+            exercises=exercises,
+            total=len(exercises),
+            page=page,
+            limit=limit
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercises: {str(e)}")
+
+@router.get("/categories")
+async def get_exercise_categories():
+    """Get all exercise categories (body parts) from ExerciseDB"""
+    try:
+        body_parts = exercise_client.get_exercise_categories()
+        
+        # Map to our category format
+        categories = []
+        for body_part in body_parts:
+            category_info = map_exercise_category_to_attributes(body_part.get("name", ""))
+            categories.append({
+                "id": body_part.get("name", ""),
+                "name": body_part.get("name", ""),
+                "category": body_part.get("name", ""),
+                "display_name": body_part.get("name", "").replace("_", " ").title(),
+                "description": f"Exercises targeting {body_part.get('name', '')}",
+                "logging_attributes": category_info.get("attributes", []),
+                "icon": "fitness-outline",
+                "color": "#3b82f6"
+            })
+        
+        return {"categories": categories}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving categories: {str(e)}")
+
+@router.get("/body-parts")
+async def get_body_parts():
+    """Get all body parts from ExerciseDB"""
+    try:
+        body_parts = exercise_client.get_exercise_categories()
+        return {"body_parts": [bp.get("name") for bp in body_parts]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving body parts: {str(e)}")
+
+@router.get("/equipment")
+async def get_equipment():
+    """Get all equipment types from ExerciseDB"""
+    try:
+        equipment = exercise_client.get_equipment()
+        return {"equipment": [eq.get("name") for eq in equipment]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving equipment: {str(e)}")
+
+@router.get("/muscles")
+async def get_muscles():
+    """Get all muscles from ExerciseDB"""
+    try:
+        muscles = exercise_client.get_muscles()
+        return {"muscles": muscles}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving muscles: {str(e)}")
+
+@router.get(
     "/{exercise_id}",
     response_model=ExerciseResponse,
     summary="Get exercise by ID",
-    description="Retrieve a specific exercise by its ID.",
+    description="Retrieve a specific exercise by its ExerciseDB ID.",
     responses={
         200: {
             "description": "Exercise retrieved successfully",
@@ -271,27 +331,56 @@ def _get_logging_category_info(logging_category: str, db: Session) -> dict:
         }
     }
 )
-async def get_exercise_by_id(
-    exercise_id: int,
-    db: Session = Depends(get_db)
+async def get_exercise_by_id(exercise_id: str):
+    """Get a specific exercise by ExerciseDB ID."""
+    try:
+        exercise_data = exercise_client.get_exercise_by_id(exercise_id)
+        
+        if not exercise_data:
+            raise HTTPException(status_code=404, detail="Exercise not found")
+        
+        return _map_exercisedb_to_response(exercise_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercise: {str(e)}")
+
+@router.get("/by-body-part/{body_part}")
+async def get_exercises_by_body_part(
+    body_part: str,
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return")
 ):
-    """Get a specific exercise by ID."""
-    exercise = db.query(Exercise).filter(Exercise.id == exercise_id).first()
-    
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Exercise not found")
-    
-    # Get logging category info
-    logging_category_info = _get_logging_category_info(exercise.logging_category, db)
-    
-    return ExerciseResponse(
-        id=exercise.id,
-        name=exercise.name,
-        category=exercise.logging_category or "unknown",
-        muscle_group="",  # Not available in current model
-        equipment=None,   # Not available in current model
-        instructions=None, # Not available in current model
-        difficulty="intermediate",  # Default value
-        logging_category=exercise.logging_category or "unknown",
-        logging_category_info=logging_category_info
-    )
+    """Get exercises for a specific body part"""
+    try:
+        exercises_data = exercise_client.get_exercises_by_body_part(body_part, limit)
+        exercises = [_map_exercisedb_to_response(ex) for ex in exercises_data]
+        return {"exercises": exercises, "body_part": body_part, "count": len(exercises)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercises for body part: {str(e)}")
+
+@router.get("/by-equipment/{equipment}")
+async def get_exercises_by_equipment(
+    equipment: str,
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return")
+):
+    """Get exercises for a specific equipment type"""
+    try:
+        exercises_data = exercise_client.get_exercises_by_equipment(equipment, limit)
+        exercises = [_map_exercisedb_to_response(ex) for ex in exercises_data]
+        return {"exercises": exercises, "equipment": equipment, "count": len(exercises)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercises for equipment: {str(e)}")
+
+@router.get("/by-target-muscle/{target_muscle}")
+async def get_exercises_by_target_muscle(
+    target_muscle: str,
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of results to return")
+):
+    """Get exercises for a specific target muscle"""
+    try:
+        exercises_data = exercise_client.get_exercises_by_target_muscle(target_muscle, limit)
+        exercises = [_map_exercisedb_to_response(ex) for ex in exercises_data]
+        return {"exercises": exercises, "target_muscle": target_muscle, "count": len(exercises)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving exercises for target muscle: {str(e)}")

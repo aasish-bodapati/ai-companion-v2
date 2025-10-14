@@ -66,6 +66,26 @@ class CRUDWaterLog(GenericHealthLoggingCRUD[WaterLog, WaterLogCreate, WaterLogUp
             func.date(WaterLog.log_date) <= end_date
         ).order_by(WaterLog.log_date.desc()).all()
 
+    def get_multi_by_user(
+        self, 
+        db: Session, 
+        *, 
+        user_id: int, 
+        start_date: Optional[date] = None, 
+        end_date: Optional[date] = None,
+        skip: int = 0, 
+        limit: int = 100
+    ) -> List[WaterLog]:
+        """Get multiple water logs for a user with optional date filtering"""
+        query = db.query(WaterLog).filter(WaterLog.user_id == user_id)
+        
+        if start_date:
+            query = query.filter(func.date(WaterLog.log_date) >= start_date)
+        if end_date:
+            query = query.filter(func.date(WaterLog.log_date) <= end_date)
+            
+        return query.order_by(WaterLog.log_date.desc()).offset(skip).limit(limit).all()
+
     def get_total_water_today(self, db: Session, *, user_id: int) -> int:
         """Get total water intake for today in ml"""
         today = date.today()

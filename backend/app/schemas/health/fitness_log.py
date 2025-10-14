@@ -59,6 +59,7 @@ class FitnessLog(FitnessLogBase):
     class Config:
         from_attributes = True
 
+
 # Nutrition schemas
 class FoodItem(BaseModel):
     name: str
@@ -170,3 +171,16 @@ class LoggingInsight(BaseModel):
     data: Optional[Dict[str, Any]] = None
     actionable: bool = False
     priority: str = "medium"  # "low", "medium", "high"
+
+# Response schemas - defined after all base classes
+class FitnessLogResponse(FitnessLog):
+    """Response schema for fitness log endpoints"""
+    pass
+
+class NutritionLogResponse(NutritionLog):
+    """Response schema for nutrition log endpoints"""
+    pass
+
+class MoodLogResponse(MoodLog):
+    """Response schema for mood log endpoints"""
+    pass

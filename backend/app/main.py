@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="""
-    ## HealthLog AI - Your Personal Wellness Assistant
+    ## HealthLog - Your Personal Wellness Assistant
 
     A comprehensive health and fitness tracking API that helps users manage their wellness journey.
 
@@ -83,7 +83,7 @@ app = FastAPI(
     redoc_url="/redoc",
     lifespan=lifespan,
     contact={
-        "name": "HealthLog AI Support",
+        "name": "HealthLog Support",
         "email": "support@healthlog-ai.com",
     },
     license_info={
@@ -342,10 +342,10 @@ async def metrics():
     """Expose Prometheus metrics from app.state.metrics.
 
     Metrics:
-    - ai_companion_requests_total (counter)
-    - ai_companion_requests_by_method_status_total (counter)
-    - ai_companion_request_latency_ms_total (counter, by path)
-    - ai_companion_request_duration_ms (histogram)
+    - healthlog_requests_total (counter)
+    - healthlog_requests_by_method_status_total (counter)
+    - healthlog_request_latency_ms_total (counter, by path)
+    - healthlog_request_duration_ms (histogram)
     """
     try:
         store = app.state.metrics or {}
@@ -353,26 +353,26 @@ async def metrics():
         per = store.get("per_route", {})
 
         lines: list[str] = []
-        lines.append("# HELP ai_companion_requests_total Total HTTP requests processed.")
-        lines.append("# TYPE ai_companion_requests_total counter")
-        lines.append(f"ai_companion_requests_total {total}")
+        lines.append("# HELP healthlog_requests_total Total HTTP requests processed.")
+        lines.append("# TYPE healthlog_requests_total counter")
+        lines.append(f"healthlog_requests_total {total}")
 
         lines.append(
-            "# HELP ai_companion_request_latency_ms_total Total request latency in milliseconds by path."
+            "# HELP healthlog_request_latency_ms_total Total request latency in milliseconds by path."
         )
-        lines.append("# TYPE ai_companion_request_latency_ms_total counter")
+        lines.append("# TYPE healthlog_request_latency_ms_total counter")
         for path, node in per.items():
             total_ms = float(node.get("total_ms", 0.0))
             # sanitize path label value by escaping quotes and backslashes
             label_path = str(path).replace("\\", "\\\\").replace('"', '\\"')
-            lines.append(f'ai_companion_request_latency_ms_total{{path="{label_path}"}} {total_ms}')
+            lines.append(f'healthlog_request_latency_ms_total{{path="{label_path}"}} {total_ms}')
 
         # Per-method/status requests counter
         pms = store.get("per_method_status", {})
         lines.append(
-            "# HELP ai_companion_requests_by_method_status_total Total HTTP requests by method and status."
+            "# HELP healthlog_requests_by_method_status_total Total HTTP requests by method and status."
         )
-        lines.append("# TYPE ai_companion_requests_by_method_status_total counter")
+        lines.append("# TYPE healthlog_requests_by_method_status_total counter")
         for key, c in pms.items():
             try:
                 method, status = key.split(":", 1)
@@ -381,7 +381,7 @@ async def metrics():
             method_esc = method.replace("\\", "\\\\").replace('"', '\\"')
             status_esc = status.replace("\\", "\\\\").replace('"', '\\"')
             lines.append(
-                f'ai_companion_requests_by_method_status_total{{method="{method_esc}",status="{status_esc}"}} {int(c)}'
+                f'healthlog_requests_by_method_status_total{{method="{method_esc}",status="{status_esc}"}} {int(c)}'
             )
 
         # Request duration histogram
@@ -390,21 +390,20 @@ async def metrics():
         counts = hist.get("counts", {})
         sum_ms = float(hist.get("sum_ms", 0.0))
         cnt = int(hist.get("count", 0))
-        lines.append("# HELP ai_companion_request_duration_ms Request duration in milliseconds.")
-        lines.append("# TYPE ai_companion_request_duration_ms histogram")
+        lines.append("# HELP healthlog_request_duration_ms Request duration in milliseconds.")
+        lines.append("# TYPE healthlog_request_duration_ms histogram")
         # Emit buckets in order
         for b in buckets:
             val = int(counts.get(str(b), 0))
-            lines.append(f'ai_companion_request_duration_ms_bucket{{le="{b}"}} {val}')
+            lines.append(f'healthlog_request_duration_ms_bucket{{le="{b}"}} {val}')
         # +Inf bucket
         lines.append(
-            f'ai_companion_request_duration_ms_bucket{{le="+Inf"}} {int(counts.get("+Inf", 0))}'
+            f'healthlog_request_duration_ms_bucket{{le="+Inf"}} {int(counts.get("+Inf", 0))}'
         )
         # count and sum
-        lines.append(f"ai_companion_request_duration_ms_count {cnt}")
-        lines.append(f"ai_companion_request_duration_ms_sum {sum_ms}")
+        lines.append(f"healthlog_request_duration_ms_count {cnt}")
+        lines.append(f"healthlog_request_duration_ms_sum {sum_ms}")
 
-        # LLM metrics removed for simplicity
 
         body = "\n".join(lines) + "\n"
         return JSONResponse(content=body, media_type="text/plain; version=0.0.4; charset=utf-8")

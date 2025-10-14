@@ -34,7 +34,7 @@ export const profileService = {
   getUserProfile: async (): Promise<UserProfile | null> => {
     try {
       const response = await api.get('/profile');
-      return response;
+      return response.data;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;
@@ -45,7 +45,7 @@ export const profileService = {
   updateUserProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile | null> => {
     try {
       const response = await api.put('/profile', profileData);
-      return response;
+      return response.data;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       return null;

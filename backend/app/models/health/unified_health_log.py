@@ -74,3 +74,4 @@ class UnifiedHealthLog(Base):
     def is_weight(self):
         return self.log_type == 'weight'
 
+

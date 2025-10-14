@@ -8,7 +8,7 @@ import { ActivityIndicator, View } from 'react-native';
 import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
-import EnhancedOnboardingScreen from '../screens/onboarding/EnhancedOnboardingScreen';
+import SimpleOnboardingScreen from '../screens/onboarding/SimpleOnboardingScreen';
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -24,9 +24,18 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
   const { isAuthenticated, isLoading, needsOnboarding, user, token } = useAuth();
 
-  // Only log significant state changes
-  if (__DEV__ && isLoading === false) {
-    DebugUtils.log('🧭 AppNavigator - isAuthenticated:', isAuthenticated, 'needsOnboarding:', needsOnboarding);
+  // Enhanced logging for debugging
+  if (__DEV__) {
+    DebugUtils.log('🧭 AppNavigator - State:', {
+      isAuthenticated,
+      isLoading,
+      needsOnboarding,
+      hasUser: !!user,
+      hasToken: !!token,
+      userId: user?.id,
+      userEmail: user?.email,
+      timestamp: new Date().toISOString()
+    });
   }
 
   if (isLoading) {
@@ -41,7 +50,7 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
         needsOnboarding ? (
-          <Stack.Screen name="Onboarding" component={EnhancedOnboardingScreen} />
+          <Stack.Screen name="Onboarding" component={SimpleOnboardingScreen} />
         ) : (
           <Stack.Screen name="Main" component={TabNavigator} />
         )

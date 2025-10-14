@@ -123,7 +123,7 @@ AI-powered health and wellness platform that combines manual logging with intell
 
 ### Nutrition APIs
 - **Indian Food Database** - Localized food database with comprehensive nutrition data
-- **WGER API** - Exercise database integration for workout tracking
+- **ExerciseDB API** - Self-hosted exercise database with 1,500+ exercises
 - **Food Search** - Advanced food search and nutrition lookup capabilities
 
 ### AI Services

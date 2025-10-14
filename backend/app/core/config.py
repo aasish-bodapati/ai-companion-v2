@@ -1,5 +1,5 @@
 """
-Simplified configuration for HealthLog AI - Health-focused only
+Simplified configuration for HealthLog - Health-focused only
 """
 
 from typing import Any, Dict, List, Optional, Union
@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     REDIS_URL: Optional[str] = None  # Redis URL for rate limiting and caching
 
     # External API settings
-    WGER_API: Optional[str] = None  # wger.de API key for exercise data
+    EXERCISE_DB_URL: str = "http://localhost:80/api/v1"  # Self-hosted ExerciseDB API
 
 
     model_config = {

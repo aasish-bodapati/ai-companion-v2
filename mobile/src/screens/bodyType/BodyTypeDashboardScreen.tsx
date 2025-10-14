@@ -3,16 +3,23 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
 import { DailyLog, WorkoutLog, BodyTypeNutritionLog } from '../../services/BodyTypeScoringService';
 import BodyTypeProgressDashboard from '../../components/bodyType/BodyTypeProgressDashboard';
 
 import { COLORS, FONT_SIZE } from '../../theme/constants';
+
+// Default values constants - following existing pattern
+const DEFAULT_VALUES = {
+  AGE: 25,
+  WEIGHT: 70,
+  HEIGHT: 175,
+};
 
 export default function BodyTypeDashboardScreen() {
   const { user } = useAuth();
@@ -42,9 +49,9 @@ export default function BodyTypeDashboardScreen() {
       // Set user attributes
       if (profile?.health_data) {
         setUserAttributes({
-          age: parseInt(profile.health_data.age || '25') || 25,
-          weight: parseInt(profile.health_data.weight || '70') || 70,
-          height: parseInt(profile.health_data.height || '175') || 175,
+          age: parseInt(profile.health_data.age || DEFAULT_VALUES.AGE.toString()) || DEFAULT_VALUES.AGE,
+          weight: parseInt(profile.health_data.weight || DEFAULT_VALUES.WEIGHT.toString()) || DEFAULT_VALUES.WEIGHT,
+          height: parseInt(profile.health_data.height || DEFAULT_VALUES.HEIGHT.toString()) || DEFAULT_VALUES.HEIGHT,
           gender: (profile.health_data.gender as 'male' | 'female' | 'other') || 'male',
           activityLevel: (profile.health_data.activity_level as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active') || 'moderate',
         });

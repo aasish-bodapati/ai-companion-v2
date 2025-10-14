@@ -1,3 +1,8 @@
+/**
+ * BaseModal - Standardized modal component for consistent UI
+ * Reduces complexity by providing a reusable base for all modals
+ */
+
 import React, { useEffect, useRef } from 'react';
 import {
   Modal,
@@ -10,6 +15,8 @@ import {
   Platform,
   ScrollView,
   Animated,
+  ViewStyle,
+  TextStyle,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,168 +25,210 @@ import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS, SHADOWS } from 
 export type ModalSize = 'small' | 'medium' | 'large' | 'fullscreen';
 export type ModalPosition = 'center' | 'bottom' | 'top';
 
-interface BaseModalProps {
-  // Core props
+export interface BaseModalProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
+  subtitle?: string;
   children: React.ReactNode;
-
-  // Modal configuration
   size?: ModalSize;
   position?: ModalPosition;
   showCloseButton?: boolean;
+  showHeader?: boolean;
   closeOnBackdrop?: boolean;
   closeOnSwipe?: boolean;
-
-  // Content configuration
+  style?: ViewStyle;
+  headerStyle?: ViewStyle;
+  titleStyle?: TextStyle;
+  subtitleStyle?: TextStyle;
+  contentStyle?: ViewStyle;
+  animationType?: 'slide' | 'fade' | 'none';
+  keyboardAvoidingView?: boolean;
   scrollable?: boolean;
-  keyboardAvoiding?: boolean;
-  showHeader?: boolean;
-
-  // Styling
-  containerStyle?: any;
-  contentStyle?: any;
-  headerStyle?: any;
-  titleStyle?: any;
-
-  // Animation
-  animationType?: 'fade' | 'slide' | 'none';
-  animationDuration?: number;
-
-  // Callbacks
-  onShow?: () => void;
-  onHide?: () => void;
-  onBackdropPress?: () => void;
-
-  // Accessibility
-  accessibilityLabel?: string;
-  accessibilityHint?: string;
+  maxHeight?: number;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function BaseModal({
   visible,
   onClose,
   title,
+  subtitle,
   children,
   size = 'medium',
   position = 'center',
   showCloseButton = true,
-  closeOnBackdrop = true,
-  closeOnSwipe = false,
-  scrollable = false,
-  keyboardAvoiding = true,
   showHeader = true,
-  containerStyle,
-  contentStyle,
+  closeOnBackdrop = true,
+  closeOnSwipe = true,
+  style,
   headerStyle,
   titleStyle,
-  animationType = 'fade',
-  animationDuration = 300,
-  onShow,
-  onHide,
-  onBackdropPress,
-  accessibilityLabel,
-  accessibilityHint,
+  subtitleStyle,
+  contentStyle,
+  animationType = 'slide',
+  keyboardAvoidingView = true,
+  scrollable = false,
+  maxHeight,
 }: BaseModalProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
 
-  // Handle modal show/hide animations
   useEffect(() => {
     if (visible) {
-      onShow?.();
-      showModal();
+      if (animationType === 'slide') {
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else if (animationType === 'fade') {
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
     } else {
-      hideModal();
-    }
-  }, [visible, showModal, hideModal]);
-
-  const showModal = () => {
-    const animations = [];
-
-    if (animationType === 'fade' || animationType === 'slide') {
-      animations.push(
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: animationDuration,
-          useNativeDriver: true,
-        })
-      );
-    }
-
-    if (animationType === 'slide') {
-      animations.push(
-        Animated.timing(slideAnim, {
+      if (animationType === 'slide') {
+        Animated.parallel([
+          Animated.timing(translateY, {
+            toValue: SCREEN_HEIGHT,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else if (animationType === 'fade') {
+        Animated.timing(opacity, {
           toValue: 0,
-          duration: animationDuration,
+          duration: 300,
           useNativeDriver: true,
-        })
-      );
+        }).start();
+      }
     }
+  }, [visible, animationType, translateY, opacity]);
 
-    if (animationType === 'fade') {
-      animations.push(
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: animationDuration,
-          useNativeDriver: true,
-        })
-      );
-    }
+  const getModalStyle = (): ViewStyle => {
+    const baseStyle: ViewStyle = {
+      backgroundColor: COLORS.white,
+      borderRadius: BORDER_RADIUS.large,
+      ...SHADOWS.large,
+    };
 
-    Animated.parallel(animations).start();
+    // Size variants
+    const sizeStyles = {
+      small: {
+        width: '80%',
+        maxHeight: SCREEN_HEIGHT * 0.4,
+      },
+      medium: {
+        width: '90%',
+        maxHeight: SCREEN_HEIGHT * 0.6,
+      },
+      large: {
+        width: '95%',
+        maxHeight: SCREEN_HEIGHT * 0.8,
+      },
+      fullscreen: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 0,
+      },
+    };
+
+    // Position variants
+    const positionStyles = {
+      center: {
+        alignSelf: 'center',
+        marginVertical: 'auto',
+      },
+      bottom: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
+      },
+      top: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        borderTopLeftRadius: 0,
+        borderTopRightRadius: 0,
+      },
+    };
+
+    return {
+      ...baseStyle,
+      ...sizeStyles[size],
+      ...positionStyles[position],
+      ...(maxHeight && { maxHeight }),
+      ...style,
+    };
   };
 
-  const hideModal = () => {
-    const animations = [];
-
-    if (animationType === 'fade' || animationType === 'slide') {
-      animations.push(
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: animationDuration,
-          useNativeDriver: true,
-        })
-      );
-    }
-
-    if (animationType === 'slide') {
-      animations.push(
-        Animated.timing(slideAnim, {
-          toValue: screenHeight,
-          duration: animationDuration,
-          useNativeDriver: true,
-        })
-      );
-    }
-
-    if (animationType === 'fade') {
-      animations.push(
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: animationDuration,
-          useNativeDriver: true,
-        })
-      );
-    }
-
-    Animated.parallel(animations).start(() => {
-      onHide?.();
-    });
+  const getHeaderStyle = (): ViewStyle => {
+    return {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: SPACING.large,
+      paddingVertical: SPACING.medium,
+      borderBottomWidth: 1,
+      borderBottomColor: COLORS.border,
+      ...headerStyle,
+    };
   };
 
-  // Handle backdrop press
+  const getTitleStyle = (): TextStyle => {
+    return {
+      fontSize: FONT_SIZE.large,
+      fontWeight: FONT_WEIGHT.semibold,
+      color: COLORS.text.primary,
+      flex: 1,
+      ...titleStyle,
+    };
+  };
+
+  const getSubtitleStyle = (): TextStyle => {
+    return {
+      fontSize: FONT_SIZE.small,
+      fontWeight: FONT_WEIGHT.regular,
+      color: COLORS.text.secondary,
+      marginTop: SPACING.xs,
+      ...subtitleStyle,
+    };
+  };
+
+  const getContentStyle = (): ViewStyle => {
+    return {
+      paddingHorizontal: SPACING.large,
+      paddingVertical: SPACING.medium,
+      ...contentStyle,
+    };
+  };
+
   const handleBackdropPress = () => {
     if (closeOnBackdrop) {
-      onBackdropPress?.() || onClose();
+      onClose();
     }
   };
 
-  // Handle swipe to close
   const handleSwipeGesture = (event: any) => {
     if (closeOnSwipe && event.nativeEvent.state === State.END) {
       const { translationY, velocityY } = event.nativeEvent;
@@ -189,101 +238,77 @@ export default function BaseModal({
     }
   };
 
-  // Get modal dimensions based on size
-  const getModalDimensions = () => {
-    switch (size) {
-      case 'small':
-        return { width: screenWidth * 0.8, maxHeight: screenHeight * 0.4 };
-      case 'medium':
-        return { width: screenWidth * 0.9, maxHeight: screenHeight * 0.7 };
-      case 'large':
-        return { width: screenWidth * 0.95, maxHeight: screenHeight * 0.85 };
-      case 'fullscreen':
-        return { width: screenWidth, height: screenHeight };
-      default:
-        return { width: screenWidth * 0.9, maxHeight: screenHeight * 0.7 };
-    }
-  };
+  const renderHeader = () => {
+    if (!showHeader) return null;
 
-  // Get modal position styles
-  const getPositionStyles = () => {
-    switch (position) {
-      case 'bottom':
-        return {
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        };
-      case 'top':
-        return {
-          justifyContent: 'flex-start',
-          alignItems: 'center',
-        };
-      case 'center':
-      default:
-        return {
-          justifyContent: 'center',
-          alignItems: 'center',
-        };
-    }
-  };
-
-  const modalDimensions = getModalDimensions();
-  const positionStyles = getPositionStyles();
-
-  // Render modal content
-  const renderContent = () => {
-    const content = (
-      <View style={[styles.modalContent, modalDimensions, contentStyle]}>
-        {/* Header */}
-        {showHeader && (title || showCloseButton) && (
-          <View style={[styles.header, headerStyle]}>
-            {title && (
-              <Text style={[styles.title, titleStyle]} numberOfLines={1}>
-                {title}
-              </Text>
-            )}
-            {showCloseButton && (
-              <TouchableOpacity
-                onPress={onClose}
-                style={styles.closeButton}
-                accessibilityLabel="Close modal"
-                accessibilityHint="Tap to close this modal"
-              >
-                <Ionicons name="close" size={24} color={COLORS.text.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
-        {/* Body */}
-        {scrollable ? (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {children}
-          </ScrollView>
-        ) : (
-          <View style={styles.body}>
-            {children}
-          </View>
+    return (
+      <View style={getHeaderStyle()}>
+        <View style={styles.headerContent}>
+          {title && <Text style={getTitleStyle()}>{title}</Text>}
+          {subtitle && <Text style={getSubtitleStyle()}>{subtitle}</Text>}
+        </View>
+        {showCloseButton && (
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color={COLORS.text.secondary} />
+          </TouchableOpacity>
         )}
       </View>
     );
+  };
 
-    // Wrap with gesture handler if swipe to close is enabled
-    if (closeOnSwipe) {
+  const renderContent = () => {
+    if (scrollable) {
       return (
-        <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
-          {content}
-        </PanGestureHandler>
+        <ScrollView
+          style={getContentStyle()}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {children}
+        </ScrollView>
       );
     }
 
-    return content;
+    return <View style={getContentStyle()}>{children}</View>;
   };
+
+  const ModalContent = () => (
+    <Animated.View
+      style={[
+        getModalStyle(),
+        {
+          transform: [{ translateY }],
+          opacity,
+        },
+      ]}
+    >
+      {renderHeader()}
+      {renderContent()}
+    </Animated.View>
+  );
+
+  if (closeOnSwipe && position === 'bottom') {
+    return (
+      <Modal
+        visible={visible}
+        transparent
+        animationType="none"
+        onRequestClose={onClose}
+      >
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={handleBackdropPress}
+        >
+          <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
+            <View style={styles.modalContainer}>
+              <ModalContent />
+            </View>
+          </PanGestureHandler>
+        </TouchableOpacity>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -291,38 +316,24 @@ export default function BaseModal({
       transparent
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent
-      accessibilityLabel={accessibilityLabel}
-      accessibilityHint={accessibilityHint}
     >
       <TouchableOpacity
-        style={[styles.backdrop, positionStyles]}
+        style={styles.backdrop}
         activeOpacity={1}
         onPress={handleBackdropPress}
       >
-        <Animated.View
-          style={[
-            styles.modalContainer,
-            {
-              opacity: fadeAnim,
-              transform: [
-                { translateY: slideAnim },
-                { scale: scaleAnim },
-              ],
-            },
-          ]}
-        >
-          {keyboardAvoiding ? (
+        <View style={styles.modalContainer}>
+          {keyboardAvoidingView ? (
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.keyboardAvoidingView}
             >
-              {renderContent()}
+              <ModalContent />
             </KeyboardAvoidingView>
           ) : (
-            renderContent()
+            <ModalContent />
           )}
-        </Animated.View>
+        </View>
       </TouchableOpacity>
     </Modal>
   );
@@ -332,46 +343,24 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardAvoidingView: {
     flex: 1,
-  },
-  modalContent: {
-    backgroundColor: COLORS.background.primary,
-    borderRadius: BORDER_RADIUS.lg,
-    ...SHADOWS.large,
-  },
-  header: {
-    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border.primary,
   },
-  title: {
-    fontSize: FONT_SIZE.lg,
-    fontWeight: FONT_WEIGHT.semibold,
-    color: COLORS.text.primary,
+  headerContent: {
     flex: 1,
-    marginRight: SPACING.md,
   },
   closeButton: {
     padding: SPACING.xs,
-    borderRadius: BORDER_RADIUS.sm,
-  },
-  body: {
-    flex: 1,
-    padding: SPACING.lg,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.lg,
+    marginLeft: SPACING.small,
   },
 });

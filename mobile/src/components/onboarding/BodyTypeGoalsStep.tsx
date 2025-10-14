@@ -15,6 +15,7 @@ import {
   UserAttributes,
   BodyTypeGoal
 } from '../../services/BodyTypeGoalsService';
+import CustomBodyTypeGoalCreator from './CustomBodyTypeGoalCreator';
 
 interface BodyTypeGoalsStepProps {
   onBodyTypeChange: (bodyTypeId: string) => void;
@@ -46,22 +47,9 @@ export default function BodyTypeGoalsStep({
   const [availableBodyTypes, setAvailableBodyTypes] = useState<BodyTypeGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCustomCreator, setShowCustomCreator] = useState(false);
 
   useEffect(() => {
-    // Get available body types based on user's current state
-    const loadBodyTypes = async () => {
-      try {
-        setError(null);
-        const available = await getAvailableBodyTypes(userData);
-        setAvailableBodyTypes(available);
-      } catch {
-        // Silent error handling - no console logging to prevent Expo Go notifications
-        setError('Failed to load body type goals');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadBodyTypes();
   }, [userData]);
 
@@ -70,18 +58,38 @@ export default function BodyTypeGoalsStep({
     if (selectedBodyType) {
       onBodyTypeChange(selectedBodyType);
     }
-  }, [selectedBodyType, onBodyTypeChange]);
+  }, [selectedBodyType]); // Remove onBodyTypeChange from dependencies to prevent infinite loop
 
   useEffect(() => {
     // Notify parent of validation state
     if (onValidationChange) {
       onValidationChange(selectedBodyType.length > 0);
     }
-  }, [selectedBodyType, onValidationChange]);
+  }, [selectedBodyType]); // Remove onValidationChange from dependencies to prevent infinite loop
 
   const handleBodyTypeSelect = (bodyTypeId: string) => {
     hapticFeedback.selection();
     setSelectedBodyType(bodyTypeId);
+  };
+
+  const handleCustomGoalCreated = (goalId: string) => {
+    // Reload body types to include the new custom goal
+    loadBodyTypes();
+    // Select the newly created goal
+    setSelectedBodyType(goalId);
+    setShowCustomCreator(false);
+  };
+
+  const loadBodyTypes = async () => {
+    try {
+      setError(null);
+      const available = await getAvailableBodyTypes(userData);
+      setAvailableBodyTypes(available);
+    } catch {
+      setError('Failed to load body type goals');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getFilteredBodyTypes = () => {
@@ -400,7 +408,24 @@ export default function BodyTypeGoalsStep({
 
         {/* Body Types Grid */}
         {renderBodyTypesGrid()}
+
+        {/* Create Custom Goal Button */}
+        <TouchableOpacity
+          style={styles.createCustomButton}
+          onPress={() => setShowCustomCreator(true)}
+        >
+          <Ionicons name="add-circle-outline" size={20} color="#3b82f6" />
+          <Text style={styles.createCustomButtonText}>Create Custom Goal</Text>
+        </TouchableOpacity>
       </ScrollView>
+
+      {/* Custom Goal Creator Modal */}
+      <CustomBodyTypeGoalCreator
+        visible={showCustomCreator}
+        onClose={() => setShowCustomCreator(false)}
+        onGoalCreated={handleCustomGoalCreated}
+        userGender={userData.gender}
+      />
     </View>
   );
 }
@@ -691,5 +716,24 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  createCustomButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
+    borderWidth: 2,
+    borderColor: '#3b82f6',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginTop: 16,
+  },
+  createCustomButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#3b82f6',
+    marginLeft: 8,
   },
 });

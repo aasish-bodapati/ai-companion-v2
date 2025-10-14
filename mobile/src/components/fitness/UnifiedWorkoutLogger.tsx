@@ -27,6 +27,7 @@ interface Exercise {
   instructions?: string;
   difficulty?: string;
   logging_category?: string;
+  gif_url?: string;
 }
 
 interface ExerciseApiResponse {
@@ -38,6 +39,7 @@ interface ExerciseApiResponse {
   instructions?: string;
   difficulty?: string;
   logging_category?: string;
+  gif_url?: string;
 }
 
 interface WorkoutSet {
@@ -89,6 +91,7 @@ export default function UnifiedWorkoutLogger({
   });
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(false);
   const isLoadingRef = useRef(false);
 
@@ -136,19 +139,36 @@ export default function UnifiedWorkoutLogger({
         equipment: exercise.equipment,
         instructions: exercise.instructions,
         difficulty: exercise.difficulty,
-        logging_category: exercise.logging_category
+        logging_category: exercise.logging_category,
+        gif_url: exercise.gif_url
       }));
       setExercises(mappedExercises);
+      setFilteredExercises(mappedExercises);
     } catch (error) {
       DebugUtils.error('Error loading exercises:', error);
       showToast.error('Failed to load exercises', 'Please try again later');
       // Set empty array as fallback to prevent UI issues
       setExercises([]);
+      setFilteredExercises([]);
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
     }
   };
+
+  // Filter exercises based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredExercises(exercises);
+    } else {
+      const filtered = exercises.filter(exercise =>
+        exercise.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exercise.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        exercise.muscle_groups.some(mg => mg.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      setFilteredExercises(filtered);
+    }
+  }, [searchQuery, exercises]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNutritionStore, useNutritionLoading } from '../../stores';
+import { useHealthActions, useHealthStats } from '../../stores';
 import { nutritionService } from '../../services/api';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
@@ -21,10 +21,9 @@ import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 export default function NutritionScreen() {
-  // Use individual selectors instead of the actions object to prevent infinite loops
-  const refreshNutritionData = useNutritionStore((state) => state.refreshNutritionData);
-  const addMeal = useNutritionStore((state) => state.addMeal);
-  const loading = useNutritionLoading();
+  // Use simplified store
+  const healthActions = useHealthActions();
+  const { loading } = useHealthStats();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
@@ -36,8 +35,8 @@ export default function NutritionScreen() {
 
   const loadWeekStats = useCallback(async () => {
     // This is now handled by the Zustand store
-    await refreshNutritionData();
-  }, []); // Remove refreshNutritionData from dependencies to prevent infinite re-renders
+    await healthActions.refreshData();
+  }, []); // Remove refreshData from dependencies to prevent infinite re-renders
 
   // Weekly activity data is now handled by useWeeklyActivity hook
 
@@ -96,7 +95,7 @@ export default function NutritionScreen() {
       await nutritionService.logMeal(mealData);
 
       // Add meal to store and refresh data
-      addMeal({
+      healthActions.addMeal({
         id: Date.now().toString(),
         meal_type: mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack',
         food_items: foodItems.map(item => ({
@@ -111,7 +110,7 @@ export default function NutritionScreen() {
         logged_at: new Date().toISOString(),
       });
 
-      await refreshNutritionData();
+      await healthActions.refreshData();
 
       if (nutritionLogsRef.current) {
         nutritionLogsRef.current.refreshLogs();
@@ -119,16 +118,16 @@ export default function NutritionScreen() {
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
-  }, [addMeal, refreshNutritionData]);
+  }, [healthActions]);
 
   const handleMealLogged = useCallback(async () => {
     setShowLogMealModal(false);
-    await refreshNutritionData();
+    await healthActions.refreshData();
     // Refresh logs if we're on the logs tab
     if (activeTab === 'logs' && nutritionLogsRef.current) {
       nutritionLogsRef.current.refreshLogs();
     }
-  }, [refreshNutritionData, activeTab]);
+  }, [healthActions, activeTab]);
 
   const renderOverview = () => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

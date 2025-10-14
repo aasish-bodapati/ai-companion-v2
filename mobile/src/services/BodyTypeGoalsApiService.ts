@@ -93,10 +93,10 @@ class BodyTypeGoalsApiService {
   async getSystemBodyTypeGoals(): Promise<BodyTypeGoal[]> {
     try {
       DebugUtils.log('🎯 Fetching system body type goals from API...');
-      const response = await api.get<BodyTypeGoalList>('/api/v1/health/body-type-goals/system');
+      const response = await api.get<BodyTypeGoal[]>('/api/v1/health/body-type-goals/system');
 
-      DebugUtils.log('🎯 System body type goals fetched successfully:', response.body_type_goals.length);
-      return response.body_type_goals;
+      DebugUtils.log('🎯 System body type goals fetched successfully:', response.length);
+      return response;
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
       throw new Error('Failed to fetch system body type goals');
