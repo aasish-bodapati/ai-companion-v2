@@ -46,6 +46,17 @@ export interface MoodLog {
   logged_at: string;
 }
 
+export interface MoodStats {
+  total_logs: number;
+  average_mood: number;
+  mood_trend: 'increasing' | 'decreasing' | 'stable';
+  recent_logs: MoodLog[];
+  mood_distribution: {
+    rating: number;
+    count: number;
+  }[];
+}
+
 export interface StepData {
   date: string;
   steps: number;

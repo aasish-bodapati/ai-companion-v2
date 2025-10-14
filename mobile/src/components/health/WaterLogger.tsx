@@ -8,7 +8,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING } from '../../theme/constants';
-import { simpleWaterService, SimpleWaterStats } from '../../services/SimpleWaterService';
+import { simpleWaterService, WaterStats } from '../../services/ConsolidatedHealthService';
 import LoadingState from '../ui/LoadingState';
 import ConfirmationDialog from '../ui/ConfirmationDialog';
 import { loadingStateConfigs } from '../ui/LoadingState.utils';
@@ -27,7 +27,7 @@ export default function WaterLogger({ onWaterLogged }: WaterLoggerProps) {
   const WATER_GOAL_ML = 3200;
   const WATER_GOAL_OZ = 108.2;
   
-  const [stats, setStats] = useState<SimpleWaterStats>({
+  const [stats, setStats] = useState<WaterStats>({
     total_ml_today: 0,
     total_oz_today: 0,
     goal_ml: WATER_GOAL_ML,

@@ -8,7 +8,7 @@ import {
   FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ApiServiceClient } from '../../services/ApiService';
+import { api } from '../../services';
 import { showToast } from '../../utils/toast';
 import { COMMON_STYLES } from '../../theme/constants';
 

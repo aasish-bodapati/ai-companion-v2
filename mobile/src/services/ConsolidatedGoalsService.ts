@@ -37,6 +37,66 @@ export interface GoalProgress {
   last_updated: string;
 }
 
+export interface HealthData {
+  age: number;
+  gender: 'male' | 'female';
+  height: number; // cm
+  weight: number; // kg
+  activityLevel: 'sedentary' | 'light' | 'active' | 'very_active';
+}
+
+export interface UserAttributes {
+  age: number;
+  height: number; // cm
+  weight: number; // kg
+  gender: 'male' | 'female' | 'other';
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+  ffm?: number; // Fat-Free Mass (kg)
+  smm?: number; // Skeletal Muscle Mass (kg)
+  bodyFat?: number; // Body Fat Percentage
+}
+
+export interface WorkoutLog {
+  type: 'cardio' | 'mobility' | 'yoga' | 'light_strength' | 'moderate_strength' | 'heavy_strength' | 'hypertrophy' | 'compound_lifts' | 'functional' | 'skipped';
+  duration?: number; // minutes
+  intensity?: 'low' | 'moderate' | 'high';
+  exercises?: string[];
+  planned?: boolean; // Was this a planned workout day?
+}
+
+export interface BodyTypeNutritionLog {
+  proteinPerKg: number;
+  calories: number;
+  tdee: number; // Total Daily Energy Expenditure
+  isJunkProcessed: boolean;
+  mealType?: 'breakfast' | 'lunch' | 'dinner' | 'snack';
+}
+
+export interface DailyLog {
+  workouts: WorkoutLog[];
+  nutrition: BodyTypeNutritionLog[];
+  waterIntake: number; // L
+  steps: number;
+  sleepHours: number;
+  progressiveOverload?: boolean; // Did they log progressive overload?
+}
+
+export interface WeeklyLog {
+  days: DailyLog[];
+  totalWorkouts: number;
+  missedSessions: number;
+  consistencyStreak: number; // days
+}
+
+export interface ScoringResult {
+  score: number; // Total points earned
+  maxScore: number; // Maximum possible points
+  percentage: number; // 0 to 100
+  feedback: string;
+  suggestions: string[];
+  alignment: 'closer' | 'neutral' | 'farther';
+}
+
 export interface BodyTypeGoal {
   id: string;
   name: string;

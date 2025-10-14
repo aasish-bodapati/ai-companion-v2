@@ -29,6 +29,25 @@ export interface FoodItem {
   is_local?: boolean;
 }
 
+export interface NutritionLog {
+  id: number;
+  user_id: number;
+  meal_type: string;
+  meal_name?: string;
+  total_calories: number;
+  protein_g?: number;
+  carbs_g?: number;
+  fat_g?: number;
+  fiber_g?: number;
+  sugar_g?: number;
+  sodium_mg?: number;
+  food_items: string;
+  notes?: string;
+  mood_before?: string;
+  mood_after?: string;
+  created_at: string;
+}
+
 export interface MealLog {
   id: string;
   food_id: string;

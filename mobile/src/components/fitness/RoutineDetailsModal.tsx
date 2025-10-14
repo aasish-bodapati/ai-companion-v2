@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 
-import { SimpleRoutineWithProgress } from '../../services/RoutineService';
+import { SimpleRoutineWithProgress } from '../../services/ConsolidatedFitnessService';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS, SHADOWS } from '../../theme/constants';
 import { CategoryBadge, DifficultyBadge } from '../ui/Badge';
 

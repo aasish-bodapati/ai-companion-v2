@@ -10,7 +10,8 @@ import { Ionicons } from '@expo/vector-icons';
 import MobileOptimizedCard from '../ui/MobileOptimizedCard';
 import { hapticFeedback } from '../../utils/haptics';
 import { COMMON_STYLES } from '../../theme/constants';
-import { GoalRecommendationService, HealthData, GoalRecommendation } from '../../services/GoalRecommendationService';
+import { GoalRecommendationService } from '../../services/GoalRecommendationService';
+import { HealthData, GoalRecommendation } from '../../services/ConsolidatedGoalsService';
 
 interface BodyTypeGoalsStepProps {
   onBodyTypeChange: (bodyTypeId: string) => void;

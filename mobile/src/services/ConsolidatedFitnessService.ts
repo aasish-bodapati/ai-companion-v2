@@ -23,6 +23,24 @@ export interface Exercise {
   difficulty?: 'beginner' | 'intermediate' | 'advanced';
 }
 
+export interface ExerciseType {
+  id: number;
+  name: string;
+  category: string;
+  muscle_group: string;
+  equipment?: string;
+  instructions?: string;
+  difficulty: string;
+  logging_category: string;
+  gif_url?: string;
+  logging_category_info?: {
+    id: string;
+    name: string;
+    display_name: string;
+    color?: string;
+  };
+}
+
 export interface ExerciseCategory {
   id: string;
   name: string;
@@ -41,14 +59,64 @@ export interface WorkoutLog {
   created_at: string;
 }
 
-export interface SimpleRoutine {
-  id: string;
-  name: string;
-  description?: string;
-  exercises: Exercise[];
-  duration_minutes?: number;
+export interface Workout {
+  activity_name: string;
+  activity_type: string;
+  sets?: number;
+  reps?: string;
+  duration?: number;
+  distance?: number;
+  distance_unit?: string;
+  intensity?: string;
+  heart_rate?: number;
   difficulty?: string;
-  is_active?: boolean;
+  total_reps?: number;
+  time?: number;
+  pace?: string;
+  weight_notes?: string;
+}
+
+export interface WorkoutDay {
+  day: string;
+  workout_name?: string;
+  description?: string;
+  workouts?: Workout[]; // For backward compatibility
+  exercises?: {
+    exercise_name: string;
+    logging_category: string;
+    sets?: number;
+    reps?: string;
+    duration?: number;
+    distance?: number;
+    distance_unit?: string;
+    intensity?: string;
+    rest_time?: string;
+    weight?: number;
+    order_index?: number;
+  }[];
+}
+
+export interface SimpleRoutine {
+  id: number;
+  name: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  duration_weeks: number;
+  created_by_user_id?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SimpleRoutineWithProgress extends SimpleRoutine {
+  workout_schedule: WorkoutDay[];
+  total_workouts_per_week: number;
+  is_template?: boolean;
+  user_progress?: {
+    is_active: boolean;
+    workouts_completed: number;
+    last_workout_date?: string;
+    started_at?: string;
+  };
 }
 
 export interface TodaysWorkout {

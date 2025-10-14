@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { moodService, MoodLog, MoodStats } from '../../services/MoodService';
+import { moodService, MoodLog, MoodStats } from '../../services/ConsolidatedHealthService';
 import { hapticFeedback } from '../../utils/haptics';
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';

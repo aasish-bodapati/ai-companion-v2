@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
-import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
-import { DailyLog, WeeklyLog } from '../../services/BodyTypeScoringService';
+import { BodyTypeGoal, UserAttributes } from '../../services/ConsolidatedGoalsService';
+import { DailyLog, WeeklyLog } from '../../services/ConsolidatedGoalsService';
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';

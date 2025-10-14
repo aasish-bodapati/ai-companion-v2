@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import React from 'react';
 
 import { Ionicons } from '@expo/vector-icons';
-import { ScoringResult } from '../../services/BodyTypeScoringService';
+import { ScoringResult } from '../../services/ConsolidatedGoalsService';
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';

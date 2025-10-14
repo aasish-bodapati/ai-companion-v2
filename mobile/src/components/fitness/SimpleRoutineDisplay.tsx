@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SimpleRoutineWithProgress } from '../../services/RoutineService';
+import { SimpleRoutineWithProgress } from '../../services/ConsolidatedFitnessService';
 import RoutineDetailsModal from './RoutineDetailsModal';
 import { DifficultyBadge } from '../ui/Badge';
 

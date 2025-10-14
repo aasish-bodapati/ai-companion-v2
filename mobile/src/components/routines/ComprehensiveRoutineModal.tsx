@@ -17,7 +17,7 @@ import { searchInputConfigs } from '../ui/SearchInput.utils';
 import { filterBarConfigs } from '../ui/FilterBar.utils';
 import { showToast } from '../../utils/toast';
 import { routineService } from '../../services/api';
-import { ApiServiceClient } from '../../services/ApiService';
+import { api } from '../../services';
 import { COMMON_STYLES } from '../../theme/constants';
 
 interface ComprehensiveRoutineModalProps {

@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { BodyTypeGoal, UserAttributes } from '../../services/BodyTypeGoalsService';
+import { BodyTypeGoal, UserAttributes } from '../../services/ConsolidatedGoalsService';
 import { useBodyTypeScoring } from '../../hooks/useBodyTypeScoring';
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';

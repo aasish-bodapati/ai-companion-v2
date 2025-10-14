@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_WEIGHT } from '../../theme/constants';
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 import { useWeather } from '../../hooks/useWeather';
-import weatherService from '../../services/WeatherService';
+import { notificationsService } from '../../services';
 import WeatherDetailsModal from '../weather/WeatherDetailsModal';
 
 interface WelcomeCardProps {
@@ -91,8 +91,8 @@ export default function WelcomeCard({ userName = 'there', onPress }: WelcomeCard
   const motivationalMessage = getMotivationalMessage();
 
   // Get weather icon and color
-  const weatherIcon = weather ? weatherService.getWeatherIcon(weather.icon) : 'partly-sunny';
-  const weatherColor = weather ? weatherService.getWeatherColor(weather.icon) : greeting.color;
+  const weatherIcon = weather ? notificationsService.getWeatherIcon(weather.icon) : 'partly-sunny';
+  const weatherColor = weather ? notificationsService.getWeatherColor(weather.icon) : greeting.color;
 
   const handleCardPress = () => {
     if (weather && !weatherLoading) {

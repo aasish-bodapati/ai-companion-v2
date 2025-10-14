@@ -5,7 +5,7 @@ import BaseModal from '../ui/BaseModal.simple';
 import { modalConfigs } from '../ui/BaseModal.utils';
 import ExerciseSelector, { exerciseSelectorConfigs } from '../ui/ExerciseSelector';
 import SimpleLoggingItem from '../ui/SimpleLoggingItem';
-import { fitnessService, ExerciseType } from '../../services/FitnessService';
+import { fitnessService, ExerciseType } from '../../services/ConsolidatedFitnessService';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, FONT_WEIGHT, BORDER_RADIUS } from '../../theme/constants';
 import { useToast } from '../../contexts/ToastContext';

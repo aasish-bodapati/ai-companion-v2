@@ -9,8 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService, NutritionStats } from '../../services/NutritionService';
-import { NutritionGoalsService, NutritionGoals } from '../../services/NutritionGoalsService';
+import { nutritionService, NutritionStats } from '../../services/ConsolidatedNutritionService';
+import { NutritionGoalsService, NutritionGoals } from '../../services/ConsolidatedNutritionService';
 import MacroProgressTracker from './MacroProgressTracker';
 import MacroRings from './MacroRings';
 import { useAuth } from '../../contexts/AuthContext';

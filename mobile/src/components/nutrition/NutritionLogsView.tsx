@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { nutritionService, NutritionLog } from '../../services/NutritionService';
+import { nutritionService, NutritionLog } from '../../services/ConsolidatedNutritionService';
 // Removed unused import
 import { useToast } from '../../contexts/ToastContext';
 import { COMMON_STYLES } from '../../theme/constants';

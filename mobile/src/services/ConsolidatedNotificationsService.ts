@@ -212,6 +212,58 @@ class ConsolidatedNotificationsService {
     }
   }
 
+  // ===== WEATHER UTILITIES =====
+
+  getWeatherIcon(iconCode: string): string {
+    // Map OpenWeatherMap icon codes to Ionicons
+    const iconMap: { [key: string]: string } = {
+      '01d': 'sunny',
+      '01n': 'moon',
+      '02d': 'partly-sunny',
+      '02n': 'cloudy-night',
+      '03d': 'cloudy',
+      '03n': 'cloudy',
+      '04d': 'cloudy',
+      '04n': 'cloudy',
+      '09d': 'rainy',
+      '09n': 'rainy',
+      '10d': 'rainy',
+      '10n': 'rainy',
+      '11d': 'thunderstorm',
+      '11n': 'thunderstorm',
+      '13d': 'snow',
+      '13n': 'snow',
+      '50d': 'partly-sunny',
+      '50n': 'cloudy-night',
+    };
+    return iconMap[iconCode] || 'partly-sunny';
+  }
+
+  getWeatherColor(iconCode: string): string {
+    // Map weather conditions to colors
+    const colorMap: { [key: string]: string } = {
+      '01d': '#f59e0b', // sunny
+      '01n': '#6366f1', // clear night
+      '02d': '#f97316', // partly cloudy day
+      '02n': '#8b5cf6', // partly cloudy night
+      '03d': '#6b7280', // cloudy
+      '03n': '#6b7280', // cloudy
+      '04d': '#6b7280', // overcast
+      '04n': '#6b7280', // overcast
+      '09d': '#3b82f6', // rain
+      '09n': '#3b82f6', // rain
+      '10d': '#3b82f6', // rain
+      '10n': '#3b82f6', // rain
+      '11d': '#7c3aed', // thunderstorm
+      '11n': '#7c3aed', // thunderstorm
+      '13d': '#e5e7eb', // snow
+      '13n': '#e5e7eb', // snow
+      '50d': '#9ca3af', // mist
+      '50n': '#9ca3af', // mist
+    };
+    return colorMap[iconCode] || '#6b7280';
+  }
+
   // ===== NOTIFICATION SCHEDULING =====
 
   async scheduleNotification(notification: {
