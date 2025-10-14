@@ -10,8 +10,8 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 // Removed Zustand store imports
-import { nutritionService } from '../../services/api';
-import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
+import { nutritionService } from '../../services/ConsolidatedNutritionService';
+import { useWeeklyActivity } from '../../hooks/ConsolidatedDataHook';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
 import UnifiedNutritionLogger from '../../components/nutrition/UnifiedNutritionLogger';
 import QuickAddMeals from '../../components/nutrition/QuickAddMeals';

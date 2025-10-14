@@ -217,6 +217,11 @@ tsconfig.tsbuildinfo
 frontend/
 
 # ===========================================
+# External API Directory (Excluded from Git)
+# ===========================================
+exercisedb-api/
+
+# ===========================================
 # Scripts & Utilities (generated files)
 # ===========================================
 frontend/scripts/

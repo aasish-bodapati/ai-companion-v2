@@ -11,9 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
-import { OnboardingData } from '../../services/OnboardingService';
-import { profileService } from '../../services/api';
-import { onboardingService } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
 import { hapticFeedback } from '../../utils/haptics';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmationDialog from '../../components/ui/ConfirmationDialog';
@@ -25,13 +23,19 @@ import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants
 const { width: screenWidth } = Dimensions.get('window');
 
 // Simple Health Overview Component
-const HealthOverview = ({ userData }: { userData: any }) => {
+interface HealthData {
+  height?: number;
+  weight?: number;
+  activity_level?: string;
+}
+
+const HealthOverview = ({ userData }: { userData: HealthData | undefined }) => {
   const calculateBMI = () => {
     const height = userData?.height;
     const weight = userData?.weight;
     if (!height || !weight) return null;
-    const h = parseFloat(height) / 100;
-    const w = parseFloat(weight);
+    const h = height / 100; // height is already a number
+    const w = weight; // weight is already a number
     return h > 0 && w > 0 ? (w / (h * h)).toFixed(1) : null;
   };
 
@@ -71,22 +75,22 @@ const HealthOverview = ({ userData }: { userData: any }) => {
 
         {/* Height */}
         <View style={styles.healthItem}>
-          <Text style={styles.healthValue}>{userData?.height ? `${userData.height}` : '--'}</Text>
+          <Text style={styles.healthValue}>{userData?.height ? `${userData.height}cm` : '--'}</Text>
           <Text style={styles.healthLabel}>Height</Text>
         </View>
 
         {/* Weight */}
         <View style={styles.healthItem}>
-          <Text style={styles.healthValue}>{userData?.weight ? `${userData.weight}` : '--'}</Text>
+          <Text style={styles.healthValue}>{userData?.weight ? `${userData.weight}kg` : '--'}</Text>
           <Text style={styles.healthLabel}>Weight</Text>
         </View>
 
         {/* Activity */}
         <View style={styles.healthItem}>
           <Text style={styles.healthValue}>
-            {userData?.activityLevel ? 
-              userData.activityLevel.charAt(0).toUpperCase() + 
-              userData.activityLevel.slice(1) : '--'}
+            {userData?.activity_level ? 
+              userData.activity_level.charAt(0).toUpperCase() + 
+              userData.activity_level.slice(1) : '--'}
           </Text>
           <Text style={styles.healthLabel}>Activity</Text>
         </View>
@@ -173,121 +177,21 @@ const AccountActions = ({
 };
 
 export default function SimpleProfileScreen() {
-  const { user, logout, rerunOnboarding, deleteAccount } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
+  const { profile, profileLoading, onboarding, rerunOnboarding, refreshProfile } = useUser();
   const { showToast } = useToast();
   
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [onboardingData, setOnboardingData] = useState<OnboardingData | null>(null);
   const [showDeleteAccountDialog, setShowDeleteAccountDialog] = useState(false);
 
-  const loadOnboardingData = useCallback(async () => {
-    try {
-      console.log('🔍 [SIMPLE PROFILE] Loading profile data...');
-      const profileData = await profileService.getUserProfile();
-      console.log('🔍 [SIMPLE PROFILE] Profile data received:', profileData);
-      
-      if (profileData) {
-        const onboardingData = profileService.convertToOnboardingData(profileData);
-        console.log('🔍 [SIMPLE PROFILE] Converted onboarding data:', onboardingData);
-        setOnboardingData(onboardingData);
-        await onboardingService.saveOnboardingData(onboardingData);
-      } else {
-        console.log('🔍 [SIMPLE PROFILE] No profile data, loading from local storage...');
-        let data = await onboardingService.loadOnboardingData();
-        if (!data) {
-          console.log('🔍 [SIMPLE PROFILE] No local data, using defaults...');
-          data = {
-            healthData: {
-              age: '25',
-              height: '175',
-              weight: '70',
-              gender: 'male',
-              activityLevel: 'moderate',
-            },
-            bodyTypeGoal: 'Athletic',
-            goals: [],
-            timezone: 'UTC',
-            preferences: {
-              notifications: true,
-              reminders: true,
-              dataSharing: false,
-            },
-          };
-          await onboardingService.saveOnboardingData(data);
-        }
-        setOnboardingData(data);
-      }
-      console.log('🔍 [SIMPLE PROFILE] Profile data loaded successfully');
-    } catch (error) {
-      console.log('❌ [SIMPLE PROFILE] Error loading profile data:', error);
-      
-      // Try to load from local storage as fallback
-      try {
-        const localData = await onboardingService.loadOnboardingData();
-        if (localData) {
-          setOnboardingData(localData);
-          console.log('🔍 [SIMPLE PROFILE] Loaded from local storage as fallback');
-        } else {
-          // Create fallback data
-          const fallbackData = {
-            healthData: {
-              age: '25',
-              height: '175',
-              weight: '70',
-              gender: 'male',
-              activityLevel: 'moderate',
-            },
-            bodyTypeGoal: 'Athletic',
-            goals: [],
-            timezone: 'UTC',
-            preferences: {
-              notifications: true,
-              reminders: true,
-              dataSharing: false,
-            },
-          };
-          setOnboardingData(fallbackData);
-          console.log('🔍 [SIMPLE PROFILE] Set fallback data');
-        }
-      } catch (localError) {
-        console.log('❌ [SIMPLE PROFILE] Failed to load from local storage:', localError);
-        // Set fallback data even if local storage fails
-        const fallbackData = {
-          healthData: {
-            age: '25',
-            height: '175',
-            weight: '70',
-            gender: 'male',
-            activityLevel: 'moderate',
-          },
-          bodyTypeGoal: 'Athletic',
-          goals: [],
-          timezone: 'UTC',
-          preferences: {
-            notifications: true,
-            reminders: true,
-            dataSharing: false,
-          },
-        };
-        setOnboardingData(fallbackData);
-        console.log('🔍 [SIMPLE PROFILE] Set fallback data after local storage error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Profile data is now managed by UserContext
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     hapticFeedback.light();
-    await loadOnboardingData();
+    await refreshProfile();
     setRefreshing(false);
-  }, []);
-
-  useEffect(() => {
-    loadOnboardingData();
-  }, []);
+  }, [refreshProfile]);
 
   const handleLogout = () => {
     hapticFeedback.medium();
@@ -318,7 +222,7 @@ export default function SimpleProfileScreen() {
     setShowDeleteAccountDialog(false);
   };
 
-  if (loading) {
+  if (profileLoading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3b82f6" />
@@ -351,11 +255,11 @@ export default function SimpleProfileScreen() {
         </View>
 
         {/* Health Overview */}
-        <HealthOverview userData={onboardingData?.healthData} />
+        <HealthOverview userData={profile?.health_data} />
 
         {/* Goal Display */}
         <GoalDisplay 
-          bodyTypeGoal={onboardingData?.bodyTypeGoal || 'Athletic'}
+          bodyTypeGoal={profile?.bodyTypeGoal || 'Athletic'}
           onEdit={handleRerunOnboarding}
         />
 

@@ -3,6 +3,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useUser } from '../contexts/UserContext';
 import { ActivityIndicator, View } from 'react-native';
 
 import TabNavigator from './TabNavigator';
@@ -22,7 +23,9 @@ export type RootStackParamList = {
 const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
-  const { isAuthenticated, isLoading, needsOnboarding, user, token } = useAuth();
+  const { isAuthenticated, isLoading, user, token } = useAuth();
+  const { onboarding } = useUser();
+  const needsOnboarding = onboarding.needsOnboarding;
 
   // Enhanced logging for debugging
   if (__DEV__) {

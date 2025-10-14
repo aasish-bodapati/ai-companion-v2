@@ -2,14 +2,15 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 // Removed Zustand store imports
 import DashboardModule from '../../modules/DashboardModule';
-import { useActiveRoutine } from '../../hooks/useActiveRoutine';
+import { useActiveRoutine } from '../../hooks/ConsolidatedDataHook';
 
 import { DebugUtils } from '../../utils/debugUtils';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
   // Removed Zustand store usage
-  const { activeRoutineId } = useActiveRoutine();
+  const { data: activeRoutine, loading: activeRoutineLoading } = useActiveRoutine();
+  const activeRoutineId = activeRoutine?.id || null;
   const [refreshing, setRefreshing] = useState(false);
   const hasRefreshedRef = useRef(false);
 
