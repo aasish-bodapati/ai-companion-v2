@@ -67,11 +67,19 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(reusabl
     
     try:
         logger.info(f"🔐 [AUTH] Decoding JWT token...")
+        logger.info(f"🔐 [AUTH] Token details:")
+        logger.info(f"🔐 [AUTH] - Length: {len(token)}")
+        logger.info(f"🔐 [AUTH] - Start: {token[:20]}...")
+        logger.info(f"🔐 [AUTH] - End: ...{token[-20:]}")
+        logger.info(f"🔐 [AUTH] - Has dots: {'.' in token}")
+        logger.info(f"🔐 [AUTH] - Dot count: {token.count('.')}")
+        
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         token_data = TokenPayload(**payload)
         logger.info(f"🔐 [AUTH] Token decoded, user_id: {token_data.sub}")
     except (jwt.JWTError, ValidationError) as e:
         logger.error(f"🔐 [AUTH] JWT decode error: {e}")
+        logger.error(f"🔐 [AUTH] Token that failed: {token}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",

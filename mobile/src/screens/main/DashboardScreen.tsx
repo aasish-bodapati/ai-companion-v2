@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useHealthActions, type HealthActions } from '../../stores';
+// Removed Zustand store imports
 import DashboardModule from '../../modules/DashboardModule';
 import { useActiveRoutine } from '../../hooks/useActiveRoutine';
 
@@ -8,8 +8,7 @@ import { DebugUtils } from '../../utils/debugUtils';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
-  // Re-enable Zustand store with fixes
-  const healthActions: HealthActions = useHealthActions();
+  // Removed Zustand store usage
   const { activeRoutineId } = useActiveRoutine();
   const [refreshing, setRefreshing] = useState(false);
   const hasRefreshedRef = useRef(false);
@@ -29,15 +28,15 @@ export default function DashboardScreen() {
   useEffect(() => {
     if (user && !hasRefreshedRef.current) {
       hasRefreshedRef.current = true;
-      healthActions.refreshData(); // Re-enabled with loading guard in store
+      // Removed Zustand store usage - data loading handled by individual components
     }
-  }, [user]); // Remove refreshData from dependencies to prevent infinite re-renders
+  }, [user]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await healthActions.refreshData(); // Re-enabled with loading guard in store
+    // Removed Zustand store usage - data loading handled by individual components
     setRefreshing(false);
-  }, []); // Remove refreshData from dependencies to prevent infinite re-renders
+  }, []);
 
   const handleNavigate = useCallback((screen: string, params?: unknown) => {
     // Handle navigation to other screens

@@ -17,10 +17,7 @@ interface HealthData {
   height: string;
   weight: string;
   gender: 'male' | 'female' | 'other' | '' | 'Please select your gender';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | '';
-  ffm?: string; // Fat-Free Mass (optional)
-  smm?: string; // Skeletal Muscle Mass (optional)
-  bodyFat?: string; // Body Fat Percentage (optional)
+  activityLevel: 'sedentary' | 'light' | 'active' | 'very_active' | '';
 }
 
 interface HealthDataStepProps {
@@ -42,11 +39,34 @@ const GENDER_OPTIONS = [
 ];
 
 const ACTIVITY_LEVEL_OPTIONS = [
-  { id: 'sedentary', label: 'Sedentary', icon: 'bed-outline' },
-  { id: 'light', label: 'Light', icon: 'walk-outline' },
-  { id: 'moderate', label: 'Moderate', icon: 'bicycle-outline' },
-  { id: 'active', label: 'Active', icon: 'fitness-outline' },
-  { id: 'very_active', label: 'Very Active', icon: 'flash-outline' },
+  { 
+    id: 'sedentary', 
+    label: 'Sedentary', 
+    icon: 'bed-outline',
+    refinement: 'Start with activation goals',
+    description: 'low-effort movement + nutrition awareness'
+  },
+  { 
+    id: 'light', 
+    label: 'Light', 
+    icon: 'walk-outline',
+    refinement: 'Sustain and build foundation',
+    description: 'add light training, optimize meals'
+  },
+  { 
+    id: 'active', 
+    label: 'Active', 
+    icon: 'fitness-outline',
+    refinement: 'Performance boost',
+    description: 'structured training + macro precision'
+  },
+  { 
+    id: 'very_active', 
+    label: 'Very Active', 
+    icon: 'flash-outline',
+    refinement: 'Recovery & optimization',
+    description: 'fuel properly, avoid under-eating'
+  },
 ];
 
 export default function HealthDataStep({
@@ -59,9 +79,6 @@ export default function HealthDataStep({
     weight: '',
     gender: initialData.gender || '', // No pre-selection for new users
     activityLevel: initialData.activityLevel || '', // No pre-selection for new users
-    ffm: '',
-    smm: '',
-    bodyFat: '',
     ...initialData,
   });
 
@@ -84,61 +101,56 @@ export default function HealthDataStep({
     }
   };
 
-  const calculateFFMI = (height: number, ffm: number): number => {
-    const heightInMeters = height / 100;
-    return ffm / (heightInMeters * heightInMeters);
+  // Removed FFMI calculation - no longer needed
+
+  // Simple BMI calculation
+  const calculateBMI = () => {
+    const height = Number(data.height);
+    const weight = Number(data.weight);
+    
+    if (height && weight && height > 0 && weight > 0) {
+      const heightInMeters = height / 100; // Convert cm to meters
+      const bmi = weight / (heightInMeters * heightInMeters);
+      return Math.round(bmi * 10) / 10; // Round to 1 decimal place
+    }
+    return null;
   };
 
-  const calculateIdealWeight = (height: number): number => {
-    // Ideal Weight = (FFMI × Height²) / (1 - BFₜ)
-    // Where FFMI = 22 (ideal), BFₜ = 0.14 (14% body fat)
-    const heightInMeters = height / 100;
-    const idealFFMI = 22;
-    const targetBodyFat = 0.14; // 14%
-
-    const idealWeight = (idealFFMI * heightInMeters * heightInMeters) / (1 - targetBodyFat);
-    return Math.round(idealWeight * 10) / 10; // Round to 1 decimal place
+  const getBMICategory = (bmi: number) => {
+    if (bmi < 18.5) return { 
+      category: 'Underweight', 
+      color: '#3b82f6',
+      interpretation: 'muscle & nutrition focus'
+    };
+    if (bmi < 22) return { 
+      category: 'Lean', 
+      color: '#10b981',
+      interpretation: 'muscle gain or maintenance'
+    };
+    if (bmi < 25) return { 
+      category: 'Healthy', 
+      color: '#10b981',
+      interpretation: 'recomposition (tone up, maintain)'
+    };
+    if (bmi < 30) return { 
+      category: 'Overweight', 
+      color: '#f59e0b',
+      interpretation: 'gentle fat balance'
+    };
+    return { 
+      category: 'Obese', 
+      color: '#ef4444',
+      interpretation: 'metabolic health focus'
+    };
   };
 
-  const calculateProteinTarget = (weight: number, ffm?: number, smm?: number, bodyFat?: number): number => {
-    // Comprehensive protein calculation based on available metrics
-    // Case 1: All optional metrics are provided (FFM, SMM, BF%)
-    if (ffm && smm && bodyFat) {
-      const ffmi = calculateFFMI(Number(data.height), ffm);
-      const proteinTarget = ffm * 1.6 * (1 + 0.3 * smm / 30 + 0.1 * (ffmi - 20));
-      return Math.round(proteinTarget * 10) / 10;
-    }
-
-    // Case 2: FFM provided, SMM and FFMI not provided
-    if (ffm && !smm && !bodyFat) {
-      const proteinTarget = ffm * 1.8;
-      return Math.round(proteinTarget * 10) / 10;
-    }
-
-    // Case 3: SMM and BF% provided, FFM not provided
-    if (smm && bodyFat && !ffm) {
-      const estimatedFFM = weight * (1 - bodyFat / 100);
-      const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-      return Math.round(proteinTarget * 10) / 10;
-    }
-
-    // Case 4: Only BF% provided, SMM and FFM not provided
-    if (bodyFat && !smm && !ffm) {
-      const estimatedFFM = weight * (1 - bodyFat / 100);
-      const proteinTarget = estimatedFFM * 1.8;
-      return Math.round(proteinTarget * 10) / 10;
-    }
-
-    // Case 5: Only SMM provided, FFM & BF% not provided
-    if (smm && !ffm && !bodyFat) {
-      const estimatedFFM = smm * 2; // Skeletal muscle is ~50% of FFM
-      const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-      return Math.round(proteinTarget * 10) / 10;
-    }
-
-    // Case 6: None of the optional metrics provided (only height & weight)
-    const proteinTarget = weight * 1.6;
-    return Math.round(proteinTarget * 10) / 10;
+  const getActivityLevelRefinement = (activityLevel: string) => {
+    const option = ACTIVITY_LEVEL_OPTIONS.find(opt => opt.id === activityLevel);
+    if (!option) return null;
+    return {
+      refinement: option.refinement,
+      description: option.description
+    };
   };
 
   // validateData function removed - unused for now
@@ -148,24 +160,12 @@ export default function HealthDataStep({
     setData(prev => ({ ...prev, gender }));
   };
 
-  const handleActivityLevelSelect = (activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | '') => {
+  const handleActivityLevelSelect = (activityLevel: 'sedentary' | 'light' | 'active' | 'very_active' | '') => {
     hapticFeedback.selection();
     setData(prev => ({ ...prev, activityLevel }));
   };
 
-  const calculateBMI = () => {
-    const height = Number(data.height) / 100; // Convert cm to m
-    const weight = Number(data.weight);
-    const bmi = weight / (height * height);
-    return bmi.toFixed(1);
-  };
-
-  const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { category: 'Underweight', color: '#3b82f6' };
-    if (bmi < 25) return { category: 'Normal', color: '#10b981' };
-    if (bmi < 30) return { category: 'Overweight', color: '#f59e0b' };
-    return { category: 'Obese', color: '#ef4444' };
-  };
+  // Removed BMI calculation functions - no longer needed
 
   const renderGenderSelector = () => (
     <View style={styles.section}>
@@ -212,8 +212,8 @@ export default function HealthDataStep({
             key={option.id}
             onPress={() => {
               hapticFeedback.selection();
-              if (option.id === 'sedentary' || option.id === 'light' || option.id === 'moderate' || option.id === 'active' || option.id === 'very_active') {
-                handleActivityLevelSelect(option.id as 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active');
+              if (option.id === 'sedentary' || option.id === 'light' || option.id === 'active' || option.id === 'very_active') {
+                handleActivityLevelSelect(option.id as 'sedentary' | 'light' | 'active' | 'very_active');
               }
             }}
             style={[
@@ -223,7 +223,7 @@ export default function HealthDataStep({
           >
             <Ionicons
               name={option.icon as keyof typeof Ionicons.glyphMap}
-              size={18}
+              size={14}
               color={data.activityLevel === option.id ? '#ffffff' : '#3b82f6'}
             />
             <Text style={[
@@ -235,76 +235,30 @@ export default function HealthDataStep({
           </TouchableOpacity>
         ))}
       </View>
+      
+      {/* Activity Level Refinement Display */}
+      {data.activityLevel && (() => {
+        const refinement = getActivityLevelRefinement(data.activityLevel);
+        if (refinement) {
+          return (
+            <View style={styles.activityRefinementContainer}>
+              <Text style={styles.activityRefinementTitle}>
+                {refinement.refinement}
+              </Text>
+              <Text style={styles.activityRefinementDescription}>
+                {refinement.description}
+              </Text>
+            </View>
+          );
+        }
+        return null;
+      })()}
+      
       {errors.activityLevel && <Text style={styles.errorText}>{errors.activityLevel}</Text>}
     </View>
   );
 
-  const renderBMIPreview = () => {
-    if (!data.height || !data.weight) return null;
-
-    const bmi = Number(calculateBMI());
-    if (isNaN(bmi)) return null;
-
-    const { category, color } = getBMICategory(bmi);
-
-    // Calculate FFMI if FFM is provided
-    let ffmi = null;
-    if (data.ffm && !isNaN(Number(data.ffm))) {
-      ffmi = calculateFFMI(Number(data.height), Number(data.ffm));
-    }
-
-    // Calculate ideal weight based on height
-    const idealWeight = calculateIdealWeight(Number(data.height));
-
-    // Calculate protein target based on available metrics
-    let proteinTarget = null;
-    const weight = Number(data.weight);
-    const ffm = data.ffm ? Number(data.ffm) : undefined;
-    const smm = data.smm ? Number(data.smm) : undefined;
-    const bodyFat = data.bodyFat ? Number(data.bodyFat) : undefined;
-
-    if (weight && (ffm || smm || bodyFat)) {
-      proteinTarget = calculateProteinTarget(weight, ffm, smm, bodyFat);
-    }
-
-    return (
-      <MobileOptimizedCard
-        variant="filled"
-        style={styles.bmiCard}
-      >
-        <View style={styles.bmiContent}>
-          <View style={styles.bmiHeader}>
-            <Ionicons name="analytics-outline" size={24} color="#3b82f6" />
-            <Text style={styles.bmiTitle}>Health Metrics</Text>
-          </View>
-          <View style={styles.bmiValue}>
-            <View style={styles.metricRow}>
-              <View style={styles.metricItem}>
-                <Text style={[styles.bmiNumber, { color }]}>{calculateBMI()}</Text>
-                <Text style={[styles.bmiCategory, { color }]}>BMI - {category}</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={[styles.bmiNumber, { color: '#3b82f6' }]}>
-                  {ffmi ? ffmi.toFixed(1) : '-'}
-                </Text>
-                <Text style={[styles.bmiCategory, { color: '#3b82f6' }]}>FFMI</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={[styles.bmiNumber, { color: '#10b981' }]}>{idealWeight}</Text>
-                <Text style={[styles.bmiCategory, { color: '#10b981' }]}>Ideal Weight (kg)</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={[styles.bmiNumber, { color: '#f59e0b' }]}>
-                  {proteinTarget ? proteinTarget : '-'}
-                </Text>
-                <Text style={[styles.bmiCategory, { color: '#f59e0b' }]}>Protein (g/day)</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </MobileOptimizedCard>
-    );
-  };
+  // Removed renderBMIPreview function - no longer needed
 
   return (
     <View style={styles.container}>
@@ -366,70 +320,36 @@ export default function HealthDataStep({
             </View>
           </View>
 
-          {/* Row 2: SMM, Body Fat, Workout Days */}
-          <View style={styles.fieldRow}>
-            <View style={styles.fieldColumn}>
-              <Text style={styles.inputLabel}>
-                SMM (kg)
-              </Text>
-              <Text style={styles.optionalLabel}>(Optional)</Text>
-              <TextInput
-                value={data.smm || ''}
-                onChangeText={(text) => updateData('smm', text)}
-                placeholder="35.5"
-                keyboardType="numeric"
-                style={[styles.input, errors.smm && styles.inputError]}
-                blurOnSubmit={true}
-                returnKeyType="next"
-                onFocus={() => hapticFeedback.light()}
-              />
-              <View style={styles.errorContainer}>
-                {errors.smm && <Text style={styles.errorText}>{errors.smm}</Text>}
-              </View>
-            </View>
-
-            <View style={styles.fieldColumn}>
-              <Text style={styles.inputLabel}>
-                Body Fat (%)
-              </Text>
-              <Text style={styles.optionalLabel}>(Optional)</Text>
-              <TextInput
-                value={data.bodyFat || ''}
-                onChangeText={(text) => updateData('bodyFat', text)}
-                placeholder="15.5"
-                keyboardType="numeric"
-                style={[styles.input, errors.bodyFat && styles.inputError]}
-                blurOnSubmit={true}
-                returnKeyType="next"
-                onFocus={() => hapticFeedback.light()}
-              />
-              <View style={styles.errorContainer}>
-                {errors.bodyFat && <Text style={styles.errorText}>{errors.bodyFat}</Text>}
-              </View>
-            </View>
-
-            <View style={styles.fieldColumn}>
-              <Text style={styles.inputLabel}>Fat-Free Mass (FFM)</Text>
-              <Text style={styles.optionalLabel}>(Optional)</Text>
-              <TextInput
-                value={data.ffm || ''}
-                onChangeText={(text) => updateData('ffm', text)}
-                placeholder="55.0"
-                keyboardType="numeric"
-                style={[styles.input, errors.ffm && styles.inputError]}
-                blurOnSubmit={true}
-                returnKeyType="next"
-                onFocus={() => hapticFeedback.light()}
-              />
-              <View style={styles.errorContainer}>
-                {errors.ffm && <Text style={styles.errorText}>{errors.ffm}</Text>}
-              </View>
-            </View>
+          {/* BMI Display - Always visible */}
+          <View style={styles.bmiContainer}>
+            <Text style={styles.bmiLabel}>Body Mass Index</Text>
+            {(() => {
+              const bmi = calculateBMI();
+              if (bmi) {
+                const bmiInfo = getBMICategory(bmi);
+                return (
+                  <View style={styles.bmiInfoContainer}>
+                    <Text style={[styles.bmiValue, { color: bmiInfo.color }]}>
+                      {bmi} ({bmiInfo.category})
+                    </Text>
+                    <Text style={[styles.bmiInterpretation, { color: bmiInfo.color }]}>
+                      {bmiInfo.interpretation}
+                    </Text>
+                  </View>
+                );
+              }
+              return (
+                <Text style={[styles.bmiValue, { color: '#9ca3af' }]}>
+                  Enter height & weight
+                </Text>
+              );
+            })()}
           </View>
+
+          {/* Removed advanced metrics row - SMM, Body Fat %, and FFMI */}
         </View>
 
-        {/* BMI Preview */}
-        {renderBMIPreview()}
+        {/* Removed BMI Preview section */}
 
         {/* Gender Selector */}
         {renderGenderSelector()}
@@ -518,8 +438,7 @@ const styles = StyleSheet.create({
   },
   activityLevelGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+    gap: 4,
     justifyContent: 'space-between',
   },
   optionButton: {
@@ -545,15 +464,15 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   activityLevelButton: {
-    width: '48%', // 2 columns with gap
-    paddingVertical: 12,
-    paddingHorizontal: 8,
+    width: '22%', // Fixed width to fit 4 buttons
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: COMMON_STYLES.standardRadius,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'column',
-    gap: 4,
-    minHeight: 60,
+    gap: 3,
+    minHeight: 55,
   },
   optionButtonSelected: {
     backgroundColor: '#3b82f6',
@@ -572,9 +491,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   activityLevelButtonText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+    lineHeight: 12,
+  },
+  activityRefinementContainer: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#0ea5e9',
+  },
+  activityRefinementTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0c4a6e',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  activityRefinementDescription: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#0369a1',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   optionButtonTextSelected: {
     color: '#ffffff',
@@ -582,48 +525,41 @@ const styles = StyleSheet.create({
   optionButtonTextUnselected: {
     color: '#3b82f6',
   },
-  bmiCard: {
-    marginBottom: 16,
-  },
-  bmiContent: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  bmiHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  bmiTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginLeft: 8,
-  },
-  bmiValue: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  metricRow: {
-    flexDirection: 'row',
+  // BMI display styles
+  bmiContainer: {
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 32,
-    width: '100%',
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
-  metricItem: {
-    alignItems: 'center',
-    flex: 1,
-    maxWidth: 120,
-  },
-  bmiNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 2,
-  },
-  bmiCategory: {
-    fontSize: 12,
+  bmiLabel: {
+    fontSize: 16,
     fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  bmiValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  bmiInfoContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  bmiInterpretation: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   prePopulatedIndicator: {
     flexDirection: 'row',

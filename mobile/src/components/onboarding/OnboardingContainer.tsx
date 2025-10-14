@@ -55,7 +55,7 @@ export default function OnboardingContainer({
       const shouldSwipeNext = translationX < -threshold || velocityX < -500;
       const shouldSwipePrevious = translationX > threshold || velocityX > 500;
 
-      DebugUtils.log('🎬 Swipe gesture - shouldSwipeNext:', shouldSwipeNext, 'canGoNext:', canGoNext, 'shouldSwipePrevious:', shouldSwipePrevious, 'canGoPrevious:', canGoPrevious);
+      DebugUtils.log('🎬 Swipe gesture - shouldSwipeNext:', shouldSwipeNext, 'canGoNext:', canGoNext, 'shouldSwipePrevious:', shouldSwipePrevious, 'canGoPrevious:', canGoPrevious, 'isLastStep:', isLastStep);
 
       if (shouldSwipeNext && canGoNext) {
         DebugUtils.log('🎬 Swipe next allowed - calling handleNext');
@@ -64,6 +64,7 @@ export default function OnboardingContainer({
         DebugUtils.log('🎬 Swipe previous allowed - calling handlePrevious');
         handlePrevious();
       } else {
+        DebugUtils.log('🎬 Swipe not allowed - snapping back');
         // Snap back
         Animated.spring(translateX, {
           toValue: 0,
@@ -159,7 +160,11 @@ export default function OnboardingContainer({
   return (
     <View style={styles.container}>
       {enableSwipe ? (
-        <PanGestureHandler onHandlerStateChange={handleSwipeGesture}>
+        <PanGestureHandler 
+          onHandlerStateChange={handleSwipeGesture}
+          activeOffsetX={[-10, 10]}
+          activeOffsetY={[-5, 5]}
+        >
           {content}
         </PanGestureHandler>
       ) : (

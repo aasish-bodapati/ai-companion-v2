@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useExerciseCategoriesWithAutoLoad } from '../../stores';
+// Removed Zustand store imports
 
 import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants';
 
@@ -41,8 +41,21 @@ export default function DynamicExerciseForm({
   activityType,
   showRemove = true
 }: DynamicExerciseFormProps) {
-  // Use exercise categories store with manual loading
-  const { loadCategories, loaded, loading } = useExerciseCategoriesWithAutoLoad();
+  // Removed Zustand store usage - using local state
+  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const loadCategories = useCallback(async () => {
+    setLoading(true);
+    try {
+      // Load categories logic here
+      setLoaded(true);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Load categories on component mount if not already loaded
   useEffect(() => {

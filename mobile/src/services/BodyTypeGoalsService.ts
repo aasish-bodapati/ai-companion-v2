@@ -287,44 +287,9 @@ export function calculateMuscleMass(
   return Math.round(muscleMass * 10) / 10;
 }
 
-// Helper function to calculate protein target using comprehensive formula
-function calculateProteinTarget(weight: number, ffm?: number, smm?: number, bodyFat?: number): number {
-  // Comprehensive protein calculation based on available metrics
-  // Case 1: All optional metrics are provided (FFM, SMM, BF%)
-  if (ffm && smm && bodyFat) {
-    const ffmi = calculateFFMI(175, ffm); // Default height for FFMI calculation
-    const proteinTarget = ffm * 1.6 * (1 + 0.3 * smm / 30 + 0.1 * (ffmi - 20));
-    return Math.round(proteinTarget * 10) / 10;
-  }
-
-  // Case 2: FFM provided, SMM and FFMI not provided
-  if (ffm && !smm && !bodyFat) {
-    const proteinTarget = ffm * 1.8;
-    return Math.round(proteinTarget * 10) / 10;
-  }
-
-  // Case 3: SMM and BF% provided, FFM not provided
-  if (smm && bodyFat && !ffm) {
-    const estimatedFFM = weight * (1 - bodyFat / 100);
-    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-    return Math.round(proteinTarget * 10) / 10;
-  }
-
-  // Case 4: Only BF% provided, SMM and FFM not provided
-  if (bodyFat && !smm && !ffm) {
-    const estimatedFFM = weight * (1 - bodyFat / 100);
-    const proteinTarget = estimatedFFM * 1.8;
-    return Math.round(proteinTarget * 10) / 10;
-  }
-
-  // Case 5: Only SMM provided, FFM & BF% not provided
-  if (smm && !ffm && !bodyFat) {
-    const estimatedFFM = smm * 2; // Skeletal muscle is ~50% of FFM
-    const proteinTarget = estimatedFFM * 1.6 * (1 + 0.3 * smm / 30);
-    return Math.round(proteinTarget * 10) / 10;
-  }
-
-  // Case 6: None of the optional metrics provided (only height & weight)
+// Helper function to calculate protein target using simple formula
+function calculateProteinTarget(weight: number): number {
+  // Simple protein calculation based on weight only
   const proteinTarget = weight * 1.6;
   return Math.round(proteinTarget * 10) / 10;
 }
@@ -357,13 +322,8 @@ export async function calculateBodyTypeGoal(
   const isWeightLoss = bodyType.name?.toLowerCase().includes('weight loss') || false;
   const calorieTarget = calculateCalorieTarget(userData, targetWeight, isWeightLoss);
 
-  // Calculate protein target using comprehensive formula
-  const proteinTarget = calculateProteinTarget(
-    userData.weight,
-    userData.ffm,
-    userData.smm,
-    userData.bodyFat
-  );
+  // Calculate protein target using simple formula (weight only)
+  const proteinTarget = calculateProteinTarget(userData.weight);
 
   // Determine if goal is realistic
   const timeline = 20; // Default to 20 weeks

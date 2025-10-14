@@ -8,7 +8,7 @@ import { ActivityIndicator, View } from 'react-native';
 import TabNavigator from './TabNavigator';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
-import SimpleOnboardingScreen from '../screens/onboarding/SimpleOnboardingScreen';
+import EnhancedOnboardingScreen from '../screens/onboarding/EnhancedOnboardingScreen';
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -50,7 +50,7 @@ export default function AppNavigator() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isAuthenticated ? (
         needsOnboarding ? (
-          <Stack.Screen name="Onboarding" component={SimpleOnboardingScreen} />
+          <Stack.Screen name="Onboarding" component={EnhancedOnboardingScreen} />
         ) : (
           <Stack.Screen name="Main" component={TabNavigator} />
         )

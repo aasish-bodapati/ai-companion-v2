@@ -12,7 +12,8 @@ from app.api.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.health.fitness_log import FitnessLog, NutritionLog, MoodLog
 from app.models.health.water_log import WaterLog
-from app.crud.health import fitness_log, nutrition_log, mood_log, water_log
+from app.crud.health import fitness_log, nutrition_log, mood_log
+from app.crud.health.water_log import water_log
 from app.schemas.health.fitness_log import (
     FitnessLogCreate, FitnessLogUpdate, FitnessLogResponse,
     NutritionLogCreate, NutritionLogUpdate, NutritionLogResponse,

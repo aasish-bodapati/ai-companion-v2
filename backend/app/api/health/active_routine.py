@@ -45,17 +45,33 @@ class TodaysWorkoutResponse(BaseModel):
     exercises: List[ExerciseResponse]
 
 
-@router.get("/active-routine", response_model=ActiveRoutineResponse)
+@router.get("/active-routine")
 async def get_active_routine(
     *,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """Get the user's currently active routine."""
-    return ActiveRoutineResponse(
-        active_routine_id=current_user.active_routine_id,
-        message="Active routine retrieved successfully"
-    )
+    try:
+        if not current_user.active_routine_id:
+            print(f"ℹ️ [ACTIVE ROUTINE] No active routine for user {current_user.email}")
+            return {"active_routine": None, "message": "No active routine found"}
+        
+        # Get the full routine object
+        from app.crud.health.simple_routine import simple_routine
+        routine = simple_routine.get(db, id=int(current_user.active_routine_id))
+        
+        if not routine:
+            raise HTTPException(status_code=404, detail="Active routine not found")
+        
+        return routine
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid routine ID format")
+    except Exception as e:
+        print(f"❌ [ACTIVE ROUTINE] Error getting active routine for user {current_user.email}: {e}")
+        print(f"❌ [ACTIVE ROUTINE] Exception type: {type(e)}")
+        print(f"❌ [ACTIVE ROUTINE] Exception args: {e.args}")
+        raise HTTPException(status_code=500, detail=f"Failed to get active routine: {str(e) if str(e) else 'Unknown error'}")
 
 
 @router.post("/active-routine", response_model=ActiveRoutineResponse)

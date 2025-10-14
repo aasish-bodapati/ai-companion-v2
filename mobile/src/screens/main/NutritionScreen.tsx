@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useHealthActions, useHealthStats } from '../../stores';
+// Removed Zustand store imports
 import { nutritionService } from '../../services/api';
 import { useWeeklyActivity } from '../../hooks/useWeeklyActivity';
 import NutritionLogsView from '../../components/nutrition/NutritionLogsView';
@@ -21,9 +21,7 @@ import { COLORS, SPACING, BORDER_RADIUS, FONT_SIZE } from '../../theme/constants
 import { STYLE_PRESETS } from '../../theme/duplicateStyles';
 
 export default function NutritionScreen() {
-  // Use simplified store
-  const healthActions = useHealthActions();
-  const { loading } = useHealthStats();
+  // Removed Zustand store usage
 
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'meals'>('overview');
   const [showLogMealModal, setShowLogMealModal] = useState(false);
@@ -34,9 +32,8 @@ export default function NutritionScreen() {
   // Modal is now handled directly in TabNavigator
 
   const loadWeekStats = useCallback(async () => {
-    // This is now handled by the Zustand store
-    await healthActions.refreshData();
-  }, []); // Remove refreshData from dependencies to prevent infinite re-renders
+    // Removed Zustand store usage - data loading handled by individual components
+  }, []);
 
   // Weekly activity data is now handled by useWeeklyActivity hook
 
@@ -94,23 +91,7 @@ export default function NutritionScreen() {
       // Log the meal with proper async/await
       await nutritionService.logMeal(mealData);
 
-      // Add meal to store and refresh data
-      healthActions.addMeal({
-        id: Date.now().toString(),
-        meal_type: mealType as 'breakfast' | 'lunch' | 'dinner' | 'snack',
-        food_items: foodItems.map(item => ({
-          food_item: { id: Date.now(), name: item.name },
-          quantity: item.quantity,
-          unit: item.quantity_unit,
-        })),
-        total_calories: mealData.total_calories,
-        total_protein: mealData.protein_g,
-        total_carbs: mealData.carbs_g,
-        total_fat: mealData.fat_g,
-        logged_at: new Date().toISOString(),
-      });
-
-      await healthActions.refreshData();
+      // Removed Zustand store usage - meal logging handled by individual components
 
       if (nutritionLogsRef.current) {
         nutritionLogsRef.current.refreshLogs();
@@ -118,16 +99,15 @@ export default function NutritionScreen() {
     } catch {
       // Silent error handling - no console logging to prevent Expo Go notifications
     }
-  }, [healthActions]);
+  }, []);
 
   const handleMealLogged = useCallback(async () => {
     setShowLogMealModal(false);
-    await healthActions.refreshData();
     // Refresh logs if we're on the logs tab
     if (activeTab === 'logs' && nutritionLogsRef.current) {
       nutritionLogsRef.current.refreshLogs();
     }
-  }, [healthActions, activeTab]);
+  }, [activeTab]);
 
   const renderOverview = () => (
     <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -253,14 +233,7 @@ export default function NutritionScreen() {
     </ScrollView>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.loadingText}>Loading nutrition data...</Text>
-      </View>
-    );
-  }
+  // Removed loading state from Zustand store
 
   return (
     <View style={styles.container}>

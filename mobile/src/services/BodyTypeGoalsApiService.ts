@@ -77,7 +77,7 @@ class BodyTypeGoalsApiService {
   async getBodyTypeGoals(): Promise<BodyTypeGoal[]> {
     try {
       DebugUtils.log('🎯 Fetching body type goals from API...');
-      const response = await api.get<BodyTypeGoalList>('/api/v1/health/body-type-goals/');
+      const response = await api.get<BodyTypeGoalList>('/api/v1/health/data/body-type-goals');
 
       DebugUtils.log('🎯 Body type goals fetched successfully:', response.body_type_goals.length);
       return response.body_type_goals;
@@ -93,7 +93,7 @@ class BodyTypeGoalsApiService {
   async getSystemBodyTypeGoals(): Promise<BodyTypeGoal[]> {
     try {
       DebugUtils.log('🎯 Fetching system body type goals from API...');
-      const response = await api.get<BodyTypeGoal[]>('/api/v1/health/body-type-goals/system');
+      const response = await api.get<BodyTypeGoal[]>('/api/v1/health/data/body-type-goals/system');
 
       DebugUtils.log('🎯 System body type goals fetched successfully:', response.length);
       return response;
@@ -109,7 +109,7 @@ class BodyTypeGoalsApiService {
   async getBodyTypeGoalsByCategory(category: string): Promise<BodyTypeGoal[]> {
     try {
       DebugUtils.log(`🎯 Fetching body type goals for category: ${category}`);
-      const response = await api.get<BodyTypeGoalList>(`/api/v1/health/body-type-goals/?category=${category}`);
+      const response = await api.get<BodyTypeGoalList>(`/api/v1/health/data/body-type-goals?category=${category}`);
 
       DebugUtils.log(`🎯 Body type goals for category ${category} fetched successfully:`, response.body_type_goals.length);
       return response.body_type_goals;
@@ -125,7 +125,7 @@ class BodyTypeGoalsApiService {
   async getBodyTypeGoalById(id: string): Promise<BodyTypeGoal | null> {
     try {
       DebugUtils.log(`🎯 Fetching body type goal: ${id}`);
-      const response = await api.get<BodyTypeGoal>(`/api/v1/health/body-type-goals/${id}`);
+      const response = await api.get<BodyTypeGoal>(`/api/v1/health/data/body-type-goals/${id}`);
 
       DebugUtils.log(`🎯 Body type goal ${id} fetched successfully`);
       return response;

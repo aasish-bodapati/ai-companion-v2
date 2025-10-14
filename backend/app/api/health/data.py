@@ -235,7 +235,7 @@ async def get_food_categories(db: Session = Depends(get_db)):
 # ============================================================================
 
 class BodyTypeGoalResponse(BaseModel):
-    id: int
+    id: str
     name: str
     description: str
     body_type: str
@@ -280,3 +280,57 @@ async def get_body_type_goals(
         return [BodyTypeGoalResponse(**goal) for goal in goals]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error fetching body type goals: {str(e)}")
+
+@router.get("/body-type-goals/system", response_model=List[BodyTypeGoalResponse])
+async def get_system_body_type_goals(
+    *,
+    db: Session = Depends(get_db)
+):
+    """Get system-created body type goals"""
+    try:
+        # Return system-created goals
+        goals = [
+            {
+                "id": "system_ectomorph",
+                "name": "Ectomorph Goals",
+                "description": "Goals for ectomorph body type",
+                "body_type": "ectomorph",
+                "goals": {
+                    "weight_gain": True,
+                    "muscle_building": True,
+                    "calorie_surplus": True
+                },
+                "is_active": True,
+                "created_at": "2024-01-01T00:00:00Z"
+            },
+            {
+                "id": "system_mesomorph",
+                "name": "Mesomorph Goals",
+                "description": "Goals for mesomorph body type",
+                "body_type": "mesomorph",
+                "goals": {
+                    "muscle_definition": True,
+                    "strength_training": True,
+                    "balanced_nutrition": True
+                },
+                "is_active": True,
+                "created_at": "2024-01-01T00:00:00Z"
+            },
+            {
+                "id": "system_endomorph",
+                "name": "Endomorph Goals",
+                "description": "Goals for endomorph body type",
+                "body_type": "endomorph",
+                "goals": {
+                    "weight_loss": True,
+                    "fat_burning": True,
+                    "calorie_deficit": True
+                },
+                "is_active": True,
+                "created_at": "2024-01-01T00:00:00Z"
+            }
+        ]
+        
+        return [BodyTypeGoalResponse(**goal) for goal in goals]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching system body type goals: {str(e)}")

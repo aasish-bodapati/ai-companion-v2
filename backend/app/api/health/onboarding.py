@@ -31,6 +31,7 @@ async def get_onboarding_status(
     current_user: User = Depends(get_current_user)
 ):
     """Check if user has completed onboarding."""
+    print(f"🔍 [ONBOARDING STATUS] API called by user: {current_user.email} (ID: {current_user.id})")
     try:
         # Check onboarding_profiles table
         onboarding_profile = db.query(OnboardingProfile).filter(
@@ -43,6 +44,18 @@ async def get_onboarding_status(
         
         # User is considered onboarded if they have onboarding profile OR health profile data
         has_completed = (onboarding_profile and onboarding_profile.completed) or has_health_profile
+
+        # Debug logging for specific user
+        if current_user.email == "iphonenew@example.com":
+            print(f"🔍 [ONBOARDING STATUS] Debug for {current_user.email}:")
+            print(f"  - User ID: {current_user.id}")
+            print(f"  - OnboardingProfile exists: {onboarding_profile is not None}")
+            print(f"  - OnboardingProfile completed: {onboarding_profile.completed if onboarding_profile else 'N/A'}")
+            print(f"  - Health profile exists: {has_health_profile}")
+            print(f"  - Health profile data: {current_user.health_profile}")
+            print(f"  - Onboarding data exists: {has_onboarding_data}")
+            print(f"  - Onboarding data: {current_user.onboarding_data}")
+            print(f"  - Final completed status: {has_completed}")
 
         return {
             "completed": has_completed,

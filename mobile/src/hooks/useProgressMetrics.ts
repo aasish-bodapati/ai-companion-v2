@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useHealthStats } from '../stores';
+// Removed Zustand store imports
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -34,7 +34,11 @@ interface ProgressMetricsData {
 }
 
 export function useProgressMetricsData(): ProgressMetricsData {
-  const { workoutsToday, caloriesToday, waterToday, mealsToday } = useHealthStats();
+  // Removed Zustand store usage - using default values
+  const workoutsToday = 0;
+  const caloriesToday = 0;
+  const waterToday = 0;
+  const mealsToday = 0;
   const renderCountRef = useRef(0);
 
   renderCountRef.current += 1;

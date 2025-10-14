@@ -18,6 +18,18 @@ def read_user_me(
     """
     Get current user.
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"👤 [USER API] Getting user data for user ID: {current_user.id}")
+    logger.info(f"👤 [USER API] User email: {current_user.email}")
+    logger.info(f"👤 [USER API] User active: {current_user.is_active}")
+    
+    # Ensure the user object has all required fields
+    if not current_user.id:
+        logger.error("👤 [USER API] User ID is missing!")
+        raise HTTPException(status_code=500, detail="User data is incomplete")
+    
     return current_user
 
 @router.put("/users/me", response_model=UserSchema)

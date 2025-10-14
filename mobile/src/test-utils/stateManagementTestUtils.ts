@@ -1,6 +1,6 @@
 /**
  * Testing utilities for state management
- * Provides helpers for testing Zustand stores, hooks, and components
+ * Provides helpers for testing components and hooks
  */
 
 import { render, RenderOptions } from '@testing-library/react-native';

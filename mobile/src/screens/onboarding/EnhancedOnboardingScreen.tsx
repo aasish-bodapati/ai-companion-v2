@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -25,10 +25,7 @@ interface HealthData {
   height: string;
   weight: string;
   gender: 'male' | 'female' | 'other' | '' | 'Please select your gender';
-  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
-  ffm?: string; // Fat-Free Mass (optional)
-  smm?: string; // Skeletal Muscle Mass (optional)
-  bodyFat?: string; // Body Fat Percentage (optional)
+  activityLevel: 'sedentary' | 'light' | 'active' | 'very_active' | '';
 }
 
 interface OnboardingData {
@@ -88,10 +85,7 @@ export default function EnhancedOnboardingScreen() {
       height: '',
       weight: '',
       gender: '',
-      activityLevel: 'moderate',
-      ffm: '',
-      smm: '',
-      bodyFat: '',
+      activityLevel: '',
     },
     bodyTypeGoal: '',
     goals: [],
@@ -181,6 +175,24 @@ export default function EnhancedOnboardingScreen() {
   const isLastStep = currentStep === ONBOARDING_STEPS.length - 1;
   const isFirstStep = currentStep === 0;
 
+  // Safety check for currentStepData - reset to last valid step if out of bounds
+  if (!currentStepData) {
+    DebugUtils.error('❌ [ONBOARDING] currentStepData is undefined for currentStep:', currentStep, 'maxSteps:', ONBOARDING_STEPS.length);
+    // Reset to last valid step instead of returning null to avoid hooks issues
+    const lastValidStep = ONBOARDING_STEPS.length - 1;
+    if (currentStep > lastValidStep) {
+      setCurrentStep(lastValidStep);
+    }
+    // Use the last step as fallback
+    const fallbackStepData = ONBOARDING_STEPS[lastValidStep];
+    if (!fallbackStepData) {
+      DebugUtils.error('❌ [ONBOARDING] No valid step data available');
+      return null;
+    }
+    // Continue with fallback data - this will be handled by the next render
+    return null;
+  }
+
   if (__DEV__) {
     DebugUtils.log('📊 Step info - currentStep:', currentStep, 'totalSteps:', ONBOARDING_STEPS.length, 'isLastStep:', isLastStep, 'currentStepData:', currentStepData?.id);
   }
@@ -219,7 +231,11 @@ export default function EnhancedOnboardingScreen() {
         DebugUtils.log('➡️ Moving to next step');
       }
       hapticFeedback.medium();
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep(prev => {
+        const nextStep = prev + 1;
+        // Ensure we don't go out of bounds
+        return nextStep < ONBOARDING_STEPS.length ? nextStep : prev;
+      });
     } else if (isLastStep) {
       if (__DEV__) {
         DebugUtils.log('✅ On last step, completing onboarding immediately');
@@ -263,9 +279,7 @@ export default function EnhancedOnboardingScreen() {
         height_cm: parseInt(onboardingData.healthData.height) || 175,
         current_weight_kg: parseInt(onboardingData.healthData.weight) || 70,
         activity_level: onboardingData.healthData.activityLevel || 'moderate',
-        smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : null,
-        body_fat_percentage: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : null,
-        ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : null,
+        // Removed advanced metrics - smm, body_fat_percentage, ffm
         bodyTypeGoal: onboardingData.bodyTypeGoal,
         timezone: onboardingData.timezone
       };
@@ -306,33 +320,45 @@ export default function EnhancedOnboardingScreen() {
     DebugUtils.log('Body type validation changed:', isValid);
   }, []);
 
-  const canGoNext = () => {
+  const canGoNext = useMemo(() => {
+    if (!currentStepData?.id) return false;
     switch (currentStepData.id) {
       case 'health_data':
         const { age, height, weight, gender, activityLevel } = onboardingData.healthData;
         return age && height && weight && gender && activityLevel && 
                !isNaN(Number(age)) && !isNaN(Number(height)) && !isNaN(Number(weight));
       case 'body_type_goal':
-        // Check if body type goal is one of the valid options
-        const validBodyTypeIds = [
-          'balanced-fit-001'  // Balanced & Fit
-        ];
+        // Check if body type goal is set (either recommended or specific goal)
         const isValid = !!(onboardingData.bodyTypeGoal &&
-                       onboardingData.bodyTypeGoal.length > 0 &&
-                       validBodyTypeIds.includes(onboardingData.bodyTypeGoal));
+                       onboardingData.bodyTypeGoal.length > 0);
         DebugUtils.log('🔍 Body type validation check:', {
           bodyTypeGoal: onboardingData.bodyTypeGoal,
           length: onboardingData.bodyTypeGoal?.length,
-          isValid,
-          validBodyTypeIds
+          isValid
         });
         return isValid;
       default:
         return true;
     }
-  };
+  }, [currentStepData.id, onboardingData.healthData, onboardingData.bodyTypeGoal]);
+
+  // Memoize userData for body type goal step
+  const userData = useMemo(() => ({
+    age: parseInt(onboardingData.healthData.age) || 25,
+    height: parseInt(onboardingData.healthData.height) || 175,
+    weight: parseInt(onboardingData.healthData.weight) || 70,
+    gender: onboardingData.healthData.gender === 'Please select your gender' ? 'male' : onboardingData.healthData.gender as 'male' | 'female',
+    activityLevel: onboardingData.healthData.activityLevel as 'sedentary' | 'light' | 'active' | 'very_active',
+  }), [
+    onboardingData.healthData.age,
+    onboardingData.healthData.height,
+    onboardingData.healthData.weight,
+    onboardingData.healthData.gender,
+    onboardingData.healthData.activityLevel
+  ]);
 
   const renderStepContent = () => {
+    if (!currentStepData?.id) return null;
     switch (currentStepData.id) {
       case 'health_data':
         return (
@@ -346,17 +372,21 @@ export default function EnhancedOnboardingScreen() {
           <BodyTypeGoalsStep
             onBodyTypeChange={handleBodyTypeChange}
             initialBodyType={onboardingData.bodyTypeGoal}
-            userData={{
-              age: parseInt(onboardingData.healthData.age) || 25,
-              height: parseInt(onboardingData.healthData.height) || 175,
-              weight: parseInt(onboardingData.healthData.weight) || 70,
-              gender: onboardingData.healthData.gender === 'Please select your gender' ? 'male' : onboardingData.healthData.gender as 'male' | 'female' | 'other',
-              activityLevel: onboardingData.healthData.activityLevel,
-              ffm: onboardingData.healthData.ffm ? parseFloat(onboardingData.healthData.ffm) : undefined,
-              smm: onboardingData.healthData.smm ? parseFloat(onboardingData.healthData.smm) : undefined,
-              bodyFat: onboardingData.healthData.bodyFat ? parseFloat(onboardingData.healthData.bodyFat) : undefined,
-            }}
+            userData={userData}
             onValidationChange={handleBodyTypeValidationChange}
+          />
+        );
+      case 'complete':
+        return (
+          <OnboardingStep
+            icon={currentStepData.icon}
+            title={currentStepData.title}
+            subtitle={currentStepData.subtitle}
+            description={currentStepData.description}
+            variant={currentStepData.variant}
+            showCompletionButton={true}
+            onComplete={handleComplete}
+            isCompleting={isCompleting}
           />
         );
       default:
@@ -411,7 +441,7 @@ export default function EnhancedOnboardingScreen() {
           onNext={handleNext}
           onPrevious={handlePrevious}
           onComplete={handleComplete}
-          canGoNext={!!canGoNext()}
+          canGoNext={canGoNext}
           canGoPrevious={!isFirstStep}
           enableSwipe={true}
           isLastStep={isLastStep}

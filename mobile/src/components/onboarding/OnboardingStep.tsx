@@ -6,6 +6,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { mobileUtils } from '../../utils/haptics';
@@ -23,6 +24,9 @@ interface OnboardingStepProps {
   showIcon?: boolean;
   iconColor?: string;
   backgroundColor?: string;
+  showCompletionButton?: boolean;
+  onComplete?: () => void;
+  isCompleting?: boolean;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -38,6 +42,9 @@ export default function OnboardingStep({
   showIcon = true,
   iconColor = '#3b82f6',
   backgroundColor = '#ffffff',
+  showCompletionButton = false,
+  onComplete,
+  isCompleting = false,
 }: OnboardingStepProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -153,6 +160,20 @@ export default function OnboardingStep({
             {children}
           </View>
         )}
+
+        {showCompletionButton && onComplete && (
+          <View style={styles.completionButtonContainer}>
+            <TouchableOpacity
+              style={[styles.completionButton, isCompleting && styles.completionButtonDisabled]}
+              onPress={onComplete}
+              disabled={isCompleting}
+            >
+              <Text style={styles.completionButtonText}>
+                {isCompleting ? 'Completing...' : 'Get Started'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </Animated.View>
   );
@@ -235,5 +256,26 @@ const styles = StyleSheet.create({
   childrenContainer: {
     width: '100%',
     marginTop: 20,
+  },
+  completionButtonContainer: {
+    width: '100%',
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  completionButton: {
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  completionButtonDisabled: {
+    backgroundColor: '#9ca3af',
+  },
+  completionButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

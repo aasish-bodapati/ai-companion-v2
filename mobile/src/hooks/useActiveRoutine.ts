@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { routineService } from '../services/api';
+import { routineService } from '../services/RoutineService';
 
 import { DebugUtils } from '../utils/debugUtils';
 
@@ -62,7 +62,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
         const activeRoutine = await routineService.getActiveRoutine();
         DebugUtils.log('📋 [USE ACTIVE ROUTINE] Active routine response:', activeRoutine);
 
-        if (activeRoutine) {
+        if (activeRoutine && activeRoutine.id) {
           DebugUtils.log('🔄 [USE ACTIVE ROUTINE] Setting activeRoutineId to', activeRoutine.id);
           setActiveRoutineId(activeRoutine.id);
           await saveActiveRoutine(activeRoutine.id);
@@ -83,7 +83,17 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
           await saveActiveRoutine(null);
           setError(null); // Clear error for expected 404
         } else {
-          throw apiError; // Re-throw unexpected errors
+          DebugUtils.error('❌ [USE ACTIVE ROUTINE] Unexpected error:', {
+            error: apiError,
+            errorType: typeof apiError,
+            errorKeys: apiError ? Object.keys(apiError) : 'no keys',
+            errorString: String(apiError),
+            errorMessage: apiError?.message || 'no message',
+            errorResponse: apiError?.response || 'no response',
+            errorStatus: apiError?.response?.status || 'no status'
+          });
+          setError('Failed to load active routine');
+          setActiveRoutineId(null);
         }
       }
     } catch (err: any) {

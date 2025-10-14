@@ -12,7 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { fitnessService } from '../../services/api';
 import { useToast } from '../../contexts/ToastContext';
-import { useExerciseCategories, useExerciseCategoriesLoaded, useExerciseCategoriesLoading, useExerciseCategoriesStore } from '../../stores';
+// Removed Zustand store imports
 import { CategoryBadge } from '../ui/Badge';
 import { exerciseCategoryService } from '../../services/api';
 import { getExerciseCategory } from '../../utils/exerciseCategoryUtils';
@@ -180,13 +180,23 @@ export default function SimpleFitnessLogs({ onRefresh }: SimpleFitnessLogsProps)
   // Use ref to avoid stale closure issues
   const selectedDateRef = useRef(selectedDate);
 
-  // Use individual selectors (safe - no infinite loops)
-  const categories = useExerciseCategories();
-  const loaded = useExerciseCategoriesLoaded();
-  const categoriesLoading = useExerciseCategoriesLoading();
+  // Removed Zustand store usage - using local state
+  const [categories, setCategories] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
 
-  // Get actions directly from store (avoid useExerciseCategoriesActions)
-  const loadCategories = useExerciseCategoriesStore.getState().loadCategories;
+  const loadCategories = useCallback(async () => {
+    setCategoriesLoading(true);
+    try {
+      const data = await exerciseCategoryService.getCategories();
+      setCategories(data);
+      setLoaded(true);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  }, []);
 
   // Update ref when selectedDate changes
   useEffect(() => {

@@ -16,6 +16,7 @@ python-dateutil==2.9.0.post0
 
 # HTTP client for API calls
 httpx>=0.25.1,<0.28.0
+requests>=2.31.0
 
 # Health Data Analytics
 numpy>=1.26.0

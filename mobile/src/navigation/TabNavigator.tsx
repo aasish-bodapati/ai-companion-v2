@@ -7,7 +7,7 @@ import DashboardScreen from '../screens/main/DashboardScreen';
 import FitnessScreen from '../screens/main/FitnessScreen';
 import NutritionScreen from '../screens/main/NutritionScreen';
 // import AnalyticsScreen from '../screens/main/AnalyticsScreen'; // REMOVED
-import EnhancedProfileScreen from '../screens/main/EnhancedProfileScreen';
+import SimpleProfileScreen from '../screens/main/SimpleProfileScreen';
 // Removed MigrationScreen import
 import QuickAddModal from '../components/common/QuickAddModal';
 import SmartWorkoutLogger from '../components/fitness/SmartWorkoutLogger';
@@ -174,7 +174,7 @@ export default function TabNavigator() {
       {/* Analytics tab removed */}
       <Tab.Screen
         name="Profile"
-        component={EnhancedProfileScreen}
+        component={SimpleProfileScreen}
         options={{ title: 'Profile' }}
       />
       {/* Removed Migration tab */}

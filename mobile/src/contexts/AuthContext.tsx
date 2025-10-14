@@ -97,18 +97,84 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const storedToken = await AsyncStorage.getItem('token');
       if (storedToken) {
+        DebugUtils.log('🔐 [AUTH CONTEXT] Retrieved token from storage:', {
+          tokenLength: storedToken.length,
+          tokenStart: storedToken.substring(0, 20) + '...',
+          tokenEnd: '...' + storedToken.substring(storedToken.length - 20),
+          hasDots: storedToken.includes('.'),
+          dotCount: (storedToken.match(/\./g) || []).length
+        });
         setToken(storedToken);
         setAuthToken(storedToken);
         // Verify token with backend first
         try {
-          const response = await api.get('/api/v1/users/me');
-          const userData = response.data;
+          const userData = await api.get('/api/v1/users/me');
+          DebugUtils.log('🔐 [AUTH CONTEXT] User data received:', userData);
+          DebugUtils.log('🔐 [AUTH CONTEXT] User data type:', typeof userData);
+          DebugUtils.log('🔐 [AUTH CONTEXT] User data keys:', userData ? Object.keys(userData) : 'null/undefined');
           
           // Validate user data before setting
           if (userData && typeof userData === 'object' && userData.id !== undefined) {
             setUserSafe(userData);
             // Update stored user data with fresh data from server
             await AsyncStorage.setItem('user', JSON.stringify(userData));
+            
+            // Check onboarding completion status now that we have user data
+            console.log('🔍 [AUTH CHECK] Making onboarding status API call with user:', userData.email);
+            
+            // TEMPORARY WORKAROUND: If user has completed onboarding before, assume it's completed
+            // This prevents the infinite onboarding loop
+            const hasCompletedOnboardingBefore = userData.health_profile || userData.onboarding_data;
+            if (hasCompletedOnboardingBefore) {
+              console.log('🔍 [AUTH CHECK] User has onboarding data, assuming completed');
+              setNeedsOnboarding(false);
+              return;
+            }
+            
+            try {
+              const onboardingStatus = await api.get('/api/v1/health/onboarding/status');
+              console.log('🔍 [AUTH CHECK] Full onboarding status response:', onboardingStatus);
+              console.log('🔍 [AUTH CHECK] Onboarding status data:', onboardingStatus.data);
+              
+              // The API response structure might be different - check both locations
+              const responseData = onboardingStatus.data || onboardingStatus;
+              console.log('🔍 [AUTH CHECK] Using response data:', responseData);
+              
+              if (responseData && typeof responseData === 'object') {
+                const completed = responseData.completed;
+                console.log('🔍 [AUTH CHECK] Completed status:', completed);
+
+                // Enhanced debugging for onboarding status
+                if (__DEV__) {
+                  DebugUtils.log('🔍 Auth check - onboarding status response:', responseData);
+                  DebugUtils.log('🔍 Auth check - completed:', completed);
+                  DebugUtils.log('🔍 Auth check - setNeedsOnboarding to:', !completed);
+                }
+
+                // Check if onboarding is completed
+                setNeedsOnboarding(!completed);
+                console.log('🔍 [AUTH CHECK] Set needsOnboarding to:', !completed);
+              } else {
+                console.log('❌ [AUTH CHECK] Invalid onboarding status response:', onboardingStatus);
+                setNeedsOnboarding(true);
+              }
+            } catch (onboardingError) {
+              console.log('❌ [AUTH CHECK] Onboarding status API error:', onboardingError);
+              console.log('❌ [AUTH CHECK] Error details:', {
+                status: onboardingError?.response?.status,
+                message: onboardingError?.message,
+                data: onboardingError?.response?.data
+              });
+              
+              // Only log error if it's not a 401 (authentication error)
+              if (onboardingError?.response?.status !== 401) {
+                if (__DEV__) {
+                  DebugUtils.log('🔍 Auth check - onboarding error, defaulting to needed');
+                }
+              }
+              // Default to needing onboarding if we can't check
+              setNeedsOnboarding(true);
+            }
           } else {
             DebugUtils.warn('🔐 [AUTH CONTEXT] Invalid user data received from API:', userData);
             throw new Error('Invalid user data received');
@@ -126,31 +192,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return; // Exit early if token is invalid
         }
 
-        // Check onboarding completion status from backend (only if we have a valid token)
-        if (storedToken && storedToken.length > 10) { // Basic token validation
-          try {
-            const onboardingStatus = await api.get('/api/v1/health/onboarding/status');
-            const completed = onboardingStatus.data.completed;
-
-            // Check if onboarding is completed
-            setNeedsOnboarding(!completed);
-            if (__DEV__) {
-              DebugUtils.log('🔍 Auth check - onboarding:', completed ? 'completed' : 'needed');
-            }
-          } catch (error) {
-            // Only log error if it's not a 401 (authentication error)
-            if (error?.response?.status !== 401) {
-              if (__DEV__) {
-                DebugUtils.log('🔍 Auth check - onboarding error, defaulting to needed');
-              }
-            }
-            // Default to needing onboarding if we can't check
-            setNeedsOnboarding(true);
-          }
-        } else {
-          // No token, assume onboarding is needed
-          setNeedsOnboarding(true);
-        }
+        // Onboarding check is now handled above after user data is loaded
       } else {
         // No token - user needs to log in, but if they do, they'll need onboarding
         setNeedsOnboarding(true);
@@ -212,6 +254,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const { access_token } = responseData;
       DebugUtils.log('🔐 [LOGIN] Got access token:', !!access_token);
+      DebugUtils.log('🔐 [LOGIN] Token details:', {
+        tokenLength: access_token?.length || 0,
+        tokenStart: access_token ? access_token.substring(0, 20) + '...' : 'undefined',
+        tokenEnd: access_token ? '...' + access_token.substring(access_token.length - 20) : 'undefined',
+        hasDots: access_token?.includes('.') || false,
+        dotCount: access_token ? (access_token.match(/\./g) || []).length : 0
+      });
 
       // Store token
       await AsyncStorage.setItem('token', access_token);
@@ -224,9 +273,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Getting user data
         DebugUtils.log('🔐 [LOGIN] Getting user data...');
-        const userResponse = await api.get('/api/v1/users/me');
-        userData = userResponse.data; // Use .data property to get the actual user data
+        userData = await api.get('/api/v1/users/me');
         DebugUtils.log('🔐 [LOGIN] User data received:', userData);
+        DebugUtils.log('🔐 [LOGIN] User data type:', typeof userData);
+        DebugUtils.log('🔐 [LOGIN] User data keys:', userData ? Object.keys(userData) : 'null/undefined');
         
         // Validate user data before setting
         if (userData && typeof userData === 'object' && userData.id !== undefined) {
@@ -261,10 +311,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Check onboarding status
       try {
+        console.log('🔐 [LOGIN] Checking onboarding status...');
+        console.log('🔐 [LOGIN] Current user email:', userData?.email);
         DebugUtils.log('🔐 [LOGIN] Checking onboarding status...');
         const onboardingStatus = await api.get('/api/v1/health/onboarding/status');
         if (__DEV__) {
-          DebugUtils.log('🔍 login - onboarding status from API:', onboardingStatus);
+          DebugUtils.log('🔍 login - onboarding status from API:', onboardingStatus.data);
         }
         const completed = onboardingStatus.data.completed;
         setNeedsOnboarding(!completed);

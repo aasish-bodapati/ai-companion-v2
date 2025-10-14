@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { hapticFeedback } from '../../utils/haptics';
 import { COLORS, SPACING, FONT_SIZE, BORDER_RADIUS } from '../../theme/constants';
-import { useExerciseCategories } from '../../stores';
+// Removed Zustand store imports
 import { CategoryBadge } from './Badge';
 
 import { DebugUtils } from '../../utils/debugUtils';
@@ -67,8 +67,8 @@ const LoggingItem = React.memo(function LoggingItem({
       : ''
   );
 
-  // Use exercise categories store
-  const categories = useExerciseCategories();
+  // Removed Zustand store usage - using empty array
+  const categories = [];
 
   // Load categories if not loaded - DISABLED TO PREVENT INFINITE LOOP
   // useEffect(() => {

@@ -33,10 +33,10 @@ export const profileService = {
   // Get user profile from backend
   getUserProfile: async (): Promise<UserProfile | null> => {
     try {
-      const response = await api.get('/profile');
+      const response = await api.get('/api/v1/health/profile');
       return response.data;
-    } catch {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+    } catch (error) {
+      console.log('❌ [PROFILE SERVICE] Error getting user profile:', error);
       return null;
     }
   },
@@ -44,16 +44,18 @@ export const profileService = {
   // Update user profile on backend
   updateUserProfile: async (profileData: Partial<UserProfile>): Promise<UserProfile | null> => {
     try {
-      const response = await api.put('/profile', profileData);
+      const response = await api.put('/api/v1/health/profile', profileData);
       return response.data;
-    } catch {
-      // Silent error handling - no console logging to prevent Expo Go notifications
+    } catch (error) {
+      console.log('❌ [PROFILE SERVICE] Error updating user profile:', error);
       return null;
     }
   },
 
   // Convert backend profile to onboarding data format
   convertToOnboardingData: (profile: UserProfile) => {
+    console.log('🔍 [PROFILE SERVICE] Converting profile data:', profile);
+    
     return {
       healthData: profile.health_data ? {
         age: profile.health_data.age || '',

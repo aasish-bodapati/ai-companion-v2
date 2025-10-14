@@ -26,10 +26,19 @@ const requestInterceptor = (config: AxiosRequestConfig) => {
   // Add auth token if available
   const token = getAuthToken();
   if (token) {
+    DebugUtils.log('🔐 [API INTERCEPTOR] Adding token to request:', {
+      tokenLength: token.length,
+      tokenStart: token.substring(0, 20) + '...',
+      tokenEnd: '...' + token.substring(token.length - 20),
+      hasDots: token.includes('.'),
+      dotCount: (token.match(/\./g) || []).length
+    });
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${token}`,
     };
+  } else {
+    DebugUtils.log('🔐 [API INTERCEPTOR] No token available for request');
   }
   
   DebugUtils.network(
@@ -52,6 +61,15 @@ const responseInterceptor = (response: AxiosResponse) => {
     response.status,
     duration
   );
+  
+  // Add debugging for user endpoint
+  if (response.config.url?.includes('/users/me')) {
+    DebugUtils.log('🔍 [API INTERCEPTOR] User endpoint response:', {
+      status: response.status,
+      data: response.data,
+      headers: response.headers
+    });
+  }
   
   return response;
 };
@@ -260,6 +278,8 @@ export const healthCheck = async (): Promise<boolean> => {
 
 // Export the axios instance for advanced usage
 export { apiClient };
+
+// Note: routineService is imported directly where needed to avoid circular dependency
 
 // Export default
 export default api;

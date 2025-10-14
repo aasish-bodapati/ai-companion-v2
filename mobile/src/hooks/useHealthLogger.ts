@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { useHealthActions } from '../stores';
+// Removed Zustand store imports
 
 interface HealthLoggerOptions {
   type: 'workout' | 'meal' | 'water' | 'mood';
@@ -10,7 +10,7 @@ interface HealthLoggerOptions {
 export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOptions) {
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const healthActions = useHealthActions();
+  // Removed Zustand store usage
 
   const openLogger = useCallback(() => {
     setIsVisible(true);
@@ -28,8 +28,7 @@ export function useHealthLogger({ type, onSuccess, onError }: HealthLoggerOption
       // For now, we'll just simulate the save
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Refresh global data
-      await healthActions.refreshData();
+      // Removed Zustand store usage - data refresh handled by individual components
 
       onSuccess?.(data);
       closeLogger();

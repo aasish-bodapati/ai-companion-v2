@@ -26,7 +26,15 @@ export abstract class BaseService {
       const duration = endTime - startTime;
 
       DebugUtils.error(`❌ [BASE SERVICE] Request failed after ${duration}ms for: ${errorContext}`);
-      DebugUtils.error(`❌ [BASE SERVICE] Error:`, error);
+      DebugUtils.error(`❌ [BASE SERVICE] Error details:`, {
+        error,
+        errorType: typeof error,
+        errorKeys: error && typeof error === 'object' ? Object.keys(error) : 'not an object',
+        errorString: String(error),
+        errorMessage: (error as any)?.message || 'no message',
+        errorResponse: (error as any)?.response || 'no response',
+        errorStatus: (error as any)?.response?.status || 'no status'
+      });
 
       this.handleError(error, errorContext);
       throw error;
